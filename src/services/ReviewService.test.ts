@@ -1,5 +1,5 @@
 import { describe, it, beforeEach, afterEach } from 'mocha';
-import { assert } from 'chai';
+import * as assert from 'assert';
 import * as fs from 'fs';
 import * as path from 'path';
 import * as vscode from 'vscode';
@@ -43,17 +43,17 @@ describe('ReviewService テストスイート', () => {
 
       const reviewIndex = await reviewService.addReview(testRelativeFilePath, options);
       
-      assert.equal(reviewIndex, 0);
+      assert.strictEqual(reviewIndex, 0);
       
       // レビューファイルが作成されているか確認
       const reviewFile = await reviewService.loadReviewFile(testRelativeFilePath);
-      assert.isNotNull(reviewFile);
+      assert.ok(reviewFile !== null);
       if (reviewFile !== null) {
-        assert.equal(reviewFile.target_file, testRelativeFilePath);
-        assert.equal(reviewFile.reviews.length, 1);
-        assert.equal(reviewFile.reviews[0]?.content, 'これは提案です');
-        assert.equal(reviewFile.reviews[0]?.reviewer, 'テスト編集者');
-        assert.equal(reviewFile.reviews[0]?.status, 'open');
+        assert.strictEqual(reviewFile.target_file, testRelativeFilePath);
+        assert.strictEqual(reviewFile.reviews.length, 1);
+        assert.strictEqual(reviewFile.reviews[0]?.content, 'これは提案です');
+        assert.strictEqual(reviewFile.reviews[0]?.reviewer, 'テスト編集者');
+        assert.strictEqual(reviewFile.reviews[0]?.status, 'open');
       }
     });
 
@@ -77,13 +77,13 @@ describe('ReviewService テストスイート', () => {
       await reviewService.addReview(testRelativeFilePath, options1);
       const reviewIndex = await reviewService.addReview(testRelativeFilePath, options2);
       
-      assert.equal(reviewIndex, 1);
+      assert.strictEqual(reviewIndex, 1);
       
       const reviewFile = await reviewService.loadReviewFile(testRelativeFilePath);
-      assert.isNotNull(reviewFile);
+      assert.ok(reviewFile !== null);
       if (reviewFile !== null) {
-        assert.equal(reviewFile.reviews.length, 2);
-        assert.equal(reviewFile.reviews[1]?.content, '2番目のレビュー');
+        assert.strictEqual(reviewFile.reviews.length, 2);
+        assert.strictEqual(reviewFile.reviews[1]?.content, '2番目のレビュー');
       }
     });
   });
@@ -91,7 +91,7 @@ describe('ReviewService テストスイート', () => {
   describe('loadReviewFile', () => {
     it('存在しないレビューファイルを読み込む', async () => {
       const reviewFile = await reviewService.loadReviewFile('nonexistent.txt');
-      assert.isNull(reviewFile);
+      assert.ok(reviewFile);
     });
 
     it('レビューファイルを正しく読み込む', async () => {
@@ -106,10 +106,10 @@ describe('ReviewService テストスイート', () => {
       await reviewService.addReview(testRelativeFilePath, options);
       const reviewFile = await reviewService.loadReviewFile(testRelativeFilePath);
       
-      assert.isNotNull(reviewFile);
+      assert.ok(reviewFile !== null);
       if (reviewFile !== null) {
-        assert.equal(reviewFile.target_file, testRelativeFilePath);
-        assert.equal(reviewFile.reviews.length, 1);
+        assert.strictEqual(reviewFile.target_file, testRelativeFilePath);
+        assert.strictEqual(reviewFile.reviews.length, 1);
       }
     });
   });
@@ -128,9 +128,9 @@ describe('ReviewService テストスイート', () => {
       await reviewService.updateReview(testRelativeFilePath, 0, { status: 'resolved' });
       
       const reviewFile = await reviewService.loadReviewFile(testRelativeFilePath);
-      assert.isNotNull(reviewFile);
+      assert.ok(reviewFile !== null);
       if (reviewFile !== null) {
-        assert.equal(reviewFile.reviews[0]?.status, 'resolved');
+        assert.strictEqual(reviewFile.reviews[0]?.status, 'resolved');
       }
     });
 
@@ -147,9 +147,9 @@ describe('ReviewService テストスイート', () => {
       await reviewService.updateReview(testRelativeFilePath, 0, { content: '更新されたレビュー' });
       
       const reviewFile = await reviewService.loadReviewFile(testRelativeFilePath);
-      assert.isNotNull(reviewFile);
+      assert.ok(reviewFile !== null);
       if (reviewFile !== null) {
-        assert.equal(reviewFile.reviews[0]?.content, '更新されたレビュー');
+        assert.strictEqual(reviewFile.reviews[0]?.content, '更新されたレビュー');
       }
     });
 
@@ -158,7 +158,7 @@ describe('ReviewService テストスイート', () => {
         await reviewService.updateReview('nonexistent.txt', 0, { status: 'resolved' });
         assert.fail('エラーが発生すべきです');
       } catch (error) {
-        assert.include((error as Error).message, 'レビューファイルが見つかりません');
+        assert.ok((error as Error).message.includes('レビューファイルが見つかりません'));
       }
     });
 
@@ -177,7 +177,7 @@ describe('ReviewService テストスイート', () => {
         await reviewService.updateReview(testRelativeFilePath, 999, { status: 'resolved' });
         assert.fail('エラーが発生すべきです');
       } catch (error) {
-        assert.include((error as Error).message, '無効なレビューインデックス');
+        assert.ok((error as Error).message.includes('無効なレビューインデックス'));
       }
     });
   });
@@ -196,7 +196,7 @@ describe('ReviewService テストスイート', () => {
       await reviewService.deleteReview(testRelativeFilePath, 0);
       
       const reviewFile = await reviewService.loadReviewFile(testRelativeFilePath);
-      assert.isNull(reviewFile); // ファイルが削除されている
+      assert.ok(reviewFile === null); // ファイルが削除されている
     });
 
     it('複数のレビューから1つを削除する', async () => {
@@ -221,10 +221,10 @@ describe('ReviewService テストスイート', () => {
       await reviewService.deleteReview(testRelativeFilePath, 0);
       
       const reviewFile = await reviewService.loadReviewFile(testRelativeFilePath);
-      assert.isNotNull(reviewFile);
+      assert.ok(reviewFile !== null);
       if (reviewFile !== null) {
-        assert.equal(reviewFile.reviews.length, 1);
-        assert.equal(reviewFile.reviews[0]?.content, '2番目のレビュー');
+        assert.strictEqual(reviewFile.reviews.length, 1);
+        assert.strictEqual(reviewFile.reviews[0]?.content, '2番目のレビュー');
       }
     });
   });
@@ -253,18 +253,18 @@ describe('ReviewService テストスイート', () => {
       
       const summary = await reviewService.getReviewSummary(testRelativeFilePath);
       
-      assert.isNotNull(summary);
+      assert.ok(summary !== null);
       if (summary !== null) {
-        assert.equal(summary.open, 1);
-        assert.equal(summary.resolved, 1);
-        assert.equal(summary.in_progress, 0);
-        assert.equal(summary.dismissed, 0);
+        assert.strictEqual(summary.open, 1);
+        assert.strictEqual(summary.resolved, 1);
+        assert.strictEqual(summary.in_progress, 0);
+        assert.strictEqual(summary.dismissed, 0);
       }
     });
 
     it('レビューが存在しない場合は null を返す', async () => {
       const summary = await reviewService.getReviewSummary(testRelativeFilePath);
-      assert.isNull(summary);
+      assert.ok(summary === null);
     });
   });
 
@@ -285,11 +285,11 @@ describe('ReviewService テストスイート', () => {
       });
       
       const reviewFile = await reviewService.loadReviewFile(testRelativeFilePath);
-      assert.isNotNull(reviewFile);
+      assert.ok(reviewFile !== null);
       if (reviewFile !== null) {
-        assert.equal(reviewFile.reviews[0]?.thread?.length, 1);
-        assert.equal(reviewFile.reviews[0]?.thread?.[0]?.author, '執筆者');
-        assert.equal(reviewFile.reviews[0]?.thread?.[0]?.content, 'コメントありがとうございます');
+        assert.strictEqual(reviewFile.reviews[0]?.thread?.length, 1);
+        assert.strictEqual(reviewFile.reviews[0]?.thread?.[0]?.author, '執筆者');
+        assert.strictEqual(reviewFile.reviews[0]?.thread?.[0]?.content, 'コメントありがとうございます');
       }
     });
 
@@ -313,10 +313,10 @@ describe('ReviewService テストスイート', () => {
       });
       
       const reviewFile = await reviewService.loadReviewFile(testRelativeFilePath);
-      assert.isNotNull(reviewFile);
+      assert.ok(reviewFile !== null);
       if (reviewFile !== null) {
-        assert.equal(reviewFile.reviews[0]?.thread?.length, 2);
-        assert.equal(reviewFile.reviews[0]?.thread?.[1]?.content, '2番目のコメント');
+        assert.strictEqual(reviewFile.reviews[0]?.thread?.length, 2);
+        assert.strictEqual(reviewFile.reviews[0]?.thread?.[1]?.content, '2番目のコメント');
       }
     });
   });
