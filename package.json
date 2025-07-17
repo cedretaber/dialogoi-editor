@@ -19,9 +19,6 @@
     "writing",
     "japanese"
   ],
-  "activationEvents": [
-    "workspaceContains:**/dialogoi.yaml"
-  ],
   "main": "./out/extension.js",
   "contributes": {
     "views": {
@@ -250,7 +247,6 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.31.0",
-    "@types/chai": "^5.2.2",
     "@types/glob": "^8.1.0",
     "@types/js-yaml": "^4.0.9",
     "@types/mocha": "^10.0.10",
