@@ -1,5 +1,6 @@
 import * as vscode from 'vscode';
 import { DialogoiTreeDataProvider } from './tree/DialogoiTreeDataProvider.js';
+import { registerReviewCommands } from './commands/reviewCommands.js';
 
 export function activate(context: vscode.ExtensionContext): void {
   console.log('Dialogoi Editor が起動しました');
@@ -385,6 +386,11 @@ export function activate(context: vscode.ExtensionContext): void {
       }
     },
   );
+
+  // レビューコマンドの登録
+  if (vscode.workspace.workspaceFolders && vscode.workspace.workspaceFolders[0]) {
+    registerReviewCommands(context, vscode.workspace.workspaceFolders[0].uri);
+  }
 
   context.subscriptions.push(
     treeView,

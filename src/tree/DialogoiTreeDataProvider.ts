@@ -255,6 +255,31 @@ export class DialogoiTreeDataProvider implements vscode.TreeDataProvider<Dialogo
       }
     }
 
+    // レビュー情報
+    if (element.review_count) {
+      const reviewSummary: string[] = [];
+      if (element.review_count.open > 0) {
+        reviewSummary.push(`未対応: ${element.review_count.open}`);
+      }
+      if (element.review_count.in_progress && element.review_count.in_progress > 0) {
+        reviewSummary.push(`対応中: ${element.review_count.in_progress}`);
+      }
+      if (element.review_count.resolved && element.review_count.resolved > 0) {
+        reviewSummary.push(`解決済み: ${element.review_count.resolved}`);
+      }
+      if (element.review_count.dismissed && element.review_count.dismissed > 0) {
+        reviewSummary.push(`却下: ${element.review_count.dismissed}`);
+      }
+      
+      if (reviewSummary.length > 0) {
+        tooltipParts.push('');
+        tooltipParts.push('レビュー:');
+        reviewSummary.forEach((summary) => {
+          tooltipParts.push(`• ${summary}`);
+        });
+      }
+    }
+
     // tooltipを設定
     if (tooltipParts.length > 0) {
       item.tooltip = tooltipParts.join('\n');

@@ -1,6 +1,7 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import * as yaml from 'js-yaml';
+import { ReviewSummary } from '../models/Review.js';
 
 export interface DialogoiTreeItem {
   name: string;
@@ -12,7 +13,9 @@ export interface DialogoiTreeItem {
   reviews?: string;
   review_count?: {
     open: number;
-    resolved: number;
+    in_progress?: number;
+    resolved?: number;
+    dismissed?: number;
   };
   glossary?: boolean;
   character?: {
@@ -146,5 +149,88 @@ export class MetaYamlUtils {
     }
 
     return errors;
+  }
+
+  /**
+   * レビューファイルのパスを生成
+   * @param targetFilePath 対象ファイルのパス（小説ルートからの相対パス）
+   * @returns レビューファイルのパス
+   */
+  static generateReviewFilePath(targetFilePath: string): string {
+    const fileName = path.basename(targetFilePath);
+    const dirName = path.dirname(targetFilePath);
+    const reviewFileName = `${fileName}_reviews.yaml`;
+    
+    if (dirName === '.') {
+      return path.join('reviews', reviewFileName);
+    } else {
+      return path.join('reviews', dirName, reviewFileName);
+    }
+  }
+
+  /**
+   * meta.yaml のファイルエントリにレビュー情報を設定
+   * @param dirPath ディレクトリパス
+   * @param fileName ファイル名
+   * @param reviewSummary レビューサマリー
+   * @returns 更新が成功したかどうか
+   */
+  static updateReviewInfo(dirPath: string, fileName: string, reviewSummary: ReviewSummary | null): boolean {
+    const metaPath = path.join(dirPath, 'meta.yaml');
+    
+    if (!fs.existsSync(metaPath)) {
+      return false;
+    }
+
+    try {
+      const content = fs.readFileSync(metaPath, 'utf-8');
+      const meta = yaml.load(content) as MetaYaml;
+      
+      const fileItem = meta.files.find(item => item.name === fileName);
+      if (!fileItem) {
+        return false;
+      }
+
+      if (reviewSummary && (reviewSummary.open > 0 || (reviewSummary.resolved && reviewSummary.resolved > 0))) {
+        // レビューが存在する場合
+        const filePathInDir = path.join(path.basename(dirPath), fileName);
+        fileItem.reviews = this.generateReviewFilePath(filePathInDir);
+        
+        // レビューサマリーを設定（0でない値のみ）
+        fileItem.review_count = { open: reviewSummary.open };
+        if (reviewSummary.in_progress && reviewSummary.in_progress > 0) {
+          fileItem.review_count.in_progress = reviewSummary.in_progress;
+        }
+        if (reviewSummary.resolved && reviewSummary.resolved > 0) {
+          fileItem.review_count.resolved = reviewSummary.resolved;
+        }
+        if (reviewSummary.dismissed && reviewSummary.dismissed > 0) {
+          fileItem.review_count.dismissed = reviewSummary.dismissed;
+        }
+      } else {
+        // レビューが存在しない場合は削除
+        delete fileItem.reviews;
+        delete fileItem.review_count;
+      }
+
+      // meta.yaml を更新
+      const updatedContent = yaml.dump(meta, { indent: 2 });
+      fs.writeFileSync(metaPath, updatedContent, 'utf-8');
+      
+      return true;
+    } catch (error) {
+      console.error('レビュー情報の更新に失敗しました:', error);
+      return false;
+    }
+  }
+
+  /**
+   * meta.yaml からレビュー情報を削除
+   * @param dirPath ディレクトリパス
+   * @param fileName ファイル名
+   * @returns 削除が成功したかどうか
+   */
+  static removeReviewInfo(dirPath: string, fileName: string): boolean {
+    return this.updateReviewInfo(dirPath, fileName, null);
   }
 }
