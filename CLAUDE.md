@@ -142,6 +142,29 @@ npm run check-all
 - 複雑な型変換で一時的な型キャストが必要な場合
 - ただし、その理由をコメントで明記すること
 
+**ファイルパスの命名規則：**
+
+パスの種類を明確にするため、以下の命名規則を必ず守ること：
+
+- **相対パス**: `relativePath`, `relativeFilePath`, `relativeDir` 等
+- **絶対パス**: `absolutePath`, `absoluteFilePath`, `absoluteDir` 等
+- **汎用的な `path`, `filePath`, `dirPath` は使用禁止**
+
+例：
+```typescript
+// ❌ 悪い例
+const path = '/absolute/path/to/file.txt';
+const filePath = 'relative/path/to/file.txt';
+
+// ✅ 良い例
+const absolutePath = '/absolute/path/to/file.txt';
+const relativePath = 'relative/path/to/file.txt';
+const absoluteFilePath = '/absolute/path/to/file.txt';
+const relativeFilePath = 'relative/path/to/file.txt';
+```
+
+この規則により、パスの種類の取り違えによるバグを防ぐ。
+
 ## **重要：作業完了前の必須チェック**
 
 **新しいファイルを作成・編集した後は、必ず以下のコマンドを実行してCIの通過を確保すること：**
