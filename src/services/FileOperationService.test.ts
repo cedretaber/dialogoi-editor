@@ -173,4 +173,93 @@ files:
       assert.ok(result.message.includes('無効なインデックス'));
     });
   });
+
+  suite('タグ操作', () => {
+    test('タグを追加する', () => {
+      const result = FileOperationService.addTag(testDir, 'existing.txt', 'new-tag');
+
+      assert.strictEqual(result.success, true);
+      assert.ok(result.message.includes('タグ "new-tag" を追加しました'));
+
+      // タグが追加されることを確認
+      assert.ok(result.updatedItems);
+      const targetFile = result.updatedItems.find((item) => item.name === 'existing.txt');
+      assert.ok(targetFile);
+      assert.ok(targetFile.tags !== undefined && targetFile.tags.includes('new-tag'));
+      assert.ok(targetFile.tags !== undefined && targetFile.tags.includes('既存'));
+    });
+
+    test('既存のタグを追加しようとするとエラーを返す', () => {
+      const result = FileOperationService.addTag(testDir, 'existing.txt', '既存');
+
+      assert.strictEqual(result.success, false);
+      assert.ok(result.message.includes('既に存在します'));
+    });
+
+    test('タグを削除する', () => {
+      const result = FileOperationService.removeTag(testDir, 'existing.txt', '既存');
+
+      assert.strictEqual(result.success, true);
+      assert.ok(result.message.includes('タグ "既存" を削除しました'));
+
+      // タグが削除されることを確認
+      assert.ok(result.updatedItems);
+      const targetFile = result.updatedItems.find((item) => item.name === 'existing.txt');
+      assert.ok(targetFile);
+      assert.ok(targetFile.tags === undefined || !targetFile.tags.includes('既存'));
+    });
+
+    test('存在しないタグを削除しようとするとエラーを返す', () => {
+      const result = FileOperationService.removeTag(testDir, 'existing.txt', 'nonexistent');
+
+      assert.strictEqual(result.success, false);
+      assert.ok(result.message.includes('見つかりません'));
+    });
+
+    test('タグを一括設定する', () => {
+      const newTags = ['tag1', 'tag2', 'tag3'];
+      const result = FileOperationService.setTags(testDir, 'existing.txt', newTags);
+
+      assert.strictEqual(result.success, true);
+      assert.ok(result.message.includes('タグを設定しました'));
+
+      // タグが設定されることを確認
+      assert.ok(result.updatedItems);
+      const targetFile = result.updatedItems.find((item) => item.name === 'existing.txt');
+      assert.ok(targetFile);
+      assert.deepStrictEqual(targetFile.tags, newTags);
+    });
+
+    test('空のタグ配列を設定するとタグが削除される', () => {
+      const result = FileOperationService.setTags(testDir, 'existing.txt', []);
+
+      assert.strictEqual(result.success, true);
+
+      // タグが削除されることを確認
+      assert.ok(result.updatedItems);
+      const targetFile = result.updatedItems.find((item) => item.name === 'existing.txt');
+      assert.ok(targetFile);
+      assert.strictEqual(targetFile.tags, undefined);
+    });
+
+    test('重複したタグを設定すると重複が削除される', () => {
+      const tagsWithDuplicates = ['tag1', 'tag2', 'tag1', 'tag3', 'tag2'];
+      const result = FileOperationService.setTags(testDir, 'existing.txt', tagsWithDuplicates);
+
+      assert.strictEqual(result.success, true);
+
+      // 重複が削除されてソートされることを確認
+      assert.ok(result.updatedItems);
+      const targetFile = result.updatedItems.find((item) => item.name === 'existing.txt');
+      assert.ok(targetFile);
+      assert.deepStrictEqual(targetFile.tags, ['tag1', 'tag2', 'tag3']);
+    });
+
+    test('存在しないファイルにタグを追加しようとするとエラーを返す', () => {
+      const result = FileOperationService.addTag(testDir, 'nonexistent.txt', 'tag');
+
+      assert.strictEqual(result.success, false);
+      assert.ok(result.message.includes('見つかりません'));
+    });
+  });
 });

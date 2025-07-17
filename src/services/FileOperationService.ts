@@ -243,6 +243,128 @@ export class FileOperationService {
   }
 
   /**
+   * ファイルにタグを追加する
+   */
+  static addTag(dirPath: string, fileName: string, tag: string): FileOperationResult {
+    try {
+      const result = this.updateMetaYaml(dirPath, (meta) => {
+        const fileIndex = meta.files.findIndex((file) => file.name === fileName);
+        if (fileIndex === -1) {
+          throw new Error(`meta.yaml内にファイル ${fileName} が見つかりません。`);
+        }
+
+        const fileItem = meta.files[fileIndex];
+        if (fileItem !== undefined) {
+          if (!fileItem.tags) {
+            fileItem.tags = [];
+          }
+          // 既にタグが存在する場合は追加しない
+          if (!fileItem.tags.includes(tag)) {
+            fileItem.tags.push(tag);
+          } else {
+            throw new Error(`タグ "${tag}" は既に存在します。`);
+          }
+        }
+        return meta;
+      });
+
+      if (!result.success) {
+        return result;
+      }
+
+      return {
+        success: true,
+        message: `${fileName} にタグ "${tag}" を追加しました。`,
+        updatedItems: result.updatedItems,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: `タグ追加エラー: ${error instanceof Error ? error.message : String(error)}`,
+      };
+    }
+  }
+
+  /**
+   * ファイルからタグを削除する
+   */
+  static removeTag(dirPath: string, fileName: string, tag: string): FileOperationResult {
+    try {
+      const result = this.updateMetaYaml(dirPath, (meta) => {
+        const fileIndex = meta.files.findIndex((file) => file.name === fileName);
+        if (fileIndex === -1) {
+          throw new Error(`meta.yaml内にファイル ${fileName} が見つかりません。`);
+        }
+
+        const fileItem = meta.files[fileIndex];
+        if (fileItem !== undefined) {
+          if (!fileItem.tags || !fileItem.tags.includes(tag)) {
+            throw new Error(`タグ "${tag}" が見つかりません。`);
+          }
+          fileItem.tags = fileItem.tags.filter((t) => t !== tag);
+          // タグが空になった場合はundefinedに設定
+          if (fileItem.tags.length === 0) {
+            fileItem.tags = undefined;
+          }
+        }
+        return meta;
+      });
+
+      if (!result.success) {
+        return result;
+      }
+
+      return {
+        success: true,
+        message: `${fileName} からタグ "${tag}" を削除しました。`,
+        updatedItems: result.updatedItems,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: `タグ削除エラー: ${error instanceof Error ? error.message : String(error)}`,
+      };
+    }
+  }
+
+  /**
+   * ファイルのタグを一括で設定する
+   */
+  static setTags(dirPath: string, fileName: string, tags: string[]): FileOperationResult {
+    try {
+      const result = this.updateMetaYaml(dirPath, (meta) => {
+        const fileIndex = meta.files.findIndex((file) => file.name === fileName);
+        if (fileIndex === -1) {
+          throw new Error(`meta.yaml内にファイル ${fileName} が見つかりません。`);
+        }
+
+        const fileItem = meta.files[fileIndex];
+        if (fileItem !== undefined) {
+          // 重複を削除してソート
+          const uniqueTags = [...new Set(tags)].sort();
+          fileItem.tags = uniqueTags.length > 0 ? uniqueTags : undefined;
+        }
+        return meta;
+      });
+
+      if (!result.success) {
+        return result;
+      }
+
+      return {
+        success: true,
+        message: `${fileName} のタグを設定しました。`,
+        updatedItems: result.updatedItems,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: `タグ設定エラー: ${error instanceof Error ? error.message : String(error)}`,
+      };
+    }
+  }
+
+  /**
    * meta.yamlを更新する共通メソッド
    */
   private static updateMetaYaml(

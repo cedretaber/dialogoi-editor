@@ -73,15 +73,24 @@ export class DialogoiTreeDataProvider implements vscode.TreeDataProvider<Dialogo
       }
     }
 
-    // レビュー数の表示
-    if (element.review_count?.open !== undefined && element.review_count.open > 0) {
-      item.description = `(${element.review_count.open} レビュー)`;
-    }
-
+    // タグとレビュー数の表示
+    const descriptionParts: string[] = [];
+    
     // タグの表示
     if (element.tags !== undefined && element.tags.length > 0) {
       const tagString = element.tags.map((tag) => `#${tag}`).join(' ');
+      descriptionParts.push(tagString);
       item.tooltip = `タグ: ${tagString}`;
+    }
+    
+    // レビュー数の表示
+    if (element.review_count?.open !== undefined && element.review_count.open > 0) {
+      descriptionParts.push(`(${element.review_count.open} レビュー)`);
+    }
+
+    // descriptionを設定
+    if (descriptionParts.length > 0) {
+      item.description = descriptionParts.join(' ');
     }
 
     // コンテキストメニュー用のcontextValue
@@ -189,5 +198,36 @@ export class DialogoiTreeDataProvider implements vscode.TreeDataProvider<Dialogo
     } else {
       return item.path.substring(0, item.path.lastIndexOf('/'));
     }
+  }
+
+  // タグ操作メソッド
+  addTag(dirPath: string, fileName: string, tag: string): { success: boolean; message: string } {
+    const result = FileOperationService.addTag(dirPath, fileName, tag);
+
+    if (result.success) {
+      this.refresh();
+    }
+
+    return result;
+  }
+
+  removeTag(dirPath: string, fileName: string, tag: string): { success: boolean; message: string } {
+    const result = FileOperationService.removeTag(dirPath, fileName, tag);
+
+    if (result.success) {
+      this.refresh();
+    }
+
+    return result;
+  }
+
+  setTags(dirPath: string, fileName: string, tags: string[]): { success: boolean; message: string } {
+    const result = FileOperationService.setTags(dirPath, fileName, tags);
+
+    if (result.success) {
+      this.refresh();
+    }
+
+    return result;
   }
 }

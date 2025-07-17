@@ -151,6 +151,133 @@ export function activate(context: vscode.ExtensionContext): void {
     },
   );
 
+  // タグ追加コマンド
+  const addTagCommand = vscode.commands.registerCommand(
+    'dialogoi.addTag',
+    async (item: any) => {
+      if (!item || !item.name) {
+        vscode.window.showErrorMessage('タグを追加するファイルを選択してください。');
+        return;
+      }
+
+      const newTag = await vscode.window.showInputBox({
+        prompt: `${item.name} に追加するタグを入力してください`,
+        placeHolder: 'タグ名',
+        validateInput: (value) => {
+          if (!value) {
+            return 'タグ名を入力してください。';
+          }
+          if (value.includes(' ')) {
+            return 'タグ名にスペースは使用できません。';
+          }
+          return null;
+        },
+      });
+
+      if (!newTag) {
+        return;
+      }
+
+      const dirPath = treeDataProvider.getDirectoryPath(item);
+      const result = treeDataProvider.addTag(dirPath, item.name, newTag);
+
+      if (result.success) {
+        vscode.window.showInformationMessage(result.message);
+      } else {
+        vscode.window.showErrorMessage(result.message);
+      }
+    },
+  );
+
+  // タグ削除コマンド
+  const removeTagCommand = vscode.commands.registerCommand(
+    'dialogoi.removeTag',
+    async (item: any) => {
+      if (!item || !item.name) {
+        vscode.window.showErrorMessage('タグを削除するファイルを選択してください。');
+        return;
+      }
+
+      const currentTags = item.tags || [];
+      if (currentTags.length === 0) {
+        vscode.window.showInformationMessage(`${item.name} にはタグが設定されていません。`);
+        return;
+      }
+
+      const tagToRemove = await vscode.window.showQuickPick(
+        currentTags.map((tag: string) => `#${tag}`),
+        {
+          placeHolder: '削除するタグを選択してください',
+        },
+      );
+
+      if (!tagToRemove) {
+        return;
+      }
+
+      // #を除去してタグ名を取得
+      const tagName = tagToRemove.startsWith('#') ? tagToRemove.slice(1) : tagToRemove;
+
+      const dirPath = treeDataProvider.getDirectoryPath(item);
+      const result = treeDataProvider.removeTag(dirPath, item.name, tagName);
+
+      if (result.success) {
+        vscode.window.showInformationMessage(result.message);
+      } else {
+        vscode.window.showErrorMessage(result.message);
+      }
+    },
+  );
+
+  // タグ編集コマンド
+  const editTagsCommand = vscode.commands.registerCommand(
+    'dialogoi.editTags',
+    async (item: any) => {
+      if (!item || !item.name) {
+        vscode.window.showErrorMessage('タグを編集するファイルを選択してください。');
+        return;
+      }
+
+      const currentTags = item.tags || [];
+      const currentTagsString = currentTags.join(', ');
+
+      const newTagsString = await vscode.window.showInputBox({
+        prompt: `${item.name} のタグを編集してください（カンマ区切り）`,
+        value: currentTagsString,
+        placeHolder: 'tag1, tag2, tag3',
+        validateInput: (value) => {
+          if (value) {
+            const tags = value.split(',').map((tag) => tag.trim());
+            for (const tag of tags) {
+              if (tag.includes(' ')) {
+                return 'タグ名にスペースは使用できません。';
+              }
+            }
+          }
+          return null;
+        },
+      });
+
+      if (newTagsString === undefined) {
+        return;
+      }
+
+      const newTags = newTagsString
+        .split(',')
+        .map((tag) => tag.trim())
+        .filter((tag) => tag.length > 0);
+
+      const dirPath = treeDataProvider.getDirectoryPath(item);
+      const result = treeDataProvider.setTags(dirPath, item.name, newTags);
+
+      if (result.success) {
+        vscode.window.showInformationMessage(result.message);
+      } else {
+        vscode.window.showErrorMessage(result.message);
+      }
+    },
+  );
+
   context.subscriptions.push(
     treeView,
     refreshCommand,
@@ -158,6 +285,9 @@ export function activate(context: vscode.ExtensionContext): void {
     createFileInDirectoryCommand,
     deleteFileCommand,
     renameFileCommand,
+    addTagCommand,
+    removeTagCommand,
+    editTagsCommand,
   );
 }
 

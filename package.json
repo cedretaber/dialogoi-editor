@@ -59,6 +59,21 @@
         "command": "dialogoi.renameFile",
         "title": "名前変更",
         "icon": "$(edit)"
+      },
+      {
+        "command": "dialogoi.addTag",
+        "title": "タグを追加",
+        "icon": "$(tag)"
+      },
+      {
+        "command": "dialogoi.removeTag",
+        "title": "タグを削除",
+        "icon": "$(close)"
+      },
+      {
+        "command": "dialogoi.editTags",
+        "title": "タグを編集",
+        "icon": "$(edit)"
       }
     ],
     "menus": {
@@ -89,6 +104,21 @@
           "command": "dialogoi.deleteFile",
           "when": "view == dialogoi-explorer && viewItem == dialogoi-file",
           "group": "3_delete"
+        },
+        {
+          "command": "dialogoi.addTag",
+          "when": "view == dialogoi-explorer && viewItem == dialogoi-file",
+          "group": "4_tags"
+        },
+        {
+          "command": "dialogoi.removeTag",
+          "when": "view == dialogoi-explorer && viewItem == dialogoi-file",
+          "group": "4_tags"
+        },
+        {
+          "command": "dialogoi.editTags",
+          "when": "view == dialogoi-explorer && viewItem == dialogoi-file",
+          "group": "4_tags"
         }
       ]
     }
@@ -100,7 +130,7 @@
     "watch": "tsc -watch -p ./",
     "pretest": "npm run compile && npm run lint",
     "lint": "eslint src/**/*.ts",
-    "test": "node ./out/runTest.js",
+    "test": "mocha --import=tsx --ui tdd src/services/FileOperationService.test.ts",
     "typecheck": "tsc --noEmit",
     "format": "prettier --write \"src/**/*.ts\"",
     "check-all": "npm run typecheck && npm run lint && npm run test",
@@ -122,6 +152,7 @@
     "globals": "^16.3.0",
     "mocha": "^11.7.1",
     "prettier": "^3.6.2",
+    "tsx": "^4.20.3",
     "typescript": "^5.8.3"
   },
   "dependencies": {
