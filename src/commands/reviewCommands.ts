@@ -5,6 +5,14 @@ import { MetaYamlUtils } from '../utils/MetaYamlUtils.js';
 import { CreateReviewOptions, ReviewSeverity } from '../models/Review.js';
 
 /**
+ * TreeViewアイテムの型定義
+ */
+interface FileItem {
+  path: string;
+  [key: string]: unknown;
+}
+
+/**
  * レビューコマンドを登録
  * @param context VSCodeエクステンションコンテキスト
  * @param workspaceRoot ワークスペースルート
@@ -15,11 +23,12 @@ export function registerReviewCommands(context: vscode.ExtensionContext, workspa
   // レビューを追加するコマンド
   const addReviewCommand = vscode.commands.registerCommand(
     'dialogoi.addReview',
-    async (fileItem: any) => {
+    async (fileItem: FileItem) => {
       try {
         await addReviewHandler(reviewService, fileItem);
       } catch (error) {
-        vscode.window.showErrorMessage(`レビューの追加に失敗しました: ${error}`);
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        vscode.window.showErrorMessage(`レビューの追加に失敗しました: ${errorMessage}`);
       }
     }
   );
@@ -27,11 +36,12 @@ export function registerReviewCommands(context: vscode.ExtensionContext, workspa
   // レビューを表示するコマンド
   const showReviewsCommand = vscode.commands.registerCommand(
     'dialogoi.showReviews',
-    async (fileItem: any) => {
+    async (fileItem: FileItem) => {
       try {
         await showReviewsHandler(reviewService, fileItem);
       } catch (error) {
-        vscode.window.showErrorMessage(`レビューの表示に失敗しました: ${error}`);
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        vscode.window.showErrorMessage(`レビューの表示に失敗しました: ${errorMessage}`);
       }
     }
   );
@@ -39,11 +49,12 @@ export function registerReviewCommands(context: vscode.ExtensionContext, workspa
   // レビューステータスを更新するコマンド
   const updateReviewStatusCommand = vscode.commands.registerCommand(
     'dialogoi.updateReviewStatus',
-    async (fileItem: any) => {
+    async (fileItem: FileItem) => {
       try {
         await updateReviewStatusHandler(reviewService, fileItem);
       } catch (error) {
-        vscode.window.showErrorMessage(`レビューステータスの更新に失敗しました: ${error}`);
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        vscode.window.showErrorMessage(`レビューステータスの更新に失敗しました: ${errorMessage}`);
       }
     }
   );
@@ -51,11 +62,12 @@ export function registerReviewCommands(context: vscode.ExtensionContext, workspa
   // レビューを削除するコマンド
   const deleteReviewCommand = vscode.commands.registerCommand(
     'dialogoi.deleteReview',
-    async (fileItem: any) => {
+    async (fileItem: FileItem) => {
       try {
         await deleteReviewHandler(reviewService, fileItem);
       } catch (error) {
-        vscode.window.showErrorMessage(`レビューの削除に失敗しました: ${error}`);
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        vscode.window.showErrorMessage(`レビューの削除に失敗しました: ${errorMessage}`);
       }
     }
   );
@@ -66,15 +78,15 @@ export function registerReviewCommands(context: vscode.ExtensionContext, workspa
 /**
  * レビュー追加のハンドラー
  */
-async function addReviewHandler(reviewService: ReviewService, fileItem: any): Promise<void> {
-  if (!fileItem || !fileItem.path) {
+async function addReviewHandler(reviewService: ReviewService, fileItem: FileItem): Promise<void> {
+  if (!fileItem?.path) {
     vscode.window.showErrorMessage('ファイルが選択されていません');
     return;
   }
 
   // 絶対パスから相対パスに変換
   const workspaceRoot = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
-  if (!workspaceRoot) {
+  if (workspaceRoot === undefined || workspaceRoot === null || workspaceRoot.trim() === '') {
     vscode.window.showErrorMessage('ワークスペースが開かれていません');
     return;
   }
@@ -93,7 +105,7 @@ async function addReviewHandler(reviewService: ReviewService, fileItem: any): Pr
     }
   });
 
-  if (!reviewer) {
+  if (reviewer === undefined || reviewer === null || reviewer.trim() === '') {
     return;
   }
 
@@ -108,7 +120,7 @@ async function addReviewHandler(reviewService: ReviewService, fileItem: any): Pr
     }
   });
 
-  if (!lineInput) {
+  if (lineInput === undefined || lineInput === null || lineInput.trim() === '') {
     return;
   }
 
@@ -140,7 +152,7 @@ async function addReviewHandler(reviewService: ReviewService, fileItem: any): Pr
     }
   });
 
-  if (!content) {
+  if (content === undefined || content === null || content.trim() === '') {
     return;
   }
 
@@ -166,15 +178,15 @@ async function addReviewHandler(reviewService: ReviewService, fileItem: any): Pr
 /**
  * レビュー表示のハンドラー
  */
-async function showReviewsHandler(reviewService: ReviewService, fileItem: any): Promise<void> {
-  if (!fileItem || !fileItem.path) {
+async function showReviewsHandler(reviewService: ReviewService, fileItem: FileItem): Promise<void> {
+  if (!fileItem?.path) {
     vscode.window.showErrorMessage('ファイルが選択されていません');
     return;
   }
 
   // 絶対パスから相対パスに変換
   const workspaceRoot = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
-  if (!workspaceRoot) {
+  if (workspaceRoot === undefined || workspaceRoot === null || workspaceRoot.trim() === '') {
     vscode.window.showErrorMessage('ワークスペースが開かれていません');
     return;
   }
@@ -221,15 +233,15 @@ async function showReviewsHandler(reviewService: ReviewService, fileItem: any): 
 /**
  * レビューステータス更新のハンドラー
  */
-async function updateReviewStatusHandler(reviewService: ReviewService, fileItem: any): Promise<void> {
-  if (!fileItem || !fileItem.path) {
+async function updateReviewStatusHandler(reviewService: ReviewService, fileItem: FileItem): Promise<void> {
+  if (!fileItem?.path) {
     vscode.window.showErrorMessage('ファイルが選択されていません');
     return;
   }
 
   // 絶対パスから相対パスに変換
   const workspaceRoot = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
-  if (!workspaceRoot) {
+  if (workspaceRoot === undefined || workspaceRoot === null || workspaceRoot.trim() === '') {
     vscode.window.showErrorMessage('ワークスペースが開かれていません');
     return;
   }
@@ -288,15 +300,15 @@ async function updateReviewStatusHandler(reviewService: ReviewService, fileItem:
 /**
  * レビュー削除のハンドラー
  */
-async function deleteReviewHandler(reviewService: ReviewService, fileItem: any): Promise<void> {
-  if (!fileItem || !fileItem.path) {
+async function deleteReviewHandler(reviewService: ReviewService, fileItem: FileItem): Promise<void> {
+  if (!fileItem?.path) {
     vscode.window.showErrorMessage('ファイルが選択されていません');
     return;
   }
 
   // 絶対パスから相対パスに変換
   const workspaceRoot = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
-  if (!workspaceRoot) {
+  if (workspaceRoot === undefined || workspaceRoot === null || workspaceRoot.trim() === '') {
     vscode.window.showErrorMessage('ワークスペースが開かれていません');
     return;
   }
@@ -324,8 +336,14 @@ async function deleteReviewHandler(reviewService: ReviewService, fileItem: any):
   }
 
   // 確認ダイアログを表示
+  const selectedReviewItem = reviewFile.reviews[selectedReview.value];
+  if (!selectedReviewItem) {
+    vscode.window.showErrorMessage('選択されたレビューが見つかりません');
+    return;
+  }
+
   const confirmResult = await vscode.window.showWarningMessage(
-    `レビュー「${reviewFile.reviews[selectedReview.value]?.content.substring(0, 50)}...」を削除しますか？`,
+    `レビュー「${selectedReviewItem.content.substring(0, 50)}...」を削除しますか？`,
     { modal: true },
     'はい',
     'いいえ'

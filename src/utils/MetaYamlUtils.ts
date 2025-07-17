@@ -188,20 +188,20 @@ export class MetaYamlUtils {
         return false;
       }
 
-      if (reviewSummary && (reviewSummary.open > 0 || (reviewSummary.resolved && reviewSummary.resolved > 0))) {
+      if (reviewSummary && (reviewSummary.open > 0 || (reviewSummary.resolved !== undefined && reviewSummary.resolved > 0))) {
         // レビューが存在する場合
         const filePathInDir = path.join(path.basename(dirAbsolutePath), fileName);
         fileItem.reviews = this.generateReviewFilePath(filePathInDir);
         
         // レビューサマリーを設定（0でない値のみ）
         fileItem.review_count = { open: reviewSummary.open };
-        if (reviewSummary.in_progress && reviewSummary.in_progress > 0) {
+        if (reviewSummary.in_progress !== undefined && reviewSummary.in_progress > 0) {
           fileItem.review_count.in_progress = reviewSummary.in_progress;
         }
-        if (reviewSummary.resolved && reviewSummary.resolved > 0) {
+        if (reviewSummary.resolved !== undefined && reviewSummary.resolved > 0) {
           fileItem.review_count.resolved = reviewSummary.resolved;
         }
-        if (reviewSummary.dismissed && reviewSummary.dismissed > 0) {
+        if (reviewSummary.dismissed !== undefined && reviewSummary.dismissed > 0) {
           fileItem.review_count.dismissed = reviewSummary.dismissed;
         }
       } else {

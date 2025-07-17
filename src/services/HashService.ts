@@ -16,7 +16,8 @@ export class HashService {
       const hash = createHash('sha256').update(content).digest('hex');
       return `sha256:${hash}`;
     } catch (error) {
-      throw new Error(`ファイルハッシュの計算に失敗しました: ${error}`);
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      throw new Error(`ファイルハッシュの計算に失敗しました: ${errorMessage}`);
     }
   }
 

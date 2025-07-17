@@ -63,7 +63,8 @@ export class ReviewService {
       if (error instanceof vscode.FileSystemError && error.code === 'FileNotFound') {
         return null;
       }
-      throw new Error(`レビューファイルの読み込みに失敗しました: ${error}`);
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      throw new Error(`レビューファイルの読み込みに失敗しました: ${errorMessage}`);
     }
   }
 
@@ -85,7 +86,8 @@ export class ReviewService {
       const yamlContent = yaml.dump(reviewFile, { indent: 2 });
       await vscode.workspace.fs.writeFile(reviewFileUri, Buffer.from(yamlContent, 'utf8'));
     } catch (error) {
-      throw new Error(`レビューファイルの保存に失敗しました: ${error}`);
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      throw new Error(`レビューファイルの保存に失敗しました: ${errorMessage}`);
     }
   }
 
