@@ -1,0 +1,96 @@
+{
+  "name": "dialogoi-editor",
+  "displayName": "Dialogoi Editor",
+  "description": "小説執筆支援ツール - 設定・キャラクター・用語集・伏線を統合管理",
+  "version": "0.0.1",
+  "publisher": "cedretaber",
+  "type": "module",
+  "engines": {
+    "vscode": "^1.102.0",
+    "node": ">=18.0.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "keywords": [
+    "小説",
+    "執筆",
+    "novel",
+    "writing",
+    "japanese"
+  ],
+  "activationEvents": [],
+  "main": "./out/extension.js",
+  "contributes": {
+    "activation": {
+      "workspaceContains": "**/dialogoi.yaml"
+    },
+    "views": {
+      "explorer": [
+        {
+          "id": "dialogoi-explorer",
+          "name": "Dialogoi",
+          "when": "dialogoi:hasNovelProject",
+          "icon": "$(book)"
+        }
+      ]
+    },
+    "commands": [
+      {
+        "command": "dialogoi.refreshExplorer",
+        "title": "更新",
+        "icon": "$(refresh)"
+      }
+    ],
+    "menus": {
+      "view/title": [
+        {
+          "command": "dialogoi.refreshExplorer",
+          "when": "view == dialogoi-explorer",
+          "group": "navigation"
+        }
+      ]
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "compile:watch": "tsc -watch -p ./",
+    "watch": "tsc -watch -p ./",
+    "pretest": "npm run compile && npm run lint",
+    "lint": "eslint src/**/*.ts",
+    "test": "node ./out/test/runTest.js",
+    "test:integration": "node ./out/test/runTest.js",
+    "typecheck": "tsc --noEmit",
+    "format": "prettier --write \"src/**/*.ts\"",
+    "check-all": "npm run typecheck && npm run lint && npm run test",
+    "package": "@vscode/vsce package"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.31.0",
+    "@types/glob": "^8.1.0",
+    "@types/js-yaml": "^4.0.9",
+    "@types/mocha": "^10.0.10",
+    "@types/node": "^24.0.14",
+    "@types/vscode": "^1.102.0",
+    "@typescript-eslint/eslint-plugin": "^8.37.0",
+    "@typescript-eslint/parser": "^8.37.0",
+    "@vscode/test-electron": "^2.5.2",
+    "@vscode/vsce": "^3.6.0",
+    "eslint": "^9.31.0",
+    "glob": "^11.0.3",
+    "globals": "^16.3.0",
+    "mocha": "^11.7.1",
+    "prettier": "^3.6.2",
+    "typescript": "^5.8.3"
+  },
+  "dependencies": {
+    "js-yaml": "^4.1.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/cedretaber/dialogoi-editor.git"
+  },
+  "author": "cedretaber",
+  "license": "MIT"
+}
