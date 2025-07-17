@@ -1,0 +1,74 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    
+    steps:
+    # チェックアウト
+    - uses: actions/checkout@v4
+    
+    # Node.js のセットアップ
+    - name: Use Node.js 24.x
+      uses: actions/setup-node@v4
+      with:
+        node-version: 24.x
+        cache: 'npm'
+    
+    # 依存関係のインストール
+    - name: Install dependencies
+      run: npm ci
+    
+    # TypeScript コンパイル
+    - name: Compile TypeScript
+      run: npm run compile
+    
+    # VSCode Extension のパッケージング
+    - name: Package extension
+      run: npm run package
+    
+    # バージョン番号を取得
+    - name: Get version
+      id: get_version
+      run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
+    
+    # GitHub Release を作成
+    - name: Create Release
+      id: create_release
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: ${{ github.ref }}
+        release_name: Release ${{ github.ref }}
+        body: |
+          Dialogoi Editor v${{ steps.get_version.outputs.VERSION }}
+          
+          ## インストール方法
+          
+          1. 下記の `dialogoi-editor-*.vsix` ファイルをダウンロード
+          2. VSCode で `Ctrl+Shift+P` (Mac: `Cmd+Shift+P`) を押してコマンドパレットを開く
+          3. `Extensions: Install from VSIX...` を選択
+          4. ダウンロードした `.vsix` ファイルを選択
+          
+          ## 変更履歴
+          
+          最新の変更については[コミット履歴](https://github.com/cedretaber/dialogoi-editor/commits/v${{ steps.get_version.outputs.VERSION }})をご確認ください。
+        draft: false
+        prerelease: false
+    
+    # VSIX ファイルを Release に添付
+    - name: Upload Release Asset
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ steps.create_release.outputs.upload_url }}
+        asset_path: ./dialogoi-editor-${{ steps.get_version.outputs.VERSION }}.vsix
+        asset_name: dialogoi-editor-${{ steps.get_version.outputs.VERSION }}.vsix
+        asset_content_type: application/vsix
