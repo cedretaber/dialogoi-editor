@@ -1,0 +1,33 @@
+# 開発用ファイル
+.vscode/**
+.vscode-test/**
+src/**
+.gitignore
+.prettierignore
+**/*.map
+**/*.ts
+**/tsconfig.json
+**/eslint.config.js
+
+# テストファイル
+**/*.test.ts
+**/*.test.js
+
+# ビルド設定
+.github/**
+.claude/**
+
+# ドキュメント（README.md は含める）
+docs/**
+examples/**
+
+# 一時ファイル
+*.vsix
+node_modules/.cache/**
+node_modules/.bin/**
+
+# その他の不要なファイル
+.DS_Store
+Thumbs.db
+*.log
+*.tmp
