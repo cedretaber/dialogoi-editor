@@ -278,6 +278,120 @@ export function activate(context: vscode.ExtensionContext): void {
     },
   );
 
+  // 参照追加コマンド
+  const addReferenceCommand = vscode.commands.registerCommand(
+    'dialogoi.addReference',
+    async (item: any) => {
+      if (!item || !item.name) {
+        vscode.window.showErrorMessage('参照を追加するファイルを選択してください。');
+        return;
+      }
+
+      const referencePath = await vscode.window.showInputBox({
+        prompt: `${item.name} が参照するファイルのパスを入力してください（小説ルートからの相対パス）`,
+        placeHolder: 'settings/world_setting.md',
+        validateInput: (value) => {
+          if (!value) {
+            return 'パスを入力してください。';
+          }
+          return null;
+        },
+      });
+
+      if (!referencePath) {
+        return;
+      }
+
+      const dirPath = treeDataProvider.getDirectoryPath(item);
+      const result = treeDataProvider.addReference(dirPath, item.name, referencePath);
+
+      if (result.success) {
+        vscode.window.showInformationMessage(result.message);
+      } else {
+        vscode.window.showErrorMessage(result.message);
+      }
+    },
+  );
+
+  // 参照削除コマンド
+  const removeReferenceCommand = vscode.commands.registerCommand(
+    'dialogoi.removeReference',
+    async (item: any) => {
+      if (!item || !item.name) {
+        vscode.window.showErrorMessage('参照を削除するファイルを選択してください。');
+        return;
+      }
+
+      const currentReferences = item.references || [];
+      if (currentReferences.length === 0) {
+        vscode.window.showInformationMessage(`${item.name} には参照が設定されていません。`);
+        return;
+      }
+
+      const referenceToRemove = await vscode.window.showQuickPick(
+        currentReferences,
+        {
+          placeHolder: '削除する参照を選択してください',
+        },
+      );
+
+      if (!referenceToRemove) {
+        return;
+      }
+
+      const dirPath = treeDataProvider.getDirectoryPath(item);
+      const result = treeDataProvider.removeReference(dirPath, item.name, referenceToRemove);
+
+      if (result.success) {
+        vscode.window.showInformationMessage(result.message);
+      } else {
+        vscode.window.showErrorMessage(result.message);
+      }
+    },
+  );
+
+  // 参照編集コマンド
+  const editReferencesCommand = vscode.commands.registerCommand(
+    'dialogoi.editReferences',
+    async (item: any) => {
+      if (!item || !item.name) {
+        vscode.window.showErrorMessage('参照を編集するファイルを選択してください。');
+        return;
+      }
+
+      const currentReferences = item.references || [];
+      const currentReferencesString = currentReferences.join('\n');
+
+      const newReferencesString = await vscode.window.showInputBox({
+        prompt: `${item.name} の参照を編集してください（1行につき1つのパス）`,
+        value: currentReferencesString,
+        placeHolder: 'settings/world_setting.md\nsettings/characters/protagonist.md',
+        validateInput: () => {
+          // 基本的なバリデーション
+          return null;
+        },
+      });
+
+      if (newReferencesString === undefined) {
+        return;
+      }
+
+      const newReferences = newReferencesString
+        .split('\n')
+        .map((ref) => ref.trim())
+        .filter((ref) => ref.length > 0);
+
+      const dirPath = treeDataProvider.getDirectoryPath(item);
+      const result = treeDataProvider.setReferences(dirPath, item.name, newReferences);
+
+      if (result.success) {
+        vscode.window.showInformationMessage(result.message);
+      } else {
+        vscode.window.showErrorMessage(result.message);
+      }
+    },
+  );
+
   context.subscriptions.push(
     treeView,
     refreshCommand,
@@ -288,6 +402,9 @@ export function activate(context: vscode.ExtensionContext): void {
     addTagCommand,
     removeTagCommand,
     editTagsCommand,
+    addReferenceCommand,
+    removeReferenceCommand,
+    editReferencesCommand,
   );
 }
 

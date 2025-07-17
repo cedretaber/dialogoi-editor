@@ -8,6 +8,7 @@
       "Bash(npm run format:*)",
       "Bash(npm run dev:*)",
       "Bash(npm run compile:*)",
+      "Bash(npm run check-all)",
       "Bash(rg:*)",
       "Bash(grep:*)",
       "Bash(find:*)"

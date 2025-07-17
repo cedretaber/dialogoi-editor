@@ -8,7 +8,7 @@ export interface DialogoiTreeItem {
   path: string;
   hash?: string;
   tags?: string[];
-  referenced?: string[];
+  references?: string[];
   reviews?: string;
   review_count?: {
     open: number;
@@ -113,8 +113,8 @@ export class MetaYamlUtils {
       errors.push('tags フィールドは配列である必要があります');
     }
 
-    if (item.referenced && !Array.isArray(item.referenced)) {
-      errors.push('referenced フィールドは配列である必要があります');
+    if (item.references && !Array.isArray(item.references)) {
+      errors.push('references フィールドは配列である必要があります');
     }
 
     if (

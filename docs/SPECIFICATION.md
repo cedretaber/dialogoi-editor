@@ -95,7 +95,7 @@ files:            # ファイル・サブディレクトリのリスト（順序
     hash: "sha256:abcd1234..."  # ファイルのSHA-256ハッシュ（変更検知用）
     # 以下はオプション
     tags: ["タグ1", "タグ2"]
-    referenced: ["パス1", "パス2"]  # 小説ルートからの相対パス
+    references: ["パス1", "パス2"]  # 小説ルートからの相対パス
     reviews: "reviews/ファイル名_reviews.yaml"  # レビューファイルへの参照
     review_count:                    # レビュー数のサマリー
       open: 3

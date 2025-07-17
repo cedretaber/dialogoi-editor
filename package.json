@@ -74,6 +74,21 @@
         "command": "dialogoi.editTags",
         "title": "タグを編集",
         "icon": "$(edit)"
+      },
+      {
+        "command": "dialogoi.addReference",
+        "title": "参照を追加",
+        "icon": "$(link)"
+      },
+      {
+        "command": "dialogoi.removeReference",
+        "title": "参照を削除",
+        "icon": "$(unlink)"
+      },
+      {
+        "command": "dialogoi.editReferences",
+        "title": "参照を編集",
+        "icon": "$(edit)"
       }
     ],
     "menus": {
@@ -119,6 +134,21 @@
           "command": "dialogoi.editTags",
           "when": "view == dialogoi-explorer && viewItem == dialogoi-file",
           "group": "4_tags"
+        },
+        {
+          "command": "dialogoi.addReference",
+          "when": "view == dialogoi-explorer && viewItem == dialogoi-file",
+          "group": "5_references"
+        },
+        {
+          "command": "dialogoi.removeReference",
+          "when": "view == dialogoi-explorer && viewItem == dialogoi-file",
+          "group": "5_references"
+        },
+        {
+          "command": "dialogoi.editReferences",
+          "when": "view == dialogoi-explorer && viewItem == dialogoi-file",
+          "group": "5_references"
         }
       ]
     }
@@ -130,7 +160,7 @@
     "watch": "tsc -watch -p ./",
     "pretest": "npm run compile && npm run lint",
     "lint": "eslint src/**/*.ts",
-    "test": "mocha --import=tsx --ui tdd src/services/FileOperationService.test.ts",
+    "test": "mocha --import=tsx --ui tdd src/services/*.test.ts",
     "typecheck": "tsc --noEmit",
     "format": "prettier --write \"src/**/*.ts\"",
     "check-all": "npm run typecheck && npm run lint && npm run test",

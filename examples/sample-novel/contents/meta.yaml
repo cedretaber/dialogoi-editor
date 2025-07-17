@@ -5,14 +5,14 @@ files:
     tags:
       - プロローグ
       - 導入
-    referenced:
+    references:
       - settings/world_setting.md
   - name: 02_entrance_ceremony.txt
     type: content
     tags:
       - 第1章
       - 入学式
-    referenced:
+    references:
       - settings/characters/tarou.md
       - settings/characters/hanako.md
   - name: 03_first_magic_lesson.txt
@@ -21,7 +21,7 @@ files:
       - 第2章
       - 魔法
       - 授業
-    referenced:
+    references:
       - settings/magic_system.md
       - settings/foreshadowings/hidden_power.md
   - name: 04_new_friendship.txt
@@ -29,5 +29,5 @@ files:
     tags:
       - 第3章
       - 友情
-    referenced:
+    references:
       - settings/characters/jirou.md

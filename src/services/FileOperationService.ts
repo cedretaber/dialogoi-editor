@@ -365,6 +365,128 @@ export class FileOperationService {
   }
 
   /**
+   * ファイルに参照を追加する
+   */
+  static addReference(dirPath: string, fileName: string, referencePath: string): FileOperationResult {
+    try {
+      const result = this.updateMetaYaml(dirPath, (meta) => {
+        const fileIndex = meta.files.findIndex((file) => file.name === fileName);
+        if (fileIndex === -1) {
+          throw new Error(`meta.yaml内にファイル ${fileName} が見つかりません。`);
+        }
+
+        const fileItem = meta.files[fileIndex];
+        if (fileItem !== undefined) {
+          if (!fileItem.references) {
+            fileItem.references = [];
+          }
+          // 既に参照が存在する場合は追加しない
+          if (!fileItem.references.includes(referencePath)) {
+            fileItem.references.push(referencePath);
+          } else {
+            throw new Error(`参照 "${referencePath}" は既に存在します。`);
+          }
+        }
+        return meta;
+      });
+
+      if (!result.success) {
+        return result;
+      }
+
+      return {
+        success: true,
+        message: `${fileName} に参照 "${referencePath}" を追加しました。`,
+        updatedItems: result.updatedItems,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: `参照追加エラー: ${error instanceof Error ? error.message : String(error)}`,
+      };
+    }
+  }
+
+  /**
+   * ファイルから参照を削除する
+   */
+  static removeReference(dirPath: string, fileName: string, referencePath: string): FileOperationResult {
+    try {
+      const result = this.updateMetaYaml(dirPath, (meta) => {
+        const fileIndex = meta.files.findIndex((file) => file.name === fileName);
+        if (fileIndex === -1) {
+          throw new Error(`meta.yaml内にファイル ${fileName} が見つかりません。`);
+        }
+
+        const fileItem = meta.files[fileIndex];
+        if (fileItem !== undefined) {
+          if (!fileItem.references || !fileItem.references.includes(referencePath)) {
+            throw new Error(`参照 "${referencePath}" が見つかりません。`);
+          }
+          fileItem.references = fileItem.references.filter((ref) => ref !== referencePath);
+          // 参照が空になった場合はundefinedに設定
+          if (fileItem.references.length === 0) {
+            fileItem.references = undefined;
+          }
+        }
+        return meta;
+      });
+
+      if (!result.success) {
+        return result;
+      }
+
+      return {
+        success: true,
+        message: `${fileName} から参照 "${referencePath}" を削除しました。`,
+        updatedItems: result.updatedItems,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: `参照削除エラー: ${error instanceof Error ? error.message : String(error)}`,
+      };
+    }
+  }
+
+  /**
+   * ファイルの参照を一括で設定する
+   */
+  static setReferences(dirPath: string, fileName: string, references: string[]): FileOperationResult {
+    try {
+      const result = this.updateMetaYaml(dirPath, (meta) => {
+        const fileIndex = meta.files.findIndex((file) => file.name === fileName);
+        if (fileIndex === -1) {
+          throw new Error(`meta.yaml内にファイル ${fileName} が見つかりません。`);
+        }
+
+        const fileItem = meta.files[fileIndex];
+        if (fileItem !== undefined) {
+          // 重複を削除
+          const uniqueReferences = [...new Set(references)];
+          fileItem.references = uniqueReferences.length > 0 ? uniqueReferences : undefined;
+        }
+        return meta;
+      });
+
+      if (!result.success) {
+        return result;
+      }
+
+      return {
+        success: true,
+        message: `${fileName} の参照を設定しました。`,
+        updatedItems: result.updatedItems,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: `参照設定エラー: ${error instanceof Error ? error.message : String(error)}`,
+      };
+    }
+  }
+
+  /**
    * meta.yamlを更新する共通メソッド
    */
   private static updateMetaYaml(

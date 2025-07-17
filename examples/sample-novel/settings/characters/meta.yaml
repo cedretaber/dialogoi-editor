@@ -8,7 +8,7 @@ files:
     tags:
       - 主人公
       - メインキャラクター
-    referenced:
+    references:
       - contents/01_prologue.txt
       - contents/02_entrance_ceremony.txt
       - contents/03_first_magic_lesson.txt
@@ -21,7 +21,7 @@ files:
     tags:
       - ヒロイン
       - メインキャラクター
-    referenced:
+    references:
       - contents/02_entrance_ceremony.txt
       - contents/03_first_magic_lesson.txt
       - contents/04_new_friendship.txt
@@ -33,7 +33,7 @@ files:
     tags:
       - 親友
       - サブキャラクター
-    referenced:
+    references:
       - contents/04_new_friendship.txt
   - name: teachers.md
     type: setting
@@ -43,6 +43,6 @@ files:
     tags:
       - 教師
       - サブキャラクター
-    referenced:
+    references:
       - contents/02_entrance_ceremony.txt
       - contents/03_first_magic_lesson.txt
