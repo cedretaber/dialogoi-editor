@@ -48,7 +48,19 @@ export function registerReviewCommands(context: vscode.ExtensionContext, workspa
     }
   );
 
-  context.subscriptions.push(addReviewCommand, showReviewsCommand, updateReviewStatusCommand);
+  // レビューを削除するコマンド
+  const deleteReviewCommand = vscode.commands.registerCommand(
+    'dialogoi.deleteReview',
+    async (fileItem: any) => {
+      try {
+        await deleteReviewHandler(reviewService, fileItem);
+      } catch (error) {
+        vscode.window.showErrorMessage(`レビューの削除に失敗しました: ${error}`);
+      }
+    }
+  );
+
+  context.subscriptions.push(addReviewCommand, showReviewsCommand, updateReviewStatusCommand, deleteReviewCommand);
 }
 
 /**
@@ -271,6 +283,67 @@ async function updateReviewStatusHandler(reviewService: ReviewService, fileItem:
   MetaYamlUtils.updateReviewInfo(dirAbsolutePath, fileName, reviewSummary);
 
   vscode.window.showInformationMessage(`レビューステータスを更新しました`);
+}
+
+/**
+ * レビュー削除のハンドラー
+ */
+async function deleteReviewHandler(reviewService: ReviewService, fileItem: any): Promise<void> {
+  if (!fileItem || !fileItem.path) {
+    vscode.window.showErrorMessage('ファイルが選択されていません');
+    return;
+  }
+
+  // 絶対パスから相対パスに変換
+  const workspaceRoot = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
+  if (!workspaceRoot) {
+    vscode.window.showErrorMessage('ワークスペースが開かれていません');
+    return;
+  }
+
+  const targetRelativeFilePath = path.relative(workspaceRoot, fileItem.path);
+  const reviewFile = await reviewService.loadReviewFile(targetRelativeFilePath);
+  
+  if (!reviewFile || reviewFile.reviews.length === 0) {
+    vscode.window.showInformationMessage('このファイルにはレビューがありません');
+    return;
+  }
+
+  // レビューを選択
+  const reviewItems = reviewFile.reviews.map((review, index) => ({
+    label: `${index + 1}. [${getStatusIcon(review.status)}] 行${review.line}: ${review.content.substring(0, 50)}...`,
+    value: index
+  }));
+
+  const selectedReview = await vscode.window.showQuickPick(reviewItems, {
+    placeHolder: '削除するレビューを選択してください'
+  });
+
+  if (!selectedReview) {
+    return;
+  }
+
+  // 確認ダイアログを表示
+  const confirmResult = await vscode.window.showWarningMessage(
+    `レビュー「${reviewFile.reviews[selectedReview.value]?.content.substring(0, 50)}...」を削除しますか？`,
+    { modal: true },
+    'はい',
+    'いいえ'
+  );
+
+  if (confirmResult !== 'はい') {
+    return;
+  }
+
+  await reviewService.deleteReview(targetRelativeFilePath, selectedReview.value);
+
+  // meta.yaml を更新
+  const reviewSummary = await reviewService.getReviewSummary(targetRelativeFilePath);
+  const dirAbsolutePath = path.dirname(fileItem.path);
+  const fileName = path.basename(fileItem.path);
+  MetaYamlUtils.updateReviewInfo(dirAbsolutePath, fileName, reviewSummary);
+
+  vscode.window.showInformationMessage(`レビューを削除しました`);
 }
 
 /**

@@ -104,6 +104,11 @@
         "command": "dialogoi.updateReviewStatus",
         "title": "レビューステータスを更新",
         "icon": "$(checklist)"
+      },
+      {
+        "command": "dialogoi.deleteReview",
+        "title": "レビューを削除",
+        "icon": "$(trash)"
       }
     ],
     "menus": {
@@ -177,6 +182,11 @@
         },
         {
           "command": "dialogoi.updateReviewStatus",
+          "when": "view == dialogoi-explorer && viewItem == dialogoi-file",
+          "group": "6_reviews"
+        },
+        {
+          "command": "dialogoi.deleteReview",
           "when": "view == dialogoi-explorer && viewItem == dialogoi-file",
           "group": "6_reviews"
         }

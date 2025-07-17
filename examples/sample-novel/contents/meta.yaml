@@ -7,6 +7,10 @@ files:
       - 導入
     references:
       - settings/world_setting.md
+    reviews: contents/01_prologue.txt_reviews.yaml
+    review_count:
+      open: 0
+      resolved: 1
   - name: 02_entrance_ceremony.txt
     type: content
     tags:
