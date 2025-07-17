@@ -119,6 +119,16 @@
         "command": "dialogoi.toggleMultipleCharacters",
         "title": "複数キャラクターフラグを切り替え",
         "icon": "$(people)"
+      },
+      {
+        "command": "dialogoi.editForeshadowing",
+        "title": "伏線を編集",
+        "icon": "$(eye)"
+      },
+      {
+        "command": "dialogoi.removeForeshadowing",
+        "title": "伏線を削除",
+        "icon": "$(eye-closed)"
       }
     ],
     "menus": {
@@ -137,78 +147,88 @@
       "view/item/context": [
         {
           "command": "dialogoi.createFileInDirectory",
-          "when": "view == dialogoi-explorer && viewItem == dialogoi-file",
+          "when": "view == dialogoi-explorer && viewItem =~ /^dialogoi-file/",
           "group": "1_create"
         },
         {
           "command": "dialogoi.renameFile",
-          "when": "view == dialogoi-explorer && viewItem == dialogoi-file",
+          "when": "view == dialogoi-explorer && viewItem =~ /^dialogoi-file/",
           "group": "2_edit"
         },
         {
           "command": "dialogoi.deleteFile",
-          "when": "view == dialogoi-explorer && viewItem == dialogoi-file",
+          "when": "view == dialogoi-explorer && viewItem =~ /^dialogoi-file/",
           "group": "3_delete"
         },
         {
           "command": "dialogoi.addTag",
-          "when": "view == dialogoi-explorer && viewItem == dialogoi-file",
+          "when": "view == dialogoi-explorer && viewItem =~ /^dialogoi-file/",
           "group": "4_tags"
         },
         {
           "command": "dialogoi.removeTag",
-          "when": "view == dialogoi-explorer && viewItem == dialogoi-file",
+          "when": "view == dialogoi-explorer && viewItem =~ /^dialogoi-file/",
           "group": "4_tags"
         },
         {
           "command": "dialogoi.editTags",
-          "when": "view == dialogoi-explorer && viewItem == dialogoi-file",
+          "when": "view == dialogoi-explorer && viewItem =~ /^dialogoi-file/",
           "group": "4_tags"
         },
         {
           "command": "dialogoi.addReference",
-          "when": "view == dialogoi-explorer && viewItem == dialogoi-file",
+          "when": "view == dialogoi-explorer && viewItem =~ /^dialogoi-file/",
           "group": "5_references"
         },
         {
           "command": "dialogoi.removeReference",
-          "when": "view == dialogoi-explorer && viewItem == dialogoi-file",
+          "when": "view == dialogoi-explorer && viewItem =~ /^dialogoi-file/",
           "group": "5_references"
         },
         {
           "command": "dialogoi.editReferences",
-          "when": "view == dialogoi-explorer && viewItem == dialogoi-file",
+          "when": "view == dialogoi-explorer && viewItem =~ /^dialogoi-file/",
           "group": "5_references"
         },
         {
           "command": "dialogoi.addReview",
-          "when": "view == dialogoi-explorer && viewItem == dialogoi-file",
+          "when": "view == dialogoi-explorer && viewItem =~ /^dialogoi-file/",
           "group": "6_reviews"
         },
         {
           "command": "dialogoi.showReviews",
-          "when": "view == dialogoi-explorer && viewItem == dialogoi-file",
+          "when": "view == dialogoi-explorer && viewItem =~ /^dialogoi-file/",
           "group": "6_reviews"
         },
         {
           "command": "dialogoi.updateReviewStatus",
-          "when": "view == dialogoi-explorer && viewItem == dialogoi-file",
+          "when": "view == dialogoi-explorer && viewItem =~ /^dialogoi-file/",
           "group": "6_reviews"
         },
         {
           "command": "dialogoi.deleteReview",
-          "when": "view == dialogoi-explorer && viewItem == dialogoi-file",
+          "when": "view == dialogoi-explorer && viewItem =~ /^dialogoi-file/",
           "group": "6_reviews"
         },
         {
           "command": "dialogoi.editCharacterImportance",
-          "when": "view == dialogoi-explorer && viewItem == dialogoi-file",
+          "when": "view == dialogoi-explorer && viewItem == dialogoi-file-setting-character",
           "group": "7_character"
         },
         {
           "command": "dialogoi.toggleMultipleCharacters",
-          "when": "view == dialogoi-explorer && viewItem == dialogoi-file",
+          "when": "view == dialogoi-explorer && viewItem == dialogoi-file-setting-character",
           "group": "7_character"
+        },
+        {
+          "command": "dialogoi.editForeshadowing",
+          "when": "view == dialogoi-explorer && viewItem == dialogoi-file-setting-foreshadowing",
+          "group": "8_foreshadowing"
+        },
+        {
+          "command": "dialogoi.removeForeshadowing",
+          "when": "view == dialogoi-explorer && viewItem == dialogoi-file-setting-foreshadowing",
+          "group": "8_foreshadowing"
         }
       ]
     }
@@ -220,7 +240,7 @@
     "watch": "tsc -watch -p ./",
     "pretest": "npm run compile && npm run lint",
     "lint": "eslint src/**/*.ts",
-    "test": "mocha --import=tsx --ui tdd src/services/ReferenceManager.test.ts src/services/FileOperationService.test.ts src/services/CharacterService.test.ts",
+    "test": "mocha --import=tsx --ui tdd src/services/ReferenceManager.test.ts src/services/FileOperationService.test.ts src/services/CharacterService.test.ts src/services/ForeshadowingService.test.ts",
     "test:vscode": "node ./out/runTest.js",
     "typecheck": "tsc --noEmit",
     "format": "prettier --write \"src/**/*.ts\"",

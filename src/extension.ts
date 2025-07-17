@@ -2,6 +2,7 @@ import * as vscode from 'vscode';
 import { DialogoiTreeDataProvider } from './tree/DialogoiTreeDataProvider.js';
 import { registerReviewCommands } from './commands/reviewCommands.js';
 import { registerCharacterCommands } from './commands/characterCommands.js';
+import { registerForeshadowingCommands } from './commands/foreshadowingCommands.js';
 
 export function activate(context: vscode.ExtensionContext): void {
   console.log('Dialogoi Editor が起動しました');
@@ -395,6 +396,9 @@ export function activate(context: vscode.ExtensionContext): void {
 
   // キャラクターコマンドの登録
   registerCharacterCommands(context, treeDataProvider);
+
+  // 伏線コマンドの登録
+  registerForeshadowingCommands(context, treeDataProvider);
 
   context.subscriptions.push(
     treeView,

@@ -4,6 +4,7 @@ import { MetaYamlUtils, DialogoiTreeItem } from '../utils/MetaYamlUtils.js';
 import { FileOperationService } from '../services/FileOperationService.js';
 import { ReferenceManager } from '../services/ReferenceManager.js';
 import { CharacterService } from '../services/CharacterService.js';
+import { ForeshadowingService } from '../services/ForeshadowingService.js';
 
 export class DialogoiTreeDataProvider implements vscode.TreeDataProvider<DialogoiTreeItem> {
   private _onDidChangeTreeData: vscode.EventEmitter<DialogoiTreeItem | undefined | null | void> =
@@ -115,8 +116,8 @@ export class DialogoiTreeDataProvider implements vscode.TreeDataProvider<Dialogo
     // tooltipの設定（タグと参照関係）
     this.setTooltip(item, element);
 
-    // コンテキストメニュー用のcontextValue
-    item.contextValue = 'dialogoi-file';
+    // コンテキストメニュー用のcontextValue（ファイル種類とメタデータに基づく）
+    item.contextValue = this.getContextValue(element);
 
     return item;
   }
@@ -214,6 +215,10 @@ export class DialogoiTreeDataProvider implements vscode.TreeDataProvider<Dialogo
     return this.novelRoot;
   }
 
+  getNovelRoot(): string | null {
+    return this.novelRoot;
+  }
+
   getDirectoryPath(item: DialogoiTreeItem): string {
     if (item.type === 'subdirectory') {
       return item.path;
@@ -286,6 +291,26 @@ export class DialogoiTreeDataProvider implements vscode.TreeDataProvider<Dialogo
             tooltipParts.push(`• ~~${ref}~~ (存在しません)`);
           });
         }
+      }
+    }
+
+    // 伏線情報
+    if (element.foreshadowing !== undefined) {
+      tooltipParts.push('');
+      tooltipParts.push('伏線:');
+      tooltipParts.push(`• 埋蔵位置: ${element.foreshadowing.start}`);
+      tooltipParts.push(`• 回収位置: ${element.foreshadowing.goal}`);
+
+      // 伏線の状態を表示
+      if (this.novelRoot !== null && this.novelRoot !== undefined) {
+        const status = this.getForeshadowingStatus(element.foreshadowing);
+        const statusText = {
+          planted: '埋蔵済み',
+          resolved: '回収済み',
+          planned: '計画中',
+          error: 'エラー',
+        }[status];
+        tooltipParts.push(`• 状態: ${statusText}`);
       }
     }
 
@@ -417,5 +442,44 @@ export class DialogoiTreeDataProvider implements vscode.TreeDataProvider<Dialogo
     }
 
     return result;
+  }
+
+  private getForeshadowingStatus(foreshadowing: {
+    start: string;
+    goal: string;
+  }): 'planted' | 'resolved' | 'planned' | 'error' {
+    if (this.novelRoot === null || this.novelRoot === undefined) {
+      return 'error';
+    }
+    return ForeshadowingService.getForeshadowingStatus(this.novelRoot, foreshadowing);
+  }
+
+  private getContextValue(element: DialogoiTreeItem): string {
+    const baseValue = element.type === 'subdirectory' ? 'dialogoi-directory' : 'dialogoi-file';
+
+    if (element.type === 'subdirectory') {
+      return baseValue;
+    }
+
+    // ファイル種別とメタデータに基づく詳細な分類
+    const contextParts: string[] = [baseValue];
+
+    // ファイル種別
+    contextParts.push(element.type); // content または setting
+
+    // 特殊なファイル種別
+    if (element.type === 'setting') {
+      if (element.glossary === true) {
+        contextParts.push('glossary');
+      } else if (element.character !== undefined) {
+        contextParts.push('character');
+      } else if (element.foreshadowing !== undefined) {
+        contextParts.push('foreshadowing');
+      } else {
+        contextParts.push('general');
+      }
+    }
+
+    return contextParts.join('-');
   }
 }

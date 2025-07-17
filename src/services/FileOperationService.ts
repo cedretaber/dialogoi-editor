@@ -2,6 +2,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import * as yaml from 'js-yaml';
 import { MetaYamlUtils, DialogoiTreeItem, MetaYaml } from '../utils/MetaYamlUtils.js';
+import { ForeshadowingData } from './ForeshadowingService.js';
 
 export interface FileOperationResult {
   success: boolean;
@@ -678,6 +679,83 @@ export class FileOperationService {
       return {
         success: false,
         message: `キャラクター設定削除エラー: ${error instanceof Error ? error.message : String(error)}`,
+      };
+    }
+  }
+
+  /**
+   * ファイルの伏線設定を設定する
+   */
+  static setForeshadowing(
+    dirPath: string,
+    fileName: string,
+    foreshadowingData: ForeshadowingData,
+  ): FileOperationResult {
+    try {
+      const result = this.updateMetaYaml(dirPath, (meta) => {
+        const fileIndex = meta.files.findIndex((file) => file.name === fileName);
+        if (fileIndex === -1) {
+          throw new Error(`meta.yaml内にファイル ${fileName} が見つかりません。`);
+        }
+
+        const fileItem = meta.files[fileIndex];
+        if (fileItem !== undefined) {
+          fileItem.foreshadowing = {
+            start: foreshadowingData.start,
+            goal: foreshadowingData.goal,
+          };
+        }
+        return meta;
+      });
+
+      if (!result.success) {
+        return result;
+      }
+
+      return {
+        success: true,
+        message: `${fileName} の伏線設定を更新しました。`,
+        updatedItems: result.updatedItems,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: `伏線設定エラー: ${error instanceof Error ? error.message : String(error)}`,
+      };
+    }
+  }
+
+  /**
+   * ファイルの伏線設定を削除する
+   */
+  static removeForeshadowing(dirPath: string, fileName: string): FileOperationResult {
+    try {
+      const result = this.updateMetaYaml(dirPath, (meta) => {
+        const fileIndex = meta.files.findIndex((file) => file.name === fileName);
+        if (fileIndex === -1) {
+          throw new Error(`meta.yaml内にファイル ${fileName} が見つかりません。`);
+        }
+
+        const fileItem = meta.files[fileIndex];
+        if (fileItem !== undefined) {
+          delete fileItem.foreshadowing;
+        }
+        return meta;
+      });
+
+      if (!result.success) {
+        return result;
+      }
+
+      return {
+        success: true,
+        message: `${fileName} の伏線設定を削除しました。`,
+        updatedItems: result.updatedItems,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: `伏線設定削除エラー: ${error instanceof Error ? error.message : String(error)}`,
       };
     }
   }
