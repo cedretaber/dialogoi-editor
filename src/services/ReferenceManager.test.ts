@@ -88,8 +88,8 @@ files:
   - name: hero.md
     type: setting
     character:
-      main: true
-      multi: false
+      importance: main
+      multiple_characters: false
 `;
     fs.writeFileSync(path.join(charactersDir, 'meta.yaml'), charactersMeta);
     fs.writeFileSync(path.join(charactersDir, 'hero.md'), 'Hero character');

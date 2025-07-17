@@ -262,4 +262,77 @@ files:
       assert.ok(result.message.includes('見つかりません'));
     });
   });
+
+  suite('キャラクターメタデータ操作', () => {
+    test('キャラクター重要度を設定する', () => {
+      const result = FileOperationService.setCharacterImportance(testDir, 'existing.txt', 'main');
+      assert.strictEqual(result.success, true);
+      assert.ok(result.message.includes('キャラクター重要度を "main" に設定しました'));
+
+      // メタデータを確認
+      assert.ok(result.updatedItems);
+      const targetFile = result.updatedItems.find((item) => item.name === 'existing.txt');
+      assert.ok(targetFile);
+      assert.ok(targetFile.character);
+      assert.strictEqual(targetFile.character.importance, 'main');
+      assert.strictEqual(targetFile.character.multiple_characters, false);
+    });
+
+    test('複数キャラクターフラグを設定する', () => {
+      const result = FileOperationService.setMultipleCharacters(testDir, 'existing.txt', true);
+      assert.strictEqual(result.success, true);
+      assert.ok(result.message.includes('複数キャラクターフラグを "有効" に設定しました'));
+
+      // メタデータを確認
+      assert.ok(result.updatedItems);
+      const targetFile = result.updatedItems.find((item) => item.name === 'existing.txt');
+      assert.ok(targetFile);
+      assert.ok(targetFile.character);
+      assert.strictEqual(targetFile.character.multiple_characters, true);
+      assert.strictEqual(targetFile.character.importance, 'sub'); // デフォルト値
+    });
+
+    test('既存のキャラクター設定を更新する', () => {
+      // 最初に設定
+      FileOperationService.setCharacterImportance(testDir, 'existing.txt', 'main');
+
+      // 複数キャラクターフラグを変更
+      const result = FileOperationService.setMultipleCharacters(testDir, 'existing.txt', true);
+      assert.strictEqual(result.success, true);
+
+      // 重要度は保持、フラグのみ変更されていることを確認
+      assert.ok(result.updatedItems);
+      const targetFile = result.updatedItems.find((item) => item.name === 'existing.txt');
+      assert.ok(targetFile);
+      assert.ok(targetFile.character);
+      assert.strictEqual(targetFile.character.importance, 'main'); // 保持
+      assert.strictEqual(targetFile.character.multiple_characters, true); // 変更
+    });
+
+    test('キャラクター設定を削除する', () => {
+      // 最初に設定
+      FileOperationService.setCharacterImportance(testDir, 'existing.txt', 'main');
+
+      // 削除
+      const result = FileOperationService.removeCharacter(testDir, 'existing.txt');
+      assert.strictEqual(result.success, true);
+      assert.ok(result.message.includes('キャラクター設定を削除しました'));
+
+      // メタデータを確認
+      assert.ok(result.updatedItems);
+      const targetFile = result.updatedItems.find((item) => item.name === 'existing.txt');
+      assert.ok(targetFile);
+      assert.strictEqual(targetFile.character, undefined);
+    });
+
+    test('存在しないファイルにキャラクター設定を追加しようとするとエラーを返す', () => {
+      const result = FileOperationService.setCharacterImportance(
+        testDir,
+        'nonexistent.txt',
+        'main',
+      );
+      assert.strictEqual(result.success, false);
+      assert.ok(result.message.includes('見つかりません'));
+    });
+  });
 });

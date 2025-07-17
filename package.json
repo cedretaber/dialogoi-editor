@@ -109,6 +109,16 @@
         "command": "dialogoi.deleteReview",
         "title": "レビューを削除",
         "icon": "$(trash)"
+      },
+      {
+        "command": "dialogoi.editCharacterImportance",
+        "title": "キャラクター重要度を編集",
+        "icon": "$(star)"
+      },
+      {
+        "command": "dialogoi.toggleMultipleCharacters",
+        "title": "複数キャラクターフラグを切り替え",
+        "icon": "$(people)"
       }
     ],
     "menus": {
@@ -189,6 +199,16 @@
           "command": "dialogoi.deleteReview",
           "when": "view == dialogoi-explorer && viewItem == dialogoi-file",
           "group": "6_reviews"
+        },
+        {
+          "command": "dialogoi.editCharacterImportance",
+          "when": "view == dialogoi-explorer && viewItem == dialogoi-file",
+          "group": "7_character"
+        },
+        {
+          "command": "dialogoi.toggleMultipleCharacters",
+          "when": "view == dialogoi-explorer && viewItem == dialogoi-file",
+          "group": "7_character"
         }
       ]
     }
@@ -200,7 +220,7 @@
     "watch": "tsc -watch -p ./",
     "pretest": "npm run compile && npm run lint",
     "lint": "eslint src/**/*.ts",
-    "test": "mocha --import=tsx --ui tdd src/services/ReferenceManager.test.ts src/services/FileOperationService.test.ts",
+    "test": "mocha --import=tsx --ui tdd src/services/ReferenceManager.test.ts src/services/FileOperationService.test.ts src/services/CharacterService.test.ts",
     "test:vscode": "node ./out/runTest.js",
     "typecheck": "tsc --noEmit",
     "format": "prettier --write \"src/**/*.ts\"",

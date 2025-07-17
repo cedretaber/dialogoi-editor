@@ -19,8 +19,9 @@ export interface DialogoiTreeItem {
   };
   glossary?: boolean;
   character?: {
-    main: boolean;
-    multi: boolean;
+    importance: 'main' | 'sub' | 'background';
+    multiple_characters: boolean;
+    display_name?: string;
   };
   foreshadowing?: {
     start: string;
@@ -120,11 +121,19 @@ export class MetaYamlUtils {
       errors.push('references フィールドは配列である必要があります');
     }
 
-    if (
-      item.character &&
-      (typeof item.character.main !== 'boolean' || typeof item.character.multi !== 'boolean')
-    ) {
-      errors.push('character.main と character.multi は boolean である必要があります');
+    if (item.character) {
+      if (!['main', 'sub', 'background'].includes(item.character.importance)) {
+        errors.push('character.importance は main, sub, background のいずれかである必要があります');
+      }
+      if (typeof item.character.multiple_characters !== 'boolean') {
+        errors.push('character.multiple_characters は boolean である必要があります');
+      }
+      if (
+        item.character.display_name !== undefined &&
+        typeof item.character.display_name !== 'string'
+      ) {
+        errors.push('character.display_name は string である必要があります');
+      }
     }
 
     return errors;

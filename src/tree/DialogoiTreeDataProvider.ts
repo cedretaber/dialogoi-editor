@@ -3,6 +3,7 @@ import * as path from 'path';
 import { MetaYamlUtils, DialogoiTreeItem } from '../utils/MetaYamlUtils.js';
 import { FileOperationService } from '../services/FileOperationService.js';
 import { ReferenceManager } from '../services/ReferenceManager.js';
+import { CharacterService } from '../services/CharacterService.js';
 
 export class DialogoiTreeDataProvider implements vscode.TreeDataProvider<DialogoiTreeItem> {
   private _onDidChangeTreeData: vscode.EventEmitter<DialogoiTreeItem | undefined | null | void> =
@@ -41,7 +42,16 @@ export class DialogoiTreeDataProvider implements vscode.TreeDataProvider<Dialogo
       ? vscode.TreeItemCollapsibleState.Collapsed
       : vscode.TreeItemCollapsibleState.None;
 
-    const item = new vscode.TreeItem(element.name, collapsibleState);
+    // 表示名を決定（キャラクターファイルの場合はマークダウンから取得）
+    let displayName = element.name;
+    if (element.character !== undefined && element.character.display_name !== undefined) {
+      displayName = element.character.display_name;
+    } else if (element.character !== undefined && !isDirectory) {
+      // display_nameが設定されていない場合は自動取得
+      displayName = CharacterService.extractDisplayName(element.path);
+    }
+
+    const item = new vscode.TreeItem(displayName, collapsibleState);
 
     // アイコンの設定（ディレクトリはアイコンなし）
     if (element.type === 'content') {
@@ -50,7 +60,12 @@ export class DialogoiTreeDataProvider implements vscode.TreeDataProvider<Dialogo
       if (element.glossary === true) {
         item.iconPath = new vscode.ThemeIcon('book');
       } else if (element.character !== undefined) {
-        item.iconPath = new vscode.ThemeIcon('person');
+        // 重要度に応じたアイコン
+        if (element.character.importance === 'main') {
+          item.iconPath = new vscode.ThemeIcon('star');
+        } else {
+          item.iconPath = new vscode.ThemeIcon('person');
+        }
       } else if (element.foreshadowing !== undefined) {
         item.iconPath = new vscode.ThemeIcon('eye');
       } else {
@@ -211,47 +226,66 @@ export class DialogoiTreeDataProvider implements vscode.TreeDataProvider<Dialogo
   private setTooltip(item: vscode.TreeItem, element: DialogoiTreeItem): void {
     const tooltipParts: string[] = [];
 
+    // キャラクター情報
+    if (element.character !== undefined) {
+      let displayName = element.character.display_name;
+      if (displayName === undefined && element.type !== 'subdirectory') {
+        displayName = CharacterService.extractDisplayName(element.path);
+      }
+      if (displayName !== undefined) {
+        tooltipParts.push(`${displayName} (${element.character.importance})`);
+      }
+    }
+
     // タグ情報
     if (element.tags !== undefined && element.tags.length > 0) {
       const tagString = element.tags.map((tag) => `#${tag}`).join(' ');
       tooltipParts.push(`タグ: ${tagString}`);
     }
 
-    // 参照関係情報
+    // 参照関係情報（キャラクターの場合は「登場話」として表示）
     if (element.type !== 'subdirectory') {
       const referenceManager = ReferenceManager.getInstance();
       const references = referenceManager.getReferences(element.path);
 
-      if (references.references.length > 0) {
-        const validReferences: string[] = [];
-        const invalidReferences: string[] = [];
+      // 双方向の参照を「登場話」として統合
+      const allAppearances = new Set<string>();
+      references.references.forEach((ref) => allAppearances.add(ref));
+      references.referencedBy.forEach((ref) => allAppearances.add(ref));
 
-        references.references.forEach((ref) => {
+      if (allAppearances.size > 0) {
+        const validAppearances: string[] = [];
+        const invalidAppearances: string[] = [];
+
+        allAppearances.forEach((ref) => {
           if (referenceManager.checkFileExists(ref)) {
-            validReferences.push(ref);
+            validAppearances.push(ref);
           } else {
-            invalidReferences.push(ref);
+            invalidAppearances.push(ref);
           }
         });
 
-        if (validReferences.length > 0 || invalidReferences.length > 0) {
+        if (element.character && validAppearances.length > 0) {
           tooltipParts.push('');
-          tooltipParts.push('参照している:');
-          validReferences.forEach((ref) => {
+          tooltipParts.push(`登場話: ${validAppearances.length}話`);
+          validAppearances.forEach((ref) => {
             tooltipParts.push(`• ${ref}`);
           });
-          invalidReferences.forEach((ref) => {
+        } else if (validAppearances.length > 0 || invalidAppearances.length > 0) {
+          tooltipParts.push('');
+          tooltipParts.push('参照関係:');
+          validAppearances.forEach((ref) => {
+            tooltipParts.push(`• ${ref}`);
+          });
+        }
+
+        if (invalidAppearances.length > 0) {
+          tooltipParts.push('');
+          tooltipParts.push('無効な参照:');
+          invalidAppearances.forEach((ref) => {
             tooltipParts.push(`• ~~${ref}~~ (存在しません)`);
           });
         }
-      }
-
-      if (references.referencedBy.length > 0) {
-        tooltipParts.push('');
-        tooltipParts.push('参照されている:');
-        references.referencedBy.forEach((ref) => {
-          tooltipParts.push(`• ${ref}`);
-        });
       }
     }
 

@@ -3,8 +3,8 @@ files:
   - name: tarou.md
     type: setting
     character:
-      main: true
-      multi: false
+      importance: main
+      multiple_characters: false
     tags:
       - 主人公
       - メインキャラクター
@@ -16,8 +16,8 @@ files:
   - name: hanako.md
     type: setting
     character:
-      main: true
-      multi: false
+      importance: main
+      multiple_characters: false
     tags:
       - ヒロイン
       - メインキャラクター
@@ -28,8 +28,8 @@ files:
   - name: jirou.md
     type: setting
     character:
-      main: false
-      multi: false
+      importance: sub
+      multiple_characters: false
     tags:
       - 親友
       - サブキャラクター
@@ -38,8 +38,8 @@ files:
   - name: teachers.md
     type: setting
     character:
-      main: false
-      multi: true
+      importance: background
+      multiple_characters: true
     tags:
       - 教師
       - サブキャラクター

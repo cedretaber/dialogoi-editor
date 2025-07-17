@@ -554,4 +554,131 @@ export class FileOperationService {
       };
     }
   }
+
+  /**
+   * ファイルのキャラクター重要度を設定する
+   */
+  static setCharacterImportance(
+    dirPath: string,
+    fileName: string,
+    importance: 'main' | 'sub' | 'background',
+  ): FileOperationResult {
+    try {
+      const result = this.updateMetaYaml(dirPath, (meta) => {
+        const fileIndex = meta.files.findIndex((file) => file.name === fileName);
+        if (fileIndex === -1) {
+          throw new Error(`meta.yaml内にファイル ${fileName} が見つかりません。`);
+        }
+
+        const fileItem = meta.files[fileIndex];
+        if (fileItem !== undefined) {
+          if (!fileItem.character) {
+            fileItem.character = {
+              importance: importance,
+              multiple_characters: false,
+            };
+          } else {
+            fileItem.character.importance = importance;
+          }
+        }
+        return meta;
+      });
+
+      if (!result.success) {
+        return result;
+      }
+
+      return {
+        success: true,
+        message: `${fileName} のキャラクター重要度を "${importance}" に設定しました。`,
+        updatedItems: result.updatedItems,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: `キャラクター重要度設定エラー: ${error instanceof Error ? error.message : String(error)}`,
+      };
+    }
+  }
+
+  /**
+   * ファイルの複数キャラクターフラグを設定する
+   */
+  static setMultipleCharacters(
+    dirPath: string,
+    fileName: string,
+    multipleCharacters: boolean,
+  ): FileOperationResult {
+    try {
+      const result = this.updateMetaYaml(dirPath, (meta) => {
+        const fileIndex = meta.files.findIndex((file) => file.name === fileName);
+        if (fileIndex === -1) {
+          throw new Error(`meta.yaml内にファイル ${fileName} が見つかりません。`);
+        }
+
+        const fileItem = meta.files[fileIndex];
+        if (fileItem !== undefined) {
+          if (!fileItem.character) {
+            fileItem.character = {
+              importance: 'sub',
+              multiple_characters: multipleCharacters,
+            };
+          } else {
+            fileItem.character.multiple_characters = multipleCharacters;
+          }
+        }
+        return meta;
+      });
+
+      if (!result.success) {
+        return result;
+      }
+
+      return {
+        success: true,
+        message: `${fileName} の複数キャラクターフラグを "${multipleCharacters ? '有効' : '無効'}" に設定しました。`,
+        updatedItems: result.updatedItems,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: `複数キャラクターフラグ設定エラー: ${error instanceof Error ? error.message : String(error)}`,
+      };
+    }
+  }
+
+  /**
+   * ファイルのキャラクター設定を削除する
+   */
+  static removeCharacter(dirPath: string, fileName: string): FileOperationResult {
+    try {
+      const result = this.updateMetaYaml(dirPath, (meta) => {
+        const fileIndex = meta.files.findIndex((file) => file.name === fileName);
+        if (fileIndex === -1) {
+          throw new Error(`meta.yaml内にファイル ${fileName} が見つかりません。`);
+        }
+
+        const fileItem = meta.files[fileIndex];
+        if (fileItem !== undefined) {
+          delete fileItem.character;
+        }
+        return meta;
+      });
+
+      if (!result.success) {
+        return result;
+      }
+
+      return {
+        success: true,
+        message: `${fileName} のキャラクター設定を削除しました。`,
+        updatedItems: result.updatedItems,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: `キャラクター設定削除エラー: ${error instanceof Error ? error.message : String(error)}`,
+      };
+    }
+  }
 }
