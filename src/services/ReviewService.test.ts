@@ -18,7 +18,7 @@ describe('ReviewService テストスイート', () => {
     workspaceRoot = vscode.Uri.file(tempDirAbsolutePath);
     reviewService = new ReviewService(workspaceRoot);
     testRelativeFilePath = 'test.txt';
-    
+
     // テストファイルを作成
     const fullTestAbsolutePath = path.join(tempDirAbsolutePath, testRelativeFilePath);
     fs.writeFileSync(fullTestAbsolutePath, 'Hello, World!\nThis is a test file.\n');
@@ -38,13 +38,13 @@ describe('ReviewService テストスイート', () => {
         reviewer: 'テスト編集者',
         type: 'human',
         severity: 'suggestion',
-        content: 'これは提案です'
+        content: 'これは提案です',
       };
 
       const reviewIndex = await reviewService.addReview(testRelativeFilePath, options);
-      
+
       assert.strictEqual(reviewIndex, 0);
-      
+
       // レビューファイルが作成されているか確認
       const reviewFile = await reviewService.loadReviewFile(testRelativeFilePath);
       assert.ok(reviewFile !== null);
@@ -63,7 +63,7 @@ describe('ReviewService テストスイート', () => {
         reviewer: '編集者A',
         type: 'human',
         severity: 'warning',
-        content: '最初のレビュー'
+        content: '最初のレビュー',
       };
 
       const options2: CreateReviewOptions = {
@@ -71,14 +71,14 @@ describe('ReviewService テストスイート', () => {
         reviewer: '編集者B',
         type: 'human',
         severity: 'error',
-        content: '2番目のレビュー'
+        content: '2番目のレビュー',
       };
 
       await reviewService.addReview(testRelativeFilePath, options1);
       const reviewIndex = await reviewService.addReview(testRelativeFilePath, options2);
-      
+
       assert.strictEqual(reviewIndex, 1);
-      
+
       const reviewFile = await reviewService.loadReviewFile(testRelativeFilePath);
       assert.ok(reviewFile !== null);
       if (reviewFile !== null) {
@@ -100,12 +100,12 @@ describe('ReviewService テストスイート', () => {
         reviewer: 'テスト編集者',
         type: 'human',
         severity: 'info',
-        content: 'テストレビュー'
+        content: 'テストレビュー',
       };
 
       await reviewService.addReview(testRelativeFilePath, options);
       const reviewFile = await reviewService.loadReviewFile(testRelativeFilePath);
-      
+
       assert.ok(reviewFile !== null);
       if (reviewFile !== null) {
         assert.strictEqual(reviewFile.target_file, testRelativeFilePath);
@@ -121,12 +121,12 @@ describe('ReviewService テストスイート', () => {
         reviewer: 'テスト編集者',
         type: 'human',
         severity: 'suggestion',
-        content: 'テストレビュー'
+        content: 'テストレビュー',
       };
 
       await reviewService.addReview(testRelativeFilePath, options);
       await reviewService.updateReview(testRelativeFilePath, 0, { status: 'resolved' });
-      
+
       const reviewFile = await reviewService.loadReviewFile(testRelativeFilePath);
       assert.ok(reviewFile !== null);
       if (reviewFile !== null) {
@@ -140,12 +140,12 @@ describe('ReviewService テストスイート', () => {
         reviewer: 'テスト編集者',
         type: 'human',
         severity: 'suggestion',
-        content: '元のレビュー'
+        content: '元のレビュー',
       };
 
       await reviewService.addReview(testRelativeFilePath, options);
       await reviewService.updateReview(testRelativeFilePath, 0, { content: '更新されたレビュー' });
-      
+
       const reviewFile = await reviewService.loadReviewFile(testRelativeFilePath);
       assert.ok(reviewFile !== null);
       if (reviewFile !== null) {
@@ -168,11 +168,11 @@ describe('ReviewService テストスイート', () => {
         reviewer: 'テスト編集者',
         type: 'human',
         severity: 'suggestion',
-        content: 'テストレビュー'
+        content: 'テストレビュー',
       };
 
       await reviewService.addReview(testRelativeFilePath, options);
-      
+
       try {
         await reviewService.updateReview(testRelativeFilePath, 999, { status: 'resolved' });
         assert.fail('エラーが発生すべきです');
@@ -189,12 +189,12 @@ describe('ReviewService テストスイート', () => {
         reviewer: 'テスト編集者',
         type: 'human',
         severity: 'suggestion',
-        content: 'テストレビュー'
+        content: 'テストレビュー',
       };
 
       await reviewService.addReview(testRelativeFilePath, options);
       await reviewService.deleteReview(testRelativeFilePath, 0);
-      
+
       const reviewFile = await reviewService.loadReviewFile(testRelativeFilePath);
       assert.ok(reviewFile === null); // ファイルが削除されている
     });
@@ -205,7 +205,7 @@ describe('ReviewService テストスイート', () => {
         reviewer: '編集者A',
         type: 'human',
         severity: 'warning',
-        content: '最初のレビュー'
+        content: '最初のレビュー',
       };
 
       const options2: CreateReviewOptions = {
@@ -213,13 +213,13 @@ describe('ReviewService テストスイート', () => {
         reviewer: '編集者B',
         type: 'human',
         severity: 'error',
-        content: '2番目のレビュー'
+        content: '2番目のレビュー',
       };
 
       await reviewService.addReview(testRelativeFilePath, options1);
       await reviewService.addReview(testRelativeFilePath, options2);
       await reviewService.deleteReview(testRelativeFilePath, 0);
-      
+
       const reviewFile = await reviewService.loadReviewFile(testRelativeFilePath);
       assert.ok(reviewFile !== null);
       if (reviewFile !== null) {
@@ -236,7 +236,7 @@ describe('ReviewService テストスイート', () => {
         reviewer: '編集者A',
         type: 'human',
         severity: 'warning',
-        content: '未対応レビュー'
+        content: '未対応レビュー',
       };
 
       const options2: CreateReviewOptions = {
@@ -244,15 +244,15 @@ describe('ReviewService テストスイート', () => {
         reviewer: '編集者B',
         type: 'human',
         severity: 'error',
-        content: '解決済みレビュー'
+        content: '解決済みレビュー',
       };
 
       await reviewService.addReview(testRelativeFilePath, options1);
       await reviewService.addReview(testRelativeFilePath, options2);
       await reviewService.updateReview(testRelativeFilePath, 1, { status: 'resolved' });
-      
+
       const summary = await reviewService.getReviewSummary(testRelativeFilePath);
-      
+
       assert.ok(summary !== null);
       if (summary !== null) {
         assert.strictEqual(summary.open, 1);
@@ -275,21 +275,24 @@ describe('ReviewService テストスイート', () => {
         reviewer: 'テスト編集者',
         type: 'human',
         severity: 'suggestion',
-        content: 'テストレビュー'
+        content: 'テストレビュー',
       };
 
       await reviewService.addReview(testRelativeFilePath, options);
       await reviewService.addComment(testRelativeFilePath, 0, {
         author: '執筆者',
-        content: 'コメントありがとうございます'
+        content: 'コメントありがとうございます',
       });
-      
+
       const reviewFile = await reviewService.loadReviewFile(testRelativeFilePath);
       assert.ok(reviewFile !== null);
       if (reviewFile !== null) {
         assert.strictEqual(reviewFile.reviews[0]?.thread?.length, 1);
         assert.strictEqual(reviewFile.reviews[0]?.thread?.[0]?.author, '執筆者');
-        assert.strictEqual(reviewFile.reviews[0]?.thread?.[0]?.content, 'コメントありがとうございます');
+        assert.strictEqual(
+          reviewFile.reviews[0]?.thread?.[0]?.content,
+          'コメントありがとうございます',
+        );
       }
     });
 
@@ -299,19 +302,19 @@ describe('ReviewService テストスイート', () => {
         reviewer: 'テスト編集者',
         type: 'human',
         severity: 'suggestion',
-        content: 'テストレビュー'
+        content: 'テストレビュー',
       };
 
       await reviewService.addReview(testRelativeFilePath, options);
       await reviewService.addComment(testRelativeFilePath, 0, {
         author: '執筆者',
-        content: '最初のコメント'
+        content: '最初のコメント',
       });
       await reviewService.addComment(testRelativeFilePath, 0, {
         author: '編集者',
-        content: '2番目のコメント'
+        content: '2番目のコメント',
       });
-      
+
       const reviewFile = await reviewService.loadReviewFile(testRelativeFilePath);
       assert.ok(reviewFile !== null);
       if (reviewFile !== null) {

@@ -270,7 +270,7 @@ export class DialogoiTreeDataProvider implements vscode.TreeDataProvider<Dialogo
       if (element.review_count.dismissed !== undefined && element.review_count.dismissed > 0) {
         reviewSummary.push(`却下: ${element.review_count.dismissed}`);
       }
-      
+
       if (reviewSummary.length > 0) {
         tooltipParts.push('');
         tooltipParts.push('レビュー:');

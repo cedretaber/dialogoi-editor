@@ -96,7 +96,7 @@ files:            # ファイル・サブディレクトリのリスト（順序
     # 以下はオプション
     tags: ["タグ1", "タグ2"]
     references: ["パス1", "パス2"]  # 小説ルートからの相対パス
-    reviews: "reviews/ファイル名_reviews.yaml"  # レビューファイルへの参照
+    reviews: "ファイル名_reviews.yaml"  # レビューファイルへの参照
     review_count:                    # レビュー数のサマリー
       open: 3
       resolved: 5
@@ -190,7 +190,7 @@ files:            # ファイル・サブディレクトリのリスト（順序
 ### レビューファイル形式
 
 ```yaml
-# novel/reviews/content1_reviews.yaml
+# novel/contents/content1.txt_reviews.yaml
 target_file: "contents/content1.txt"
 file_hash: "sha256:abcd1234..."  # 対象ファイルのハッシュ（変更検知用）
 reviews:
@@ -213,9 +213,9 @@ reviews:
 
 ### ファイル配置規則
 
-- レビューファイルは `reviews/` ディレクトリに配置
+- レビューファイルは対象ファイルと同じディレクトリに配置
 - ファイル名は `対象ファイル名_reviews.yaml` 形式
-- ディレクトリ構造を保持（例: `reviews/contents/chapter1/content1_reviews.yaml`）
+- 例: `contents/chapter1/content1.txt` → `contents/chapter1/content1.txt_reviews.yaml`
 
 ### レビューのステータス
 

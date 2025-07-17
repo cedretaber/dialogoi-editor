@@ -47,8 +47,11 @@ npx vsce package
 ### テストと品質管理
 
 ```bash
-# 単体テスト実行
+# 単体テスト実行（CI用 - VSCode非依存）
 npm test
+
+# VSCode拡張機能テスト実行（開発用 - VSCode環境必要）
+npm run test:vscode
 
 # TypeScript コンパイル
 npm run compile
@@ -65,6 +68,12 @@ npm run format
 # 全体チェック（CI用）
 npm run check-all
 ```
+
+**テスト実行環境について：**
+- `npm test`: 標準のNode.js環境で実行可能（CI/CDで自動実行）
+- `npm run test:vscode`: VSCode環境が必要（開発時に手動実行）
+  - VSCode内でF5キーでデバッグ実行時
+  - または `xvfb-run -a npm run test:vscode` でヘッドレス実行
 
 ## 開発時の注意事項
 

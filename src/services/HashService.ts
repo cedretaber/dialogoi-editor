@@ -37,10 +37,7 @@ export class HashService {
    * @param expectedHash 期待されるハッシュ値
    * @returns ハッシュが一致するかどうか
    */
-  static async verifyFileHash(
-    fileUri: vscode.Uri,
-    expectedHash: string
-  ): Promise<boolean> {
+  static async verifyFileHash(fileUri: vscode.Uri, expectedHash: string): Promise<boolean> {
     try {
       const actualHash = await this.calculateFileHash(fileUri);
       return actualHash === expectedHash;

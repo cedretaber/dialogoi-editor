@@ -160,7 +160,7 @@ export class MetaYamlUtils {
     const fileName = path.basename(targetRelativeFilePath);
     const dirName = path.dirname(targetRelativeFilePath);
     const reviewFileName = `${fileName}_reviews.yaml`;
-    
+
     // 対象ファイルと同じディレクトリに配置
     return path.join(dirName, reviewFileName);
   }
@@ -172,9 +172,13 @@ export class MetaYamlUtils {
    * @param reviewSummary レビューサマリー
    * @returns 更新が成功したかどうか
    */
-  static updateReviewInfo(dirAbsolutePath: string, fileName: string, reviewSummary: ReviewSummary | null): boolean {
+  static updateReviewInfo(
+    dirAbsolutePath: string,
+    fileName: string,
+    reviewSummary: ReviewSummary | null,
+  ): boolean {
     const metaAbsolutePath = path.join(dirAbsolutePath, 'meta.yaml');
-    
+
     if (!fs.existsSync(metaAbsolutePath)) {
       return false;
     }
@@ -182,17 +186,21 @@ export class MetaYamlUtils {
     try {
       const content = fs.readFileSync(metaAbsolutePath, 'utf-8');
       const meta = yaml.load(content) as MetaYaml;
-      
-      const fileItem = meta.files.find(item => item.name === fileName);
+
+      const fileItem = meta.files.find((item) => item.name === fileName);
       if (!fileItem) {
         return false;
       }
 
-      if (reviewSummary && (reviewSummary.open > 0 || (reviewSummary.resolved !== undefined && reviewSummary.resolved > 0))) {
+      if (
+        reviewSummary &&
+        (reviewSummary.open > 0 ||
+          (reviewSummary.resolved !== undefined && reviewSummary.resolved > 0))
+      ) {
         // レビューが存在する場合
         const filePathInDir = path.join(path.basename(dirAbsolutePath), fileName);
         fileItem.reviews = this.generateReviewFilePath(filePathInDir);
-        
+
         // レビューサマリーを設定（0でない値のみ）
         fileItem.review_count = { open: reviewSummary.open };
         if (reviewSummary.in_progress !== undefined && reviewSummary.in_progress > 0) {
@@ -213,7 +221,7 @@ export class MetaYamlUtils {
       // meta.yaml を更新
       const updatedContent = yaml.dump(meta, { indent: 2 });
       fs.writeFileSync(metaAbsolutePath, updatedContent, 'utf-8');
-      
+
       return true;
     } catch (error) {
       console.error('レビュー情報の更新に失敗しました:', error);
