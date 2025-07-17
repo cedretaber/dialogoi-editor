@@ -8,10 +8,10 @@ export async function run(): Promise<void> {
     color: true,
   });
 
-  const testsRoot = path.resolve(__dirname, '..');
+  const testsRoot = path.resolve(__dirname, '.');
 
   try {
-    const files = await glob('**/**.test.js', { cwd: testsRoot });
+    const files = await glob('**/*.test.js', { cwd: testsRoot });
 
     files.forEach((f: string) => mocha.addFile(path.resolve(testsRoot, f)));
 

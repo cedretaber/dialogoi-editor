@@ -1,0 +1,6 @@
+readme: README.md
+files:
+  - name: contents
+    type: subdirectory
+  - name: settings
+    type: subdirectory

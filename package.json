@@ -19,12 +19,11 @@
     "writing",
     "japanese"
   ],
-  "activationEvents": [],
+  "activationEvents": [
+    "workspaceContains:**/dialogoi.yaml"
+  ],
   "main": "./out/extension.js",
   "contributes": {
-    "activation": {
-      "workspaceContains": "**/dialogoi.yaml"
-    },
     "views": {
       "explorer": [
         {
@@ -40,6 +39,26 @@
         "command": "dialogoi.refreshExplorer",
         "title": "更新",
         "icon": "$(refresh)"
+      },
+      {
+        "command": "dialogoi.createFile",
+        "title": "ファイル作成",
+        "icon": "$(add)"
+      },
+      {
+        "command": "dialogoi.createFileInDirectory",
+        "title": "ここにファイル作成",
+        "icon": "$(add)"
+      },
+      {
+        "command": "dialogoi.deleteFile",
+        "title": "削除",
+        "icon": "$(trash)"
+      },
+      {
+        "command": "dialogoi.renameFile",
+        "title": "名前変更",
+        "icon": "$(edit)"
       }
     ],
     "menus": {
@@ -48,6 +67,28 @@
           "command": "dialogoi.refreshExplorer",
           "when": "view == dialogoi-explorer",
           "group": "navigation"
+        },
+        {
+          "command": "dialogoi.createFile",
+          "when": "view == dialogoi-explorer",
+          "group": "navigation"
+        }
+      ],
+      "view/item/context": [
+        {
+          "command": "dialogoi.createFileInDirectory",
+          "when": "view == dialogoi-explorer && viewItem == dialogoi-file",
+          "group": "1_create"
+        },
+        {
+          "command": "dialogoi.renameFile",
+          "when": "view == dialogoi-explorer && viewItem == dialogoi-file",
+          "group": "2_edit"
+        },
+        {
+          "command": "dialogoi.deleteFile",
+          "when": "view == dialogoi-explorer && viewItem == dialogoi-file",
+          "group": "3_delete"
         }
       ]
     }
@@ -59,8 +100,7 @@
     "watch": "tsc -watch -p ./",
     "pretest": "npm run compile && npm run lint",
     "lint": "eslint src/**/*.ts",
-    "test": "node ./out/test/runTest.js",
-    "test:integration": "node ./out/test/runTest.js",
+    "test": "node ./out/runTest.js",
     "typecheck": "tsc --noEmit",
     "format": "prettier --write \"src/**/*.ts\"",
     "check-all": "npm run typecheck && npm run lint && npm run test",

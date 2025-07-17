@@ -12,11 +12,12 @@
 小説執筆支援のためのVSCode Extensionです。本文・設定・キャラクター・用語集・伏線などを体系的に管理し、執筆の一貫性を保ちながら効率的な作業を支援します。
 
 主要機能：
-- TreeViewによる階層的ファイル管理
-- meta.yamlによるメタデータ管理
-- レビュー機能（編集者・AI連携）
-- タグシステムと参照関係管理
-- 将来的にDialogoi MCP サーバとの連携
+- TreeViewによる階層的ファイル管理 ✅
+- meta.yamlによるメタデータ管理 ✅
+- ファイル作成・削除・名前変更・並び替え ✅
+- レビュー機能（編集者・AI連携） 🔄（Phase 2）
+- タグシステムと参照関係管理 🔄（Phase 2）
+- 将来的にDialogoi MCP サーバとの連携 🔄（Phase 4）
 
 ## 開発コマンド
 
@@ -47,8 +48,8 @@ npx vsce package
 # 単体テスト実行
 npm test
 
-# Extension統合テスト（Extension Hostでのテスト）
-npm run test:integration
+# TypeScript コンパイル
+npm run compile
 
 # TypeScript型チェック
 npm run typecheck

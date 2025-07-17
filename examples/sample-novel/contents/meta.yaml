@@ -1,0 +1,33 @@
+readme: README.md
+files:
+  - name: 01_prologue.txt
+    type: content
+    tags:
+      - プロローグ
+      - 導入
+    referenced:
+      - settings/world_setting.md
+  - name: 02_entrance_ceremony.txt
+    type: content
+    tags:
+      - 第1章
+      - 入学式
+    referenced:
+      - settings/characters/tarou.md
+      - settings/characters/hanako.md
+  - name: 03_first_magic_lesson.txt
+    type: content
+    tags:
+      - 第2章
+      - 魔法
+      - 授業
+    referenced:
+      - settings/magic_system.md
+      - settings/foreshadowings/hidden_power.md
+  - name: 04_new_friendship.txt
+    type: content
+    tags:
+      - 第3章
+      - 友情
+    referenced:
+      - settings/characters/jirou.md

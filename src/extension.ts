@@ -1,13 +1,164 @@
 import * as vscode from 'vscode';
+import { DialogoiTreeDataProvider } from './tree/DialogoiTreeDataProvider.js';
 
 export function activate(context: vscode.ExtensionContext): void {
   console.log('Dialogoi Editor が起動しました');
 
-  const disposable = vscode.commands.registerCommand('dialogoi.refreshExplorer', () => {
+  // TreeDataProviderの作成と登録
+  const treeDataProvider = new DialogoiTreeDataProvider();
+  const treeView = vscode.window.createTreeView('dialogoi-explorer', {
+    treeDataProvider: treeDataProvider,
+    showCollapseAll: true,
+  });
+
+  // 更新コマンドの実装
+  const refreshCommand = vscode.commands.registerCommand('dialogoi.refreshExplorer', () => {
+    treeDataProvider.refresh();
     vscode.window.showInformationMessage('Dialogoi Explorer を更新しました');
   });
 
-  context.subscriptions.push(disposable);
+  // ファイル作成コマンド（選択中のディレクトリまたはルート）
+  const createFileCommand = vscode.commands.registerCommand('dialogoi.createFile', async () => {
+    let targetDir: string;
+
+    // 現在選択されているアイテムを取得
+    const selection = treeView.selection;
+    if (selection && selection.length > 0 && selection[0]) {
+      const selectedItem = selection[0];
+      targetDir = treeDataProvider.getDirectoryPath(selectedItem);
+    } else {
+      // 何も選択されていない場合はルートディレクトリ
+      const currentDir = treeDataProvider.getCurrentDirectory();
+      if (!currentDir) {
+        vscode.window.showErrorMessage('小説プロジェクトが見つかりません。');
+        return;
+      }
+      targetDir = currentDir;
+    }
+
+    await createFileInDirectory(targetDir);
+  });
+
+  // ファイル作成コマンド（選択したディレクトリ用）
+  const createFileInDirectoryCommand = vscode.commands.registerCommand(
+    'dialogoi.createFileInDirectory',
+    async (item: any) => {
+      let targetDir: string;
+
+      if (item && item.path) {
+        // 選択したアイテムのディレクトリパスを取得
+        targetDir = treeDataProvider.getDirectoryPath(item);
+      } else {
+        // 何も選択していない場合はルートディレクトリ
+        const currentDir = treeDataProvider.getCurrentDirectory();
+        if (!currentDir) {
+          vscode.window.showErrorMessage('小説プロジェクトが見つかりません。');
+          return;
+        }
+        targetDir = currentDir;
+      }
+
+      await createFileInDirectory(targetDir);
+    },
+  );
+
+  // ファイル作成の共通処理
+  async function createFileInDirectory(targetDir: string): Promise<void> {
+    const fileType = await vscode.window.showQuickPick(
+      [
+        { label: '本文', value: 'content', description: '.txt ファイルを作成' },
+        { label: '設定', value: 'setting', description: '.md ファイルを作成' },
+        { label: 'ディレクトリ', value: 'subdirectory', description: '新しいディレクトリを作成' },
+      ],
+      {
+        placeHolder: 'ファイルの種類を選択してください',
+      },
+    );
+
+    if (!fileType) {
+      return;
+    }
+
+    const baseFileName = await vscode.window.showInputBox({
+      prompt: `${fileType.label}の名前を入力してください（拡張子は自動で付与されます）`,
+      placeHolder: fileType.value === 'subdirectory' ? 'フォルダ名' : 'ファイル名',
+    });
+
+    if (!baseFileName) {
+      return;
+    }
+
+    // 拡張子を自動で付与
+    let fileName: string;
+    if (fileType.value === 'subdirectory') {
+      fileName = baseFileName;
+    } else if (fileType.value === 'content') {
+      fileName = baseFileName.endsWith('.txt') ? baseFileName : `${baseFileName}.txt`;
+    } else {
+      // setting
+      fileName = baseFileName.endsWith('.md') ? baseFileName : `${baseFileName}.md`;
+    }
+
+    treeDataProvider.createFile(
+      targetDir,
+      fileName,
+      fileType.value as 'content' | 'setting' | 'subdirectory',
+    );
+  }
+
+  // ファイル削除コマンド
+  const deleteFileCommand = vscode.commands.registerCommand(
+    'dialogoi.deleteFile',
+    async (item: any) => {
+      if (!item || !item.name) {
+        vscode.window.showErrorMessage('削除するファイルを選択してください。');
+        return;
+      }
+
+      const confirm = await vscode.window.showWarningMessage(
+        `${item.name} を削除しますか？この操作は取り消せません。`,
+        { modal: true },
+        'はい',
+      );
+
+      if (confirm === 'はい') {
+        const dirPath = treeDataProvider.getDirectoryPath(item);
+        treeDataProvider.deleteFile(dirPath, item.name);
+      }
+    },
+  );
+
+  // ファイル名変更コマンド
+  const renameFileCommand = vscode.commands.registerCommand(
+    'dialogoi.renameFile',
+    async (item: any) => {
+      if (!item || !item.name) {
+        vscode.window.showErrorMessage('リネームするファイルを選択してください。');
+        return;
+      }
+
+      const newName = await vscode.window.showInputBox({
+        prompt: '新しいファイル名を入力してください',
+        value: item.name,
+      });
+
+      if (!newName || newName === item.name) {
+        return;
+      }
+
+      const dirPath = treeDataProvider.getDirectoryPath(item);
+      treeDataProvider.renameFile(dirPath, item.name, newName);
+    },
+  );
+
+  context.subscriptions.push(
+    treeView,
+    refreshCommand,
+    createFileCommand,
+    createFileInDirectoryCommand,
+    deleteFileCommand,
+    renameFileCommand,
+  );
 }
 
 export function deactivate(): void {

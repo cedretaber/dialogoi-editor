@@ -1,0 +1,20 @@
+readme: README.md
+files:
+  - name: hidden_power.md
+    type: setting
+    foreshadowing:
+      start: "contents/03_first_magic_lesson.txt"
+      goal: "contents/未定_覚醒.txt"
+    tags: ["主人公", "古代魔法", "長期伏線"]
+  - name: academy_secret.md
+    type: setting
+    foreshadowing:
+      start: "contents/02_entrance_ceremony.txt"
+      goal: "contents/未定_学院の謎.txt"
+    tags: ["魔法学院", "秘密", "中期伏線"]
+  - name: ancient_prophecy.md
+    type: setting
+    foreshadowing:
+      start: "contents/01_prologue.txt"
+      goal: "contents/未定_予言の成就.txt"
+    tags: ["予言", "運命", "長期伏線"]

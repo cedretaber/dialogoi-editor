@@ -1,0 +1,48 @@
+readme: README.md
+files:
+  - name: tarou.md
+    type: setting
+    character:
+      main: true
+      multi: false
+    tags:
+      - 主人公
+      - メインキャラクター
+    referenced:
+      - contents/01_prologue.txt
+      - contents/02_entrance_ceremony.txt
+      - contents/03_first_magic_lesson.txt
+      - contents/04_new_friendship.txt
+  - name: hanako.md
+    type: setting
+    character:
+      main: true
+      multi: false
+    tags:
+      - ヒロイン
+      - メインキャラクター
+    referenced:
+      - contents/02_entrance_ceremony.txt
+      - contents/03_first_magic_lesson.txt
+      - contents/04_new_friendship.txt
+  - name: jirou.md
+    type: setting
+    character:
+      main: false
+      multi: false
+    tags:
+      - 親友
+      - サブキャラクター
+    referenced:
+      - contents/04_new_friendship.txt
+  - name: teachers.md
+    type: setting
+    character:
+      main: false
+      multi: true
+    tags:
+      - 教師
+      - サブキャラクター
+    referenced:
+      - contents/02_entrance_ceremony.txt
+      - contents/03_first_magic_lesson.txt
