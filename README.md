@@ -1,5 +1,7 @@
 # Dialogoi Editor
 
+[![CI](https://github.com/cedretaber/dialogoi-editor/actions/workflows/ci.yml/badge.svg)](https://github.com/cedretaber/dialogoi-editor/actions/workflows/ci.yml)
+
 VSCode Extension として提供する小説執筆支援ツール
 
 ## 概要
