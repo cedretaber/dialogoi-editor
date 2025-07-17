@@ -31,11 +31,8 @@ export class ReviewService {
     const relativeDirName = path.dirname(targetRelativeFilePath);
     const reviewFileName = `${fileName}_reviews.yaml`;
     
-    if (relativeDirName === '.') {
-      return path.join('reviews', reviewFileName);
-    } else {
-      return path.join('reviews', relativeDirName, reviewFileName);
-    }
+    // 対象ファイルと同じディレクトリに配置
+    return path.join(relativeDirName, reviewFileName);
   }
 
   /**
@@ -79,11 +76,7 @@ export class ReviewService {
     const reviewFileUri = this.getReviewFileUri(targetRelativeFilePath);
     
     try {
-      // reviews ディレクトリが存在しない場合は作成
-      const reviewsDir = vscode.Uri.joinPath(this.workspaceRoot, 'reviews');
-      await vscode.workspace.fs.createDirectory(reviewsDir);
-      
-      // サブディレクトリも作成
+      // 対象ファイルと同じディレクトリに保存するため、そのディレクトリを作成
       const reviewRelativeDirPath = path.dirname(this.getReviewFilePath(targetRelativeFilePath));
       const reviewDir = vscode.Uri.joinPath(this.workspaceRoot, reviewRelativeDirPath);
       await vscode.workspace.fs.createDirectory(reviewDir);

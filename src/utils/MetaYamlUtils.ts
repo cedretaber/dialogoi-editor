@@ -161,11 +161,8 @@ export class MetaYamlUtils {
     const dirName = path.dirname(targetRelativeFilePath);
     const reviewFileName = `${fileName}_reviews.yaml`;
     
-    if (dirName === '.') {
-      return path.join('reviews', reviewFileName);
-    } else {
-      return path.join('reviews', dirName, reviewFileName);
-    }
+    // 対象ファイルと同じディレクトリに配置
+    return path.join(dirName, reviewFileName);
   }
 
   /**
