@@ -1,0 +1,51 @@
+name: CI
+
+on:
+  push:
+    branches: [ master, main ]
+  pull_request:
+    branches: [ master, main ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    
+    strategy:
+      matrix:
+        node-version: [22.x, 24.x]
+    
+    steps:
+    # チェックアウト
+    - uses: actions/checkout@v4
+    
+    # Node.js のセットアップ
+    - name: Use Node.js ${{ matrix.node-version }}
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ matrix.node-version }}
+        cache: 'npm'
+    
+    # 依存関係のインストール
+    - name: Install dependencies
+      run: npm ci
+    
+    # TypeScript 型チェック
+    - name: Type check
+      run: npm run typecheck
+    
+    # Prettier フォーマットチェック
+    - name: Format check
+      run: npm run format:check
+    
+    # ESLint チェック
+    - name: Lint
+      run: npm run lint
+    
+    # テスト実行
+    - name: Run tests
+      run: npm test
+    
+    # VSCode Extension のパッケージング（ビルド確認）
+    - name: Package extension
+      run: npm run package
+      if: matrix.node-version == '24.x'

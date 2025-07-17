@@ -152,42 +152,39 @@ export function activate(context: vscode.ExtensionContext): void {
   );
 
   // タグ追加コマンド
-  const addTagCommand = vscode.commands.registerCommand(
-    'dialogoi.addTag',
-    async (item: any) => {
-      if (!item || !item.name) {
-        vscode.window.showErrorMessage('タグを追加するファイルを選択してください。');
-        return;
-      }
+  const addTagCommand = vscode.commands.registerCommand('dialogoi.addTag', async (item: any) => {
+    if (!item || !item.name) {
+      vscode.window.showErrorMessage('タグを追加するファイルを選択してください。');
+      return;
+    }
 
-      const newTag = await vscode.window.showInputBox({
-        prompt: `${item.name} に追加するタグを入力してください`,
-        placeHolder: 'タグ名',
-        validateInput: (value) => {
-          if (!value) {
-            return 'タグ名を入力してください。';
-          }
-          if (value.includes(' ')) {
-            return 'タグ名にスペースは使用できません。';
-          }
-          return null;
-        },
-      });
+    const newTag = await vscode.window.showInputBox({
+      prompt: `${item.name} に追加するタグを入力してください`,
+      placeHolder: 'タグ名',
+      validateInput: (value) => {
+        if (!value) {
+          return 'タグ名を入力してください。';
+        }
+        if (value.includes(' ')) {
+          return 'タグ名にスペースは使用できません。';
+        }
+        return null;
+      },
+    });
 
-      if (!newTag) {
-        return;
-      }
+    if (!newTag) {
+      return;
+    }
 
-      const dirPath = treeDataProvider.getDirectoryPath(item);
-      const result = treeDataProvider.addTag(dirPath, item.name, newTag);
+    const dirPath = treeDataProvider.getDirectoryPath(item);
+    const result = treeDataProvider.addTag(dirPath, item.name, newTag);
 
-      if (result.success) {
-        vscode.window.showInformationMessage(result.message);
-      } else {
-        vscode.window.showErrorMessage(result.message);
-      }
-    },
-  );
+    if (result.success) {
+      vscode.window.showInformationMessage(result.message);
+    } else {
+      vscode.window.showErrorMessage(result.message);
+    }
+  });
 
   // タグ削除コマンド
   const removeTagCommand = vscode.commands.registerCommand(
@@ -328,12 +325,9 @@ export function activate(context: vscode.ExtensionContext): void {
         return;
       }
 
-      const referenceToRemove = await vscode.window.showQuickPick(
-        currentReferences,
-        {
-          placeHolder: '削除する参照を選択してください',
-        },
-      );
+      const referenceToRemove = await vscode.window.showQuickPick(currentReferences, {
+        placeHolder: '削除する参照を選択してください',
+      });
 
       if (!referenceToRemove) {
         return;

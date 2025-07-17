@@ -367,7 +367,11 @@ export class FileOperationService {
   /**
    * ファイルに参照を追加する
    */
-  static addReference(dirPath: string, fileName: string, referencePath: string): FileOperationResult {
+  static addReference(
+    dirPath: string,
+    fileName: string,
+    referencePath: string,
+  ): FileOperationResult {
     try {
       const result = this.updateMetaYaml(dirPath, (meta) => {
         const fileIndex = meta.files.findIndex((file) => file.name === fileName);
@@ -410,7 +414,11 @@ export class FileOperationService {
   /**
    * ファイルから参照を削除する
    */
-  static removeReference(dirPath: string, fileName: string, referencePath: string): FileOperationResult {
+  static removeReference(
+    dirPath: string,
+    fileName: string,
+    referencePath: string,
+  ): FileOperationResult {
     try {
       const result = this.updateMetaYaml(dirPath, (meta) => {
         const fileIndex = meta.files.findIndex((file) => file.name === fileName);
@@ -452,7 +460,11 @@ export class FileOperationService {
   /**
    * ファイルの参照を一括で設定する
    */
-  static setReferences(dirPath: string, fileName: string, references: string[]): FileOperationResult {
+  static setReferences(
+    dirPath: string,
+    fileName: string,
+    references: string[],
+  ): FileOperationResult {
     try {
       const result = this.updateMetaYaml(dirPath, (meta) => {
         const fileIndex = meta.files.findIndex((file) => file.name === fileName);

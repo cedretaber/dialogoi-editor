@@ -3,8 +3,8 @@ import * as fs from 'fs';
 import { MetaYamlUtils } from '../utils/MetaYamlUtils.js';
 
 export interface ReferenceInfo {
-  references: string[];    // このファイルが参照しているファイル
-  referencedBy: string[];  // このファイルを参照しているファイル
+  references: string[]; // このファイルが参照しているファイル
+  referencedBy: string[]; // このファイルを参照しているファイル
 }
 
 export class ReferenceManager {
@@ -39,10 +39,10 @@ export class ReferenceManager {
     }
 
     const relativePath = path.relative(this.novelRoot, filePath);
-    
+
     // 既存の参照を削除
     this.removeFileReferences(relativePath);
-    
+
     // 新しい参照を追加
     this.addFileReferences(relativePath, newReferences);
   }
@@ -51,7 +51,8 @@ export class ReferenceManager {
    * 指定ファイルの参照情報を取得
    */
   getReferences(filePath: string): ReferenceInfo {
-    const relativePath = this.novelRoot !== null ? path.relative(this.novelRoot, filePath) : filePath;
+    const relativePath =
+      this.novelRoot !== null ? path.relative(this.novelRoot, filePath) : filePath;
     return this.referencesMap.get(relativePath) || { references: [], referencedBy: [] };
   }
 
@@ -82,7 +83,7 @@ export class ReferenceManager {
     // このディレクトリ内のファイルの参照関係を処理
     for (const file of meta.files) {
       const fileRelativePath = path.join(relativeDirPath, file.name);
-      
+
       if (file.type === 'subdirectory') {
         // サブディレクトリを再帰的に処理
         const subDirPath = path.join(dirPath, file.name);
@@ -100,7 +101,7 @@ export class ReferenceManager {
   private addFileReferences(sourceFile: string, referencedFiles: string[]): void {
     // 正規化されたパスを使用
     const normalizedSourceFile = path.normalize(sourceFile);
-    
+
     // 参照元ファイルのエントリを取得または作成
     let sourceInfo = this.referencesMap.get(normalizedSourceFile);
     if (!sourceInfo) {
@@ -111,7 +112,7 @@ export class ReferenceManager {
     // 参照先ファイルを追加
     for (const referencedFile of referencedFiles) {
       const normalizedReferencedFile = path.normalize(referencedFile);
-      
+
       // 重複チェック
       if (!sourceInfo.references.includes(normalizedReferencedFile)) {
         sourceInfo.references.push(normalizedReferencedFile);
@@ -123,7 +124,7 @@ export class ReferenceManager {
         targetInfo = { references: [], referencedBy: [] };
         this.referencesMap.set(normalizedReferencedFile, targetInfo);
       }
-      
+
       if (!targetInfo.referencedBy.includes(normalizedSourceFile)) {
         targetInfo.referencedBy.push(normalizedSourceFile);
       }
@@ -136,18 +137,18 @@ export class ReferenceManager {
   private removeFileReferences(sourceFile: string): void {
     const normalizedSourceFile = path.normalize(sourceFile);
     const sourceInfo = this.referencesMap.get(normalizedSourceFile);
-    
+
     if (sourceInfo) {
       // 逆参照を削除
       for (const referencedFile of sourceInfo.references) {
         const targetInfo = this.referencesMap.get(referencedFile);
         if (targetInfo) {
           targetInfo.referencedBy = targetInfo.referencedBy.filter(
-            (file) => file !== normalizedSourceFile
+            (file) => file !== normalizedSourceFile,
           );
         }
       }
-      
+
       // 参照元の参照リストをクリア
       sourceInfo.references = [];
     }
@@ -160,7 +161,7 @@ export class ReferenceManager {
     if (this.novelRoot === null) {
       return false;
     }
-    
+
     const fullPath = path.join(this.novelRoot, referencedFile);
     return fs.existsSync(fullPath);
   }
@@ -170,7 +171,7 @@ export class ReferenceManager {
    */
   getInvalidReferences(filePath: string): string[] {
     const references = this.getReferences(filePath);
-    return references.references.filter(ref => !this.checkFileExists(ref));
+    return references.references.filter((ref) => !this.checkFileExists(ref));
   }
 
   /**

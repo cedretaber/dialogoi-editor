@@ -23,7 +23,7 @@ export class DialogoiTreeDataProvider implements vscode.TreeDataProvider<Dialogo
     if (this.novelRoot !== null) {
       // コンテキストにノベルプロジェクトが存在することを設定
       vscode.commands.executeCommand('setContext', 'dialogoi:hasNovelProject', true);
-      
+
       // 参照関係を初期化
       const referenceManager = ReferenceManager.getInstance();
       referenceManager.initialize(this.novelRoot);
@@ -80,13 +80,13 @@ export class DialogoiTreeDataProvider implements vscode.TreeDataProvider<Dialogo
 
     // タグとレビュー数の表示
     const descriptionParts: string[] = [];
-    
+
     // タグの表示
     if (element.tags !== undefined && element.tags.length > 0) {
       const tagString = element.tags.map((tag) => `#${tag}`).join(' ');
       descriptionParts.push(tagString);
     }
-    
+
     // レビュー数の表示
     if (element.review_count?.open !== undefined && element.review_count.open > 0) {
       descriptionParts.push(`(${element.review_count.open} レビュー)`);
@@ -221,35 +221,35 @@ export class DialogoiTreeDataProvider implements vscode.TreeDataProvider<Dialogo
     if (element.type !== 'subdirectory') {
       const referenceManager = ReferenceManager.getInstance();
       const references = referenceManager.getReferences(element.path);
-      
+
       if (references.references.length > 0) {
         const validReferences: string[] = [];
         const invalidReferences: string[] = [];
-        
-        references.references.forEach(ref => {
+
+        references.references.forEach((ref) => {
           if (referenceManager.checkFileExists(ref)) {
             validReferences.push(ref);
           } else {
             invalidReferences.push(ref);
           }
         });
-        
+
         if (validReferences.length > 0 || invalidReferences.length > 0) {
           tooltipParts.push('');
           tooltipParts.push('参照している:');
-          validReferences.forEach(ref => {
+          validReferences.forEach((ref) => {
             tooltipParts.push(`• ${ref}`);
           });
-          invalidReferences.forEach(ref => {
+          invalidReferences.forEach((ref) => {
             tooltipParts.push(`• ~~${ref}~~ (存在しません)`);
           });
         }
       }
-      
+
       if (references.referencedBy.length > 0) {
         tooltipParts.push('');
         tooltipParts.push('参照されている:');
-        references.referencedBy.forEach(ref => {
+        references.referencedBy.forEach((ref) => {
           tooltipParts.push(`• ${ref}`);
         });
       }
@@ -282,7 +282,11 @@ export class DialogoiTreeDataProvider implements vscode.TreeDataProvider<Dialogo
     return result;
   }
 
-  setTags(dirPath: string, fileName: string, tags: string[]): { success: boolean; message: string } {
+  setTags(
+    dirPath: string,
+    fileName: string,
+    tags: string[],
+  ): { success: boolean; message: string } {
     const result = FileOperationService.setTags(dirPath, fileName, tags);
 
     if (result.success) {
@@ -293,48 +297,63 @@ export class DialogoiTreeDataProvider implements vscode.TreeDataProvider<Dialogo
   }
 
   // 参照関係操作メソッド
-  addReference(dirPath: string, fileName: string, referencePath: string): { success: boolean; message: string } {
+  addReference(
+    dirPath: string,
+    fileName: string,
+    referencePath: string,
+  ): { success: boolean; message: string } {
     const result = FileOperationService.addReference(dirPath, fileName, referencePath);
 
     if (result.success) {
       // ReferenceManagerを更新
       const referenceManager = ReferenceManager.getInstance();
       const filePath = path.join(dirPath, fileName);
-      const currentReferences = result.updatedItems?.find(item => item.name === fileName)?.references || [];
+      const currentReferences =
+        result.updatedItems?.find((item) => item.name === fileName)?.references || [];
       referenceManager.updateFileReferences(filePath, currentReferences);
-      
+
       this.refresh();
     }
 
     return result;
   }
 
-  removeReference(dirPath: string, fileName: string, referencePath: string): { success: boolean; message: string } {
+  removeReference(
+    dirPath: string,
+    fileName: string,
+    referencePath: string,
+  ): { success: boolean; message: string } {
     const result = FileOperationService.removeReference(dirPath, fileName, referencePath);
 
     if (result.success) {
       // ReferenceManagerを更新
       const referenceManager = ReferenceManager.getInstance();
       const filePath = path.join(dirPath, fileName);
-      const currentReferences = result.updatedItems?.find(item => item.name === fileName)?.references || [];
+      const currentReferences =
+        result.updatedItems?.find((item) => item.name === fileName)?.references || [];
       referenceManager.updateFileReferences(filePath, currentReferences);
-      
+
       this.refresh();
     }
 
     return result;
   }
 
-  setReferences(dirPath: string, fileName: string, references: string[]): { success: boolean; message: string } {
+  setReferences(
+    dirPath: string,
+    fileName: string,
+    references: string[],
+  ): { success: boolean; message: string } {
     const result = FileOperationService.setReferences(dirPath, fileName, references);
 
     if (result.success) {
       // ReferenceManagerを更新
       const referenceManager = ReferenceManager.getInstance();
       const filePath = path.join(dirPath, fileName);
-      const currentReferences = result.updatedItems?.find(item => item.name === fileName)?.references || [];
+      const currentReferences =
+        result.updatedItems?.find((item) => item.name === fileName)?.references || [];
       referenceManager.updateFileReferences(filePath, currentReferences);
-      
+
       this.refresh();
     }
 
