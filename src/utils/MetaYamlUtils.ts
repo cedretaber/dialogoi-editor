@@ -47,15 +47,15 @@ export class MetaYamlUtils {
     }
   }
 
-  static loadMetaYaml(dirPath: string): MetaYaml | null {
-    const metaPath = path.join(dirPath, 'meta.yaml');
+  static loadMetaYaml(dirAbsolutePath: string): MetaYaml | null {
+    const metaAbsolutePath = path.join(dirAbsolutePath, 'meta.yaml');
 
     try {
-      if (!fs.existsSync(metaPath)) {
+      if (!fs.existsSync(metaAbsolutePath)) {
         return null;
       }
 
-      const metaContent = fs.readFileSync(metaPath, 'utf8');
+      const metaContent = fs.readFileSync(metaAbsolutePath, 'utf8');
       return this.parseMetaYaml(metaContent);
     } catch (error) {
       console.error('meta.yaml の読み込みエラー:', error);
@@ -63,31 +63,31 @@ export class MetaYamlUtils {
     }
   }
 
-  static getReadmeFilePath(dirPath: string): string | null {
-    const meta = this.loadMetaYaml(dirPath);
+  static getReadmeFilePath(dirAbsolutePath: string): string | null {
+    const meta = this.loadMetaYaml(dirAbsolutePath);
 
     if (meta === null || meta.readme === undefined) {
       return null;
     }
 
-    const readmeFilePath = path.join(dirPath, meta.readme);
-    if (fs.existsSync(readmeFilePath)) {
-      return readmeFilePath;
+    const readmeAbsolutePath = path.join(dirAbsolutePath, meta.readme);
+    if (fs.existsSync(readmeAbsolutePath)) {
+      return readmeAbsolutePath;
     }
 
     return null;
   }
 
-  static findNovelRoot(workspaceRoot: string): string | null {
-    const findDialogoiYaml = (dir: string): string | null => {
-      const items = fs.readdirSync(dir, { withFileTypes: true });
+  static findNovelRoot(workspaceRootAbsolutePath: string): string | null {
+    const findDialogoiYaml = (dirAbsolutePath: string): string | null => {
+      const items = fs.readdirSync(dirAbsolutePath, { withFileTypes: true });
 
       for (const item of items) {
-        const fullPath = path.join(dir, item.name);
+        const fullAbsolutePath = path.join(dirAbsolutePath, item.name);
         if (item.isFile() && item.name === 'dialogoi.yaml') {
-          return dir;
+          return dirAbsolutePath;
         } else if (item.isDirectory()) {
-          const result = findDialogoiYaml(fullPath);
+          const result = findDialogoiYaml(fullAbsolutePath);
           if (result !== null) {
             return result;
           }
@@ -96,7 +96,7 @@ export class MetaYamlUtils {
       return null;
     };
 
-    return findDialogoiYaml(workspaceRoot);
+    return findDialogoiYaml(workspaceRootAbsolutePath);
   }
 
   static validateDialogoiTreeItem(item: DialogoiTreeItem): string[] {
@@ -153,12 +153,12 @@ export class MetaYamlUtils {
 
   /**
    * レビューファイルのパスを生成
-   * @param targetFilePath 対象ファイルのパス（小説ルートからの相対パス）
+   * @param targetRelativeFilePath 対象ファイルのパス（小説ルートからの相対パス）
    * @returns レビューファイルのパス
    */
-  static generateReviewFilePath(targetFilePath: string): string {
-    const fileName = path.basename(targetFilePath);
-    const dirName = path.dirname(targetFilePath);
+  static generateReviewFilePath(targetRelativeFilePath: string): string {
+    const fileName = path.basename(targetRelativeFilePath);
+    const dirName = path.dirname(targetRelativeFilePath);
     const reviewFileName = `${fileName}_reviews.yaml`;
     
     if (dirName === '.') {
@@ -170,20 +170,20 @@ export class MetaYamlUtils {
 
   /**
    * meta.yaml のファイルエントリにレビュー情報を設定
-   * @param dirPath ディレクトリパス
+   * @param dirAbsolutePath ディレクトリパス（絶対パス）
    * @param fileName ファイル名
    * @param reviewSummary レビューサマリー
    * @returns 更新が成功したかどうか
    */
-  static updateReviewInfo(dirPath: string, fileName: string, reviewSummary: ReviewSummary | null): boolean {
-    const metaPath = path.join(dirPath, 'meta.yaml');
+  static updateReviewInfo(dirAbsolutePath: string, fileName: string, reviewSummary: ReviewSummary | null): boolean {
+    const metaAbsolutePath = path.join(dirAbsolutePath, 'meta.yaml');
     
-    if (!fs.existsSync(metaPath)) {
+    if (!fs.existsSync(metaAbsolutePath)) {
       return false;
     }
 
     try {
-      const content = fs.readFileSync(metaPath, 'utf-8');
+      const content = fs.readFileSync(metaAbsolutePath, 'utf-8');
       const meta = yaml.load(content) as MetaYaml;
       
       const fileItem = meta.files.find(item => item.name === fileName);
@@ -193,7 +193,7 @@ export class MetaYamlUtils {
 
       if (reviewSummary && (reviewSummary.open > 0 || (reviewSummary.resolved && reviewSummary.resolved > 0))) {
         // レビューが存在する場合
-        const filePathInDir = path.join(path.basename(dirPath), fileName);
+        const filePathInDir = path.join(path.basename(dirAbsolutePath), fileName);
         fileItem.reviews = this.generateReviewFilePath(filePathInDir);
         
         // レビューサマリーを設定（0でない値のみ）
@@ -215,7 +215,7 @@ export class MetaYamlUtils {
 
       // meta.yaml を更新
       const updatedContent = yaml.dump(meta, { indent: 2 });
-      fs.writeFileSync(metaPath, updatedContent, 'utf-8');
+      fs.writeFileSync(metaAbsolutePath, updatedContent, 'utf-8');
       
       return true;
     } catch (error) {
@@ -226,11 +226,11 @@ export class MetaYamlUtils {
 
   /**
    * meta.yaml からレビュー情報を削除
-   * @param dirPath ディレクトリパス
+   * @param dirAbsolutePath ディレクトリパス（絶対パス）
    * @param fileName ファイル名
    * @returns 削除が成功したかどうか
    */
-  static removeReviewInfo(dirPath: string, fileName: string): boolean {
-    return this.updateReviewInfo(dirPath, fileName, null);
+  static removeReviewInfo(dirAbsolutePath: string, fileName: string): boolean {
+    return this.updateReviewInfo(dirAbsolutePath, fileName, null);
   }
 }
