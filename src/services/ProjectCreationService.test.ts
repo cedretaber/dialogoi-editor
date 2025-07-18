@@ -59,7 +59,7 @@ project_settings:
       );
       assert.ok(
         result.createdFiles !== undefined &&
-          result.createdFiles.includes(path.join(projectPath, 'meta.yaml')),
+          result.createdFiles.includes(path.join(projectPath, '.dialogoi-meta.yaml')),
       );
 
       // dialogoi.yamlが作成されているか確認
@@ -139,12 +139,12 @@ project_settings:
 
       assert.strictEqual(result.success, true);
 
-      // meta.yamlが作成されているか確認
-      const metaYamlPath = path.join(projectPath, 'meta.yaml');
+      // .dialogoi-meta.yamlが作成されているか確認
+      const metaYamlPath = path.join(projectPath, '.dialogoi-meta.yaml');
       assert.ok(mockFileRepository.existsSync(mockFileRepository.createFileUri(metaYamlPath)));
 
-      // characters/meta.yamlも作成されているか確認
-      const charactersMetaYamlPath = path.join(charactersDir, 'meta.yaml');
+      // characters/.dialogoi-meta.yamlも作成されているか確認
+      const charactersMetaYamlPath = path.join(charactersDir, '.dialogoi-meta.yaml');
       assert.ok(
         mockFileRepository.existsSync(mockFileRepository.createFileUri(charactersMetaYamlPath)),
       );
@@ -181,10 +181,10 @@ project_settings:
       );
     });
 
-    test('既存meta.yamlファイルを尊重する', async () => {
+    test('既存.dialogoi-meta.yamlファイルを尊重する', async () => {
       const projectPath = '/test/respect-meta';
 
-      // 既存meta.yamlを含むディレクトリを作成
+      // 既存.dialogoi-meta.yamlを含むディレクトリを作成
       mockFileRepository.createDirectoryForTest(projectPath);
       mockFileRepository.createFileForTest(path.join(projectPath, 'chapter1.txt'), 'Chapter 1');
       const existingMeta = `readme: "README.md"
@@ -193,10 +193,13 @@ files:
     type: content
     path: chapter1.txt
     tags: ["重要"]`;
-      mockFileRepository.createFileForTest(path.join(projectPath, 'meta.yaml'), existingMeta);
+      mockFileRepository.createFileForTest(
+        path.join(projectPath, '.dialogoi-meta.yaml'),
+        existingMeta,
+      );
 
       const options: ProjectCreationOptions = {
-        title: 'meta.yaml尊重テスト',
+        title: '.dialogoi-meta.yaml尊重テスト',
         author: '著者名',
       };
 
@@ -204,17 +207,17 @@ files:
 
       assert.strictEqual(result.success, true);
 
-      // meta.yamlがスキップされているか確認
+      // .dialogoi-meta.yamlがスキップされているか確認
       assert.ok(
         result.skippedFiles !== undefined &&
-          result.skippedFiles.some((file) => file.includes('meta.yaml')),
+          result.skippedFiles.some((file) => file.includes('.dialogoi-meta.yaml')),
       );
     });
 
-    test('meta.yaml上書きオプションが有効な場合は既存meta.yamlを上書きする', async () => {
+    test('.dialogoi-meta.yaml上書きオプションが有効な場合は既存.dialogoi-meta.yamlを上書きする', async () => {
       const projectPath = '/test/overwrite-meta';
 
-      // 既存meta.yamlを含むディレクトリを作成
+      // 既存.dialogoi-meta.yamlを含むディレクトリを作成
       mockFileRepository.createDirectoryForTest(projectPath);
       mockFileRepository.createFileForTest(path.join(projectPath, 'chapter1.txt'), 'Chapter 1');
       const existingMeta = `readme: "README.md"
@@ -223,10 +226,13 @@ files:
     type: content
     path: chapter1.txt
     tags: ["古いタグ"]`;
-      mockFileRepository.createFileForTest(path.join(projectPath, 'meta.yaml'), existingMeta);
+      mockFileRepository.createFileForTest(
+        path.join(projectPath, '.dialogoi-meta.yaml'),
+        existingMeta,
+      );
 
       const options: ProjectCreationOptions = {
-        title: 'meta.yaml上書きテスト',
+        title: '.dialogoi-meta.yaml上書きテスト',
         author: '著者名',
         overwriteMetaYaml: true,
       };
@@ -235,8 +241,8 @@ files:
 
       assert.strictEqual(result.success, true);
 
-      // meta.yamlが作成されているか確認
-      const metaYamlPath = path.join(projectPath, 'meta.yaml');
+      // .dialogoi-meta.yamlが作成されているか確認
+      const metaYamlPath = path.join(projectPath, '.dialogoi-meta.yaml');
       assert.ok(result.createdFiles !== undefined && result.createdFiles.includes(metaYamlPath));
     });
 
@@ -259,8 +265,8 @@ files:
 
       assert.strictEqual(result.success, true);
 
-      // meta.yamlを読み込んで確認
-      const metaYamlPath = path.join(projectPath, 'meta.yaml');
+      // .dialogoi-meta.yamlを読み込んで確認
+      const metaYamlPath = path.join(projectPath, '.dialogoi-meta.yaml');
       const metaContent = mockFileRepository.readFileSync(
         mockFileRepository.createFileUri(metaYamlPath),
         'utf8',

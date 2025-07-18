@@ -23,7 +23,7 @@ export class ReferenceManager {
   }
 
   /**
-   * 参照関係を初期化（全meta.yamlを走査）
+   * 参照関係を初期化（全.dialogoi-meta.yamlを走査）
    */
   initialize(novelRoot: string, fileRepository: FileRepository): void {
     this.novelRoot = novelRoot;
@@ -67,14 +67,14 @@ export class ReferenceManager {
   }
 
   /**
-   * 全meta.yamlを再帰的に走査して参照関係を構築
+   * 全.dialogoi-meta.yamlを再帰的に走査して参照関係を構築
    */
   private scanAllReferences(dirPath: string): void {
     this.scanDirectoryReferences(dirPath, '');
   }
 
   /**
-   * 指定ディレクトリのmeta.yamlを読み込み、参照関係を構築
+   * 指定ディレクトリの.dialogoi-meta.yamlを読み込み、参照関係を構築
    */
   private scanDirectoryReferences(dirPath: string, relativeDirPath: string): void {
     if (!this.fileRepository) {

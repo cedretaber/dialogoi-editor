@@ -22,7 +22,7 @@ suite('MetaYamlService テストスイート', () => {
   });
 
   suite('loadMetaYaml', () => {
-    test('正常なmeta.yamlファイルを読み込む', () => {
+    test('正常な.dialogoi-meta.yamlファイルを読み込む', () => {
       const testDir = '/test/project';
       const metaContent = `readme: README.md
 files:
@@ -37,7 +37,7 @@ files:
     path: ${testDir}/settings`;
 
       mockFileRepository.addDirectory(testDir);
-      mockFileRepository.addFile(`${testDir}/meta.yaml`, metaContent);
+      mockFileRepository.addFile(`${testDir}/.dialogoi-meta.yaml`, metaContent);
 
       const result = service.loadMetaYaml(testDir);
 
@@ -51,7 +51,7 @@ files:
       assert.strictEqual(result?.files[1]?.type, 'subdirectory');
     });
 
-    test('meta.yamlファイルが存在しない場合nullを返す', () => {
+    test('.dialogoi-meta.yamlファイルが存在しない場合nullを返す', () => {
       const testDir = '/test/project';
       mockFileRepository.addDirectory(testDir);
 
@@ -68,27 +68,27 @@ files:
   - invalid: yaml: content`;
 
       mockFileRepository.addDirectory(testDir);
-      mockFileRepository.addFile(`${testDir}/meta.yaml`, invalidYaml);
+      mockFileRepository.addFile(`${testDir}/.dialogoi-meta.yaml`, invalidYaml);
 
       const result = service.loadMetaYaml(testDir);
       assert.strictEqual(result, null);
     });
 
-    test('空のmeta.yamlファイルの場合nullを返す', () => {
+    test('空の.dialogoi-meta.yamlファイルの場合nullを返す', () => {
       const testDir = '/test/project';
       mockFileRepository.addDirectory(testDir);
-      mockFileRepository.addFile(`${testDir}/meta.yaml`, '');
+      mockFileRepository.addFile(`${testDir}/.dialogoi-meta.yaml`, '');
 
       const result = service.loadMetaYaml(testDir);
       assert.strictEqual(result, null);
     });
 
-    test('最小構成のmeta.yamlファイルを読み込む', () => {
+    test('最小構成の.dialogoi-meta.yamlファイルを読み込む', () => {
       const testDir = '/test/project';
       const metaContent = `files: []`;
 
       mockFileRepository.addDirectory(testDir);
-      mockFileRepository.addFile(`${testDir}/meta.yaml`, metaContent);
+      mockFileRepository.addFile(`${testDir}/.dialogoi-meta.yaml`, metaContent);
 
       const result = service.loadMetaYaml(testDir);
 
@@ -144,7 +144,7 @@ files:
 
       // 保存されたファイルを確認
       const savedContent = mockFileRepository.readFileSync(
-        mockFileRepository.createFileUri(`${testDir}/meta.yaml`),
+        mockFileRepository.createFileUri(`${testDir}/.dialogoi-meta.yaml`),
         'utf8',
       );
       assert.ok(savedContent.includes('readme: README.md'));
@@ -172,7 +172,7 @@ files:
       assert.strictEqual(result, true);
 
       const savedContent = mockFileRepository.readFileSync(
-        mockFileRepository.createFileUri(`${testDir}/meta.yaml`),
+        mockFileRepository.createFileUri(`${testDir}/.dialogoi-meta.yaml`),
         'utf8',
       );
       assert.ok(savedContent.includes('readme: README.md'));
@@ -197,7 +197,7 @@ files:
       assert.strictEqual(result, true);
 
       const savedContent = mockFileRepository.readFileSync(
-        mockFileRepository.createFileUri(`${testDir}/meta.yaml`),
+        mockFileRepository.createFileUri(`${testDir}/.dialogoi-meta.yaml`),
         'utf8',
       );
       assert.ok(savedContent.includes('name: test.txt'));
@@ -223,8 +223,8 @@ files:
       const result = service.saveMetaYaml(testDir, invalidMeta);
       assert.strictEqual(result, false);
 
-      // meta.yamlファイルが作成されていないことを確認
-      const metaUri = mockFileRepository.createFileUri(`${testDir}/meta.yaml`);
+      // .dialogoi-meta.yamlファイルが作成されていないことを確認
+      const metaUri = mockFileRepository.createFileUri(`${testDir}/.dialogoi-meta.yaml`);
       assert.strictEqual(mockFileRepository.existsSync(metaUri), false);
     });
 
@@ -259,7 +259,7 @@ files:
 files: []`;
 
       mockFileRepository.addDirectory(testDir);
-      mockFileRepository.addFile(`${testDir}/meta.yaml`, metaContent);
+      mockFileRepository.addFile(`${testDir}/.dialogoi-meta.yaml`, metaContent);
       mockFileRepository.addFile(`${testDir}/README.md`, '# Test Project');
 
       const result = service.getReadmeFilePath(testDir);
@@ -272,25 +272,25 @@ files: []`;
 files: []`;
 
       mockFileRepository.addDirectory(testDir);
-      mockFileRepository.addFile(`${testDir}/meta.yaml`, metaContent);
+      mockFileRepository.addFile(`${testDir}/.dialogoi-meta.yaml`, metaContent);
       // README.mdファイルは作成しない
 
       const result = service.getReadmeFilePath(testDir);
       assert.strictEqual(result, null);
     });
 
-    test('meta.yamlにreadmeが設定されていない場合nullを返す', () => {
+    test('.dialogoi-meta.yamlにreadmeが設定されていない場合nullを返す', () => {
       const testDir = '/test/project';
       const metaContent = `files: []`;
 
       mockFileRepository.addDirectory(testDir);
-      mockFileRepository.addFile(`${testDir}/meta.yaml`, metaContent);
+      mockFileRepository.addFile(`${testDir}/.dialogoi-meta.yaml`, metaContent);
 
       const result = service.getReadmeFilePath(testDir);
       assert.strictEqual(result, null);
     });
 
-    test('meta.yamlが存在しない場合nullを返す', () => {
+    test('.dialogoi-meta.yamlが存在しない場合nullを返す', () => {
       const testDir = '/test/project';
       mockFileRepository.addDirectory(testDir);
 
@@ -305,7 +305,7 @@ files: []`;
 
       mockFileRepository.addDirectory(testDir);
       mockFileRepository.addDirectory(`${testDir}/docs`);
-      mockFileRepository.addFile(`${testDir}/meta.yaml`, metaContent);
+      mockFileRepository.addFile(`${testDir}/.dialogoi-meta.yaml`, metaContent);
       mockFileRepository.addFile(`${testDir}/docs/README.md`, '# Test Project');
 
       const result = service.getReadmeFilePath(testDir);
@@ -395,7 +395,7 @@ files:
     path: ${testDir}/${fileName}`;
 
       mockFileRepository.addDirectory(testDir);
-      mockFileRepository.addFile(`${testDir}/meta.yaml`, metaContent);
+      mockFileRepository.addFile(`${testDir}/.dialogoi-meta.yaml`, metaContent);
 
       const reviewSummary: ReviewSummary = {
         open: 2,
@@ -407,7 +407,7 @@ files:
       const result = service.updateReviewInfo(testDir, fileName, reviewSummary);
       assert.strictEqual(result, true);
 
-      // 更新されたmeta.yamlを確認
+      // 更新された.dialogoi-meta.yamlを確認
       const updatedMeta = service.loadMetaYaml(testDir);
       assert.notStrictEqual(updatedMeta, null);
 
@@ -439,12 +439,12 @@ files:
       resolved: 1`;
 
       mockFileRepository.addDirectory(testDir);
-      mockFileRepository.addFile(`${testDir}/meta.yaml`, metaContent);
+      mockFileRepository.addFile(`${testDir}/.dialogoi-meta.yaml`, metaContent);
 
       const result = service.updateReviewInfo(testDir, fileName, null);
       assert.strictEqual(result, true);
 
-      // 更新されたmeta.yamlを確認
+      // 更新された.dialogoi-meta.yamlを確認
       const updatedMeta = service.loadMetaYaml(testDir);
       assert.notStrictEqual(updatedMeta, null);
 
@@ -469,7 +469,7 @@ files:
     path: ${testDir}/${fileName}`;
 
       mockFileRepository.addDirectory(testDir);
-      mockFileRepository.addFile(`${testDir}/meta.yaml`, metaContent);
+      mockFileRepository.addFile(`${testDir}/.dialogoi-meta.yaml`, metaContent);
 
       const reviewSummary: ReviewSummary = {
         open: 0,
@@ -481,7 +481,7 @@ files:
       const result = service.updateReviewInfo(testDir, fileName, reviewSummary);
       assert.strictEqual(result, true);
 
-      // 更新されたmeta.yamlを確認
+      // 更新された.dialogoi-meta.yamlを確認
       const updatedMeta = service.loadMetaYaml(testDir);
       assert.notStrictEqual(updatedMeta, null);
 
@@ -506,7 +506,7 @@ files:
     path: ${testDir}/${fileName}`;
 
       mockFileRepository.addDirectory(testDir);
-      mockFileRepository.addFile(`${testDir}/meta.yaml`, metaContent);
+      mockFileRepository.addFile(`${testDir}/.dialogoi-meta.yaml`, metaContent);
 
       const reviewSummary: ReviewSummary = {
         open: 1,
@@ -518,7 +518,7 @@ files:
       const result = service.updateReviewInfo(testDir, fileName, reviewSummary);
       assert.strictEqual(result, true);
 
-      // 更新されたmeta.yamlを確認
+      // 更新された.dialogoi-meta.yamlを確認
       const updatedMeta = service.loadMetaYaml(testDir);
       assert.notStrictEqual(updatedMeta, null);
 
@@ -535,7 +535,7 @@ files:
       }
     });
 
-    test('meta.yamlが存在しない場合falseを返す', () => {
+    test('.dialogoi-meta.yamlが存在しない場合falseを返す', () => {
       const testDir = '/test/project';
       const fileName = 'chapter1.txt';
       mockFileRepository.addDirectory(testDir);
@@ -561,7 +561,7 @@ files:
     path: ${testDir}/chapter1.txt`;
 
       mockFileRepository.addDirectory(testDir);
-      mockFileRepository.addFile(`${testDir}/meta.yaml`, metaContent);
+      mockFileRepository.addFile(`${testDir}/.dialogoi-meta.yaml`, metaContent);
 
       const reviewSummary: ReviewSummary = {
         open: 1,
@@ -574,13 +574,13 @@ files:
       assert.strictEqual(result, false);
     });
 
-    test('不正なmeta.yamlの場合falseを返す', () => {
+    test('不正な.dialogoi-meta.yamlの場合falseを返す', () => {
       const testDir = '/test/project';
       const fileName = 'chapter1.txt';
       const invalidMeta = `invalid: yaml: content`;
 
       mockFileRepository.addDirectory(testDir);
-      mockFileRepository.addFile(`${testDir}/meta.yaml`, invalidMeta);
+      mockFileRepository.addFile(`${testDir}/.dialogoi-meta.yaml`, invalidMeta);
 
       const reviewSummary: ReviewSummary = {
         open: 1,
@@ -609,12 +609,12 @@ files:
       resolved: 1`;
 
       mockFileRepository.addDirectory(testDir);
-      mockFileRepository.addFile(`${testDir}/meta.yaml`, metaContent);
+      mockFileRepository.addFile(`${testDir}/.dialogoi-meta.yaml`, metaContent);
 
       const result = service.removeReviewInfo(testDir, fileName);
       assert.strictEqual(result, true);
 
-      // 更新されたmeta.yamlを確認
+      // 更新された.dialogoi-meta.yamlを確認
       const updatedMeta = service.loadMetaYaml(testDir);
       assert.notStrictEqual(updatedMeta, null);
 
@@ -639,12 +639,12 @@ files:
     path: ${testDir}/${fileName}`;
 
       mockFileRepository.addDirectory(testDir);
-      mockFileRepository.addFile(`${testDir}/meta.yaml`, metaContent);
+      mockFileRepository.addFile(`${testDir}/.dialogoi-meta.yaml`, metaContent);
 
       const result = service.removeReviewInfo(testDir, fileName);
       assert.strictEqual(result, true);
 
-      // meta.yamlに変更がないことを確認
+      // .dialogoi-meta.yamlに変更がないことを確認
       const updatedMeta = service.loadMetaYaml(testDir);
       assert.notStrictEqual(updatedMeta, null);
 

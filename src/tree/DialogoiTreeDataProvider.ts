@@ -92,7 +92,7 @@ export class DialogoiTreeDataProvider implements vscode.TreeDataProvider<Dialogo
         arguments: [vscode.Uri.file(element.path)],
       };
     } else {
-      // ディレクトリの場合はmeta.yamlで指定されたreadmeファイルを開く
+      // ディレクトリの場合は.dialogoi-meta.yamlで指定されたreadmeファイルを開く
       const readmeFilePath = this.getReadmeFilePath(element.path);
       if (readmeFilePath !== null) {
         item.command = {
@@ -141,14 +141,14 @@ export class DialogoiTreeDataProvider implements vscode.TreeDataProvider<Dialogo
     }
 
     if (element) {
-      // サブディレクトリの場合、その中のmeta.yamlを読み込む
-      console.warn('サブディレクトリのmeta.yaml読み込み:', element.path);
+      // サブディレクトリの場合、その中の.dialogoi-meta.yamlを読み込む
+      console.warn('サブディレクトリの.dialogoi-meta.yaml読み込み:', element.path);
       const result = this.loadMetaYaml(element.path);
       console.warn('サブディレクトリ結果:', result);
       return Promise.resolve(result);
     } else {
-      // ルートの場合、ノベルルートのmeta.yamlを読み込む
-      console.warn('ルートのmeta.yaml読み込み:', this.novelRoot);
+      // ルートの場合、ノベルルートの.dialogoi-meta.yamlを読み込む
+      console.warn('ルートの.dialogoi-meta.yaml読み込み:', this.novelRoot);
       const result = this.loadMetaYaml(this.novelRoot);
       console.warn('ルート結果:', result);
       return Promise.resolve(result);

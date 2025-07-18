@@ -4,16 +4,16 @@ import { FileRepository, DirectoryEntry } from '../repositories/FileRepository.j
 import { MetaYamlUtils, MetaYaml } from '../utils/MetaYamlUtils.js';
 
 /**
- * meta.yaml ファイルの操作を行うサービス
+ * .dialogoi-meta.yaml ファイルの操作を行うサービス
  */
 export class MetaYamlService {
   constructor(private fileRepository: FileRepository) {}
 
   /**
-   * meta.yaml を読み込む
+   * .dialogoi-meta.yaml を読み込む
    */
   loadMetaYaml(dirAbsolutePath: string): MetaYaml | null {
-    const metaAbsolutePath = path.join(dirAbsolutePath, 'meta.yaml');
+    const metaAbsolutePath = path.join(dirAbsolutePath, '.dialogoi-meta.yaml');
 
     try {
       const metaUri = this.fileRepository.createFileUri(metaAbsolutePath);
@@ -23,22 +23,22 @@ export class MetaYamlService {
       const metaContent = this.fileRepository.readFileSync(metaUri, 'utf8');
       return MetaYamlUtils.parseMetaYaml(metaContent);
     } catch (error) {
-      console.error('meta.yaml の読み込みエラー:', error);
+      console.error('.dialogoi-meta.yaml の読み込みエラー:', error);
       return null;
     }
   }
 
   /**
-   * meta.yamlファイルを保存
+   * .dialogoi-meta.yamlファイルを保存
    */
   saveMetaYaml(dirAbsolutePath: string, meta: MetaYaml): boolean {
-    const metaAbsolutePath = path.join(dirAbsolutePath, 'meta.yaml');
+    const metaAbsolutePath = path.join(dirAbsolutePath, '.dialogoi-meta.yaml');
 
     try {
       // バリデーション
       const validationErrors = MetaYamlUtils.validateMetaYaml(meta);
       if (validationErrors.length > 0) {
-        console.error('meta.yaml検証エラー:', validationErrors);
+        console.error('.dialogoi-meta.yaml検証エラー:', validationErrors);
         return false;
       }
 
@@ -47,7 +47,7 @@ export class MetaYamlService {
       this.fileRepository.writeFileSync(metaUri, yamlContent, 'utf8');
       return true;
     } catch (error) {
-      console.error('meta.yaml の保存エラー:', error);
+      console.error('.dialogoi-meta.yaml の保存エラー:', error);
       return false;
     }
   }
@@ -99,14 +99,14 @@ export class MetaYamlService {
   }
 
   /**
-   * meta.yaml のファイルエントリにレビュー情報を設定
+   * .dialogoi-meta.yaml のファイルエントリにレビュー情報を設定
    */
   updateReviewInfo(
     dirAbsolutePath: string,
     fileName: string,
     reviewSummary: ReviewSummary | null,
   ): boolean {
-    const metaAbsolutePath = path.join(dirAbsolutePath, 'meta.yaml');
+    const metaAbsolutePath = path.join(dirAbsolutePath, '.dialogoi-meta.yaml');
 
     try {
       const metaUri = this.fileRepository.createFileUri(metaAbsolutePath);
@@ -153,7 +153,7 @@ export class MetaYamlService {
         delete fileItem.review_count;
       }
 
-      // meta.yaml を更新
+      // .dialogoi-meta.yaml を更新
       const updatedContent = MetaYamlUtils.stringifyMetaYaml(meta);
       this.fileRepository.writeFileSync(metaUri, updatedContent, 'utf-8');
 
@@ -165,7 +165,7 @@ export class MetaYamlService {
   }
 
   /**
-   * meta.yaml からレビュー情報を削除
+   * .dialogoi-meta.yaml からレビュー情報を削除
    */
   removeReviewInfo(dirAbsolutePath: string, fileName: string): boolean {
     return this.updateReviewInfo(dirAbsolutePath, fileName, null);

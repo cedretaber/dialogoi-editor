@@ -55,7 +55,7 @@ export interface ReviewFile {
 }
 
 /**
- * meta.yaml でのレビュー数サマリー
+ * .dialogoi-meta.yaml でのレビュー数サマリー
  */
 export interface ReviewSummary {
   open: number;

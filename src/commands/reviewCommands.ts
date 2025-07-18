@@ -177,7 +177,7 @@ async function addReviewHandler(reviewService: ReviewService, fileItem: FileItem
 
   const reviewIndex = reviewService.addReview(targetRelativeFilePath, reviewOptions);
 
-  // meta.yaml を更新
+  // .dialogoi-meta.yaml を更新
   const reviewSummary = reviewService.getReviewSummary(targetRelativeFilePath);
   const dirAbsolutePath = path.dirname(fileItem.path);
   const fileName = path.basename(fileItem.path);
@@ -304,7 +304,7 @@ async function updateReviewStatusHandler(
     status: selectedStatus.value as 'open' | 'in_progress' | 'resolved' | 'dismissed',
   });
 
-  // meta.yaml を更新
+  // .dialogoi-meta.yaml を更新
   const reviewSummary = reviewService.getReviewSummary(targetRelativeFilePath);
   const dirAbsolutePath = path.dirname(fileItem.path);
   const fileName = path.basename(fileItem.path);
@@ -376,7 +376,7 @@ async function deleteReviewHandler(
 
   reviewService.deleteReview(targetRelativeFilePath, selectedReview.value);
 
-  // meta.yaml を更新
+  // .dialogoi-meta.yaml を更新
   const reviewSummary = reviewService.getReviewSummary(targetRelativeFilePath);
   const dirAbsolutePath = path.dirname(fileItem.path);
   const fileName = path.basename(fileItem.path);

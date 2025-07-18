@@ -84,7 +84,7 @@ export class ProjectCreationService {
       }
       result.createdFiles?.push(...(dialogoiResult.createdFiles || []));
 
-      // 4. 既存ファイルの再帰的スキャンとmeta.yaml生成
+      // 4. 既存ファイルの再帰的スキャンと.dialogoi-meta.yaml生成
       const scanResult = await this.scanAndCreateMetaYaml(projectRootAbsolutePath, options);
       if (!scanResult.success) {
         result.message = scanResult.message;
@@ -169,7 +169,7 @@ export class ProjectCreationService {
   }
 
   /**
-   * 既存ファイルを再帰的にスキャンしてmeta.yamlを生成
+   * 既存ファイルを再帰的にスキャンして.dialogoi-meta.yamlを生成
    */
   private async scanAndCreateMetaYaml(
     projectRootAbsolutePath: string,
@@ -215,7 +215,7 @@ export class ProjectCreationService {
   }
 
   /**
-   * ディレクトリを再帰的にスキャンしてmeta.yamlを作成
+   * ディレクトリを再帰的にスキャンして.dialogoi-meta.yamlを作成
    */
   private async scanDirectoryRecursively(
     currentAbsolutePath: string,
@@ -268,8 +268,8 @@ export class ProjectCreationService {
       }
     }
 
-    // meta.yamlを作成または更新
-    const metaYamlPath = path.join(currentAbsolutePath, 'meta.yaml');
+    // .dialogoi-meta.yamlを作成または更新
+    const metaYamlPath = path.join(currentAbsolutePath, '.dialogoi-meta.yaml');
     const metaYamlUri = this.fileRepository.createFileUri(metaYamlPath);
     const metaYamlExists = this.fileRepository.existsSync(metaYamlUri);
 
@@ -297,7 +297,7 @@ export class ProjectCreationService {
   }
 
   /**
-   * ファイルリストからmeta.yamlを作成
+   * ファイルリストから.dialogoi-meta.yamlを作成
    */
   private createMetaYamlFromFiles(files: string[], readmeFilename: string): MetaYaml {
     const metaYaml: MetaYaml = {
@@ -306,8 +306,8 @@ export class ProjectCreationService {
     };
 
     for (const fileName of files) {
-      // meta.yamlとREADMEファイルはスキップ
-      if (fileName === 'meta.yaml' || fileName === readmeFilename) {
+      // .dialogoi-meta.yamlとREADMEファイルはスキップ
+      if (fileName === '.dialogoi-meta.yaml' || fileName === readmeFilename) {
         continue;
       }
 

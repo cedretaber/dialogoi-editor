@@ -41,7 +41,7 @@ suite('ReferenceManager テストスイート', () => {
     mockFileRepository.addDirectory(testDir);
     mockFileRepository.addFile(path.join(testDir, 'dialogoi.yaml'), 'version: 1.0');
 
-    // ルートのmeta.yamlを作成
+    // ルートの.dialogoi-meta.yamlを作成
     const rootMeta = `readme: README.md
 files:
   - name: contents
@@ -49,9 +49,9 @@ files:
   - name: settings
     type: subdirectory
 `;
-    mockFileRepository.addFile(path.join(testDir, 'meta.yaml'), rootMeta);
+    mockFileRepository.addFile(path.join(testDir, '.dialogoi-meta.yaml'), rootMeta);
 
-    // contentsディレクトリとmeta.yamlを作成
+    // contentsディレクトリと.dialogoi-meta.yamlを作成
     const contentsDir = path.join(testDir, 'contents');
     mockFileRepository.addDirectory(contentsDir);
 
@@ -67,11 +67,11 @@ files:
     references:
       - settings/magic.md
 `;
-    mockFileRepository.addFile(path.join(contentsDir, 'meta.yaml'), contentsMeta);
+    mockFileRepository.addFile(path.join(contentsDir, '.dialogoi-meta.yaml'), contentsMeta);
     mockFileRepository.addFile(path.join(contentsDir, 'chapter1.txt'), 'Chapter 1 content');
     mockFileRepository.addFile(path.join(contentsDir, 'chapter2.txt'), 'Chapter 2 content');
 
-    // settingsディレクトリとmeta.yamlを作成
+    // settingsディレクトリと.dialogoi-meta.yamlを作成
     const settingsDir = path.join(testDir, 'settings');
     mockFileRepository.addDirectory(settingsDir);
 
@@ -84,11 +84,11 @@ files:
   - name: characters
     type: subdirectory
 `;
-    mockFileRepository.addFile(path.join(settingsDir, 'meta.yaml'), settingsMeta);
+    mockFileRepository.addFile(path.join(settingsDir, '.dialogoi-meta.yaml'), settingsMeta);
     mockFileRepository.addFile(path.join(settingsDir, 'world.md'), 'World setting');
     mockFileRepository.addFile(path.join(settingsDir, 'magic.md'), 'Magic system');
 
-    // settings/charactersディレクトリとmeta.yamlを作成
+    // settings/charactersディレクトリと.dialogoi-meta.yamlを作成
     const charactersDir = path.join(settingsDir, 'characters');
     mockFileRepository.addDirectory(charactersDir);
 
@@ -100,7 +100,7 @@ files:
       importance: main
       multiple_characters: false
 `;
-    mockFileRepository.addFile(path.join(charactersDir, 'meta.yaml'), charactersMeta);
+    mockFileRepository.addFile(path.join(charactersDir, '.dialogoi-meta.yaml'), charactersMeta);
     mockFileRepository.addFile(path.join(charactersDir, 'hero.md'), 'Hero character');
   }
 
