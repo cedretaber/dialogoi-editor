@@ -212,42 +212,42 @@ export class MetaYamlUtils {
       const content = fileOperationService.readFileSync(metaUri, 'utf-8');
       const meta = yaml.load(content) as MetaYaml;
 
-        const fileItem = meta.files.find((item) => item.name === fileName);
-        if (!fileItem) {
-          return false;
+      const fileItem = meta.files.find((item) => item.name === fileName);
+      if (!fileItem) {
+        return false;
+      }
+
+      if (
+        reviewSummary &&
+        (reviewSummary.open > 0 ||
+          (reviewSummary.resolved !== undefined && reviewSummary.resolved > 0))
+      ) {
+        // レビューが存在する場合
+        const filePathInDir = path.join(path.basename(dirAbsolutePath), fileName);
+        fileItem.reviews = this.generateReviewFilePath(filePathInDir);
+
+        // レビューサマリーを設定（0でない値のみ）
+        fileItem.review_count = { open: reviewSummary.open };
+        if (reviewSummary.in_progress !== undefined && reviewSummary.in_progress > 0) {
+          fileItem.review_count.in_progress = reviewSummary.in_progress;
         }
-
-        if (
-          reviewSummary &&
-          (reviewSummary.open > 0 ||
-            (reviewSummary.resolved !== undefined && reviewSummary.resolved > 0))
-        ) {
-          // レビューが存在する場合
-          const filePathInDir = path.join(path.basename(dirAbsolutePath), fileName);
-          fileItem.reviews = this.generateReviewFilePath(filePathInDir);
-
-          // レビューサマリーを設定（0でない値のみ）
-          fileItem.review_count = { open: reviewSummary.open };
-          if (reviewSummary.in_progress !== undefined && reviewSummary.in_progress > 0) {
-            fileItem.review_count.in_progress = reviewSummary.in_progress;
-          }
-          if (reviewSummary.resolved !== undefined && reviewSummary.resolved > 0) {
-            fileItem.review_count.resolved = reviewSummary.resolved;
-          }
-          if (reviewSummary.dismissed !== undefined && reviewSummary.dismissed > 0) {
-            fileItem.review_count.dismissed = reviewSummary.dismissed;
-          }
-        } else {
-          // レビューが存在しない場合は削除
-          delete fileItem.reviews;
-          delete fileItem.review_count;
+        if (reviewSummary.resolved !== undefined && reviewSummary.resolved > 0) {
+          fileItem.review_count.resolved = reviewSummary.resolved;
         }
+        if (reviewSummary.dismissed !== undefined && reviewSummary.dismissed > 0) {
+          fileItem.review_count.dismissed = reviewSummary.dismissed;
+        }
+      } else {
+        // レビューが存在しない場合は削除
+        delete fileItem.reviews;
+        delete fileItem.review_count;
+      }
 
-        // meta.yaml を更新
-        const updatedContent = yaml.dump(meta, { indent: 2 });
-        fileOperationService.writeFileSync(metaUri, updatedContent, 'utf-8');
+      // meta.yaml を更新
+      const updatedContent = yaml.dump(meta, { indent: 2 });
+      fileOperationService.writeFileSync(metaUri, updatedContent, 'utf-8');
 
-        return true;
+      return true;
     } catch (error) {
       console.error('レビュー情報の更新に失敗しました:', error);
       return false;

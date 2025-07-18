@@ -134,7 +134,7 @@ export class DialogoiTreeDataProvider implements vscode.TreeDataProvider<Dialogo
   getChildren(element?: DialogoiTreeItem): Promise<DialogoiTreeItem[]> {
     console.log('getChildren 呼び出し, element:', element?.name || 'ルート');
     console.log('novelRoot:', this.novelRoot);
-    
+
     if (this.novelRoot === null) {
       console.log('novelRoot が null のため空配列を返す');
       return Promise.resolve([]);
