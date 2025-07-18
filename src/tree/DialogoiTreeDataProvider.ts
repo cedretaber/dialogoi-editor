@@ -14,20 +14,29 @@ export class DialogoiTreeDataProvider implements vscode.TreeDataProvider<Dialogo
   private novelRoot: string | null = null;
 
   constructor() {
+    console.log('DialogoiTreeDataProvider コンストラクタ開始');
     this.workspaceRoot = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath ?? '';
+    console.log('Workspace root:', this.workspaceRoot);
     this.findNovelRoot();
+    console.log('DialogoiTreeDataProvider コンストラクタ完了');
   }
 
   private findNovelRoot(): void {
-    this.novelRoot = MetaYamlUtils.findNovelRoot(this.workspaceRoot);
+    console.log('findNovelRoot 開始');
+    const fileOperationService = ServiceContainer.getInstance().getFileOperationService();
+    this.novelRoot = MetaYamlUtils.findNovelRoot(this.workspaceRoot, fileOperationService);
+    console.log('Novel root 検出結果:', this.novelRoot);
     if (this.novelRoot !== null) {
       // コンテキストにノベルプロジェクトが存在することを設定
+      console.log('Novel project context設定');
       vscode.commands.executeCommand('setContext', 'dialogoi:hasNovelProject', true);
 
       // 参照関係を初期化
+      console.log('ReferenceManager初期化開始');
       const referenceManager = ReferenceManager.getInstance();
       const fileOperationService = ServiceContainer.getInstance().getFileOperationService();
       referenceManager.initialize(this.novelRoot, fileOperationService);
+      console.log('ReferenceManager初期化完了');
     }
   }
 
@@ -123,35 +132,52 @@ export class DialogoiTreeDataProvider implements vscode.TreeDataProvider<Dialogo
   }
 
   getChildren(element?: DialogoiTreeItem): Promise<DialogoiTreeItem[]> {
+    console.log('getChildren 呼び出し, element:', element?.name || 'ルート');
+    console.log('novelRoot:', this.novelRoot);
+    
     if (this.novelRoot === null) {
+      console.log('novelRoot が null のため空配列を返す');
       return Promise.resolve([]);
     }
 
     if (element) {
       // サブディレクトリの場合、その中のmeta.yamlを読み込む
-      return Promise.resolve(this.loadMetaYaml(element.path));
+      console.log('サブディレクトリのmeta.yaml読み込み:', element.path);
+      const result = this.loadMetaYaml(element.path);
+      console.log('サブディレクトリ結果:', result);
+      return Promise.resolve(result);
     } else {
       // ルートの場合、ノベルルートのmeta.yamlを読み込む
-      return Promise.resolve(this.loadMetaYaml(this.novelRoot));
+      console.log('ルートのmeta.yaml読み込み:', this.novelRoot);
+      const result = this.loadMetaYaml(this.novelRoot);
+      console.log('ルート結果:', result);
+      return Promise.resolve(result);
     }
   }
 
   private loadMetaYaml(dirPath: string): DialogoiTreeItem[] {
-    const meta = MetaYamlUtils.loadMetaYaml(dirPath);
+    console.log('loadMetaYaml 呼び出し, dirPath:', dirPath);
+    const fileOperationService = ServiceContainer.getInstance().getFileOperationService();
+    const meta = MetaYamlUtils.loadMetaYaml(dirPath, fileOperationService);
+    console.log('loadMetaYaml 結果:', meta);
 
     if (meta === null) {
+      console.log('meta が null のため空配列を返す');
       return [];
     }
 
     // ファイルの絶対パスを設定
-    return meta.files.map((file) => ({
+    const result = meta.files.map((file) => ({
       ...file,
       path: path.join(dirPath, file.name),
     }));
+    console.log('最終的な結果:', result);
+    return result;
   }
 
   private getReadmeFilePath(dirPath: string): string | null {
-    return MetaYamlUtils.getReadmeFilePath(dirPath);
+    const fileOperationService = ServiceContainer.getInstance().getFileOperationService();
+    return MetaYamlUtils.getReadmeFilePath(dirPath, fileOperationService);
   }
 
   // ファイル操作メソッド

@@ -20,6 +20,10 @@
     "japanese"
   ],
   "main": "./out/extension.js",
+  "activationEvents": [
+    "onStartupFinished",
+    "workspaceContains:**/dialogoi.yaml"
+  ],
   "contributes": {
     "views": {
       "explorer": [

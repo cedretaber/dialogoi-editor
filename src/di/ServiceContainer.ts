@@ -47,11 +47,12 @@ export class ServiceContainer {
    */
   getFileOperationService(): FileOperationService {
     if (!this.fileOperationService) {
-      throw new Error('FileOperationServiceが初期化されていません。VSCodeServiceContainer.initialize()を使用してください。');
+      throw new Error(
+        'FileOperationServiceが初期化されていません。VSCodeServiceContainer.initialize()を使用してください。',
+      );
     }
     return this.fileOperationService;
   }
-
 
   /**
    * CharacterServiceを取得
@@ -98,7 +99,11 @@ export class ServiceContainer {
    */
   getReviewService(workspaceRoot: Uri): ReviewService {
     if (!this.reviewService) {
-      this.reviewService = new ReviewService(this.getFileOperationService(), this.getHashService(), workspaceRoot);
+      this.reviewService = new ReviewService(
+        this.getFileOperationService(),
+        this.getHashService(),
+        workspaceRoot,
+      );
     }
     return this.reviewService;
   }

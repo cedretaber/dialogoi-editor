@@ -32,7 +32,10 @@ suite('ForeshadowingService', () => {
       path.join(foreshadowingsDir, 'mystery.md'),
       '# 謎の手がかり\n\n重要な伏線の説明',
     );
-    mockFileService.addFile(path.join(foreshadowingsDir, 'no-heading.md'), '伏線の内容（見出しなし）');
+    mockFileService.addFile(
+      path.join(foreshadowingsDir, 'no-heading.md'),
+      '伏線の内容（見出しなし）',
+    );
   });
 
   teardown(() => {

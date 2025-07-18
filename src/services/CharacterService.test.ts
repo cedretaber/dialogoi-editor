@@ -14,7 +14,7 @@ suite('CharacterService テストスイート', () => {
     mockFileService = new MockFileOperationService();
     characterService = new CharacterService(mockFileService);
     testDir = '/tmp/dialogoi-character-test';
-    
+
     // テスト用ディレクトリを作成
     mockFileService.addDirectory(testDir);
   });

@@ -16,10 +16,10 @@ describe('ReviewService テストスイート', () => {
     // テスト用サービスコンテナを初期化
     const container = TestServiceContainer.getInstance();
     container.reset();
-    
+
     // モックファイルサービスを取得
     mockFileOperationService = container.getMockFileOperationService();
-    
+
     // テスト用のワークスペースを設定
     workspaceRootPath = '/workspace';
     const workspaceRoot = mockFileOperationService.createFileUri(workspaceRootPath);

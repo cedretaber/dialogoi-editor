@@ -3,7 +3,18 @@ import { DialogoiTreeItem } from '../utils/MetaYamlUtils.js';
 import { ForeshadowingData } from '../services/ForeshadowingService.js';
 
 // TypeScriptの型定義を拡張
-type BufferEncoding = 'ascii' | 'utf8' | 'utf-8' | 'utf16le' | 'ucs2' | 'ucs-2' | 'base64' | 'base64url' | 'latin1' | 'binary' | 'hex';
+type BufferEncoding =
+  | 'ascii'
+  | 'utf8'
+  | 'utf-8'
+  | 'utf16le'
+  | 'ucs2'
+  | 'ucs-2'
+  | 'base64'
+  | 'base64url'
+  | 'latin1'
+  | 'binary'
+  | 'hex';
 
 /**
  * ファイル操作の結果を表すインターフェイス
@@ -75,7 +86,10 @@ export abstract class FileOperationService {
   /**
    * ディレクトリの内容を読み込む
    */
-  abstract readdirSync(uri: Uri, options?: { withFileTypes?: boolean }): string[] | DirectoryEntry[];
+  abstract readdirSync(
+    uri: Uri,
+    options?: { withFileTypes?: boolean },
+  ): string[] | DirectoryEntry[];
 
   /**
    * ファイルの統計情報を取得

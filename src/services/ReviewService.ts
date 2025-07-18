@@ -21,7 +21,7 @@ export class ReviewService {
   constructor(
     private fileOperationService: FileOperationService,
     private hashService: HashService,
-    workspaceRoot: Uri
+    workspaceRoot: Uri,
   ) {
     this.workspaceRoot = workspaceRoot;
   }
@@ -83,7 +83,10 @@ export class ReviewService {
     try {
       // 対象ファイルと同じディレクトリに保存するため、そのディレクトリを作成
       const reviewRelativeDirPath = path.dirname(this.getReviewFilePath(targetRelativeFilePath));
-      const reviewDir = this.fileOperationService.joinPath(this.workspaceRoot, reviewRelativeDirPath);
+      const reviewDir = this.fileOperationService.joinPath(
+        this.workspaceRoot,
+        reviewRelativeDirPath,
+      );
       if (!this.fileOperationService.existsSync(reviewDir)) {
         this.fileOperationService.mkdirSync(reviewDir);
       }
@@ -104,7 +107,10 @@ export class ReviewService {
    * @returns 追加されたレビューのインデックス
    */
   addReview(targetRelativeFilePath: string, options: CreateReviewOptions): number {
-    const targetFileUri = this.fileOperationService.joinPath(this.workspaceRoot, targetRelativeFilePath);
+    const targetFileUri = this.fileOperationService.joinPath(
+      this.workspaceRoot,
+      targetRelativeFilePath,
+    );
     const fileHash = this.hashService.calculateFileHash(targetFileUri);
 
     let reviewFile = this.loadReviewFile(targetRelativeFilePath);
@@ -282,7 +288,10 @@ export class ReviewService {
       return false;
     }
 
-    const targetFileUri = this.fileOperationService.joinPath(this.workspaceRoot, targetRelativeFilePath);
+    const targetFileUri = this.fileOperationService.joinPath(
+      this.workspaceRoot,
+      targetRelativeFilePath,
+    );
     const currentHash = this.hashService.calculateFileHash(targetFileUri);
 
     return currentHash !== reviewFile.file_hash;

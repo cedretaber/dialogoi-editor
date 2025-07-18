@@ -84,7 +84,11 @@ export class TestServiceContainer {
    */
   getReviewService(workspaceRoot: Uri): ReviewService {
     if (!this.reviewService) {
-      this.reviewService = new ReviewService(this.fileOperationService, this.getHashService(), workspaceRoot);
+      this.reviewService = new ReviewService(
+        this.fileOperationService,
+        this.getHashService(),
+        workspaceRoot,
+      );
     }
     return this.reviewService;
   }

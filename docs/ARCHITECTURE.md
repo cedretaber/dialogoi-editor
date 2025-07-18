@@ -46,19 +46,145 @@
 │  └─ Commands (コマンドパレット)                 │
 ├─────────────────────────────────────────────────┤
 │  Business Logic Layer                           │
-│  ├─ FileOperationService ✅ (ファイル操作)      │
+│  ├─ CharacterService ✅ (キャラクター管理)      │
+│  ├─ ForeshadowingService ✅ (伏線管理)          │
 │  ├─ ReferenceManager ✅ (参照関係管理)          │
-│  ├─ MetaYamlUtils ✅ (meta.yaml管理)            │
 │  ├─ ReviewService ✅ (レビュー管理)             │
 │  ├─ HashService ✅ (ハッシュ計算)               │
+│  ├─ MetaYamlUtils ✅ (meta.yaml管理)            │
 │  ├─ File Watcher (予定) (ファイル監視)          │
 │  └─ Validation Service (バリデーション)         │
 ├─────────────────────────────────────────────────┤
+│  Abstraction Layer ✅ (DI Container)            │
+│  ├─ FileOperationService Interface             │
+│  ├─ Uri Interface                               │
+│  ├─ ServiceContainer (DI管理)                  │
+│  ├─ VSCodeServiceContainer (本番環境)          │
+│  └─ TestServiceContainer (テスト環境)          │
+├─────────────────────────────────────────────────┤
 │  Data Access Layer                              │
-│  ├─ File System API                             │
+│  ├─ VSCodeFileOperationService ✅ (本番実装)   │
+│  ├─ MockFileOperationService ✅ (テスト実装)   │
 │  ├─ YAML Parser/Writer                          │
 │  └─ Cache Manager                               │
 └─────────────────────────────────────────────────┘
+```
+
+## 依存関係注入（DI）アーキテクチャ ✅
+
+### 設計思想
+
+このプロジェクトでは **VSCode依存の局所化** と **テスト可能性の向上** を目的として、依存関係注入（Dependency Injection）パターンを採用しています。
+
+### 主要な抽象化レイヤー
+
+#### 1. FileOperationService Interface
+```typescript
+export abstract class FileOperationService {
+  abstract existsSync(uri: Uri): boolean;
+  abstract readFileSync(uri: Uri, encoding?: BufferEncoding): string;
+  abstract writeFileSync(uri: Uri, data: string | Buffer, encoding?: BufferEncoding): void;
+  // ... その他のファイル操作メソッド
+}
+```
+
+#### 2. Uri Interface
+```typescript
+export interface Uri {
+  readonly scheme: string;
+  readonly authority: string;
+  readonly path: string;
+  readonly fsPath: string;
+  toString(): string;
+  toJSON(): object;
+}
+```
+
+### 具象実装
+
+#### 1. VSCodeFileOperationService (本番環境)
+- `vscode.workspace.fs` およびNode.js `fs` モジュールを使用
+- 実際のファイルシステムとの相互作用を担当
+- VSCode環境でのみ動作
+
+#### 2. MockFileOperationService (テスト環境)
+- インメモリでファイルシステムを模擬
+- 単体テストでの高速実行を実現
+- VSCode環境に依存しない
+
+### DI Container
+
+#### ServiceContainer
+```typescript
+export class ServiceContainer {
+  private static instance: ServiceContainer;
+  
+  getFileOperationService(): FileOperationService { ... }
+  getCharacterService(): CharacterService { ... }
+  getForeshadowingService(): ForeshadowingService { ... }
+  // ... その他のサービス取得メソッド
+}
+```
+
+#### VSCodeServiceContainer (本番環境初期化)
+```typescript
+export class VSCodeServiceContainer {
+  static async initialize(): Promise<ServiceContainer> {
+    const container = ServiceContainer.getInstance();
+    const fileOperationService = new VSCodeFileOperationService();
+    container.setFileOperationService(fileOperationService);
+    return container;
+  }
+}
+```
+
+#### TestServiceContainer (テスト環境初期化)
+```typescript
+export class TestServiceContainer {
+  static create(): ServiceContainer {
+    const container = new ServiceContainer();
+    const mockFileOperationService = new MockFileOperationService();
+    container.setFileOperationService(mockFileOperationService);
+    return container;
+  }
+}
+```
+
+### 利点
+
+1. **テスト可能性**: MockFileOperationServiceにより、ファイルシステムに依存しない高速なテストが可能
+2. **VSCode依存の局所化**: ビジネスロジックからVSCode固有のコードを分離
+3. **保守性**: インターフェースを変更せずに実装を差し替え可能
+4. **型安全性**: TypeScriptの型システムを活用した安全なコード
+
+### 使用方法
+
+#### サービスクラスでの使用
+```typescript
+export class CharacterService {
+  constructor(private fileOperationService: FileOperationService) {}
+  
+  extractDisplayName(fileAbsolutePath: string): string {
+    const uri = this.fileOperationService.createFileUri(fileAbsolutePath);
+    if (this.fileOperationService.existsSync(uri)) {
+      const content = this.fileOperationService.readFileSync(uri, 'utf8');
+      // ... 処理
+    }
+    return fileName;
+  }
+}
+```
+
+#### 拡張機能での初期化
+```typescript
+export async function activate(context: vscode.ExtensionContext): Promise<void> {
+  // VSCode環境でServiceContainerを初期化
+  await VSCodeServiceContainer.initialize();
+  
+  // 以降、ServiceContainerから各サービスを取得して使用
+  const treeDataProvider = new DialogoiTreeDataProvider();
+  // ...
+}
 ```
 
 ## 主要コンポーネント

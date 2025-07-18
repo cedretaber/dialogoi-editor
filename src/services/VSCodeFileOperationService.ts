@@ -1,7 +1,13 @@
 import * as vscode from 'vscode';
 import * as path from 'path';
 import * as yaml from 'js-yaml';
-import { FileOperationService, FileOperationResult, FileStats, DirectoryEntry } from '../interfaces/FileOperationService.js';
+import * as fs from 'fs';
+import {
+  FileOperationService,
+  FileOperationResult,
+  FileStats,
+  DirectoryEntry,
+} from '../interfaces/FileOperationService.js';
 import { Uri } from '../interfaces/Uri.js';
 import { MetaYamlUtils, DialogoiTreeItem, MetaYaml } from '../utils/MetaYamlUtils.js';
 import { ForeshadowingData } from './ForeshadowingService.js';
@@ -16,17 +22,35 @@ class VSCodeUri implements Uri {
     this._uri = uri;
   }
 
-  get scheme(): string { return this._uri.scheme; }
-  get authority(): string { return this._uri.authority; }
-  get path(): string { return this._uri.path; }
-  get query(): string { return this._uri.query; }
-  get fragment(): string { return this._uri.fragment; }
-  get fsPath(): string { return this._uri.fsPath; }
+  get scheme(): string {
+    return this._uri.scheme;
+  }
+  get authority(): string {
+    return this._uri.authority;
+  }
+  get path(): string {
+    return this._uri.path;
+  }
+  get query(): string {
+    return this._uri.query;
+  }
+  get fragment(): string {
+    return this._uri.fragment;
+  }
+  get fsPath(): string {
+    return this._uri.fsPath;
+  }
 
-  toString(): string { return this._uri.toString(); }
-  toJSON(): object { return this._uri.toJSON(); }
+  toString(): string {
+    return this._uri.toString();
+  }
+  toJSON(): object {
+    return this._uri.toJSON();
+  }
 
-  get vsCodeUri(): vscode.Uri { return this._uri; }
+  get vsCodeUri(): vscode.Uri {
+    return this._uri;
+  }
 }
 
 /**
@@ -39,11 +63,21 @@ class VSCodeFileStats implements FileStats {
     this._stat = stat;
   }
 
-  isFile(): boolean { return this._stat.type === vscode.FileType.File; }
-  isDirectory(): boolean { return this._stat.type === vscode.FileType.Directory; }
-  get size(): number { return this._stat.size; }
-  get mtime(): Date { return new Date(this._stat.mtime); }
-  get birthtime(): Date { return new Date(this._stat.ctime); }
+  isFile(): boolean {
+    return this._stat.type === vscode.FileType.File;
+  }
+  isDirectory(): boolean {
+    return this._stat.type === vscode.FileType.Directory;
+  }
+  get size(): number {
+    return this._stat.size;
+  }
+  get mtime(): Date {
+    return new Date(this._stat.mtime);
+  }
+  get birthtime(): Date {
+    return new Date(this._stat.ctime);
+  }
 }
 
 /**
@@ -58,16 +92,21 @@ class VSCodeDirectoryEntry implements DirectoryEntry {
     this._type = type;
   }
 
-  get name(): string { return this._name; }
-  isFile(): boolean { return this._type === vscode.FileType.File; }
-  isDirectory(): boolean { return this._type === vscode.FileType.Directory; }
+  get name(): string {
+    return this._name;
+  }
+  isFile(): boolean {
+    return this._type === vscode.FileType.File;
+  }
+  isDirectory(): boolean {
+    return this._type === vscode.FileType.Directory;
+  }
 }
 
 /**
  * VSCodeのファイル操作APIを使用した具象実装
  */
 export class VSCodeFileOperationService extends FileOperationService {
-  
   // === 基本的なファイル操作メソッド ===
 
   existsSync(uri: Uri): boolean {
@@ -76,7 +115,6 @@ export class VSCodeFileOperationService extends FileOperationService {
       // VSCodeのファイル操作は非同期だが、同期的に実行するためにPromiseを同期的に待つ
       // 実際の実装では、VSCodeの同期的なファイル操作がない場合があるため、
       // 一時的にfs.existsSyncを使用する
-      const fs = require('fs');
       return fs.existsSync(vsCodeUri.fsPath);
     } catch {
       return false;
@@ -90,10 +128,11 @@ export class VSCodeFileOperationService extends FileOperationService {
     const vsCodeUri = (uri as VSCodeUri).vsCodeUri;
     try {
       // 同様に、一時的にfs.readFileSyncを使用
-      const fs = require('fs');
       return fs.readFileSync(vsCodeUri.fsPath, encoding);
     } catch (error) {
-      throw new Error(`ファイル読み込みエラー: ${error instanceof Error ? error.message : String(error)}`);
+      throw new Error(
+        `ファイル読み込みエラー: ${error instanceof Error ? error.message : String(error)}`,
+      );
     }
   }
 
@@ -101,89 +140,107 @@ export class VSCodeFileOperationService extends FileOperationService {
     const vsCodeUri = (uri as VSCodeUri).vsCodeUri;
     try {
       // 同様に、一時的にfs.writeFileSyncを使用
-      const fs = require('fs');
+      // fs is imported at the top of the file
       fs.writeFileSync(vsCodeUri.fsPath, data, encoding);
     } catch (error) {
-      throw new Error(`ファイル書き込みエラー: ${error instanceof Error ? error.message : String(error)}`);
+      throw new Error(
+        `ファイル書き込みエラー: ${error instanceof Error ? error.message : String(error)}`,
+      );
     }
   }
 
   mkdirSync(uri: Uri): void {
     const vsCodeUri = (uri as VSCodeUri).vsCodeUri;
     try {
-      const fs = require('fs');
+      // fs is imported at the top of the file
       fs.mkdirSync(vsCodeUri.fsPath);
     } catch (error) {
-      throw new Error(`ディレクトリ作成エラー: ${error instanceof Error ? error.message : String(error)}`);
+      throw new Error(
+        `ディレクトリ作成エラー: ${error instanceof Error ? error.message : String(error)}`,
+      );
     }
   }
 
   unlinkSync(uri: Uri): void {
     const vsCodeUri = (uri as VSCodeUri).vsCodeUri;
     try {
-      const fs = require('fs');
+      // fs is imported at the top of the file
       fs.unlinkSync(vsCodeUri.fsPath);
     } catch (error) {
-      throw new Error(`ファイル削除エラー: ${error instanceof Error ? error.message : String(error)}`);
+      throw new Error(
+        `ファイル削除エラー: ${error instanceof Error ? error.message : String(error)}`,
+      );
     }
   }
 
   rmSync(uri: Uri, options?: { recursive?: boolean; force?: boolean }): void {
     const vsCodeUri = (uri as VSCodeUri).vsCodeUri;
     try {
-      const fs = require('fs');
+      // fs is imported at the top of the file
       fs.rmSync(vsCodeUri.fsPath, options);
     } catch (error) {
-      throw new Error(`ディレクトリ削除エラー: ${error instanceof Error ? error.message : String(error)}`);
+      throw new Error(
+        `ディレクトリ削除エラー: ${error instanceof Error ? error.message : String(error)}`,
+      );
     }
   }
 
   readdirSync(uri: Uri, options?: { withFileTypes?: boolean }): string[] | DirectoryEntry[] {
     const vsCodeUri = (uri as VSCodeUri).vsCodeUri;
     try {
-      const fs = require('fs');
-      const results = fs.readdirSync(vsCodeUri.fsPath, options);
-      
       if (options?.withFileTypes) {
-        return results.map((dirent: any) => 
-          new VSCodeDirectoryEntry(dirent.name, dirent.isDirectory() ? vscode.FileType.Directory : vscode.FileType.File)
+        const results = fs.readdirSync(vsCodeUri.fsPath, { withFileTypes: true });
+        return results.map(
+          (dirent: fs.Dirent) =>
+            new VSCodeDirectoryEntry(
+              dirent.name,
+              dirent.isDirectory() ? vscode.FileType.Directory : vscode.FileType.File,
+            ),
         );
+      } else {
+        const results = fs.readdirSync(vsCodeUri.fsPath);
+        return results;
       }
-      return results;
     } catch (error) {
-      throw new Error(`ディレクトリ読み込みエラー: ${error instanceof Error ? error.message : String(error)}`);
+      throw new Error(
+        `ディレクトリ読み込みエラー: ${error instanceof Error ? error.message : String(error)}`,
+      );
     }
   }
 
   statSync(uri: Uri): FileStats {
     const vsCodeUri = (uri as VSCodeUri).vsCodeUri;
     try {
-      const fs = require('fs');
+      // fs is imported at the top of the file
       const stat = fs.statSync(vsCodeUri.fsPath);
       return new VSCodeFileStats({
         type: stat.isDirectory() ? vscode.FileType.Directory : vscode.FileType.File,
         size: stat.size,
         mtime: stat.mtime.getTime(),
-        ctime: stat.birthtime.getTime()
+        ctime: stat.birthtime.getTime(),
       });
     } catch (error) {
-      throw new Error(`ファイル統計情報取得エラー: ${error instanceof Error ? error.message : String(error)}`);
+      throw new Error(
+        `ファイル統計情報取得エラー: ${error instanceof Error ? error.message : String(error)}`,
+      );
     }
   }
 
   lstatSync(uri: Uri): FileStats {
     const vsCodeUri = (uri as VSCodeUri).vsCodeUri;
     try {
-      const fs = require('fs');
+      // fs is imported at the top of the file
       const stat = fs.lstatSync(vsCodeUri.fsPath);
       return new VSCodeFileStats({
         type: stat.isDirectory() ? vscode.FileType.Directory : vscode.FileType.File,
         size: stat.size,
         mtime: stat.mtime.getTime(),
-        ctime: stat.birthtime.getTime()
+        ctime: stat.birthtime.getTime(),
       });
     } catch (error) {
-      throw new Error(`ファイル統計情報取得エラー: ${error instanceof Error ? error.message : String(error)}`);
+      throw new Error(
+        `ファイル統計情報取得エラー: ${error instanceof Error ? error.message : String(error)}`,
+      );
     }
   }
 
@@ -191,10 +248,12 @@ export class VSCodeFileOperationService extends FileOperationService {
     const oldVsCodeUri = (oldUri as VSCodeUri).vsCodeUri;
     const newVsCodeUri = (newUri as VSCodeUri).vsCodeUri;
     try {
-      const fs = require('fs');
+      // fs is imported at the top of the file
       fs.renameSync(oldVsCodeUri.fsPath, newVsCodeUri.fsPath);
     } catch (error) {
-      throw new Error(`ファイル名変更エラー: ${error instanceof Error ? error.message : String(error)}`);
+      throw new Error(
+        `ファイル名変更エラー: ${error instanceof Error ? error.message : String(error)}`,
+      );
     }
   }
 
@@ -857,7 +916,7 @@ export class VSCodeFileOperationService extends FileOperationService {
       const metaUri = this.createFileUri(metaPath);
 
       // meta.yamlを読み込み
-      const meta = MetaYamlUtils.loadMetaYaml(dirPath);
+      const meta = MetaYamlUtils.loadMetaYaml(dirPath, this);
       if (meta === null) {
         return {
           success: false,

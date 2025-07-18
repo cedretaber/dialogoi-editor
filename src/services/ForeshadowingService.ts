@@ -17,7 +17,7 @@ export class ForeshadowingService {
   extractDisplayName(fileAbsolutePath: string): string {
     try {
       const fileUri = this.fileOperationService.createFileUri(fileAbsolutePath);
-      
+
       if (!this.fileOperationService.existsSync(fileUri)) {
         return this.getFileNameWithoutExtension(fileAbsolutePath);
       }

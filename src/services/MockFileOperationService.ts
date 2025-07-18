@@ -1,4 +1,9 @@
-import { FileOperationService, FileOperationResult, FileStats, DirectoryEntry } from '../interfaces/FileOperationService.js';
+import {
+  FileOperationService,
+  FileOperationResult,
+  FileStats,
+  DirectoryEntry,
+} from '../interfaces/FileOperationService.js';
 import { Uri } from '../interfaces/Uri.js';
 import { MetaYamlUtils, DialogoiTreeItem, MetaYaml } from '../utils/MetaYamlUtils.js';
 import { ForeshadowingData } from './ForeshadowingService.js';
@@ -6,7 +11,18 @@ import * as path from 'path';
 import * as yaml from 'js-yaml';
 
 // TypeScriptの型定義を拡張
-type BufferEncoding = 'ascii' | 'utf8' | 'utf-8' | 'utf16le' | 'ucs2' | 'ucs-2' | 'base64' | 'base64url' | 'latin1' | 'binary' | 'hex';
+type BufferEncoding =
+  | 'ascii'
+  | 'utf8'
+  | 'utf-8'
+  | 'utf16le'
+  | 'ucs2'
+  | 'ucs-2'
+  | 'base64'
+  | 'base64url'
+  | 'latin1'
+  | 'binary'
+  | 'hex';
 
 /**
  * モック用のUri実装
@@ -14,15 +30,31 @@ type BufferEncoding = 'ascii' | 'utf8' | 'utf-8' | 'utf16le' | 'ucs2' | 'ucs-2' 
 class MockUri implements Uri {
   constructor(private _path: string) {}
 
-  get scheme(): string { return 'file'; }
-  get authority(): string { return ''; }
-  get path(): string { return this._path; }
-  get query(): string { return ''; }
-  get fragment(): string { return ''; }
-  get fsPath(): string { return this._path; }
+  get scheme(): string {
+    return 'file';
+  }
+  get authority(): string {
+    return '';
+  }
+  get path(): string {
+    return this._path;
+  }
+  get query(): string {
+    return '';
+  }
+  get fragment(): string {
+    return '';
+  }
+  get fsPath(): string {
+    return this._path;
+  }
 
-  toString(): string { return `file://${this._path}`; }
-  toJSON(): object { return { scheme: 'file', authority: '', path: this._path, query: '', fragment: '' }; }
+  toString(): string {
+    return `file://${this._path}`;
+  }
+  toJSON(): object {
+    return { scheme: 'file', authority: '', path: this._path, query: '', fragment: '' };
+  }
 }
 
 /**
@@ -34,14 +66,24 @@ class MockFileStats implements FileStats {
     private _isDirectory: boolean,
     private _size: number = 0,
     private _mtime: Date = new Date(),
-    private _birthtime: Date = new Date()
+    private _birthtime: Date = new Date(),
   ) {}
 
-  isFile(): boolean { return this._isFile; }
-  isDirectory(): boolean { return this._isDirectory; }
-  get size(): number { return this._size; }
-  get mtime(): Date { return this._mtime; }
-  get birthtime(): Date { return this._birthtime; }
+  isFile(): boolean {
+    return this._isFile;
+  }
+  isDirectory(): boolean {
+    return this._isDirectory;
+  }
+  get size(): number {
+    return this._size;
+  }
+  get mtime(): Date {
+    return this._mtime;
+  }
+  get birthtime(): Date {
+    return this._birthtime;
+  }
 }
 
 /**
@@ -51,12 +93,18 @@ class MockDirectoryEntry implements DirectoryEntry {
   constructor(
     private _name: string,
     private _isFile: boolean,
-    private _isDirectory: boolean
+    private _isDirectory: boolean,
   ) {}
 
-  get name(): string { return this._name; }
-  isFile(): boolean { return this._isFile; }
-  isDirectory(): boolean { return this._isDirectory; }
+  get name(): string {
+    return this._name;
+  }
+  isFile(): boolean {
+    return this._isFile;
+  }
+  isDirectory(): boolean {
+    return this._isDirectory;
+  }
 }
 
 /**
@@ -118,18 +166,18 @@ export class MockFileOperationService extends FileOperationService {
     if (content === undefined) {
       throw new Error(`ファイルが見つかりません: ${path}`);
     }
-    
+
     if (encoding === null) {
       return Buffer.isBuffer(content) ? content : Buffer.from(content);
     }
-    
+
     return Buffer.isBuffer(content) ? content.toString(encoding || 'utf8') : content;
   }
 
   writeFileSync(uri: Uri, data: string | Buffer, _encoding?: BufferEncoding): void {
     const path = uri.fsPath;
     this.files.set(path, data);
-    
+
     // 親ディレクトリも作成
     const parentDir = path.substring(0, path.lastIndexOf('/'));
     if (parentDir && !this.directories.has(parentDir)) {
@@ -152,15 +200,15 @@ export class MockFileOperationService extends FileOperationService {
 
   rmSync(uri: Uri, options?: { recursive?: boolean; force?: boolean }): void {
     const path = uri.fsPath;
-    
+
     if (this.directories.has(path)) {
       if (options?.recursive === true) {
         // 再帰的に削除
-        const toDelete = Array.from(this.directories).filter(dir => dir.startsWith(path));
-        toDelete.forEach(dir => this.directories.delete(dir));
-        
-        const filesToDelete = Array.from(this.files.keys()).filter(file => file.startsWith(path));
-        filesToDelete.forEach(file => this.files.delete(file));
+        const toDelete = Array.from(this.directories).filter((dir) => dir.startsWith(path));
+        toDelete.forEach((dir) => this.directories.delete(dir));
+
+        const filesToDelete = Array.from(this.files.keys()).filter((file) => file.startsWith(path));
+        filesToDelete.forEach((file) => this.files.delete(file));
       } else {
         this.directories.delete(path);
       }
@@ -173,7 +221,7 @@ export class MockFileOperationService extends FileOperationService {
 
   readdirSync(uri: Uri, options?: { withFileTypes?: boolean }): string[] | DirectoryEntry[] {
     const dirPath = uri.fsPath;
-    
+
     if (!this.directories.has(dirPath)) {
       throw new Error(`ディレクトリが見つかりません: ${dirPath}`);
     }
@@ -208,7 +256,7 @@ export class MockFileOperationService extends FileOperationService {
 
   statSync(uri: Uri): FileStats {
     const path = uri.fsPath;
-    
+
     if (this.files.has(path)) {
       const content = this.files.get(path);
       if (content !== undefined) {
@@ -228,7 +276,7 @@ export class MockFileOperationService extends FileOperationService {
   renameSync(oldUri: Uri, newUri: Uri): void {
     const oldPath = oldUri.fsPath;
     const newPath = newUri.fsPath;
-    
+
     if (this.files.has(oldPath)) {
       const content = this.files.get(oldPath);
       if (content !== undefined) {
@@ -408,7 +456,11 @@ export class MockFileOperationService extends FileOperationService {
     return { success: true, message: '参照追加完了' };
   }
 
-  removeReference(_dirPath: string, _fileName: string, _referencePath: string): FileOperationResult {
+  removeReference(
+    _dirPath: string,
+    _fileName: string,
+    _referencePath: string,
+  ): FileOperationResult {
     // 実装は省略（実際のプロジェクトでは完全に実装する）
     return { success: true, message: '参照削除完了' };
   }
@@ -418,12 +470,20 @@ export class MockFileOperationService extends FileOperationService {
     return { success: true, message: '参照設定完了' };
   }
 
-  setCharacterImportance(_dirPath: string, _fileName: string, _importance: 'main' | 'sub' | 'background'): FileOperationResult {
+  setCharacterImportance(
+    _dirPath: string,
+    _fileName: string,
+    _importance: 'main' | 'sub' | 'background',
+  ): FileOperationResult {
     // 実装は省略（実際のプロジェクトでは完全に実装する）
     return { success: true, message: 'キャラクター重要度設定完了' };
   }
 
-  setMultipleCharacters(_dirPath: string, _fileName: string, _multipleCharacters: boolean): FileOperationResult {
+  setMultipleCharacters(
+    _dirPath: string,
+    _fileName: string,
+    _multipleCharacters: boolean,
+  ): FileOperationResult {
     // 実装は省略（実際のプロジェクトでは完全に実装する）
     return { success: true, message: '複数キャラクター設定完了' };
   }
@@ -433,7 +493,11 @@ export class MockFileOperationService extends FileOperationService {
     return { success: true, message: 'キャラクター削除完了' };
   }
 
-  setForeshadowing(_dirPath: string, _fileName: string, _foreshadowingData: ForeshadowingData): FileOperationResult {
+  setForeshadowing(
+    _dirPath: string,
+    _fileName: string,
+    _foreshadowingData: ForeshadowingData,
+  ): FileOperationResult {
     // 実装は省略（実際のプロジェクトでは完全に実装する）
     return { success: true, message: '伏線設定完了' };
   }

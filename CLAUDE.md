@@ -91,7 +91,6 @@ npm run check-all
 ## 開発時の注意事項
 
 ### package.json の設定
-
 - 可能な限り最新のライブラリを利用する
 - package.json の依存を確認し、バージョンの古いライブラリがあればアップデートする
 - 依存の問題でバージョンが上げられないなどやむを得ない場合のみ古いライブラリの利用を許可
@@ -145,6 +144,60 @@ npm run check-all
 - ファイル監視は必要最小限に限定
 - メタデータのキャッシング戦略
 
+### 依存関係注入（DI）アーキテクチャ
+
+**重要**: このプロジェクトではVSCode依存の局所化とテスト可能性の向上のため、依存関係注入パターンを採用しています。
+
+**サービスクラスの作成指針:**
+- 全てのサービスクラスはコンストラクタでFileOperationServiceを受け取る
+- 直接的なファイル操作（Node.js `fs`モジュール）は行わない
+- VSCode APIへの直接アクセスは避ける
+
+**例：**
+```typescript
+export class NewService {
+  constructor(private fileOperationService: FileOperationService) {}
+  
+  someMethod(): void {
+    // ❌ 悪い例：直接ファイル操作
+    // const content = fs.readFileSync(path);
+    
+    // ✅ 良い例：FileOperationService経由
+    const uri = this.fileOperationService.createFileUri(path);
+    const content = this.fileOperationService.readFileSync(uri);
+  }
+}
+```
+
+**テストの作成指針:**
+- 全てのサービスクラスのテストはMockFileOperationServiceを使用
+- TestServiceContainerから依存関係を取得
+- 実際のファイルシステムに依存しない
+
+**例：**
+```typescript
+suite('NewService テストスイート', () => {
+  let service: NewService;
+  let mockFileService: MockFileOperationService;
+
+  setup(() => {
+    const container = TestServiceContainer.create();
+    mockFileService = container.getFileOperationService() as MockFileOperationService;
+    service = new NewService(mockFileService);
+  });
+
+  test('テストケース', () => {
+    // テスト用ファイルを準備
+    mockFileService.createFile('/test/file.txt', 'test content');
+    
+    // テスト実行
+    const result = service.someMethod();
+    
+    // 結果検証
+    assert.strictEqual(result, 'expected');
+  });
+});
+```
 
 ## 開発の進め方
 
@@ -155,6 +208,11 @@ npm run check-all
 ### コーディング規約と型安全性
 
 **基本原則：** コーディング規約、型安全性についてはその言語のベストプラクティスに従うこと。敢えてベストプラクティスから外れる場合はその理由を明記すること。
+
+**その他原則**
+
+- インデントの不一致などについては気にする必要はない。
+  - `npm run format` で修正されるため
 
 **TypeScript 固有の注意事項：**
 

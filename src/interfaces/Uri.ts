@@ -31,7 +31,7 @@ export class UriFactory {
       fragment: '',
       fsPath: path,
       toString: () => `file://${path}`,
-      toJSON: () => ({ scheme: 'file', authority: '', path, query: '', fragment: '' })
+      toJSON: () => ({ scheme: 'file', authority: '', path, query: '', fragment: '' }),
     };
   }
 
@@ -49,13 +49,13 @@ export class UriFactory {
       fragment: url.hash.slice(1),
       fsPath: url.pathname,
       toString: () => value,
-      toJSON: () => ({ 
+      toJSON: () => ({
         scheme: url.protocol.slice(0, -1),
         authority: url.hostname,
         path: url.pathname,
         query: url.search.slice(1),
-        fragment: url.hash.slice(1)
-      })
+        fragment: url.hash.slice(1),
+      }),
     };
   }
 }
