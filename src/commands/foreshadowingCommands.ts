@@ -99,8 +99,8 @@ export function registerForeshadowingCommands(
       );
 
       if (confirmation?.value === true) {
-        const fileOperationService = ServiceContainer.getInstance().getFileOperationService();
-        const result = fileOperationService.setForeshadowing(dirPath, fileName, foreshadowingData);
+        const fileRepository = ServiceContainer.getInstance().getFileRepository();
+        const result = fileRepository.setForeshadowing(dirPath, fileName, foreshadowingData);
 
         if (result.success) {
           provider.refresh();
@@ -137,8 +137,8 @@ export function registerForeshadowingCommands(
       );
 
       if (confirmation?.value === true) {
-        const fileOperationService = ServiceContainer.getInstance().getFileOperationService();
-        const result = fileOperationService.removeForeshadowing(dirPath, fileName);
+        const fileRepository = ServiceContainer.getInstance().getFileRepository();
+        const result = fileRepository.removeForeshadowing(dirPath, fileName);
 
         if (result.success) {
           provider.refresh();

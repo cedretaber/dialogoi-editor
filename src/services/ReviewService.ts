@@ -8,7 +8,7 @@ import {
   UpdateReviewOptions,
   AddCommentOptions,
 } from '../models/Review.js';
-import { FileOperationService } from '../interfaces/FileOperationService.js';
+import { FileRepository } from '../repositories/FileRepository.js';
 import { Uri } from '../interfaces/Uri.js';
 import { HashService } from './HashService.js';
 
@@ -19,7 +19,7 @@ export class ReviewService {
   private workspaceRoot: Uri;
 
   constructor(
-    private fileOperationService: FileOperationService,
+    private fileRepository: FileRepository,
     private hashService: HashService,
     workspaceRoot: Uri,
   ) {
@@ -47,7 +47,7 @@ export class ReviewService {
    */
   private getReviewFileUri(targetRelativeFilePath: string): Uri {
     const reviewRelativeFilePath = this.getReviewFilePath(targetRelativeFilePath);
-    return this.fileOperationService.joinPath(this.workspaceRoot, reviewRelativeFilePath);
+    return this.fileRepository.joinPath(this.workspaceRoot, reviewRelativeFilePath);
   }
 
   /**
@@ -59,10 +59,10 @@ export class ReviewService {
     const reviewFileUri = this.getReviewFileUri(targetRelativeFilePath);
 
     try {
-      if (!this.fileOperationService.existsSync(reviewFileUri)) {
+      if (!this.fileRepository.existsSync(reviewFileUri)) {
         return null;
       }
-      const yamlContent = this.fileOperationService.readFileSync(reviewFileUri, 'utf8');
+      const yamlContent = this.fileRepository.readFileSync(reviewFileUri, 'utf8');
       const reviewData = yaml.load(yamlContent) as ReviewFile;
 
       return reviewData;
@@ -83,17 +83,14 @@ export class ReviewService {
     try {
       // 対象ファイルと同じディレクトリに保存するため、そのディレクトリを作成
       const reviewRelativeDirPath = path.dirname(this.getReviewFilePath(targetRelativeFilePath));
-      const reviewDir = this.fileOperationService.joinPath(
-        this.workspaceRoot,
-        reviewRelativeDirPath,
-      );
-      if (!this.fileOperationService.existsSync(reviewDir)) {
-        this.fileOperationService.mkdirSync(reviewDir);
+      const reviewDir = this.fileRepository.joinPath(this.workspaceRoot, reviewRelativeDirPath);
+      if (!this.fileRepository.existsSync(reviewDir)) {
+        this.fileRepository.mkdirSync(reviewDir);
       }
 
       // YAML として保存
       const yamlContent = yaml.dump(reviewFile, { indent: 2 });
-      this.fileOperationService.writeFileSync(reviewFileUri, yamlContent, 'utf8');
+      this.fileRepository.writeFileSync(reviewFileUri, yamlContent, 'utf8');
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
       throw new Error(`レビューファイルの保存に失敗しました: ${errorMessage}`);
@@ -107,10 +104,7 @@ export class ReviewService {
    * @returns 追加されたレビューのインデックス
    */
   addReview(targetRelativeFilePath: string, options: CreateReviewOptions): number {
-    const targetFileUri = this.fileOperationService.joinPath(
-      this.workspaceRoot,
-      targetRelativeFilePath,
-    );
+    const targetFileUri = this.fileRepository.joinPath(this.workspaceRoot, targetRelativeFilePath);
     const fileHash = this.hashService.calculateFileHash(targetFileUri);
 
     let reviewFile = this.loadReviewFile(targetRelativeFilePath);
@@ -244,7 +238,7 @@ export class ReviewService {
     if (reviewFile.reviews.length === 0) {
       // レビューがない場合はファイルを削除
       const reviewFileUri = this.getReviewFileUri(targetRelativeFilePath);
-      this.fileOperationService.unlinkSync(reviewFileUri);
+      this.fileRepository.unlinkSync(reviewFileUri);
     } else {
       this.saveReviewFile(targetRelativeFilePath, reviewFile);
     }
@@ -288,10 +282,7 @@ export class ReviewService {
       return false;
     }
 
-    const targetFileUri = this.fileOperationService.joinPath(
-      this.workspaceRoot,
-      targetRelativeFilePath,
-    );
+    const targetFileUri = this.fileRepository.joinPath(this.workspaceRoot, targetRelativeFilePath);
     const currentHash = this.hashService.calculateFileHash(targetFileUri);
 
     return currentHash !== reviewFile.file_hash;

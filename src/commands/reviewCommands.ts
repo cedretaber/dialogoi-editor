@@ -23,8 +23,8 @@ export function registerReviewCommands(
   workspaceRoot: vscode.Uri,
 ): void {
   const container = ServiceContainer.getInstance();
-  const fileOperationService = container.getFileOperationService();
-  const workspaceUri = fileOperationService.createFileUri(workspaceRoot.fsPath);
+  const fileRepository = container.getFileRepository();
+  const workspaceUri = fileRepository.createFileUri(workspaceRoot.fsPath);
   const reviewService = container.getReviewService(workspaceUri);
 
   // レビューを追加するコマンド
@@ -183,8 +183,8 @@ async function addReviewHandler(reviewService: ReviewService, fileItem: FileItem
   const dirAbsolutePath = path.dirname(fileItem.path);
   const fileName = path.basename(fileItem.path);
   const { ServiceContainer } = await import('../di/ServiceContainer.js');
-  const fileOperationService = ServiceContainer.getInstance().getFileOperationService();
-  MetaYamlUtils.updateReviewInfo(dirAbsolutePath, fileName, reviewSummary, fileOperationService);
+  const fileRepository = ServiceContainer.getInstance().getFileRepository();
+  MetaYamlUtils.updateReviewInfo(dirAbsolutePath, fileName, reviewSummary, fileRepository);
 
   vscode.window.showInformationMessage(`レビューを追加しました (ID: ${reviewIndex})`);
 }
@@ -310,8 +310,8 @@ async function updateReviewStatusHandler(
   const dirAbsolutePath = path.dirname(fileItem.path);
   const fileName = path.basename(fileItem.path);
   const { ServiceContainer } = await import('../di/ServiceContainer.js');
-  const fileOperationService = ServiceContainer.getInstance().getFileOperationService();
-  MetaYamlUtils.updateReviewInfo(dirAbsolutePath, fileName, reviewSummary, fileOperationService);
+  const fileRepository = ServiceContainer.getInstance().getFileRepository();
+  MetaYamlUtils.updateReviewInfo(dirAbsolutePath, fileName, reviewSummary, fileRepository);
 
   vscode.window.showInformationMessage(`レビューステータスを更新しました`);
 }
@@ -382,8 +382,8 @@ async function deleteReviewHandler(
   const dirAbsolutePath = path.dirname(fileItem.path);
   const fileName = path.basename(fileItem.path);
   const { ServiceContainer } = await import('../di/ServiceContainer.js');
-  const fileOperationService = ServiceContainer.getInstance().getFileOperationService();
-  MetaYamlUtils.updateReviewInfo(dirAbsolutePath, fileName, reviewSummary, fileOperationService);
+  const fileRepository = ServiceContainer.getInstance().getFileRepository();
+  MetaYamlUtils.updateReviewInfo(dirAbsolutePath, fileName, reviewSummary, fileRepository);
 
   vscode.window.showInformationMessage(`レビューを削除しました`);
 }

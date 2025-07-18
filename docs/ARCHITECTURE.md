@@ -59,15 +59,15 @@
 │  └─ Validation Service (バリデーション)         │
 ├─────────────────────────────────────────────────┤
 │  Abstraction Layer ✅ (DI Container)            │
-│  ├─ FileOperationService Interface             │
-│  ├─ Uri Interface                               │
 │  ├─ ServiceContainer (DI管理)                  │
 │  ├─ VSCodeServiceContainer (本番環境)          │
 │  └─ TestServiceContainer (テスト環境)          │
 ├─────────────────────────────────────────────────┤
-│  Data Access Layer                              │
-│  ├─ VSCodeFileOperationService ✅ (本番実装)   │
-│  ├─ MockFileOperationService ✅ (テスト実装)   │
+│  Data Access Layer ✅ (Repository Pattern)     │
+│  ├─ FileRepository ✅ (抽象基底クラス)         │
+│  ├─ VSCodeFileRepository ✅ (本番実装)         │
+│  ├─ MockFileRepository ✅ (テスト実装)         │
+│  ├─ Uri Interface                               │
 │  ├─ YAML Parser/Writer                          │
 │  └─ Cache Manager                               │
 └─────────────────────────────────────────────────┘
@@ -81,9 +81,9 @@
 
 ### 主要な抽象化レイヤー
 
-#### 1. FileOperationService Interface
+#### 1. FileRepository (抽象基底クラス)
 ```typescript
-export abstract class FileOperationService {
+export abstract class FileRepository {
   abstract existsSync(uri: Uri): boolean;
   abstract readFileSync(uri: Uri, encoding?: BufferEncoding): string;
   abstract writeFileSync(uri: Uri, data: string | Buffer, encoding?: BufferEncoding): void;
@@ -105,12 +105,12 @@ export interface Uri {
 
 ### 具象実装
 
-#### 1. VSCodeFileOperationService (本番環境)
+#### 1. VSCodeFileRepository (本番環境)
 - `vscode.workspace.fs` およびNode.js `fs` モジュールを使用
 - 実際のファイルシステムとの相互作用を担当
 - VSCode環境でのみ動作
 
-#### 2. MockFileOperationService (テスト環境)
+#### 2. MockFileRepository (テスト環境)
 - インメモリでファイルシステムを模擬
 - 単体テストでの高速実行を実現
 - VSCode環境に依存しない
@@ -122,7 +122,7 @@ export interface Uri {
 export class ServiceContainer {
   private static instance: ServiceContainer;
   
-  getFileOperationService(): FileOperationService { ... }
+  getFileRepository(): FileRepository { ... }
   getCharacterService(): CharacterService { ... }
   getForeshadowingService(): ForeshadowingService { ... }
   // ... その他のサービス取得メソッド
@@ -134,8 +134,8 @@ export class ServiceContainer {
 export class VSCodeServiceContainer {
   static async initialize(): Promise<ServiceContainer> {
     const container = ServiceContainer.getInstance();
-    const fileOperationService = new VSCodeFileOperationService();
-    container.setFileOperationService(fileOperationService);
+    const fileRepository = new VSCodeFileRepository();
+    container.setFileRepository(fileRepository);
     return container;
   }
 }
@@ -146,8 +146,8 @@ export class VSCodeServiceContainer {
 export class TestServiceContainer {
   static create(): ServiceContainer {
     const container = new ServiceContainer();
-    const mockFileOperationService = new MockFileOperationService();
-    container.setFileOperationService(mockFileOperationService);
+    const mockFileRepository = new MockFileRepository();
+    container.setFileRepository(mockFileRepository);
     return container;
   }
 }
@@ -155,22 +155,23 @@ export class TestServiceContainer {
 
 ### 利点
 
-1. **テスト可能性**: MockFileOperationServiceにより、ファイルシステムに依存しない高速なテストが可能
+1. **テスト可能性**: MockFileRepositoryにより、ファイルシステムに依存しない高速なテストが可能
 2. **VSCode依存の局所化**: ビジネスロジックからVSCode固有のコードを分離
 3. **保守性**: インターフェースを変更せずに実装を差し替え可能
 4. **型安全性**: TypeScriptの型システムを活用した安全なコード
+5. **Repository パターン**: データアクセスロジックを抽象化する標準的なパターン
 
 ### 使用方法
 
 #### サービスクラスでの使用
 ```typescript
 export class CharacterService {
-  constructor(private fileOperationService: FileOperationService) {}
+  constructor(private fileRepository: FileRepository) {}
   
   extractDisplayName(fileAbsolutePath: string): string {
-    const uri = this.fileOperationService.createFileUri(fileAbsolutePath);
-    if (this.fileOperationService.existsSync(uri)) {
-      const content = this.fileOperationService.readFileSync(uri, 'utf8');
+    const uri = this.fileRepository.createFileUri(fileAbsolutePath);
+    if (this.fileRepository.existsSync(uri)) {
+      const content = this.fileRepository.readFileSync(uri, 'utf8');
       // ... 処理
     }
     return fileName;
@@ -227,12 +228,13 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
 - ファイル存在チェック機能（実装済み）
 - Map構造による高速な参照関係検索（実装済み）
 
-### 6. FileOperationService ✅
+### 6. FileRepository ✅ (旧 FileOperationService)
 
 - ファイル・ディレクトリの作成・削除・名前変更（実装済み）
 - タグ操作（追加・削除・一括設定）（実装済み）
 - 参照操作（追加・削除・一括設定）（実装済み）
 - アトミックなmeta.yaml更新（実装済み）
+- Repository パターンによるデータアクセス層の抽象化（実装済み）
 
 ### 7. ReviewService ✅
 

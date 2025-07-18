@@ -1,5 +1,5 @@
-import { FileOperationService } from '../interfaces/FileOperationService.js';
-import { MockFileOperationService } from '../services/MockFileOperationService.js';
+import { FileRepository } from '../repositories/FileRepository.js';
+import { MockFileRepository } from '../repositories/MockFileRepository.js';
 import { CharacterService } from '../services/CharacterService.js';
 import { ForeshadowingService } from '../services/ForeshadowingService.js';
 import { ReferenceManager } from '../services/ReferenceManager.js';
@@ -16,7 +16,7 @@ import { Uri } from '../interfaces/Uri.js';
  */
 export class TestServiceContainer {
   private static instance: TestServiceContainer | null = null;
-  private fileOperationService: FileOperationService;
+  private fileRepository: FileRepository;
   private characterService: CharacterService | null = null;
   private foreshadowingService: ForeshadowingService | null = null;
   private referenceManager: ReferenceManager | null = null;
@@ -27,8 +27,8 @@ export class TestServiceContainer {
   private projectCreationService: ProjectCreationService | null = null;
 
   private constructor() {
-    // テスト環境では常にMockFileOperationServiceを使用
-    this.fileOperationService = new MockFileOperationService();
+    // テスト環境では常にMockFileRepositoryを使用
+    this.fileRepository = new MockFileRepository();
   }
 
   static getInstance(): TestServiceContainer {
@@ -39,10 +39,10 @@ export class TestServiceContainer {
   }
 
   /**
-   * FileOperationServiceを取得
+   * FileRepositoryを取得
    */
-  getFileOperationService(): FileOperationService {
-    return this.fileOperationService;
+  getFileRepository(): FileRepository {
+    return this.fileRepository;
   }
 
   /**
@@ -50,7 +50,7 @@ export class TestServiceContainer {
    */
   getCharacterService(): CharacterService {
     if (!this.characterService) {
-      this.characterService = new CharacterService(this.fileOperationService);
+      this.characterService = new CharacterService(this.fileRepository);
     }
     return this.characterService;
   }
@@ -60,7 +60,7 @@ export class TestServiceContainer {
    */
   getForeshadowingService(): ForeshadowingService {
     if (!this.foreshadowingService) {
-      this.foreshadowingService = new ForeshadowingService(this.fileOperationService);
+      this.foreshadowingService = new ForeshadowingService(this.fileRepository);
     }
     return this.foreshadowingService;
   }
@@ -80,7 +80,7 @@ export class TestServiceContainer {
    */
   getHashService(): HashService {
     if (!this.hashService) {
-      this.hashService = new HashService(this.fileOperationService);
+      this.hashService = new HashService(this.fileRepository);
     }
     return this.hashService;
   }
@@ -91,7 +91,7 @@ export class TestServiceContainer {
   getReviewService(workspaceRoot: Uri): ReviewService {
     if (!this.reviewService) {
       this.reviewService = new ReviewService(
-        this.fileOperationService,
+        this.fileRepository,
         this.getHashService(),
         workspaceRoot,
       );
@@ -104,7 +104,7 @@ export class TestServiceContainer {
    */
   getDialogoiYamlService(): DialogoiYamlService {
     if (!this.dialogoiYamlService) {
-      this.dialogoiYamlService = new DialogoiYamlService(this.fileOperationService);
+      this.dialogoiYamlService = new DialogoiYamlService(this.fileRepository);
     }
     return this.dialogoiYamlService;
   }
@@ -114,7 +114,7 @@ export class TestServiceContainer {
    */
   getDialogiTemplateService(): DialogoiTemplateService {
     if (!this.dialogoiTemplateService) {
-      this.dialogoiTemplateService = new DialogoiTemplateService(this.fileOperationService);
+      this.dialogoiTemplateService = new DialogoiTemplateService(this.fileRepository);
     }
     return this.dialogoiTemplateService;
   }
@@ -125,7 +125,7 @@ export class TestServiceContainer {
   getProjectCreationService(): ProjectCreationService {
     if (!this.projectCreationService) {
       this.projectCreationService = new ProjectCreationService(
-        this.fileOperationService,
+        this.fileRepository,
         this.getDialogoiYamlService(),
         this.getDialogiTemplateService(),
       );
@@ -137,7 +137,7 @@ export class TestServiceContainer {
    * すべてのサービスをリセット（テスト用）
    */
   reset(): void {
-    this.fileOperationService = new MockFileOperationService();
+    this.fileRepository = new MockFileRepository();
     this.characterService = null;
     this.foreshadowingService = null;
     this.referenceManager = null;
@@ -149,10 +149,10 @@ export class TestServiceContainer {
   }
 
   /**
-   * MockFileOperationServiceを取得（テスト用）
+   * MockFileRepositoryを取得（テスト用）
    */
-  getMockFileOperationService(): MockFileOperationService {
-    return this.fileOperationService as MockFileOperationService;
+  getMockFileRepository(): MockFileRepository {
+    return this.fileRepository as MockFileRepository;
   }
 
   /**

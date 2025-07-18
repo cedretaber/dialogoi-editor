@@ -2,17 +2,17 @@ import { suite, test, beforeEach } from 'mocha';
 import * as assert from 'assert';
 import * as path from 'path';
 import { DialogoiYamlService } from './DialogoiYamlService.js';
-import { MockFileOperationService } from './MockFileOperationService.js';
+import { MockFileRepository } from '../repositories/MockFileRepository.js';
 import { TestServiceContainer } from '../di/TestServiceContainer.js';
 
 suite('DialogoiYamlService テストスイート', () => {
   let service: DialogoiYamlService;
-  let mockFileService: MockFileOperationService;
+  let mockFileRepository: MockFileRepository;
 
   beforeEach(() => {
     const container = TestServiceContainer.create();
-    mockFileService = container.getFileOperationService() as MockFileOperationService;
-    service = new DialogoiYamlService(mockFileService);
+    mockFileRepository = container.getFileRepository() as MockFileRepository;
+    service = new DialogoiYamlService(mockFileRepository);
   });
 
   suite('isDialogoiProjectRoot', () => {
@@ -20,7 +20,7 @@ suite('DialogoiYamlService テストスイート', () => {
       const projectRoot = '/test/project';
       const dialogoiYamlPath = path.join(projectRoot, 'dialogoi.yaml');
 
-      mockFileService.createFileForTest(dialogoiYamlPath, 'test content');
+      mockFileRepository.createFileForTest(dialogoiYamlPath, 'test content');
 
       const result = service.isDialogoiProjectRoot(projectRoot);
       assert.strictEqual(result, true);
@@ -44,7 +44,7 @@ version: "1.0.0"
 created_at: "2024-01-01T00:00:00Z"
 tags: ["ファンタジー"]`;
 
-      mockFileService.createFileForTest(dialogoiYamlPath, yamlContent);
+      mockFileRepository.createFileForTest(dialogoiYamlPath, yamlContent);
 
       const result = service.loadDialogoiYaml(projectRoot);
 
@@ -67,7 +67,7 @@ tags: ["ファンタジー"]`;
       const projectRoot = '/test/project';
       const dialogoiYamlPath = path.join(projectRoot, 'dialogoi.yaml');
 
-      mockFileService.createFileForTest(dialogoiYamlPath, 'invalid yaml content [');
+      mockFileRepository.createFileForTest(dialogoiYamlPath, 'invalid yaml content [');
 
       const result = service.loadDialogoiYaml(projectRoot);
       assert.strictEqual(result, null);
@@ -89,10 +89,10 @@ tags: ["ファンタジー"]`;
       const result = service.saveDialogoiYaml(projectRoot, data);
 
       assert.strictEqual(result, true);
-      assert.ok(mockFileService.existsSync(mockFileService.createFileUri(dialogoiYamlPath)));
+      assert.ok(mockFileRepository.existsSync(mockFileRepository.createFileUri(dialogoiYamlPath)));
 
-      const savedContent = mockFileService.readFileSync(
-        mockFileService.createFileUri(dialogoiYamlPath),
+      const savedContent = mockFileRepository.readFileSync(
+        mockFileRepository.createFileUri(dialogoiYamlPath),
         'utf8',
       );
       assert.ok(savedContent.includes('title: テスト小説'));
@@ -129,8 +129,8 @@ tags: ["ファンタジー"]`;
 
       assert.strictEqual(result, true);
 
-      const savedContent = mockFileService.readFileSync(
-        mockFileService.createFileUri(dialogoiYamlPath),
+      const savedContent = mockFileRepository.readFileSync(
+        mockFileRepository.createFileUri(dialogoiYamlPath),
         'utf8',
       );
       assert.ok(savedContent.includes('updated_at:'));
@@ -167,7 +167,7 @@ tags: ["ファンタジー"]`;
       const projectRoot = '/test/existing-project';
       const dialogoiYamlPath = path.join(projectRoot, 'dialogoi.yaml');
 
-      mockFileService.createFileForTest(dialogoiYamlPath, 'existing content');
+      mockFileRepository.createFileForTest(dialogoiYamlPath, 'existing content');
 
       const result = service.createDialogoiProject(projectRoot, '新しい小説', '新しい著者');
       assert.strictEqual(result, false);
@@ -179,7 +179,7 @@ tags: ["ファンタジー"]`;
       const result = service.createDialogoiProject(projectRoot, '新しい小説', '新しい著者');
 
       assert.strictEqual(result, true);
-      assert.ok(mockFileService.existsSync(mockFileService.createDirectoryUri(projectRoot)));
+      assert.ok(mockFileRepository.existsSync(mockFileRepository.createDirectoryUri(projectRoot)));
       assert.ok(service.isDialogoiProjectRoot(projectRoot));
     });
   });
@@ -193,7 +193,7 @@ author: "元の著者"
 version: "1.0.0"
 created_at: "2024-01-01T00:00:00Z"`;
 
-      mockFileService.createFileForTest(dialogoiYamlPath, originalContent);
+      mockFileRepository.createFileForTest(dialogoiYamlPath, originalContent);
 
       const result = service.updateDialogoiYaml(projectRoot, {
         title: '新しいタイトル',
@@ -225,7 +225,7 @@ created_at: "2024-01-01T00:00:00Z"`;
       const subDir = '/test/project/contents';
       const dialogoiYamlPath = path.join(projectRoot, 'dialogoi.yaml');
 
-      mockFileService.createFileForTest(dialogoiYamlPath, 'test content');
+      mockFileRepository.createFileForTest(dialogoiYamlPath, 'test content');
 
       const result = service.findProjectRoot(subDir);
       assert.strictEqual(result, projectRoot);
@@ -235,7 +235,7 @@ created_at: "2024-01-01T00:00:00Z"`;
       const projectRoot = '/test/project';
       const dialogoiYamlPath = path.join(projectRoot, 'dialogoi.yaml');
 
-      mockFileService.createFileForTest(dialogoiYamlPath, 'test content');
+      mockFileRepository.createFileForTest(dialogoiYamlPath, 'test content');
 
       const result = service.findProjectRoot(projectRoot);
       assert.strictEqual(result, projectRoot);
@@ -253,7 +253,7 @@ created_at: "2024-01-01T00:00:00Z"`;
       const deepDir = '/test/project/contents/chapter1/subsection';
       const dialogoiYamlPath = path.join(projectRoot, 'dialogoi.yaml');
 
-      mockFileService.createFileForTest(dialogoiYamlPath, 'test content');
+      mockFileRepository.createFileForTest(dialogoiYamlPath, 'test content');
 
       const result = service.findProjectRoot(deepDir);
       assert.strictEqual(result, projectRoot);

@@ -30,12 +30,8 @@ export function registerCharacterCommands(
       });
 
       if (selected !== undefined) {
-        const fileOperationService = ServiceContainer.getInstance().getFileOperationService();
-        const result = fileOperationService.setCharacterImportance(
-          dirPath,
-          fileName,
-          selected.value,
-        );
+        const fileRepository = ServiceContainer.getInstance().getFileRepository();
+        const result = fileRepository.setCharacterImportance(dirPath, fileName, selected.value);
 
         if (result.success) {
           provider.refresh();
@@ -72,8 +68,8 @@ export function registerCharacterCommands(
       );
 
       if (confirmation?.value === true) {
-        const fileOperationService = ServiceContainer.getInstance().getFileOperationService();
-        const result = fileOperationService.setMultipleCharacters(dirPath, fileName, newValue);
+        const fileRepository = ServiceContainer.getInstance().getFileRepository();
+        const result = fileRepository.setMultipleCharacters(dirPath, fileName, newValue);
 
         if (result.success) {
           provider.refresh();

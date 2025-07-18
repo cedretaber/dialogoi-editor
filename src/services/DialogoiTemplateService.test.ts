@@ -1,12 +1,12 @@
 import { suite, test, beforeEach } from 'mocha';
 import * as assert from 'assert';
 import { DialogoiTemplateService } from './DialogoiTemplateService.js';
-import { MockFileOperationService } from './MockFileOperationService.js';
+import { MockFileRepository } from '../repositories/MockFileRepository.js';
 import { TestServiceContainer } from '../di/TestServiceContainer.js';
 
 suite('DialogoiTemplateService テストスイート', () => {
   let service: DialogoiTemplateService;
-  let mockFileService: MockFileOperationService;
+  let mockFileRepository: MockFileRepository;
 
   const testTemplate = `title: "テストテンプレート"
 author: "テスト著者"
@@ -24,12 +24,12 @@ project_settings:
 
   beforeEach(() => {
     const container = TestServiceContainer.create();
-    mockFileService = container.getFileOperationService() as MockFileOperationService;
+    mockFileRepository = container.getFileRepository() as MockFileRepository;
 
     // テスト用テンプレートを設定
-    mockFileService.setExtensionResource('templates/default-dialogoi.yaml', testTemplate);
+    mockFileRepository.setExtensionResource('templates/default-dialogoi.yaml', testTemplate);
 
-    service = new DialogoiTemplateService(mockFileService);
+    service = new DialogoiTemplateService(mockFileRepository);
   });
 
   suite('loadDefaultTemplate', () => {
@@ -51,7 +51,7 @@ project_settings:
 
     test('テンプレートファイルが存在しない場合nullを返す', async () => {
       // リソースをクリア
-      mockFileService.setExtensionResource('templates/default-dialogoi.yaml', '');
+      mockFileRepository.setExtensionResource('templates/default-dialogoi.yaml', '');
 
       const result = await service.loadDefaultTemplate();
       assert.strictEqual(result, null);
@@ -92,7 +92,7 @@ project_settings:
 
     test('テンプレート読み込みエラー時はnullを返す', async () => {
       // 無効なテンプレートを設定
-      mockFileService.setExtensionResource('templates/default-dialogoi.yaml', 'invalid yaml [');
+      mockFileRepository.setExtensionResource('templates/default-dialogoi.yaml', 'invalid yaml [');
 
       const result = await service.createProjectFromTemplate('タイトル', '著者');
       assert.strictEqual(result, null);
@@ -131,7 +131,7 @@ author: "著者"
 version: "1.0.0"
 created_at: "2024-01-01T00:00:00Z"`;
 
-      mockFileService.setExtensionResource('templates/default-dialogoi.yaml', simpleTemplate);
+      mockFileRepository.setExtensionResource('templates/default-dialogoi.yaml', simpleTemplate);
 
       const result = await service.getDefaultExcludePatterns();
       assert.deepStrictEqual(result, []);
@@ -150,7 +150,7 @@ author: "著者"
 version: "1.0.0"
 created_at: "2024-01-01T00:00:00Z"`;
 
-      mockFileService.setExtensionResource('templates/default-dialogoi.yaml', simpleTemplate);
+      mockFileRepository.setExtensionResource('templates/default-dialogoi.yaml', simpleTemplate);
 
       const result = await service.getDefaultReadmeFilename();
       assert.strictEqual(result, 'README.md');

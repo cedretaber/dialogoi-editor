@@ -1,12 +1,12 @@
 import { createHash } from 'crypto';
-import { FileOperationService } from '../interfaces/FileOperationService.js';
+import { FileRepository } from '../repositories/FileRepository.js';
 import { Uri } from '../interfaces/Uri.js';
 
 /**
  * ファイルハッシュ計算サービス
  */
 export class HashService {
-  constructor(public fileOperationService: FileOperationService) {}
+  constructor(public fileRepository: FileRepository) {}
   /**
    * ファイルの SHA-256 ハッシュを計算
    * @param fileUri ファイルの URI
@@ -14,7 +14,7 @@ export class HashService {
    */
   calculateFileHash(fileUri: Uri): string {
     try {
-      const content = this.fileOperationService.readFileSync(fileUri, null);
+      const content = this.fileRepository.readFileSync(fileUri, null);
       const hash = createHash('sha256').update(content).digest('hex');
       return `sha256:${hash}`;
     } catch (error) {

@@ -3,13 +3,13 @@ import * as assert from 'assert';
 import { ProjectCreationService, ProjectCreationOptions } from './ProjectCreationService.js';
 import { DialogoiYamlService } from './DialogoiYamlService.js';
 import { DialogoiTemplateService } from './DialogoiTemplateService.js';
-import { MockFileOperationService } from './MockFileOperationService.js';
+import { MockFileRepository } from '../repositories/MockFileRepository.js';
 import { TestServiceContainer } from '../di/TestServiceContainer.js';
 import * as path from 'path';
 
 suite('ProjectCreationService テストスイート', () => {
   let service: ProjectCreationService;
-  let mockFileService: MockFileOperationService;
+  let mockFileRepository: MockFileRepository;
   let dialogoiYamlService: DialogoiYamlService;
   let templateService: DialogoiTemplateService;
 
@@ -29,14 +29,14 @@ project_settings:
 
   beforeEach(() => {
     const container = TestServiceContainer.create();
-    mockFileService = container.getFileOperationService() as MockFileOperationService;
+    mockFileRepository = container.getFileRepository() as MockFileRepository;
     dialogoiYamlService = container.getDialogoiYamlService();
     templateService = container.getDialogiTemplateService();
 
     // テスト用テンプレートを設定
-    mockFileService.setExtensionResource('templates/default-dialogoi.yaml', testTemplate);
+    mockFileRepository.setExtensionResource('templates/default-dialogoi.yaml', testTemplate);
 
-    service = new ProjectCreationService(mockFileService, dialogoiYamlService, templateService);
+    service = new ProjectCreationService(mockFileRepository, dialogoiYamlService, templateService);
   });
 
   suite('createProject', () => {
@@ -64,16 +64,16 @@ project_settings:
 
       // dialogoi.yamlが作成されているか確認
       const dialogoiYamlPath = path.join(projectPath, 'dialogoi.yaml');
-      assert.ok(mockFileService.existsSync(mockFileService.createFileUri(dialogoiYamlPath)));
+      assert.ok(mockFileRepository.existsSync(mockFileRepository.createFileUri(dialogoiYamlPath)));
     });
 
     test('既存プロジェクトがある場合は上書きを拒否する', async () => {
       const projectPath = '/test/existing';
 
       // 既存プロジェクトを作成
-      mockFileService.createDirectoryForTest(projectPath);
+      mockFileRepository.createDirectoryForTest(projectPath);
       const dialogoiYamlPath = path.join(projectPath, 'dialogoi.yaml');
-      mockFileService.createFileForTest(dialogoiYamlPath, testTemplate);
+      mockFileRepository.createFileForTest(dialogoiYamlPath, testTemplate);
 
       const options: ProjectCreationOptions = {
         title: '新しい小説',
@@ -90,9 +90,9 @@ project_settings:
       const projectPath = '/test/overwrite';
 
       // 既存プロジェクトを作成
-      mockFileService.createDirectoryForTest(projectPath);
+      mockFileRepository.createDirectoryForTest(projectPath);
       const dialogoiYamlPath = path.join(projectPath, 'dialogoi.yaml');
-      mockFileService.createFileForTest(dialogoiYamlPath, testTemplate);
+      mockFileRepository.createFileForTest(dialogoiYamlPath, testTemplate);
 
       const options: ProjectCreationOptions = {
         title: '上書きプロジェクト',
@@ -110,22 +110,25 @@ project_settings:
       const projectPath = '/test/with-files';
 
       // 既存ファイルを作成
-      mockFileService.createDirectoryForTest(projectPath);
-      mockFileService.createFileForTest(
+      mockFileRepository.createDirectoryForTest(projectPath);
+      mockFileRepository.createFileForTest(
         path.join(projectPath, 'chapter1.txt'),
         'Chapter 1 content',
       );
-      mockFileService.createFileForTest(path.join(projectPath, 'settings.md'), '# Settings');
-      mockFileService.createFileForTest(path.join(projectPath, 'notes.txt'), 'Notes');
+      mockFileRepository.createFileForTest(path.join(projectPath, 'settings.md'), '# Settings');
+      mockFileRepository.createFileForTest(path.join(projectPath, 'notes.txt'), 'Notes');
 
       // サブディレクトリも作成
       const charactersDir = path.join(projectPath, 'characters');
-      mockFileService.createDirectoryForTest(charactersDir);
-      mockFileService.createFileForTest(
+      mockFileRepository.createDirectoryForTest(charactersDir);
+      mockFileRepository.createFileForTest(
         path.join(charactersDir, 'protagonist.md'),
         '# Protagonist',
       );
-      mockFileService.createFileForTest(path.join(charactersDir, 'antagonist.md'), '# Antagonist');
+      mockFileRepository.createFileForTest(
+        path.join(charactersDir, 'antagonist.md'),
+        '# Antagonist',
+      );
 
       const options: ProjectCreationOptions = {
         title: 'ファイル付きプロジェクト',
@@ -138,22 +141,24 @@ project_settings:
 
       // meta.yamlが作成されているか確認
       const metaYamlPath = path.join(projectPath, 'meta.yaml');
-      assert.ok(mockFileService.existsSync(mockFileService.createFileUri(metaYamlPath)));
+      assert.ok(mockFileRepository.existsSync(mockFileRepository.createFileUri(metaYamlPath)));
 
       // characters/meta.yamlも作成されているか確認
       const charactersMetaYamlPath = path.join(charactersDir, 'meta.yaml');
-      assert.ok(mockFileService.existsSync(mockFileService.createFileUri(charactersMetaYamlPath)));
+      assert.ok(
+        mockFileRepository.existsSync(mockFileRepository.createFileUri(charactersMetaYamlPath)),
+      );
     });
 
     test('除外パターンが正しく適用される', async () => {
       const projectPath = '/test/exclude-patterns';
 
       // 除外されるファイルを作成
-      mockFileService.createDirectoryForTest(projectPath);
-      mockFileService.createFileForTest(path.join(projectPath, 'chapter1.txt'), 'Chapter 1');
-      mockFileService.createFileForTest(path.join(projectPath, '.gitignore'), '# Git ignore');
-      mockFileService.createFileForTest(path.join(projectPath, 'temp.tmp'), 'Temporary file');
-      mockFileService.createFileForTest(path.join(projectPath, 'notes.md'), '# Notes');
+      mockFileRepository.createDirectoryForTest(projectPath);
+      mockFileRepository.createFileForTest(path.join(projectPath, 'chapter1.txt'), 'Chapter 1');
+      mockFileRepository.createFileForTest(path.join(projectPath, '.gitignore'), '# Git ignore');
+      mockFileRepository.createFileForTest(path.join(projectPath, 'temp.tmp'), 'Temporary file');
+      mockFileRepository.createFileForTest(path.join(projectPath, 'notes.md'), '# Notes');
 
       const options: ProjectCreationOptions = {
         title: '除外パターンテスト',
@@ -180,15 +185,15 @@ project_settings:
       const projectPath = '/test/respect-meta';
 
       // 既存meta.yamlを含むディレクトリを作成
-      mockFileService.createDirectoryForTest(projectPath);
-      mockFileService.createFileForTest(path.join(projectPath, 'chapter1.txt'), 'Chapter 1');
+      mockFileRepository.createDirectoryForTest(projectPath);
+      mockFileRepository.createFileForTest(path.join(projectPath, 'chapter1.txt'), 'Chapter 1');
       const existingMeta = `readme: "README.md"
 files:
   - name: chapter1.txt
     type: content
     path: chapter1.txt
     tags: ["重要"]`;
-      mockFileService.createFileForTest(path.join(projectPath, 'meta.yaml'), existingMeta);
+      mockFileRepository.createFileForTest(path.join(projectPath, 'meta.yaml'), existingMeta);
 
       const options: ProjectCreationOptions = {
         title: 'meta.yaml尊重テスト',
@@ -210,15 +215,15 @@ files:
       const projectPath = '/test/overwrite-meta';
 
       // 既存meta.yamlを含むディレクトリを作成
-      mockFileService.createDirectoryForTest(projectPath);
-      mockFileService.createFileForTest(path.join(projectPath, 'chapter1.txt'), 'Chapter 1');
+      mockFileRepository.createDirectoryForTest(projectPath);
+      mockFileRepository.createFileForTest(path.join(projectPath, 'chapter1.txt'), 'Chapter 1');
       const existingMeta = `readme: "README.md"
 files:
   - name: chapter1.txt
     type: content
     path: chapter1.txt
     tags: ["古いタグ"]`;
-      mockFileService.createFileForTest(path.join(projectPath, 'meta.yaml'), existingMeta);
+      mockFileRepository.createFileForTest(path.join(projectPath, 'meta.yaml'), existingMeta);
 
       const options: ProjectCreationOptions = {
         title: 'meta.yaml上書きテスト',
@@ -239,11 +244,11 @@ files:
       const projectPath = '/test/file-types';
 
       // 様々な拡張子のファイルを作成
-      mockFileService.createDirectoryForTest(projectPath);
-      mockFileService.createFileForTest(path.join(projectPath, 'story.txt'), 'Story content');
-      mockFileService.createFileForTest(path.join(projectPath, 'setting.md'), '# Setting');
-      mockFileService.createFileForTest(path.join(projectPath, 'data.json'), '{}');
-      mockFileService.createFileForTest(path.join(projectPath, 'script.py'), 'print("hello")');
+      mockFileRepository.createDirectoryForTest(projectPath);
+      mockFileRepository.createFileForTest(path.join(projectPath, 'story.txt'), 'Story content');
+      mockFileRepository.createFileForTest(path.join(projectPath, 'setting.md'), '# Setting');
+      mockFileRepository.createFileForTest(path.join(projectPath, 'data.json'), '{}');
+      mockFileRepository.createFileForTest(path.join(projectPath, 'script.py'), 'print("hello")');
 
       const options: ProjectCreationOptions = {
         title: 'ファイル種別テスト',
@@ -256,8 +261,8 @@ files:
 
       // meta.yamlを読み込んで確認
       const metaYamlPath = path.join(projectPath, 'meta.yaml');
-      const metaContent = mockFileService.readFileSync(
-        mockFileService.createFileUri(metaYamlPath),
+      const metaContent = mockFileRepository.readFileSync(
+        mockFileRepository.createFileUri(metaYamlPath),
         'utf8',
       );
 

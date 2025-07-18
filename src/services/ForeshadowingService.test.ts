@@ -1,17 +1,17 @@
 import * as assert from 'assert';
 import * as path from 'path';
 import { ForeshadowingService, ForeshadowingData } from './ForeshadowingService.js';
-import { MockFileOperationService } from './MockFileOperationService.js';
+import { MockFileRepository } from '../repositories/MockFileRepository.js';
 
 suite('ForeshadowingService', () => {
-  let mockFileService: MockFileOperationService;
+  let mockFileRepository: MockFileRepository;
   let foreshadowingService: ForeshadowingService;
   let novelRootAbsolutePath: string;
 
   setup(() => {
     // モックサービスを初期化
-    mockFileService = new MockFileOperationService();
-    foreshadowingService = new ForeshadowingService(mockFileService);
+    mockFileRepository = new MockFileRepository();
+    foreshadowingService = new ForeshadowingService(mockFileRepository);
     novelRootAbsolutePath = '/tmp/dialogoi-test/novel';
 
     // テスト用のファイル構造を作成
@@ -20,19 +20,19 @@ suite('ForeshadowingService', () => {
     const foreshadowingsDir = path.join(settingsDir, 'foreshadowings');
 
     // ディレクトリを作成
-    mockFileService.addDirectory(novelRootAbsolutePath);
-    mockFileService.addDirectory(contentsDir);
-    mockFileService.addDirectory(settingsDir);
-    mockFileService.addDirectory(foreshadowingsDir);
+    mockFileRepository.addDirectory(novelRootAbsolutePath);
+    mockFileRepository.addDirectory(contentsDir);
+    mockFileRepository.addDirectory(settingsDir);
+    mockFileRepository.addDirectory(foreshadowingsDir);
 
     // テスト用ファイルを作成
-    mockFileService.addFile(path.join(contentsDir, 'chapter1.txt'), 'Chapter 1 content');
-    mockFileService.addFile(path.join(contentsDir, 'chapter2.txt'), 'Chapter 2 content');
-    mockFileService.addFile(
+    mockFileRepository.addFile(path.join(contentsDir, 'chapter1.txt'), 'Chapter 1 content');
+    mockFileRepository.addFile(path.join(contentsDir, 'chapter2.txt'), 'Chapter 2 content');
+    mockFileRepository.addFile(
       path.join(foreshadowingsDir, 'mystery.md'),
       '# 謎の手がかり\n\n重要な伏線の説明',
     );
-    mockFileService.addFile(
+    mockFileRepository.addFile(
       path.join(foreshadowingsDir, 'no-heading.md'),
       '伏線の内容（見出しなし）',
     );
@@ -40,7 +40,7 @@ suite('ForeshadowingService', () => {
 
   teardown(() => {
     // モックサービスをリセット
-    mockFileService.reset();
+    mockFileRepository.reset();
   });
 
   suite('extractDisplayName', () => {

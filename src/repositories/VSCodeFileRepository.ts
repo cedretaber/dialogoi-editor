@@ -3,14 +3,14 @@ import * as path from 'path';
 import * as yaml from 'js-yaml';
 import * as fs from 'fs';
 import {
-  FileOperationService,
+  FileRepository,
   FileOperationResult,
   FileStats,
   DirectoryEntry,
-} from '../interfaces/FileOperationService.js';
+} from './FileRepository.js';
 import { Uri } from '../interfaces/Uri.js';
 import { MetaYamlUtils, DialogoiTreeItem, MetaYaml } from '../utils/MetaYamlUtils.js';
-import { ForeshadowingData } from './ForeshadowingService.js';
+import { ForeshadowingData } from '../services/ForeshadowingService.js';
 
 /**
  * VSCodeのUri型を抽象化したUri実装
@@ -106,7 +106,7 @@ class VSCodeDirectoryEntry implements DirectoryEntry {
 /**
  * VSCodeのファイル操作APIを使用した具象実装
  */
-export class VSCodeFileOperationService extends FileOperationService {
+export class VSCodeFileRepository extends FileRepository {
   constructor(private extensionContext: vscode.ExtensionContext) {
     super();
   }

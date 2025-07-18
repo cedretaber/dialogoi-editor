@@ -1,5 +1,5 @@
-import { FileOperationService } from '../interfaces/FileOperationService.js';
-import { MockFileOperationService } from '../services/MockFileOperationService.js';
+import { FileRepository } from '../repositories/FileRepository.js';
+import { MockFileRepository } from '../repositories/MockFileRepository.js';
 import { CharacterService } from '../services/CharacterService.js';
 import { ForeshadowingService } from '../services/ForeshadowingService.js';
 import { ReferenceManager } from '../services/ReferenceManager.js';
@@ -15,7 +15,7 @@ import { Uri } from '../interfaces/Uri.js';
  */
 export class ServiceContainer {
   private static instance: ServiceContainer | null = null;
-  private fileOperationService: FileOperationService | null = null;
+  private fileRepository: FileRepository | null = null;
   private characterService: CharacterService | null = null;
   private foreshadowingService: ForeshadowingService | null = null;
   private referenceManager: ReferenceManager | null = null;
@@ -34,10 +34,10 @@ export class ServiceContainer {
   }
 
   /**
-   * FileOperationServiceを設定（テスト用）
+   * FileRepositoryを設定（テスト用）
    */
-  setFileOperationService(service: FileOperationService): void {
-    this.fileOperationService = service;
+  setFileRepository(repository: FileRepository): void {
+    this.fileRepository = repository;
     // 依存サービスをリセット
     this.characterService = null;
     this.foreshadowingService = null;
@@ -49,15 +49,15 @@ export class ServiceContainer {
   }
 
   /**
-   * FileOperationServiceを取得
+   * FileRepositoryを取得
    */
-  getFileOperationService(): FileOperationService {
-    if (!this.fileOperationService) {
+  getFileRepository(): FileRepository {
+    if (!this.fileRepository) {
       throw new Error(
-        'FileOperationServiceが初期化されていません。VSCodeServiceContainer.initialize()を使用してください。',
+        'FileRepositoryが初期化されていません。VSCodeServiceContainer.initialize()を使用してください。',
       );
     }
-    return this.fileOperationService;
+    return this.fileRepository;
   }
 
   /**
@@ -65,7 +65,7 @@ export class ServiceContainer {
    */
   getCharacterService(): CharacterService {
     if (!this.characterService) {
-      this.characterService = new CharacterService(this.getFileOperationService());
+      this.characterService = new CharacterService(this.getFileRepository());
     }
     return this.characterService;
   }
@@ -75,7 +75,7 @@ export class ServiceContainer {
    */
   getForeshadowingService(): ForeshadowingService {
     if (!this.foreshadowingService) {
-      this.foreshadowingService = new ForeshadowingService(this.getFileOperationService());
+      this.foreshadowingService = new ForeshadowingService(this.getFileRepository());
     }
     return this.foreshadowingService;
   }
@@ -95,7 +95,7 @@ export class ServiceContainer {
    */
   getHashService(): HashService {
     if (!this.hashService) {
-      this.hashService = new HashService(this.getFileOperationService());
+      this.hashService = new HashService(this.getFileRepository());
     }
     return this.hashService;
   }
@@ -106,7 +106,7 @@ export class ServiceContainer {
   getReviewService(workspaceRoot: Uri): ReviewService {
     if (!this.reviewService) {
       this.reviewService = new ReviewService(
-        this.getFileOperationService(),
+        this.getFileRepository(),
         this.getHashService(),
         workspaceRoot,
       );
@@ -119,7 +119,7 @@ export class ServiceContainer {
    */
   getDialogoiYamlService(): DialogoiYamlService {
     if (!this.dialogoiYamlService) {
-      this.dialogoiYamlService = new DialogoiYamlService(this.getFileOperationService());
+      this.dialogoiYamlService = new DialogoiYamlService(this.getFileRepository());
     }
     return this.dialogoiYamlService;
   }
@@ -129,7 +129,7 @@ export class ServiceContainer {
    */
   getDialogiTemplateService(): DialogoiTemplateService {
     if (!this.dialogoiTemplateService) {
-      this.dialogoiTemplateService = new DialogoiTemplateService(this.getFileOperationService());
+      this.dialogoiTemplateService = new DialogoiTemplateService(this.getFileRepository());
     }
     return this.dialogoiTemplateService;
   }
@@ -139,14 +139,14 @@ export class ServiceContainer {
    * @deprecated テスト環境ではTestServiceContainerを使用してください
    */
   initializeForTesting(): void {
-    this.setFileOperationService(new MockFileOperationService());
+    this.setFileRepository(new MockFileRepository());
   }
 
   /**
    * サービスをリセット（テスト用）
    */
   reset(): void {
-    this.fileOperationService = null;
+    this.fileRepository = null;
     this.characterService = null;
     this.foreshadowingService = null;
     this.referenceManager = null;

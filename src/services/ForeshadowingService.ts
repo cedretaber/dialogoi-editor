@@ -1,5 +1,5 @@
 import * as path from 'path';
-import { FileOperationService } from '../interfaces/FileOperationService.js';
+import { FileRepository } from '../repositories/FileRepository.js';
 
 export interface ForeshadowingData {
   start: string;
@@ -7,7 +7,7 @@ export interface ForeshadowingData {
 }
 
 export class ForeshadowingService {
-  constructor(private fileOperationService: FileOperationService) {}
+  constructor(private fileRepository: FileRepository) {}
 
   /**
    * マークダウンファイルから表示名を取得
@@ -16,13 +16,13 @@ export class ForeshadowingService {
    */
   extractDisplayName(fileAbsolutePath: string): string {
     try {
-      const fileUri = this.fileOperationService.createFileUri(fileAbsolutePath);
+      const fileUri = this.fileRepository.createFileUri(fileAbsolutePath);
 
-      if (!this.fileOperationService.existsSync(fileUri)) {
+      if (!this.fileRepository.existsSync(fileUri)) {
         return this.getFileNameWithoutExtension(fileAbsolutePath);
       }
 
-      const content = this.fileOperationService.readFileSync(fileUri, 'utf-8');
+      const content = this.fileRepository.readFileSync(fileUri, 'utf-8');
       const lines = content.split('\n');
 
       // 最初の # 見出しを探す
@@ -53,8 +53,8 @@ export class ForeshadowingService {
     }
 
     const absolutePath = path.join(novelRootAbsolutePath, relativePath);
-    const fileUri = this.fileOperationService.createFileUri(absolutePath);
-    return this.fileOperationService.existsSync(fileUri);
+    const fileUri = this.fileRepository.createFileUri(absolutePath);
+    return this.fileRepository.existsSync(fileUri);
   }
 
   /**

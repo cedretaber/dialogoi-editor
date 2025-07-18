@@ -1,12 +1,12 @@
 import {
-  FileOperationService,
+  FileRepository,
   FileOperationResult,
   FileStats,
   DirectoryEntry,
-} from '../interfaces/FileOperationService.js';
+} from './FileRepository.js';
 import { Uri } from '../interfaces/Uri.js';
 import { MetaYamlUtils, DialogoiTreeItem, MetaYaml } from '../utils/MetaYamlUtils.js';
-import { ForeshadowingData } from './ForeshadowingService.js';
+import { ForeshadowingData } from '../services/ForeshadowingService.js';
 import * as path from 'path';
 import * as yaml from 'js-yaml';
 
@@ -108,9 +108,9 @@ class MockDirectoryEntry implements DirectoryEntry {
 }
 
 /**
- * テスト用のモックFileOperationService
+ * テスト用のモックFileRepository
  */
-export class MockFileOperationService extends FileOperationService {
+export class MockFileRepository extends FileRepository {
   private files: Map<string, string | Buffer> = new Map();
   private directories: Set<string> = new Set();
   private extensionResources: Map<string, string> = new Map();
@@ -354,7 +354,7 @@ export class MockFileOperationService extends FileOperationService {
   }
 
   // === 高レベルなメタデータ操作メソッド ===
-  // 実際の実装では、これらのメソッドはVSCodeFileOperationServiceと同じロジックを使用
+  // 実際の実装では、これらのメソッドはVSCodeFileRepositoryと同じロジックを使用
 
   createFile(
     dirPath: string,

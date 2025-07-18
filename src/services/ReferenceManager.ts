@@ -1,6 +1,6 @@
 import * as path from 'path';
 import { MetaYamlUtils } from '../utils/MetaYamlUtils.js';
-import { FileOperationService } from '../interfaces/FileOperationService.js';
+import { FileRepository } from '../repositories/FileRepository.js';
 
 export interface ReferenceInfo {
   references: string[]; // このファイルが参照しているファイル
@@ -11,7 +11,7 @@ export class ReferenceManager {
   private static instance: ReferenceManager | null = null;
   private referencesMap: Map<string, ReferenceInfo> = new Map();
   private novelRoot: string | null = null;
-  private fileOperationService: FileOperationService | null = null;
+  private fileRepository: FileRepository | null = null;
 
   private constructor() {}
 
@@ -25,9 +25,9 @@ export class ReferenceManager {
   /**
    * 参照関係を初期化（全meta.yamlを走査）
    */
-  initialize(novelRoot: string, fileOperationService: FileOperationService): void {
+  initialize(novelRoot: string, fileRepository: FileRepository): void {
     this.novelRoot = novelRoot;
-    this.fileOperationService = fileOperationService;
+    this.fileRepository = fileRepository;
     this.referencesMap.clear();
     this.scanAllReferences(novelRoot);
   }
@@ -77,10 +77,10 @@ export class ReferenceManager {
    * 指定ディレクトリのmeta.yamlを読み込み、参照関係を構築
    */
   private scanDirectoryReferences(dirPath: string, relativeDirPath: string): void {
-    if (!this.fileOperationService) {
+    if (!this.fileRepository) {
       return;
     }
-    const meta = MetaYamlUtils.loadMetaYaml(dirPath, this.fileOperationService);
+    const meta = MetaYamlUtils.loadMetaYaml(dirPath, this.fileRepository);
     if (!meta) {
       return;
     }
@@ -163,13 +163,13 @@ export class ReferenceManager {
    * 参照先ファイルが存在するかチェック
    */
   checkFileExists(referencedFile: string): boolean {
-    if (this.novelRoot === null || this.fileOperationService === null) {
+    if (this.novelRoot === null || this.fileRepository === null) {
       return false;
     }
 
     const fullPath = path.join(this.novelRoot, referencedFile);
-    const fileUri = this.fileOperationService.createFileUri(fullPath);
-    return this.fileOperationService.existsSync(fileUri);
+    const fileUri = this.fileRepository.createFileUri(fullPath);
+    return this.fileRepository.existsSync(fileUri);
   }
 
   /**

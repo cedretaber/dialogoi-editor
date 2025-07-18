@@ -1,8 +1,8 @@
 import * as path from 'path';
-import { FileOperationService } from '../interfaces/FileOperationService.js';
+import { FileRepository } from '../repositories/FileRepository.js';
 
 export class CharacterService {
-  constructor(private fileOperationService: FileOperationService) {}
+  constructor(private fileRepository: FileRepository) {}
 
   /**
    * マークダウンファイルから表示名を取得
@@ -11,13 +11,13 @@ export class CharacterService {
    */
   extractDisplayName(fileAbsolutePath: string): string {
     try {
-      const fileUri = this.fileOperationService.createFileUri(fileAbsolutePath);
+      const fileUri = this.fileRepository.createFileUri(fileAbsolutePath);
 
-      if (!this.fileOperationService.existsSync(fileUri)) {
+      if (!this.fileRepository.existsSync(fileUri)) {
         return this.getFileNameWithoutExtension(fileAbsolutePath);
       }
 
-      const content = this.fileOperationService.readFileSync(fileUri, 'utf-8');
+      const content = this.fileRepository.readFileSync(fileUri, 'utf-8');
       const lines = content.split('\n');
 
       // 最初の # 見出しを探す

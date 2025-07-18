@@ -13,17 +13,15 @@ export class VSCodeServiceContainer {
     const container = ServiceContainer.getInstance();
 
     try {
-      // VSCodeFileOperationServiceを動的にロード
-      const { VSCodeFileOperationService } = await import(
-        '../services/VSCodeFileOperationService.js'
-      );
-      const fileOperationService = new VSCodeFileOperationService(context);
-      container.setFileOperationService(fileOperationService);
+      // VSCodeFileRepositoryを動的にロード
+      const { VSCodeFileRepository } = await import('../repositories/VSCodeFileRepository.js');
+      const fileRepository = new VSCodeFileRepository(context);
+      container.setFileRepository(fileRepository);
 
       return container;
     } catch (error) {
       throw new Error(
-        `VSCodeFileOperationServiceの読み込みに失敗しました: ${error instanceof Error ? error.message : String(error)}`,
+        `VSCodeFileRepositoryの読み込みに失敗しました: ${error instanceof Error ? error.message : String(error)}`,
       );
     }
   }

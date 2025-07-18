@@ -1,4 +1,4 @@
-import { FileOperationService } from '../interfaces/FileOperationService.js';
+import { FileRepository } from '../repositories/FileRepository.js';
 import { DialogoiYaml, DialogoiYamlUtils } from '../utils/DialogoiYamlUtils.js';
 
 /**
@@ -7,7 +7,7 @@ import { DialogoiYaml, DialogoiYamlUtils } from '../utils/DialogoiYamlUtils.js';
 export class DialogoiTemplateService {
   private static readonly DEFAULT_TEMPLATE_PATH = 'templates/default-dialogoi.yaml';
 
-  constructor(private fileOperationService: FileOperationService) {}
+  constructor(private fileRepository: FileRepository) {}
 
   /**
    * デフォルトテンプレートを読み込む
@@ -15,7 +15,7 @@ export class DialogoiTemplateService {
    */
   async loadDefaultTemplate(): Promise<DialogoiYaml | null> {
     try {
-      const templateContent = await this.fileOperationService.readExtensionResource(
+      const templateContent = await this.fileRepository.readExtensionResource(
         DialogoiTemplateService.DEFAULT_TEMPLATE_PATH,
       );
       return DialogoiYamlUtils.parseDialogoiYaml(templateContent);

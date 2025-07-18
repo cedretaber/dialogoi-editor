@@ -1,11 +1,11 @@
 import * as path from 'path';
-import { FileOperationService } from '../interfaces/FileOperationService.js';
+import { FileRepository } from '../repositories/FileRepository.js';
 import { DialogoiYaml, DialogoiYamlUtils } from '../utils/DialogoiYamlUtils.js';
 
 export class DialogoiYamlService {
   private static readonly DIALOGOI_YAML_FILENAME = 'dialogoi.yaml';
 
-  constructor(private fileOperationService: FileOperationService) {}
+  constructor(private fileRepository: FileRepository) {}
 
   /**
    * 指定されたディレクトリがDialogoiプロジェクトのルートかどうかを判定
@@ -17,8 +17,8 @@ export class DialogoiYamlService {
       directoryAbsolutePath,
       DialogoiYamlService.DIALOGOI_YAML_FILENAME,
     );
-    const uri = this.fileOperationService.createFileUri(dialogoiYamlPath);
-    return this.fileOperationService.existsSync(uri);
+    const uri = this.fileRepository.createFileUri(dialogoiYamlPath);
+    return this.fileRepository.existsSync(uri);
   }
 
   /**
@@ -31,14 +31,14 @@ export class DialogoiYamlService {
       projectRootAbsolutePath,
       DialogoiYamlService.DIALOGOI_YAML_FILENAME,
     );
-    const uri = this.fileOperationService.createFileUri(dialogoiYamlPath);
+    const uri = this.fileRepository.createFileUri(dialogoiYamlPath);
 
-    if (!this.fileOperationService.existsSync(uri)) {
+    if (!this.fileRepository.existsSync(uri)) {
       return null;
     }
 
     try {
-      const content = this.fileOperationService.readFileSync(uri, 'utf8');
+      const content = this.fileRepository.readFileSync(uri, 'utf8');
       return DialogoiYamlUtils.parseDialogoiYaml(content);
     } catch (error) {
       console.error('dialogoi.yaml の読み込みエラー:', error);
@@ -64,7 +64,7 @@ export class DialogoiYamlService {
       projectRootAbsolutePath,
       DialogoiYamlService.DIALOGOI_YAML_FILENAME,
     );
-    const uri = this.fileOperationService.createFileUri(dialogoiYamlPath);
+    const uri = this.fileRepository.createFileUri(dialogoiYamlPath);
 
     try {
       // updated_atを現在時刻に更新
@@ -74,7 +74,7 @@ export class DialogoiYamlService {
       };
 
       const yamlContent = DialogoiYamlUtils.stringifyDialogoiYaml(dataToSave);
-      this.fileOperationService.writeFileSync(uri, yamlContent, 'utf8');
+      this.fileRepository.writeFileSync(uri, yamlContent, 'utf8');
       return true;
     } catch (error) {
       console.error('dialogoi.yaml の保存エラー:', error);
@@ -103,10 +103,10 @@ export class DialogoiYamlService {
     }
 
     // プロジェクトディレクトリが存在しない場合は作成
-    const projectUri = this.fileOperationService.createDirectoryUri(projectRootAbsolutePath);
-    if (!this.fileOperationService.existsSync(projectUri)) {
+    const projectUri = this.fileRepository.createDirectoryUri(projectRootAbsolutePath);
+    if (!this.fileRepository.existsSync(projectUri)) {
       try {
-        this.fileOperationService.createDirectorySync(projectUri);
+        this.fileRepository.createDirectorySync(projectUri);
       } catch (error) {
         console.error('プロジェクトディレクトリの作成エラー:', error);
         return false;

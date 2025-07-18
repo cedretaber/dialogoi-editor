@@ -1,15 +1,15 @@
 import { suite, test, setup } from 'mocha';
 import * as assert from 'assert';
 import { HashService } from './HashService.js';
-import { MockFileOperationService } from './MockFileOperationService.js';
+import { MockFileRepository } from '../repositories/MockFileRepository.js';
 
 suite('HashService テストスイート', () => {
   let hashService: HashService;
-  let mockFileService: MockFileOperationService;
+  let mockFileRepository: MockFileRepository;
 
   setup(() => {
-    mockFileService = new MockFileOperationService();
-    hashService = new HashService(mockFileService);
+    mockFileRepository = new MockFileRepository();
+    hashService = new HashService(mockFileRepository);
   });
 
   suite('calculateContentHash', () => {

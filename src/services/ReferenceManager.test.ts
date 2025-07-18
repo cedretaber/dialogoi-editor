@@ -1,16 +1,16 @@
 import * as assert from 'assert';
 import * as path from 'path';
 import { ReferenceManager } from './ReferenceManager.js';
-import { MockFileOperationService } from './MockFileOperationService.js';
+import { MockFileRepository } from '../repositories/MockFileRepository.js';
 
 suite('ReferenceManager テストスイート', () => {
   let testDir: string;
   let refManager: ReferenceManager;
-  let mockFileService: MockFileOperationService;
+  let mockFileRepository: MockFileRepository;
 
   setup(() => {
     // モックファイルサービスを初期化
-    mockFileService = new MockFileOperationService();
+    mockFileRepository = new MockFileRepository();
     testDir = '/tmp/dialogoi-ref-test';
 
     // テスト用のプロジェクト構造を作成
@@ -23,14 +23,14 @@ suite('ReferenceManager テストスイート', () => {
 
   teardown(() => {
     // モックファイルサービスをリセット
-    mockFileService.reset();
+    mockFileRepository.reset();
     refManager.clear();
   });
 
   function createTestProject(): void {
     // ルートディレクトリを作成
-    mockFileService.addDirectory(testDir);
-    mockFileService.addFile(path.join(testDir, 'dialogoi.yaml'), 'version: 1.0');
+    mockFileRepository.addDirectory(testDir);
+    mockFileRepository.addFile(path.join(testDir, 'dialogoi.yaml'), 'version: 1.0');
 
     // ルートのmeta.yamlを作成
     const rootMeta = `readme: README.md
@@ -40,11 +40,11 @@ files:
   - name: settings
     type: subdirectory
 `;
-    mockFileService.addFile(path.join(testDir, 'meta.yaml'), rootMeta);
+    mockFileRepository.addFile(path.join(testDir, 'meta.yaml'), rootMeta);
 
     // contentsディレクトリとmeta.yamlを作成
     const contentsDir = path.join(testDir, 'contents');
-    mockFileService.addDirectory(contentsDir);
+    mockFileRepository.addDirectory(contentsDir);
 
     const contentsMeta = `readme: README.md
 files:
@@ -58,13 +58,13 @@ files:
     references:
       - settings/magic.md
 `;
-    mockFileService.addFile(path.join(contentsDir, 'meta.yaml'), contentsMeta);
-    mockFileService.addFile(path.join(contentsDir, 'chapter1.txt'), 'Chapter 1 content');
-    mockFileService.addFile(path.join(contentsDir, 'chapter2.txt'), 'Chapter 2 content');
+    mockFileRepository.addFile(path.join(contentsDir, 'meta.yaml'), contentsMeta);
+    mockFileRepository.addFile(path.join(contentsDir, 'chapter1.txt'), 'Chapter 1 content');
+    mockFileRepository.addFile(path.join(contentsDir, 'chapter2.txt'), 'Chapter 2 content');
 
     // settingsディレクトリとmeta.yamlを作成
     const settingsDir = path.join(testDir, 'settings');
-    mockFileService.addDirectory(settingsDir);
+    mockFileRepository.addDirectory(settingsDir);
 
     const settingsMeta = `readme: README.md
 files:
@@ -75,13 +75,13 @@ files:
   - name: characters
     type: subdirectory
 `;
-    mockFileService.addFile(path.join(settingsDir, 'meta.yaml'), settingsMeta);
-    mockFileService.addFile(path.join(settingsDir, 'world.md'), 'World setting');
-    mockFileService.addFile(path.join(settingsDir, 'magic.md'), 'Magic system');
+    mockFileRepository.addFile(path.join(settingsDir, 'meta.yaml'), settingsMeta);
+    mockFileRepository.addFile(path.join(settingsDir, 'world.md'), 'World setting');
+    mockFileRepository.addFile(path.join(settingsDir, 'magic.md'), 'Magic system');
 
     // settings/charactersディレクトリとmeta.yamlを作成
     const charactersDir = path.join(settingsDir, 'characters');
-    mockFileService.addDirectory(charactersDir);
+    mockFileRepository.addDirectory(charactersDir);
 
     const charactersMeta = `readme: README.md
 files:
@@ -91,12 +91,12 @@ files:
       importance: main
       multiple_characters: false
 `;
-    mockFileService.addFile(path.join(charactersDir, 'meta.yaml'), charactersMeta);
-    mockFileService.addFile(path.join(charactersDir, 'hero.md'), 'Hero character');
+    mockFileRepository.addFile(path.join(charactersDir, 'meta.yaml'), charactersMeta);
+    mockFileRepository.addFile(path.join(charactersDir, 'hero.md'), 'Hero character');
   }
 
   test('初期化が正しく動作する', () => {
-    refManager.initialize(testDir, mockFileService);
+    refManager.initialize(testDir, mockFileRepository);
 
     // chapter1.txtの参照関係をチェック
     const chapter1Refs = refManager.getReferences(path.join(testDir, 'contents', 'chapter1.txt'));
@@ -123,7 +123,7 @@ files:
   });
 
   test('単一ファイルの参照関係を更新できる', () => {
-    refManager.initialize(testDir, mockFileService);
+    refManager.initialize(testDir, mockFileRepository);
 
     const filePath = path.join(testDir, 'contents', 'chapter1.txt');
     const newReferences = ['settings/world.md', 'settings/magic.md']; // hero.mdを削除、magic.mdを追加
@@ -148,7 +148,7 @@ files:
   });
 
   test('存在しないファイルの参照関係を取得すると空の配列が返る', () => {
-    refManager.initialize(testDir, mockFileService);
+    refManager.initialize(testDir, mockFileRepository);
 
     const nonExistentPath = path.join(testDir, 'non-existent.txt');
     const refs = refManager.getReferences(nonExistentPath);
@@ -158,7 +158,7 @@ files:
   });
 
   test('clearメソッドで参照関係がクリアされる', () => {
-    refManager.initialize(testDir, mockFileService);
+    refManager.initialize(testDir, mockFileRepository);
 
     // 初期化後は参照関係がある
     const chapter1Refs = refManager.getReferences(path.join(testDir, 'contents', 'chapter1.txt'));
@@ -175,7 +175,7 @@ files:
   });
 
   test('ファイルの存在チェックが正しく動作する', () => {
-    refManager.initialize(testDir, mockFileService);
+    refManager.initialize(testDir, mockFileRepository);
 
     // 存在するファイル
     assert.strictEqual(refManager.checkFileExists('settings/world.md'), true);
@@ -187,7 +187,7 @@ files:
   });
 
   test('無効な参照先ファイルを取得できる', () => {
-    refManager.initialize(testDir, mockFileService);
+    refManager.initialize(testDir, mockFileRepository);
 
     // chapter1.txtに存在しない参照を追加
     const filePath = path.join(testDir, 'contents', 'chapter1.txt');
@@ -207,7 +207,7 @@ files:
   });
 
   test('空の参照配列で更新すると参照関係が削除される', () => {
-    refManager.initialize(testDir, mockFileService);
+    refManager.initialize(testDir, mockFileRepository);
 
     const filePath = path.join(testDir, 'contents', 'chapter1.txt');
 
@@ -228,7 +228,7 @@ files:
   });
 
   test('同じファイルを複数回参照しても重複しない', () => {
-    refManager.initialize(testDir, mockFileService);
+    refManager.initialize(testDir, mockFileRepository);
 
     const filePath = path.join(testDir, 'contents', 'chapter1.txt');
     const duplicateReferences = [

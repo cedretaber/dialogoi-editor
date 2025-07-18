@@ -1,4 +1,4 @@
-import { FileOperationService, DirectoryEntry } from '../interfaces/FileOperationService.js';
+import { FileRepository, DirectoryEntry } from '../repositories/FileRepository.js';
 import { DialogoiYamlService } from './DialogoiYamlService.js';
 import { DialogoiTemplateService } from './DialogoiTemplateService.js';
 import { MetaYaml } from '../utils/MetaYamlUtils.js';
@@ -35,7 +35,7 @@ export interface ProjectCreationOptions {
  */
 export class ProjectCreationService {
   constructor(
-    private fileOperationService: FileOperationService,
+    private fileRepository: FileRepository,
     private dialogoiYamlService: DialogoiYamlService,
     private templateService: DialogoiTemplateService,
   ) {}
@@ -61,9 +61,9 @@ export class ProjectCreationService {
 
     try {
       // 1. プロジェクトディレクトリの存在確認・作成
-      const projectUri = this.fileOperationService.createDirectoryUri(projectRootAbsolutePath);
-      if (!this.fileOperationService.existsSync(projectUri)) {
-        this.fileOperationService.createDirectorySync(projectUri);
+      const projectUri = this.fileRepository.createDirectoryUri(projectRootAbsolutePath);
+      if (!this.fileRepository.existsSync(projectUri)) {
+        this.fileRepository.createDirectorySync(projectUri);
         result.createdFiles?.push(projectRootAbsolutePath);
       }
 
@@ -225,13 +225,13 @@ export class ProjectCreationService {
     overwriteMetaYaml: boolean,
     result: ProjectCreationResult,
   ): Promise<void> {
-    const currentUri = this.fileOperationService.createDirectoryUri(currentAbsolutePath);
+    const currentUri = this.fileRepository.createDirectoryUri(currentAbsolutePath);
 
-    if (!this.fileOperationService.existsSync(currentUri)) {
+    if (!this.fileRepository.existsSync(currentUri)) {
       return;
     }
 
-    const stats = this.fileOperationService.statSync(currentUri);
+    const stats = this.fileRepository.statSync(currentUri);
     if (!stats.isDirectory()) {
       return;
     }
@@ -244,7 +244,7 @@ export class ProjectCreationService {
     }
 
     // ディレクトリ内のファイルを取得
-    const entries = this.fileOperationService.readdirSync(currentUri, {
+    const entries = this.fileRepository.readdirSync(currentUri, {
       withFileTypes: true,
     }) as DirectoryEntry[];
     const files: string[] = [];
@@ -270,8 +270,8 @@ export class ProjectCreationService {
 
     // meta.yamlを作成または更新
     const metaYamlPath = path.join(currentAbsolutePath, 'meta.yaml');
-    const metaYamlUri = this.fileOperationService.createFileUri(metaYamlPath);
-    const metaYamlExists = this.fileOperationService.existsSync(metaYamlUri);
+    const metaYamlUri = this.fileRepository.createFileUri(metaYamlPath);
+    const metaYamlExists = this.fileRepository.existsSync(metaYamlUri);
 
     if (metaYamlExists === true && overwriteMetaYaml !== true) {
       result.skippedFiles?.push(metaYamlPath);
@@ -279,7 +279,7 @@ export class ProjectCreationService {
       const metaYaml = this.createMetaYamlFromFiles(files, readmeFilename);
       const yamlContent = yaml.dump(metaYaml, { flowLevel: -1, lineWidth: -1 });
 
-      this.fileOperationService.writeFileSync(metaYamlUri, yamlContent);
+      this.fileRepository.writeFileSync(metaYamlUri, yamlContent);
       result.createdFiles?.push(metaYamlPath);
     }
 

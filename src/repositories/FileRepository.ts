@@ -1,4 +1,4 @@
-import { Uri } from './Uri.js';
+import { Uri } from '../interfaces/Uri.js';
 import { DialogoiTreeItem } from '../utils/MetaYamlUtils.js';
 import { ForeshadowingData } from '../services/ForeshadowingService.js';
 
@@ -46,9 +46,9 @@ export interface DirectoryEntry {
 }
 
 /**
- * ファイル操作を抽象化するサービス
+ * ファイル操作を抽象化するリポジトリ
  */
-export abstract class FileOperationService {
+export abstract class FileRepository {
   // === 基本的なファイル操作メソッド ===
 
   /**

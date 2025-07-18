@@ -1,7 +1,7 @@
 import * as path from 'path';
 import * as yaml from 'js-yaml';
 import { ReviewSummary } from '../models/Review.js';
-import { FileOperationService, DirectoryEntry } from '../interfaces/FileOperationService.js';
+import { FileRepository, DirectoryEntry } from '../repositories/FileRepository.js';
 
 export interface DialogoiTreeItem {
   name: string;
@@ -50,7 +50,7 @@ export class MetaYamlUtils {
 
   static loadMetaYaml(
     dirAbsolutePath: string,
-    fileOperationService: FileOperationService,
+    fileOperationService: FileRepository,
   ): MetaYaml | null {
     const metaAbsolutePath = path.join(dirAbsolutePath, 'meta.yaml');
 
@@ -69,7 +69,7 @@ export class MetaYamlUtils {
 
   static getReadmeFilePath(
     dirAbsolutePath: string,
-    fileOperationService: FileOperationService,
+    fileOperationService: FileRepository,
   ): string | null {
     const meta = this.loadMetaYaml(dirAbsolutePath, fileOperationService);
 
@@ -88,7 +88,7 @@ export class MetaYamlUtils {
 
   static findNovelRoot(
     workspaceRootAbsolutePath: string,
-    fileOperationService: FileOperationService,
+    fileOperationService: FileRepository,
   ): string | null {
     const findDialogoiYaml = (dirAbsolutePath: string): string | null => {
       const dirUri = fileOperationService.createFileUri(dirAbsolutePath);
@@ -198,7 +198,7 @@ export class MetaYamlUtils {
     dirAbsolutePath: string,
     fileName: string,
     reviewSummary: ReviewSummary | null,
-    fileOperationService: FileOperationService,
+    fileOperationService: FileRepository,
   ): boolean {
     const metaAbsolutePath = path.join(dirAbsolutePath, 'meta.yaml');
 
@@ -263,7 +263,7 @@ export class MetaYamlUtils {
   static removeReviewInfo(
     dirAbsolutePath: string,
     fileName: string,
-    fileOperationService: FileOperationService,
+    fileOperationService: FileRepository,
   ): boolean {
     return this.updateReviewInfo(dirAbsolutePath, fileName, null, fileOperationService);
   }

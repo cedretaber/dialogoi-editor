@@ -4,13 +4,13 @@ import * as path from 'path';
 import { ReviewService } from './ReviewService.js';
 import { CreateReviewOptions } from '../models/Review.js';
 import { TestServiceContainer } from '../di/TestServiceContainer.js';
-import { MockFileOperationService } from './MockFileOperationService.js';
+import { MockFileRepository } from '../repositories/MockFileRepository.js';
 
 describe('ReviewService テストスイート', () => {
   let workspaceRootPath: string;
   let reviewService: ReviewService;
   let testRelativeFilePath: string;
-  let mockFileOperationService: MockFileOperationService;
+  let mockFileRepository: MockFileRepository;
 
   beforeEach(() => {
     // テスト用サービスコンテナを初期化
@@ -18,17 +18,17 @@ describe('ReviewService テストスイート', () => {
     container.reset();
 
     // モックファイルサービスを取得
-    mockFileOperationService = container.getMockFileOperationService();
+    mockFileRepository = container.getMockFileRepository();
 
     // テスト用のワークスペースを設定
     workspaceRootPath = '/workspace';
-    const workspaceRoot = mockFileOperationService.createFileUri(workspaceRootPath);
+    const workspaceRoot = mockFileRepository.createFileUri(workspaceRootPath);
     reviewService = container.getReviewService(workspaceRoot);
     testRelativeFilePath = 'test.txt';
 
     // テストファイルを作成
     const fullTestAbsolutePath = path.join(workspaceRootPath, testRelativeFilePath);
-    mockFileOperationService.addFile(fullTestAbsolutePath, 'Hello, World!\nThis is a test file.\n');
+    mockFileRepository.addFile(fullTestAbsolutePath, 'Hello, World!\nThis is a test file.\n');
   });
 
   afterEach(() => {
