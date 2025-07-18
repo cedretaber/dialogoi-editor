@@ -156,6 +156,36 @@ tags: ["ファンタジー", "青春", "学園"]
 
 - `updated_at` (string): ファイル変更時に自動更新（将来実装予定）
 
+### プロジェクト設定
+
+- `project_settings` (object): プロジェクト固有の設定
+  - `readme_filename` (string): READMEファイル名（デフォルト: "README.md"）
+  - `exclude_patterns` (array): 除外パターン（glob形式）
+
+### 例（プロジェクト設定付き）
+
+```yaml
+title: "新しい小説"
+author: "著者名"
+version: "1.0.0"
+created_at: "2024-01-01T00:00:00Z"
+tags: ["ファンタジー", "青春"]
+
+project_settings:
+  readme_filename: "README.md"
+  exclude_patterns:
+    - ".*"                    # 隠しファイル
+    - ".DS_Store"             # macOS システムファイル
+    - "Thumbs.db"             # Windows システムファイル
+    - "*.tmp"                 # 一時ファイル
+    - "*.bak"                 # バックアップファイル
+    - "node_modules/"         # Node.js 依存関係
+    - ".git/"                 # Git リポジトリ
+    - ".vscode/"              # VSCode 設定
+    - "*.log"                 # ログファイル
+    - ".dialogoi-cache/"      # Dialogoi キャッシュ
+```
+
 ## ファイル管理ルール
 
 1. **管理対象の判定**
@@ -254,6 +284,45 @@ reviews:
 - サイドパネルでレビュー一覧表示
 - フィルタリング機能（ステータス、レビュアー、重要度）
 - スレッド形式での議論が可能
+
+## プロジェクト新規作成機能
+
+### 概要
+
+既存のディレクトリを Dialogoi Editor で管理する小説プロジェクトに変換する機能。
+
+### 機能
+
+1. **`dialogoi.yaml` 作成**: プロジェクトメタデータファイルを生成
+2. **再帰的スキャン**: 指定ディレクトリ以下のすべてのファイルを検索
+3. **自動 `meta.yaml` 生成**: 各ディレクトリに適切な `meta.yaml` を作成
+4. **ファイル種別自動判定**: 
+   - `.txt` → `content` (本文)
+   - `.md` → `setting` (設定)
+   - その他 → `setting` (設定)
+5. **既存ファイル尊重**: 既存の `meta.yaml` や `dialogoi.yaml` は変更しない
+6. **除外パターン**: 不要なファイルを自動的に除外
+
+### 除外パターン
+
+デフォルトで以下のパターンが除外されます：
+
+- `.*` - 隠しファイル
+- `.DS_Store` - macOS システムファイル
+- `Thumbs.db` - Windows システムファイル
+- `*.tmp`, `*.bak` - 一時・バックアップファイル
+- `node_modules/`, `.git/`, `.vscode/` - 開発関連ディレクトリ
+- `*.log` - ログファイル
+- `.dialogoi-cache/` - Dialogoi キャッシュ
+
+### 処理フロー
+
+1. ユーザーが「新規プロジェクト作成」を選択
+2. プロジェクトメタデータ（タイトル、著者、タグ）を入力
+3. 指定ディレクトリの再帰的スキャン
+4. 除外パターンに基づいてファイルをフィルタリング
+5. 各ディレクトリに対して `meta.yaml` を作成（既存があれば保持）
+6. プロジェクトルートに `dialogoi.yaml` を作成
 
 ## 今後の拡張予定
 

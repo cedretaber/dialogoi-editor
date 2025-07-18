@@ -30,6 +30,7 @@
 - **js-yaml** ✅ - YAMLファイルの読み書き（実装済み）
 - **mocha + tsx** ✅ - テストフレームワーク（実装済み）
 - **crypto (Node.js標準)** ✅ - SHA-256ハッシュ計算（実装済み）
+- **micromatch** ✅ - glob パターンマッチング（実装済み）
 - **ajv** (予定) - YAMLスキーマのバリデーション
 - **React** (WebView用・予定) - リッチなUI構築用
 - **青空文庫パーサー** (予定) - 将来的な実装予定
@@ -52,6 +53,8 @@
 │  ├─ ReviewService ✅ (レビュー管理)             │
 │  ├─ HashService ✅ (ハッシュ計算)               │
 │  ├─ MetaYamlUtils ✅ (meta.yaml管理)            │
+│  ├─ DialogoiYamlService ✅ (dialogoi.yaml管理)  │
+│  ├─ ProjectCreationService ✅ (プロジェクト作成) │
 │  ├─ File Watcher (予定) (ファイル監視)          │
 │  └─ Validation Service (バリデーション)         │
 ├─────────────────────────────────────────────────┤
@@ -249,7 +252,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
 
 1. **初期化**
    - Extension 起動時に小説ルートディレクトリを検索
-   - `dialogoi.yaml` の存在確認
+   - `dialogoi.yaml` の存在確認とプロジェクトルート特定
    - `meta.yaml` を再帰的に読み込み
 
 2. **表示**
@@ -272,12 +275,13 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
 - [x] ファイル名変更機能
 - [x] 包括的なテストスイート
 
-### Phase 2: メタデータ管理 🔄 **進行中**
+### Phase 2: メタデータ管理 ✅ **完了**
 - [x] タグシステムの実装
 - [x] 参照関係の管理
 - [x] ファイルハッシュ変更検知システム
 - [x] レビュー機能の基本実装
-- [ ] 設定種別ごとの専用UI
+- [x] dialogoi.yaml の仕様策定と実装
+- [x] プロジェクト新規作成機能の実装
 
 ### Phase 3: 高度な機能
 - [ ] WebView による詳細画面
