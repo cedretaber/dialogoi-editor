@@ -77,7 +77,10 @@ export class ReferenceManager {
    * 指定ディレクトリのmeta.yamlを読み込み、参照関係を構築
    */
   private scanDirectoryReferences(dirPath: string, relativeDirPath: string): void {
-    const meta = MetaYamlUtils.loadMetaYaml(dirPath, this.fileOperationService!);
+    if (!this.fileOperationService) {
+      return;
+    }
+    const meta = MetaYamlUtils.loadMetaYaml(dirPath, this.fileOperationService);
     if (!meta) {
       return;
     }

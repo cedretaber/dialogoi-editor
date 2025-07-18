@@ -43,9 +43,9 @@ export function registerReviewCommands(
   // レビューを表示するコマンド
   const showReviewsCommand = vscode.commands.registerCommand(
     'dialogoi.showReviews',
-    async (fileItem: FileItem) => {
+    (fileItem: FileItem) => {
       try {
-        await showReviewsHandler(reviewService, fileItem);
+        showReviewsHandler(reviewService, fileItem);
       } catch (error) {
         const errorMessage = error instanceof Error ? error.message : String(error);
         vscode.window.showErrorMessage(`レビューの表示に失敗しました: ${errorMessage}`);
@@ -192,7 +192,7 @@ async function addReviewHandler(reviewService: ReviewService, fileItem: FileItem
 /**
  * レビュー表示のハンドラー
  */
-async function showReviewsHandler(reviewService: ReviewService, fileItem: FileItem): Promise<void> {
+function showReviewsHandler(reviewService: ReviewService, fileItem: FileItem): void {
   if (!fileItem?.path) {
     vscode.window.showErrorMessage('ファイルが選択されていません');
     return;

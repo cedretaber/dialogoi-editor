@@ -45,7 +45,7 @@ class VSCodeUri implements Uri {
     return this._uri.toString();
   }
   toJSON(): object {
-    return this._uri.toJSON();
+    return this._uri.toJSON() as object;
   }
 
   get vsCodeUri(): vscode.Uri {
@@ -121,10 +121,57 @@ export class VSCodeFileOperationService extends FileOperationService {
     }
   }
 
-  readFileSync(uri: Uri, encoding?: BufferEncoding): string;
+  readFileSync(
+    uri: Uri,
+    encoding?:
+      | 'ascii'
+      | 'utf8'
+      | 'utf-8'
+      | 'utf16le'
+      | 'utf-16le'
+      | 'ucs2'
+      | 'ucs-2'
+      | 'base64'
+      | 'base64url'
+      | 'latin1'
+      | 'binary'
+      | 'hex',
+  ): string;
   readFileSync(uri: Uri, encoding?: null): Buffer;
-  readFileSync(uri: Uri, encoding?: BufferEncoding | null): string | Buffer;
-  readFileSync(uri: Uri, encoding?: BufferEncoding | null): string | Buffer {
+  readFileSync(
+    uri: Uri,
+    encoding?:
+      | 'ascii'
+      | 'utf8'
+      | 'utf-8'
+      | 'utf16le'
+      | 'utf-16le'
+      | 'ucs2'
+      | 'ucs-2'
+      | 'base64'
+      | 'base64url'
+      | 'latin1'
+      | 'binary'
+      | 'hex'
+      | null,
+  ): string | Buffer;
+  readFileSync(
+    uri: Uri,
+    encoding?:
+      | 'ascii'
+      | 'utf8'
+      | 'utf-8'
+      | 'utf16le'
+      | 'utf-16le'
+      | 'ucs2'
+      | 'ucs-2'
+      | 'base64'
+      | 'base64url'
+      | 'latin1'
+      | 'binary'
+      | 'hex'
+      | null,
+  ): string | Buffer {
     const vsCodeUri = (uri as VSCodeUri).vsCodeUri;
     try {
       // 同様に、一時的にfs.readFileSyncを使用
@@ -136,7 +183,23 @@ export class VSCodeFileOperationService extends FileOperationService {
     }
   }
 
-  writeFileSync(uri: Uri, data: string | Buffer, encoding?: BufferEncoding): void {
+  writeFileSync(
+    uri: Uri,
+    data: string | Buffer,
+    encoding?:
+      | 'ascii'
+      | 'utf8'
+      | 'utf-8'
+      | 'utf16le'
+      | 'utf-16le'
+      | 'ucs2'
+      | 'ucs-2'
+      | 'base64'
+      | 'base64url'
+      | 'latin1'
+      | 'binary'
+      | 'hex',
+  ): void {
     const vsCodeUri = (uri as VSCodeUri).vsCodeUri;
     try {
       // 同様に、一時的にfs.writeFileSyncを使用
@@ -188,7 +251,7 @@ export class VSCodeFileOperationService extends FileOperationService {
   readdirSync(uri: Uri, options?: { withFileTypes?: boolean }): string[] | DirectoryEntry[] {
     const vsCodeUri = (uri as VSCodeUri).vsCodeUri;
     try {
-      if (options?.withFileTypes) {
+      if (options?.withFileTypes === true) {
         const results = fs.readdirSync(vsCodeUri.fsPath, { withFileTypes: true });
         return results.map(
           (dirent: fs.Dirent) =>
