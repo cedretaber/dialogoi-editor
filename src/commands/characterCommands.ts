@@ -31,7 +31,11 @@ export function registerCharacterCommands(
 
       if (selected !== undefined) {
         const fileOperationService = ServiceContainer.getInstance().getFileOperationService();
-        const result = fileOperationService.setCharacterImportance(dirPath, fileName, selected.value);
+        const result = fileOperationService.setCharacterImportance(
+          dirPath,
+          fileName,
+          selected.value,
+        );
 
         if (result.success) {
           provider.refresh();

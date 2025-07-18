@@ -14,7 +14,6 @@ type BufferEncoding =
   | 'binary'
   | 'hex';
 
-
 /**
  * ファイル統計情報を表すインターフェイス
  */

@@ -1,10 +1,6 @@
 import * as vscode from 'vscode';
 import * as fs from 'fs';
-import {
-  FileRepository,
-  FileStats,
-  DirectoryEntry,
-} from './FileRepository.js';
+import { FileRepository, FileStats, DirectoryEntry } from './FileRepository.js';
 import { Uri } from '../interfaces/Uri.js';
 
 /**

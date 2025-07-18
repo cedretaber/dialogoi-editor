@@ -52,7 +52,7 @@ export class ServiceContainer implements IServiceContainer {
     if (ServiceContainer.testInstance !== null) {
       return ServiceContainer.testInstance;
     }
-    
+
     if (!ServiceContainer.instance) {
       ServiceContainer.instance = new ServiceContainer();
     }

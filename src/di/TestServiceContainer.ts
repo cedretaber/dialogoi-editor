@@ -200,7 +200,7 @@ export class TestServiceContainer implements IServiceContainer {
     if (this.fileRepository instanceof MockFileRepository) {
       this.fileRepository.reset();
     }
-    
+
     // ReferenceManagerのクリア
     if (this.referenceManager) {
       this.referenceManager.clear();

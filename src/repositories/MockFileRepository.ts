@@ -1,8 +1,4 @@
-import {
-  FileRepository,
-  FileStats,
-  DirectoryEntry,
-} from './FileRepository.js';
+import { FileRepository, FileStats, DirectoryEntry } from './FileRepository.js';
 import { Uri } from '../interfaces/Uri.js';
 import * as path from 'path';
 
@@ -349,4 +345,3 @@ export class MockFileRepository extends FileRepository {
     return Promise.resolve(content);
   }
 }
-

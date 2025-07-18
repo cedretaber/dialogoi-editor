@@ -16,7 +16,7 @@ export class VSCodeServiceContainer {
       // VSCodeFileRepositoryを動的にロード
       const { VSCodeFileRepository } = await import('../repositories/VSCodeFileRepository.js');
       const fileRepository = new VSCodeFileRepository(context);
-      
+
       // ServiceContainerが具体的なクラスなのでキャストして使用
       if (container instanceof ServiceContainer) {
         container.setFileRepository(fileRepository);

@@ -189,7 +189,13 @@ export class DialogoiTreeDataProvider implements vscode.TreeDataProvider<Dialogo
     tags: string[] = [],
   ): void {
     const fileOperationService = ServiceContainer.getInstance().getFileOperationService();
-    const result = fileOperationService.createFile(dirPath, fileName, fileType, initialContent, tags);
+    const result = fileOperationService.createFile(
+      dirPath,
+      fileName,
+      fileType,
+      initialContent,
+      tags,
+    );
 
     if (result.success) {
       this.refresh();
