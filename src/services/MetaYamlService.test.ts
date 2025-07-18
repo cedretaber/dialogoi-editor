@@ -40,7 +40,7 @@ files:
       mockFileRepository.addFile(`${testDir}/meta.yaml`, metaContent);
 
       const result = service.loadMetaYaml(testDir);
-      
+
       assert.notStrictEqual(result, null);
       assert.strictEqual(result?.readme, 'README.md');
       assert.strictEqual(result?.files.length, 2);
@@ -91,7 +91,7 @@ files:
       mockFileRepository.addFile(`${testDir}/meta.yaml`, metaContent);
 
       const result = service.loadMetaYaml(testDir);
-      
+
       assert.notStrictEqual(result, null);
       assert.strictEqual(result?.readme, undefined);
       assert.strictEqual(result?.files.length, 0);
@@ -410,11 +410,11 @@ files:
       // 更新されたmeta.yamlを確認
       const updatedMeta = service.loadMetaYaml(testDir);
       assert.notStrictEqual(updatedMeta, null);
-      
+
       if (updatedMeta !== null) {
-        const fileItem = updatedMeta.files.find(f => f.name === fileName);
+        const fileItem = updatedMeta.files.find((f) => f.name === fileName);
         assert.notStrictEqual(fileItem, undefined);
-        
+
         if (fileItem !== undefined) {
           assert.strictEqual(typeof fileItem.reviews, 'string');
           assert.strictEqual(fileItem.review_count?.open, 2);
@@ -447,11 +447,11 @@ files:
       // 更新されたmeta.yamlを確認
       const updatedMeta = service.loadMetaYaml(testDir);
       assert.notStrictEqual(updatedMeta, null);
-      
+
       if (updatedMeta !== null) {
-        const fileItem = updatedMeta.files.find(f => f.name === fileName);
+        const fileItem = updatedMeta.files.find((f) => f.name === fileName);
         assert.notStrictEqual(fileItem, undefined);
-        
+
         if (fileItem !== undefined) {
           assert.strictEqual(fileItem.reviews, undefined);
           assert.strictEqual(fileItem.review_count, undefined);
@@ -484,11 +484,11 @@ files:
       // 更新されたmeta.yamlを確認
       const updatedMeta = service.loadMetaYaml(testDir);
       assert.notStrictEqual(updatedMeta, null);
-      
+
       if (updatedMeta !== null) {
-        const fileItem = updatedMeta.files.find(f => f.name === fileName);
+        const fileItem = updatedMeta.files.find((f) => f.name === fileName);
         assert.notStrictEqual(fileItem, undefined);
-        
+
         if (fileItem !== undefined) {
           assert.strictEqual(fileItem.reviews, undefined);
           assert.strictEqual(fileItem.review_count, undefined);
@@ -521,11 +521,11 @@ files:
       // 更新されたmeta.yamlを確認
       const updatedMeta = service.loadMetaYaml(testDir);
       assert.notStrictEqual(updatedMeta, null);
-      
+
       if (updatedMeta !== null) {
-        const fileItem = updatedMeta.files.find(f => f.name === fileName);
+        const fileItem = updatedMeta.files.find((f) => f.name === fileName);
         assert.notStrictEqual(fileItem, undefined);
-        
+
         if (fileItem !== undefined) {
           assert.strictEqual(fileItem.review_count?.open, 1);
           assert.strictEqual(fileItem.review_count?.in_progress, undefined);
@@ -617,11 +617,11 @@ files:
       // 更新されたmeta.yamlを確認
       const updatedMeta = service.loadMetaYaml(testDir);
       assert.notStrictEqual(updatedMeta, null);
-      
+
       if (updatedMeta !== null) {
-        const fileItem = updatedMeta.files.find(f => f.name === fileName);
+        const fileItem = updatedMeta.files.find((f) => f.name === fileName);
         assert.notStrictEqual(fileItem, undefined);
-        
+
         if (fileItem !== undefined) {
           assert.strictEqual(fileItem.reviews, undefined);
           assert.strictEqual(fileItem.review_count, undefined);
@@ -647,11 +647,11 @@ files:
       // meta.yamlに変更がないことを確認
       const updatedMeta = service.loadMetaYaml(testDir);
       assert.notStrictEqual(updatedMeta, null);
-      
+
       if (updatedMeta !== null) {
-        const fileItem = updatedMeta.files.find(f => f.name === fileName);
+        const fileItem = updatedMeta.files.find((f) => f.name === fileName);
         assert.notStrictEqual(fileItem, undefined);
-        
+
         if (fileItem !== undefined) {
           assert.strictEqual(fileItem.reviews, undefined);
           assert.strictEqual(fileItem.review_count, undefined);
@@ -748,9 +748,9 @@ files:
       assert.notStrictEqual(loadedMeta, null);
 
       if (loadedMeta !== null) {
-        const fileItem = loadedMeta.files.find(f => f.name === fileName);
+        const fileItem = loadedMeta.files.find((f) => f.name === fileName);
         assert.notStrictEqual(fileItem, undefined);
-        
+
         if (fileItem !== undefined) {
           assert.strictEqual(typeof fileItem.reviews, 'string');
           assert.strictEqual(fileItem.review_count?.open, 2);
@@ -769,9 +769,9 @@ files:
       assert.notStrictEqual(loadedMeta2, null);
 
       if (loadedMeta2 !== null) {
-        const fileItem2 = loadedMeta2.files.find(f => f.name === fileName);
+        const fileItem2 = loadedMeta2.files.find((f) => f.name === fileName);
         assert.notStrictEqual(fileItem2, undefined);
-        
+
         if (fileItem2 !== undefined) {
           assert.strictEqual(fileItem2.reviews, undefined);
           assert.strictEqual(fileItem2.review_count, undefined);

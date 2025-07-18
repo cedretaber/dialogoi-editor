@@ -37,7 +37,7 @@ files:
       assert.notStrictEqual(result, null);
       assert.strictEqual(result?.readme, 'README.md');
       assert.strictEqual(result?.files.length, 2);
-      
+
       const file1 = result?.files[0];
       assert.strictEqual(file1?.name, 'chapter1.txt');
       assert.strictEqual(file1?.type, 'content');
@@ -152,7 +152,7 @@ files:
       };
 
       const result = MetaYamlUtils.stringifyMetaYaml(meta);
-      
+
       // 結果の検証
       assert.strictEqual(typeof result, 'string');
       assert.ok(result.includes('readme: README.md'));
@@ -181,7 +181,7 @@ files:
       };
 
       const result = MetaYamlUtils.stringifyMetaYaml(meta);
-      
+
       assert.strictEqual(typeof result, 'string');
       assert.ok(result.includes('name: test.txt'));
       assert.ok(result.includes('type: content'));
@@ -195,7 +195,7 @@ files:
       };
 
       const result = MetaYamlUtils.stringifyMetaYaml(meta);
-      
+
       assert.strictEqual(typeof result, 'string');
       assert.ok(result.includes('readme: README.md'));
       assert.ok(result.includes('files: []'));
@@ -360,9 +360,7 @@ files:
       assert.strictEqual(errors.length, 1);
       const firstError = errors[0];
       if (firstError !== undefined) {
-        assert.ok(
-          firstError.includes('character.display_name は string である必要があります'),
-        );
+        assert.ok(firstError.includes('character.display_name は string である必要があります'));
       }
     });
 
@@ -456,8 +454,8 @@ files:
 
       const errors = MetaYamlUtils.validateMetaYaml(meta);
       assert.ok(errors.length > 0);
-      assert.ok(errors.some(error => error.includes('files[1]:')));
-      assert.ok(errors.some(error => error.includes('files[2]:')));
+      assert.ok(errors.some((error) => error.includes('files[1]:')));
+      assert.ok(errors.some((error) => error.includes('files[2]:')));
     });
   });
 
@@ -559,11 +557,11 @@ files:
       const yamlString = MetaYamlUtils.stringifyMetaYaml(originalMeta);
       const parsedMeta = MetaYamlUtils.parseMetaYaml(yamlString);
       assert.notStrictEqual(parsedMeta, null);
-      
+
       if (parsedMeta !== null) {
         const yamlString2 = MetaYamlUtils.stringifyMetaYaml(parsedMeta);
         const parsedMeta2 = MetaYamlUtils.parseMetaYaml(yamlString2);
-        
+
         // 両方の変換結果が同じであることを確認
         assert.deepStrictEqual(parsedMeta, parsedMeta2);
       }
