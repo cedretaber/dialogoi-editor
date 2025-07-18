@@ -113,6 +113,7 @@ class MockDirectoryEntry implements DirectoryEntry {
 export class MockFileOperationService extends FileOperationService {
   private files: Map<string, string | Buffer> = new Map();
   private directories: Set<string> = new Set();
+  private extensionResources: Map<string, string> = new Map();
 
   constructor() {
     super();
@@ -141,6 +142,27 @@ export class MockFileOperationService extends FileOperationService {
     if (parentDir && !this.directories.has(parentDir)) {
       this.directories.add(parentDir);
     }
+  }
+
+  /**
+   * ファイルを手動で追加（テスト用）- addFileのエイリアス
+   */
+  createFileForTest(path: string, content: string | Buffer): void {
+    this.addFile(path, content);
+  }
+
+  /**
+   * ディレクトリを手動で追加（テスト用）
+   */
+  createDirectoryForTest(path: string): void {
+    this.addDirectory(path);
+  }
+
+  /**
+   * 拡張機能リソースを設定（テスト用）
+   */
+  setExtensionResource(resourcePath: string, content: string): void {
+    this.extensionResources.set(resourcePath, content);
   }
 
   /**
@@ -188,6 +210,17 @@ export class MockFileOperationService extends FileOperationService {
   mkdirSync(uri: Uri): void {
     const path = uri.fsPath;
     this.directories.add(path);
+  }
+
+  createDirectorySync(uri: Uri): void {
+    const path = uri.fsPath;
+    this.directories.add(path);
+
+    // 親ディレクトリも作成
+    const parentPath = path.substring(0, path.lastIndexOf('/'));
+    if (parentPath && !this.directories.has(parentPath)) {
+      this.directories.add(parentPath);
+    }
   }
 
   unlinkSync(uri: Uri): void {
@@ -297,6 +330,10 @@ export class MockFileOperationService extends FileOperationService {
     return new MockUri(path);
   }
 
+  createDirectoryUri(path: string): Uri {
+    return new MockUri(path);
+  }
+
   parseUri(value: string): Uri {
     const url = new URL(value);
     return new MockUri(url.pathname);
@@ -306,6 +343,14 @@ export class MockFileOperationService extends FileOperationService {
     const basePath = base.fsPath;
     const joinedPath = path.join(basePath, ...paths);
     return new MockUri(joinedPath);
+  }
+
+  readExtensionResource(resourcePath: string): Promise<string> {
+    const content = this.extensionResources.get(resourcePath);
+    if (content === undefined || content === '') {
+      throw new Error(`リソースが見つかりません: ${resourcePath}`);
+    }
+    return Promise.resolve(content);
   }
 
   // === 高レベルなメタデータ操作メソッド ===

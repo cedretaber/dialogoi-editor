@@ -107,6 +107,9 @@ class VSCodeDirectoryEntry implements DirectoryEntry {
  * VSCodeのファイル操作APIを使用した具象実装
  */
 export class VSCodeFileOperationService extends FileOperationService {
+  constructor(private extensionContext: vscode.ExtensionContext) {
+    super();
+  }
   // === 基本的なファイル操作メソッド ===
 
   existsSync(uri: Uri): boolean {
@@ -224,6 +227,17 @@ export class VSCodeFileOperationService extends FileOperationService {
     }
   }
 
+  createDirectorySync(uri: Uri): void {
+    const vsCodeUri = (uri as VSCodeUri).vsCodeUri;
+    try {
+      fs.mkdirSync(vsCodeUri.fsPath, { recursive: true });
+    } catch (error) {
+      throw new Error(
+        `ディレクトリ作成エラー: ${error instanceof Error ? error.message : String(error)}`,
+      );
+    }
+  }
+
   unlinkSync(uri: Uri): void {
     const vsCodeUri = (uri as VSCodeUri).vsCodeUri;
     try {
@@ -326,6 +340,10 @@ export class VSCodeFileOperationService extends FileOperationService {
     return new VSCodeUri(vscode.Uri.file(path));
   }
 
+  createDirectoryUri(path: string): Uri {
+    return new VSCodeUri(vscode.Uri.file(path));
+  }
+
   parseUri(value: string): Uri {
     return new VSCodeUri(vscode.Uri.parse(value));
   }
@@ -333,6 +351,23 @@ export class VSCodeFileOperationService extends FileOperationService {
   joinPath(base: Uri, ...paths: string[]): Uri {
     const vsCodeUri = (base as VSCodeUri).vsCodeUri;
     return new VSCodeUri(vscode.Uri.joinPath(vsCodeUri, ...paths));
+  }
+
+  async readExtensionResource(resourcePath: string): Promise<string> {
+    const resourceUri = vscode.Uri.joinPath(
+      this.extensionContext.extensionUri,
+      'resources',
+      resourcePath,
+    );
+
+    try {
+      const content = await vscode.workspace.fs.readFile(resourceUri);
+      return Buffer.from(content).toString('utf8');
+    } catch (error) {
+      throw new Error(
+        `リソース読み込みエラー: ${resourcePath} - ${error instanceof Error ? error.message : String(error)}`,
+      );
+    }
   }
 
   // === 高レベルなメタデータ操作メソッド ===

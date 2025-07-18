@@ -74,6 +74,11 @@ export abstract class FileOperationService {
   abstract mkdirSync(uri: Uri): void;
 
   /**
+   * ディレクトリを再帰的に作成
+   */
+  abstract createDirectorySync(uri: Uri): void;
+
+  /**
    * ファイルを削除
    */
   abstract unlinkSync(uri: Uri): void;
@@ -114,6 +119,11 @@ export abstract class FileOperationService {
   abstract createFileUri(path: string): Uri;
 
   /**
+   * ディレクトリパスからUriを作成
+   */
+  abstract createDirectoryUri(path: string): Uri;
+
+  /**
    * 文字列からUriを作成
    */
   abstract parseUri(value: string): Uri;
@@ -122,6 +132,11 @@ export abstract class FileOperationService {
    * パスを結合してUriを作成
    */
   abstract joinPath(base: Uri, ...paths: string[]): Uri;
+
+  /**
+   * 拡張機能内のリソースファイルを読み込む
+   */
+  abstract readExtensionResource(resourcePath: string): Promise<string>;
 
   // === 高レベルなメタデータ操作メソッド ===
 

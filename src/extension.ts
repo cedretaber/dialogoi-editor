@@ -11,7 +11,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   try {
     // VSCode環境でServiceContainerを初期化
     console.log('ServiceContainer初期化を開始...');
-    await VSCodeServiceContainer.initialize();
+    await VSCodeServiceContainer.initialize(context);
     console.log('ServiceContainer初期化完了');
 
     // TreeDataProviderの作成と登録

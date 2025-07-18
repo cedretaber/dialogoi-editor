@@ -5,6 +5,9 @@ import { ForeshadowingService } from '../services/ForeshadowingService.js';
 import { ReferenceManager } from '../services/ReferenceManager.js';
 import { HashService } from '../services/HashService.js';
 import { ReviewService } from '../services/ReviewService.js';
+import { DialogoiYamlService } from '../services/DialogoiYamlService.js';
+import { DialogoiTemplateService } from '../services/DialogoiTemplateService.js';
+import { ProjectCreationService } from '../services/ProjectCreationService.js';
 import { Uri } from '../interfaces/Uri.js';
 
 /**
@@ -19,6 +22,9 @@ export class TestServiceContainer {
   private referenceManager: ReferenceManager | null = null;
   private hashService: HashService | null = null;
   private reviewService: ReviewService | null = null;
+  private dialogoiYamlService: DialogoiYamlService | null = null;
+  private dialogoiTemplateService: DialogoiTemplateService | null = null;
+  private projectCreationService: ProjectCreationService | null = null;
 
   private constructor() {
     // テスト環境では常にMockFileOperationServiceを使用
@@ -94,6 +100,40 @@ export class TestServiceContainer {
   }
 
   /**
+   * DialogoiYamlServiceを取得
+   */
+  getDialogoiYamlService(): DialogoiYamlService {
+    if (!this.dialogoiYamlService) {
+      this.dialogoiYamlService = new DialogoiYamlService(this.fileOperationService);
+    }
+    return this.dialogoiYamlService;
+  }
+
+  /**
+   * DialogoiTemplateServiceを取得
+   */
+  getDialogiTemplateService(): DialogoiTemplateService {
+    if (!this.dialogoiTemplateService) {
+      this.dialogoiTemplateService = new DialogoiTemplateService(this.fileOperationService);
+    }
+    return this.dialogoiTemplateService;
+  }
+
+  /**
+   * ProjectCreationServiceを取得
+   */
+  getProjectCreationService(): ProjectCreationService {
+    if (!this.projectCreationService) {
+      this.projectCreationService = new ProjectCreationService(
+        this.fileOperationService,
+        this.getDialogoiYamlService(),
+        this.getDialogiTemplateService(),
+      );
+    }
+    return this.projectCreationService;
+  }
+
+  /**
    * すべてのサービスをリセット（テスト用）
    */
   reset(): void {
@@ -103,6 +143,9 @@ export class TestServiceContainer {
     this.referenceManager = null;
     this.hashService = null;
     this.reviewService = null;
+    this.dialogoiYamlService = null;
+    this.dialogoiTemplateService = null;
+    this.projectCreationService = null;
   }
 
   /**
@@ -110,5 +153,12 @@ export class TestServiceContainer {
    */
   getMockFileOperationService(): MockFileOperationService {
     return this.fileOperationService as MockFileOperationService;
+  }
+
+  /**
+   * 新しいテストコンテナを作成（スタティックメソッド）
+   */
+  static create(): TestServiceContainer {
+    return new TestServiceContainer();
   }
 }

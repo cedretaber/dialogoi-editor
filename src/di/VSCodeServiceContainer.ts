@@ -1,3 +1,4 @@
+import * as vscode from 'vscode';
 import { ServiceContainer } from './ServiceContainer.js';
 
 /**
@@ -8,7 +9,7 @@ export class VSCodeServiceContainer {
   /**
    * VSCode環境でServiceContainerを初期化
    */
-  static async initialize(): Promise<ServiceContainer> {
+  static async initialize(context: vscode.ExtensionContext): Promise<ServiceContainer> {
     const container = ServiceContainer.getInstance();
 
     try {
@@ -16,7 +17,7 @@ export class VSCodeServiceContainer {
       const { VSCodeFileOperationService } = await import(
         '../services/VSCodeFileOperationService.js'
       );
-      const fileOperationService = new VSCodeFileOperationService();
+      const fileOperationService = new VSCodeFileOperationService(context);
       container.setFileOperationService(fileOperationService);
 
       return container;

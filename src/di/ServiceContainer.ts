@@ -5,6 +5,8 @@ import { ForeshadowingService } from '../services/ForeshadowingService.js';
 import { ReferenceManager } from '../services/ReferenceManager.js';
 import { HashService } from '../services/HashService.js';
 import { ReviewService } from '../services/ReviewService.js';
+import { DialogoiYamlService } from '../services/DialogoiYamlService.js';
+import { DialogoiTemplateService } from '../services/DialogoiTemplateService.js';
 import { Uri } from '../interfaces/Uri.js';
 
 /**
@@ -19,6 +21,8 @@ export class ServiceContainer {
   private referenceManager: ReferenceManager | null = null;
   private hashService: HashService | null = null;
   private reviewService: ReviewService | null = null;
+  private dialogoiYamlService: DialogoiYamlService | null = null;
+  private dialogoiTemplateService: DialogoiTemplateService | null = null;
 
   private constructor() {}
 
@@ -40,6 +44,8 @@ export class ServiceContainer {
     this.referenceManager = null;
     this.hashService = null;
     this.reviewService = null;
+    this.dialogoiYamlService = null;
+    this.dialogoiTemplateService = null;
   }
 
   /**
@@ -109,6 +115,26 @@ export class ServiceContainer {
   }
 
   /**
+   * DialogoiYamlServiceを取得
+   */
+  getDialogoiYamlService(): DialogoiYamlService {
+    if (!this.dialogoiYamlService) {
+      this.dialogoiYamlService = new DialogoiYamlService(this.getFileOperationService());
+    }
+    return this.dialogoiYamlService;
+  }
+
+  /**
+   * DialogoiTemplateServiceを取得
+   */
+  getDialogiTemplateService(): DialogoiTemplateService {
+    if (!this.dialogoiTemplateService) {
+      this.dialogoiTemplateService = new DialogoiTemplateService(this.getFileOperationService());
+    }
+    return this.dialogoiTemplateService;
+  }
+
+  /**
    * テスト用のモックサービスでコンテナを初期化
    * @deprecated テスト環境ではTestServiceContainerを使用してください
    */
@@ -126,5 +152,7 @@ export class ServiceContainer {
     this.referenceManager = null;
     this.hashService = null;
     this.reviewService = null;
+    this.dialogoiYamlService = null;
+    this.dialogoiTemplateService = null;
   }
 }
