@@ -1,7 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-/* eslint-disable @typescript-eslint/no-unsafe-assignment */
-/* eslint-disable @typescript-eslint/strict-boolean-expressions */
-/* eslint-disable @typescript-eslint/no-non-null-assertion */
 import * as assert from 'assert';
 import { MetaYamlUtils, MetaYaml, DialogoiTreeItem } from './MetaYamlUtils.js';
 
@@ -41,7 +37,7 @@ files:
       assert.notStrictEqual(result, null);
       assert.strictEqual(result?.readme, 'README.md');
       assert.strictEqual(result?.files.length, 2);
-
+      
       const file1 = result?.files[0];
       assert.strictEqual(file1?.name, 'chapter1.txt');
       assert.strictEqual(file1?.type, 'content');
@@ -156,7 +152,7 @@ files:
       };
 
       const result = MetaYamlUtils.stringifyMetaYaml(meta);
-
+      
       // 結果の検証
       assert.strictEqual(typeof result, 'string');
       assert.ok(result.includes('readme: README.md'));
@@ -185,7 +181,7 @@ files:
       };
 
       const result = MetaYamlUtils.stringifyMetaYaml(meta);
-
+      
       assert.strictEqual(typeof result, 'string');
       assert.ok(result.includes('name: test.txt'));
       assert.ok(result.includes('type: content'));
@@ -199,7 +195,7 @@ files:
       };
 
       const result = MetaYamlUtils.stringifyMetaYaml(meta);
-
+      
       assert.strictEqual(typeof result, 'string');
       assert.ok(result.includes('readme: README.md'));
       assert.ok(result.includes('files: []'));
@@ -254,11 +250,11 @@ files:
     });
 
     test('不正なtype値の場合エラーを返す', () => {
-      const item: DialogoiTreeItem = {
+      const item = {
         name: 'test.txt',
-        type: 'invalid' as any,
+        type: 'invalid',
         path: '/test/test.txt',
-      };
+      } as unknown as DialogoiTreeItem;
 
       const errors = MetaYamlUtils.validateDialogoiTreeItem(item);
       assert.strictEqual(errors.length, 1);
@@ -273,99 +269,116 @@ files:
     });
 
     test('tagsが配列でない場合エラーを返す', () => {
-      const item: DialogoiTreeItem = {
+      const item = {
         name: 'test.txt',
         type: 'content',
         path: '/test/test.txt',
-        tags: 'invalid' as any,
-      };
+        tags: 'invalid',
+      } as unknown as DialogoiTreeItem;
 
       const errors = MetaYamlUtils.validateDialogoiTreeItem(item);
       assert.strictEqual(errors.length, 1);
-      assert.ok(errors[0]?.includes('tags フィールドは配列である必要があります'));
+      const firstError = errors[0];
+      if (firstError !== undefined) {
+        assert.ok(firstError.includes('tags フィールドは配列である必要があります'));
+      }
     });
 
     test('referencesが配列でない場合エラーを返す', () => {
-      const item: DialogoiTreeItem = {
+      const item = {
         name: 'test.txt',
         type: 'content',
         path: '/test/test.txt',
-        references: 'invalid' as any,
-      };
+        references: 'invalid',
+      } as unknown as DialogoiTreeItem;
 
       const errors = MetaYamlUtils.validateDialogoiTreeItem(item);
       assert.strictEqual(errors.length, 1);
-      assert.ok(errors[0]?.includes('references フィールドは配列である必要があります'));
+      const firstError = errors[0];
+      if (firstError !== undefined) {
+        assert.ok(firstError.includes('references フィールドは配列である必要があります'));
+      }
     });
 
     test('character.importanceが不正な値の場合エラーを返す', () => {
-      const item: DialogoiTreeItem = {
+      const item = {
         name: 'test.txt',
         type: 'content',
         path: '/test/test.txt',
         character: {
-          importance: 'invalid' as any,
+          importance: 'invalid',
           multiple_characters: false,
         },
-      };
+      } as unknown as DialogoiTreeItem;
 
       const errors = MetaYamlUtils.validateDialogoiTreeItem(item);
       assert.strictEqual(errors.length, 1);
-      assert.ok(
-        errors[0]?.includes(
-          'character.importance は main, sub, background のいずれかである必要があります',
-        ),
-      );
+      const firstError = errors[0];
+      if (firstError !== undefined) {
+        assert.ok(
+          firstError.includes(
+            'character.importance は main, sub, background のいずれかである必要があります',
+          ),
+        );
+      }
     });
 
     test('character.multiple_charactersがbooleanでない場合エラーを返す', () => {
-      const item: DialogoiTreeItem = {
+      const item = {
         name: 'test.txt',
         type: 'content',
         path: '/test/test.txt',
         character: {
           importance: 'main',
-          multiple_characters: 'invalid' as any,
+          multiple_characters: 'invalid',
         },
-      };
+      } as unknown as DialogoiTreeItem;
 
       const errors = MetaYamlUtils.validateDialogoiTreeItem(item);
       assert.strictEqual(errors.length, 1);
-      assert.ok(
-        errors[0]?.includes('character.multiple_characters は boolean である必要があります'),
-      );
+      const firstError = errors[0];
+      if (firstError !== undefined) {
+        assert.ok(
+          firstError.includes('character.multiple_characters は boolean である必要があります'),
+        );
+      }
     });
 
     test('character.display_nameが文字列でない場合エラーを返す', () => {
-      const item: DialogoiTreeItem = {
+      const item = {
         name: 'test.txt',
         type: 'content',
         path: '/test/test.txt',
         character: {
           importance: 'main',
           multiple_characters: false,
-          display_name: 123 as any,
+          display_name: 123,
         },
-      };
+      } as unknown as DialogoiTreeItem;
 
       const errors = MetaYamlUtils.validateDialogoiTreeItem(item);
       assert.strictEqual(errors.length, 1);
-      assert.ok(errors[0]?.includes('character.display_name は string である必要があります'));
+      const firstError = errors[0];
+      if (firstError !== undefined) {
+        assert.ok(
+          firstError.includes('character.display_name は string である必要があります'),
+        );
+      }
     });
 
     test('複数のエラーがある場合すべてのエラーを返す', () => {
-      const item: DialogoiTreeItem = {
+      const item = {
         name: '',
-        type: 'invalid' as any,
+        type: 'invalid',
         path: '/test/test.txt',
-        tags: 'invalid' as any,
-        references: 'invalid' as any,
+        tags: 'invalid',
+        references: 'invalid',
         character: {
-          importance: 'invalid' as any,
-          multiple_characters: 'invalid' as any,
-          display_name: 123 as any,
+          importance: 'invalid',
+          multiple_characters: 'invalid',
+          display_name: 123,
         },
-      };
+      } as unknown as DialogoiTreeItem;
 
       const errors = MetaYamlUtils.validateDialogoiTreeItem(item);
       assert.strictEqual(errors.length, 7);
@@ -395,14 +408,17 @@ files:
     });
 
     test('filesが配列でない場合エラーを返す', () => {
-      const meta: MetaYaml = {
+      const meta = {
         readme: 'README.md',
-        files: 'invalid' as any,
-      };
+        files: 'invalid',
+      } as unknown as MetaYaml;
 
       const errors = MetaYamlUtils.validateMetaYaml(meta);
       assert.strictEqual(errors.length, 1);
-      assert.ok(errors[0]?.includes('files フィールドは配列である必要があります'));
+      const firstError = errors[0];
+      if (firstError !== undefined) {
+        assert.ok(firstError.includes('files フィールドは配列である必要があります'));
+      }
     });
 
     test('空のfiles配列は正常', () => {
@@ -426,22 +442,22 @@ files:
           },
           {
             name: '',
-            type: 'invalid' as any,
+            type: 'invalid',
             path: '/test/invalid.txt',
-          },
+          } as unknown as DialogoiTreeItem,
           {
             name: 'another.txt',
             type: 'content',
             path: '/test/another.txt',
-            tags: 'invalid' as any,
-          },
+            tags: 'invalid',
+          } as unknown as DialogoiTreeItem,
         ],
       };
 
       const errors = MetaYamlUtils.validateMetaYaml(meta);
       assert.ok(errors.length > 0);
-      assert.ok(errors.some((error) => error.includes('files[1]:')));
-      assert.ok(errors.some((error) => error.includes('files[2]:')));
+      assert.ok(errors.some(error => error.includes('files[1]:')));
+      assert.ok(errors.some(error => error.includes('files[2]:')));
     });
   });
 
@@ -543,12 +559,14 @@ files:
       const yamlString = MetaYamlUtils.stringifyMetaYaml(originalMeta);
       const parsedMeta = MetaYamlUtils.parseMetaYaml(yamlString);
       assert.notStrictEqual(parsedMeta, null);
-
-      const yamlString2 = MetaYamlUtils.stringifyMetaYaml(parsedMeta!);
-      const parsedMeta2 = MetaYamlUtils.parseMetaYaml(yamlString2);
-
-      // 両方の変換結果が同じであることを確認
-      assert.deepStrictEqual(parsedMeta, parsedMeta2);
+      
+      if (parsedMeta !== null) {
+        const yamlString2 = MetaYamlUtils.stringifyMetaYaml(parsedMeta);
+        const parsedMeta2 = MetaYamlUtils.parseMetaYaml(yamlString2);
+        
+        // 両方の変換結果が同じであることを確認
+        assert.deepStrictEqual(parsedMeta, parsedMeta2);
+      }
     });
 
     test('バリデーションエラーがある場合の相互変換', () => {
@@ -561,8 +579,10 @@ files:
       const parsedMeta = MetaYamlUtils.parseMetaYaml(yamlWithError);
       assert.notStrictEqual(parsedMeta, null);
 
-      const errors = MetaYamlUtils.validateMetaYaml(parsedMeta!);
-      assert.ok(errors.length > 0);
+      if (parsedMeta !== null) {
+        const errors = MetaYamlUtils.validateMetaYaml(parsedMeta);
+        assert.ok(errors.length > 0);
+      }
     });
   });
 });

@@ -1,7 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-/* eslint-disable @typescript-eslint/no-unsafe-assignment */
-/* eslint-disable @typescript-eslint/strict-boolean-expressions */
-/* eslint-disable @typescript-eslint/no-non-null-assertion */
 import * as assert from 'assert';
 import { MetaYamlService } from './MetaYamlService.js';
 import { MetaYaml } from '../utils/MetaYamlUtils.js';
@@ -44,7 +40,7 @@ files:
       mockFileRepository.addFile(`${testDir}/meta.yaml`, metaContent);
 
       const result = service.loadMetaYaml(testDir);
-
+      
       assert.notStrictEqual(result, null);
       assert.strictEqual(result?.readme, 'README.md');
       assert.strictEqual(result?.files.length, 2);
@@ -95,7 +91,7 @@ files:
       mockFileRepository.addFile(`${testDir}/meta.yaml`, metaContent);
 
       const result = service.loadMetaYaml(testDir);
-
+      
       assert.notStrictEqual(result, null);
       assert.strictEqual(result?.readme, undefined);
       assert.strictEqual(result?.files.length, 0);
@@ -211,7 +207,7 @@ files:
 
     test('バリデーションエラーがある場合falseを返す', () => {
       const testDir = '/test/project';
-      const invalidMeta: MetaYaml = {
+      const invalidMeta = {
         readme: 'README.md',
         files: [
           {
@@ -220,7 +216,7 @@ files:
             path: `${testDir}/test.txt`,
           },
         ],
-      };
+      } as MetaYaml;
 
       mockFileRepository.addDirectory(testDir);
 
@@ -234,20 +230,20 @@ files:
 
     test('複数のバリデーションエラーがある場合falseを返す', () => {
       const testDir = '/test/project';
-      const invalidMeta: MetaYaml = {
+      const invalidMeta = {
         files: [
           {
             name: '', // 空の名前はエラー
-            type: 'invalid' as any, // 不正なタイプはエラー
+            type: 'invalid', // 不正なタイプはエラー
             path: `${testDir}/test.txt`,
-            tags: 'invalid' as any, // 文字列はエラー（配列である必要がある）
+            tags: 'invalid', // 文字列はエラー（配列である必要がある）
             character: {
-              importance: 'invalid' as any, // 不正な重要度はエラー
-              multiple_characters: 'invalid' as any, // 不正な型はエラー
+              importance: 'invalid', // 不正な重要度はエラー
+              multiple_characters: 'invalid', // 不正な型はエラー
             },
           },
         ],
-      };
+      } as unknown as MetaYaml;
 
       mockFileRepository.addDirectory(testDir);
 
@@ -414,14 +410,19 @@ files:
       // 更新されたmeta.yamlを確認
       const updatedMeta = service.loadMetaYaml(testDir);
       assert.notStrictEqual(updatedMeta, null);
-
-      const fileItem = updatedMeta?.files.find((f) => f.name === fileName);
-      assert.notStrictEqual(fileItem, undefined);
-      assert.ok(fileItem?.reviews);
-      assert.strictEqual(fileItem?.review_count?.open, 2);
-      assert.strictEqual(fileItem?.review_count?.in_progress, 1);
-      assert.strictEqual(fileItem?.review_count?.resolved, 3);
-      assert.strictEqual(fileItem?.review_count?.dismissed, undefined);
+      
+      if (updatedMeta !== null) {
+        const fileItem = updatedMeta.files.find(f => f.name === fileName);
+        assert.notStrictEqual(fileItem, undefined);
+        
+        if (fileItem !== undefined) {
+          assert.strictEqual(typeof fileItem.reviews, 'string');
+          assert.strictEqual(fileItem.review_count?.open, 2);
+          assert.strictEqual(fileItem.review_count?.in_progress, 1);
+          assert.strictEqual(fileItem.review_count?.resolved, 3);
+          assert.strictEqual(fileItem.review_count?.dismissed, undefined);
+        }
+      }
     });
 
     test('レビュー情報がない場合（null）は削除する', () => {
@@ -446,11 +447,16 @@ files:
       // 更新されたmeta.yamlを確認
       const updatedMeta = service.loadMetaYaml(testDir);
       assert.notStrictEqual(updatedMeta, null);
-
-      const fileItem = updatedMeta?.files.find((f) => f.name === fileName);
-      assert.notStrictEqual(fileItem, undefined);
-      assert.strictEqual(fileItem?.reviews, undefined);
-      assert.strictEqual(fileItem?.review_count, undefined);
+      
+      if (updatedMeta !== null) {
+        const fileItem = updatedMeta.files.find(f => f.name === fileName);
+        assert.notStrictEqual(fileItem, undefined);
+        
+        if (fileItem !== undefined) {
+          assert.strictEqual(fileItem.reviews, undefined);
+          assert.strictEqual(fileItem.review_count, undefined);
+        }
+      }
     });
 
     test('レビュー件数がすべて0の場合は削除する', () => {
@@ -478,11 +484,16 @@ files:
       // 更新されたmeta.yamlを確認
       const updatedMeta = service.loadMetaYaml(testDir);
       assert.notStrictEqual(updatedMeta, null);
-
-      const fileItem = updatedMeta?.files.find((f) => f.name === fileName);
-      assert.notStrictEqual(fileItem, undefined);
-      assert.strictEqual(fileItem?.reviews, undefined);
-      assert.strictEqual(fileItem?.review_count, undefined);
+      
+      if (updatedMeta !== null) {
+        const fileItem = updatedMeta.files.find(f => f.name === fileName);
+        assert.notStrictEqual(fileItem, undefined);
+        
+        if (fileItem !== undefined) {
+          assert.strictEqual(fileItem.reviews, undefined);
+          assert.strictEqual(fileItem.review_count, undefined);
+        }
+      }
     });
 
     test('0でない値のみが設定される', () => {
@@ -510,13 +521,18 @@ files:
       // 更新されたmeta.yamlを確認
       const updatedMeta = service.loadMetaYaml(testDir);
       assert.notStrictEqual(updatedMeta, null);
-
-      const fileItem = updatedMeta?.files.find((f) => f.name === fileName);
-      assert.notStrictEqual(fileItem, undefined);
-      assert.strictEqual(fileItem?.review_count?.open, 1);
-      assert.strictEqual(fileItem?.review_count?.in_progress, undefined);
-      assert.strictEqual(fileItem?.review_count?.resolved, 2);
-      assert.strictEqual(fileItem?.review_count?.dismissed, undefined);
+      
+      if (updatedMeta !== null) {
+        const fileItem = updatedMeta.files.find(f => f.name === fileName);
+        assert.notStrictEqual(fileItem, undefined);
+        
+        if (fileItem !== undefined) {
+          assert.strictEqual(fileItem.review_count?.open, 1);
+          assert.strictEqual(fileItem.review_count?.in_progress, undefined);
+          assert.strictEqual(fileItem.review_count?.resolved, 2);
+          assert.strictEqual(fileItem.review_count?.dismissed, undefined);
+        }
+      }
     });
 
     test('meta.yamlが存在しない場合falseを返す', () => {
@@ -601,11 +617,16 @@ files:
       // 更新されたmeta.yamlを確認
       const updatedMeta = service.loadMetaYaml(testDir);
       assert.notStrictEqual(updatedMeta, null);
-
-      const fileItem = updatedMeta?.files.find((f) => f.name === fileName);
-      assert.notStrictEqual(fileItem, undefined);
-      assert.strictEqual(fileItem?.reviews, undefined);
-      assert.strictEqual(fileItem?.review_count, undefined);
+      
+      if (updatedMeta !== null) {
+        const fileItem = updatedMeta.files.find(f => f.name === fileName);
+        assert.notStrictEqual(fileItem, undefined);
+        
+        if (fileItem !== undefined) {
+          assert.strictEqual(fileItem.reviews, undefined);
+          assert.strictEqual(fileItem.review_count, undefined);
+        }
+      }
     });
 
     test('レビュー情報がない場合でも成功する', () => {
@@ -626,11 +647,16 @@ files:
       // meta.yamlに変更がないことを確認
       const updatedMeta = service.loadMetaYaml(testDir);
       assert.notStrictEqual(updatedMeta, null);
-
-      const fileItem = updatedMeta?.files.find((f) => f.name === fileName);
-      assert.notStrictEqual(fileItem, undefined);
-      assert.strictEqual(fileItem?.reviews, undefined);
-      assert.strictEqual(fileItem?.review_count, undefined);
+      
+      if (updatedMeta !== null) {
+        const fileItem = updatedMeta.files.find(f => f.name === fileName);
+        assert.notStrictEqual(fileItem, undefined);
+        
+        if (fileItem !== undefined) {
+          assert.strictEqual(fileItem.reviews, undefined);
+          assert.strictEqual(fileItem.review_count, undefined);
+        }
+      }
     });
   });
 
@@ -677,14 +703,16 @@ files:
       const loadResult1 = service.loadMetaYaml(testDir);
       assert.notStrictEqual(loadResult1, null);
 
-      const saveResult2 = service.saveMetaYaml(testDir, loadResult1!);
-      assert.strictEqual(saveResult2, true);
+      if (loadResult1 !== null) {
+        const saveResult2 = service.saveMetaYaml(testDir, loadResult1);
+        assert.strictEqual(saveResult2, true);
 
-      const loadResult2 = service.loadMetaYaml(testDir);
-      assert.notStrictEqual(loadResult2, null);
+        const loadResult2 = service.loadMetaYaml(testDir);
+        assert.notStrictEqual(loadResult2, null);
 
-      // 両方の読み込み結果が同じであることを確認
-      assert.deepStrictEqual(loadResult1, loadResult2);
+        // 両方の読み込み結果が同じであることを確認
+        assert.deepStrictEqual(loadResult1, loadResult2);
+      }
     });
 
     test('updateReviewInfoとloadMetaYamlの相互運用', () => {
@@ -719,13 +747,18 @@ files:
       const loadedMeta = service.loadMetaYaml(testDir);
       assert.notStrictEqual(loadedMeta, null);
 
-      const fileItem = loadedMeta?.files.find((f) => f.name === fileName);
-      assert.notStrictEqual(fileItem, undefined);
-      assert.ok(fileItem?.reviews);
-      assert.strictEqual(fileItem?.review_count?.open, 2);
-      assert.strictEqual(fileItem?.review_count?.in_progress, 1);
-      assert.strictEqual(fileItem?.review_count?.resolved, 3);
-      assert.strictEqual(fileItem?.review_count?.dismissed, undefined);
+      if (loadedMeta !== null) {
+        const fileItem = loadedMeta.files.find(f => f.name === fileName);
+        assert.notStrictEqual(fileItem, undefined);
+        
+        if (fileItem !== undefined) {
+          assert.strictEqual(typeof fileItem.reviews, 'string');
+          assert.strictEqual(fileItem.review_count?.open, 2);
+          assert.strictEqual(fileItem.review_count?.in_progress, 1);
+          assert.strictEqual(fileItem.review_count?.resolved, 3);
+          assert.strictEqual(fileItem.review_count?.dismissed, undefined);
+        }
+      }
 
       // レビュー情報を削除
       const removeResult = service.removeReviewInfo(testDir, fileName);
@@ -735,10 +768,15 @@ files:
       const loadedMeta2 = service.loadMetaYaml(testDir);
       assert.notStrictEqual(loadedMeta2, null);
 
-      const fileItem2 = loadedMeta2?.files.find((f) => f.name === fileName);
-      assert.notStrictEqual(fileItem2, undefined);
-      assert.strictEqual(fileItem2?.reviews, undefined);
-      assert.strictEqual(fileItem2?.review_count, undefined);
+      if (loadedMeta2 !== null) {
+        const fileItem2 = loadedMeta2.files.find(f => f.name === fileName);
+        assert.notStrictEqual(fileItem2, undefined);
+        
+        if (fileItem2 !== undefined) {
+          assert.strictEqual(fileItem2.reviews, undefined);
+          assert.strictEqual(fileItem2.review_count, undefined);
+        }
+      }
     });
   });
 });
