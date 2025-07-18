@@ -90,6 +90,12 @@ npm run check-all
 
 ## 開発時の注意事項
 
+### package.json の設定
+
+- 可能な限り最新のライブラリを利用する
+- package.json の依存を確認し、バージョンの古いライブラリがあればアップデートする
+- 依存の問題でバージョンが上げられないなどやむを得ない場合のみ古いライブラリの利用を許可
+
 ### VSCode Extension API 固有の注意事項
 
 **Activation Events:**

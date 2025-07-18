@@ -1,18 +1,20 @@
 import { createHash } from 'crypto';
-import * as vscode from 'vscode';
+import { FileOperationService } from '../interfaces/FileOperationService.js';
+import { Uri } from '../interfaces/Uri.js';
 
 /**
  * ファイルハッシュ計算サービス
  */
 export class HashService {
+  constructor(public fileOperationService: FileOperationService) {}
   /**
    * ファイルの SHA-256 ハッシュを計算
    * @param fileUri ファイルの URI
    * @returns SHA-256 ハッシュ文字列（プレフィックス付き）
    */
-  static async calculateFileHash(fileUri: vscode.Uri): Promise<string> {
+  calculateFileHash(fileUri: Uri): string {
     try {
-      const content = await vscode.workspace.fs.readFile(fileUri);
+      const content = this.fileOperationService.readFileSync(fileUri, null);
       const hash = createHash('sha256').update(content).digest('hex');
       return `sha256:${hash}`;
     } catch (error) {
@@ -26,7 +28,7 @@ export class HashService {
    * @param content ファイルの内容（文字列）
    * @returns SHA-256 ハッシュ文字列（プレフィックス付き）
    */
-  static calculateContentHash(content: string): string {
+  calculateContentHash(content: string): string {
     const hash = createHash('sha256').update(content, 'utf8').digest('hex');
     return `sha256:${hash}`;
   }
@@ -37,9 +39,9 @@ export class HashService {
    * @param expectedHash 期待されるハッシュ値
    * @returns ハッシュが一致するかどうか
    */
-  static async verifyFileHash(fileUri: vscode.Uri, expectedHash: string): Promise<boolean> {
+  verifyFileHash(fileUri: Uri, expectedHash: string): boolean {
     try {
-      const actualHash = await this.calculateFileHash(fileUri);
+      const actualHash = this.calculateFileHash(fileUri);
       return actualHash === expectedHash;
     } catch (error) {
       console.error('ハッシュ検証エラー:', error);
@@ -52,7 +54,7 @@ export class HashService {
    * @param hash ハッシュ文字列
    * @returns アルゴリズム名
    */
-  static getHashAlgorithm(hash: string): string {
+  getHashAlgorithm(hash: string): string {
     const colonIndex = hash.indexOf(':');
     if (colonIndex === -1) {
       return 'unknown';
@@ -65,7 +67,7 @@ export class HashService {
    * @param hash ハッシュ文字列
    * @returns ハッシュ値
    */
-  static getHashValue(hash: string): string {
+  getHashValue(hash: string): string {
     const colonIndex = hash.indexOf(':');
     if (colonIndex === -1) {
       return hash;

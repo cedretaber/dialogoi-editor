@@ -1,4 +1,3 @@
-import * as vscode from 'vscode';
 import * as yaml from 'js-yaml';
 import * as path from 'path';
 import {
@@ -9,15 +8,21 @@ import {
   UpdateReviewOptions,
   AddCommentOptions,
 } from '../models/Review.js';
+import { FileOperationService } from '../interfaces/FileOperationService.js';
+import { Uri } from '../interfaces/Uri.js';
 import { HashService } from './HashService.js';
 
 /**
  * レビュー管理サービス
  */
 export class ReviewService {
-  private workspaceRoot: vscode.Uri;
+  private workspaceRoot: Uri;
 
-  constructor(workspaceRoot: vscode.Uri) {
+  constructor(
+    private fileOperationService: FileOperationService,
+    private hashService: HashService,
+    workspaceRoot: Uri
+  ) {
     this.workspaceRoot = workspaceRoot;
   }
 
@@ -40,9 +45,9 @@ export class ReviewService {
    * @param targetRelativeFilePath 対象ファイルのパス（小説ルートからの相対パス）
    * @returns レビューファイルの URI
    */
-  private getReviewFileUri(targetRelativeFilePath: string): vscode.Uri {
+  private getReviewFileUri(targetRelativeFilePath: string): Uri {
     const reviewRelativeFilePath = this.getReviewFilePath(targetRelativeFilePath);
-    return vscode.Uri.joinPath(this.workspaceRoot, reviewRelativeFilePath);
+    return this.fileOperationService.joinPath(this.workspaceRoot, reviewRelativeFilePath);
   }
 
   /**
@@ -50,19 +55,18 @@ export class ReviewService {
    * @param targetRelativeFilePath 対象ファイルのパス（小説ルートからの相対パス）
    * @returns レビューファイルの内容
    */
-  async loadReviewFile(targetRelativeFilePath: string): Promise<ReviewFile | null> {
+  loadReviewFile(targetRelativeFilePath: string): ReviewFile | null {
     const reviewFileUri = this.getReviewFileUri(targetRelativeFilePath);
 
     try {
-      const content = await vscode.workspace.fs.readFile(reviewFileUri);
-      const yamlContent = Buffer.from(content).toString('utf8');
+      if (!this.fileOperationService.existsSync(reviewFileUri)) {
+        return null;
+      }
+      const yamlContent = this.fileOperationService.readFileSync(reviewFileUri, 'utf8');
       const reviewData = yaml.load(yamlContent) as ReviewFile;
 
       return reviewData;
     } catch (error) {
-      if (error instanceof vscode.FileSystemError && error.code === 'FileNotFound') {
-        return null;
-      }
       const errorMessage = error instanceof Error ? error.message : String(error);
       throw new Error(`レビューファイルの読み込みに失敗しました: ${errorMessage}`);
     }
@@ -73,18 +77,20 @@ export class ReviewService {
    * @param targetRelativeFilePath 対象ファイルのパス（小説ルートからの相対パス）
    * @param reviewFile レビューファイルの内容
    */
-  async saveReviewFile(targetRelativeFilePath: string, reviewFile: ReviewFile): Promise<void> {
+  saveReviewFile(targetRelativeFilePath: string, reviewFile: ReviewFile): void {
     const reviewFileUri = this.getReviewFileUri(targetRelativeFilePath);
 
     try {
       // 対象ファイルと同じディレクトリに保存するため、そのディレクトリを作成
       const reviewRelativeDirPath = path.dirname(this.getReviewFilePath(targetRelativeFilePath));
-      const reviewDir = vscode.Uri.joinPath(this.workspaceRoot, reviewRelativeDirPath);
-      await vscode.workspace.fs.createDirectory(reviewDir);
+      const reviewDir = this.fileOperationService.joinPath(this.workspaceRoot, reviewRelativeDirPath);
+      if (!this.fileOperationService.existsSync(reviewDir)) {
+        this.fileOperationService.mkdirSync(reviewDir);
+      }
 
       // YAML として保存
       const yamlContent = yaml.dump(reviewFile, { indent: 2 });
-      await vscode.workspace.fs.writeFile(reviewFileUri, Buffer.from(yamlContent, 'utf8'));
+      this.fileOperationService.writeFileSync(reviewFileUri, yamlContent, 'utf8');
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
       throw new Error(`レビューファイルの保存に失敗しました: ${errorMessage}`);
@@ -97,11 +103,11 @@ export class ReviewService {
    * @param options レビュー作成オプション
    * @returns 追加されたレビューのインデックス
    */
-  async addReview(targetRelativeFilePath: string, options: CreateReviewOptions): Promise<number> {
-    const targetFileUri = vscode.Uri.joinPath(this.workspaceRoot, targetRelativeFilePath);
-    const fileHash = await HashService.calculateFileHash(targetFileUri);
+  addReview(targetRelativeFilePath: string, options: CreateReviewOptions): number {
+    const targetFileUri = this.fileOperationService.joinPath(this.workspaceRoot, targetRelativeFilePath);
+    const fileHash = this.hashService.calculateFileHash(targetFileUri);
 
-    let reviewFile = await this.loadReviewFile(targetRelativeFilePath);
+    let reviewFile = this.loadReviewFile(targetRelativeFilePath);
 
     if (!reviewFile) {
       reviewFile = {
@@ -128,7 +134,7 @@ export class ReviewService {
 
     reviewFile.reviews.push(newReview);
 
-    await this.saveReviewFile(targetRelativeFilePath, reviewFile);
+    this.saveReviewFile(targetRelativeFilePath, reviewFile);
 
     return reviewFile.reviews.length - 1;
   }
@@ -139,12 +145,12 @@ export class ReviewService {
    * @param reviewIndex レビューのインデックス
    * @param options 更新オプション
    */
-  async updateReview(
+  updateReview(
     targetRelativeFilePath: string,
     reviewIndex: number,
     options: UpdateReviewOptions,
-  ): Promise<void> {
-    const reviewFile = await this.loadReviewFile(targetRelativeFilePath);
+  ): void {
+    const reviewFile = this.loadReviewFile(targetRelativeFilePath);
 
     if (!reviewFile) {
       throw new Error('レビューファイルが見つかりません');
@@ -169,7 +175,7 @@ export class ReviewService {
       review.severity = options.severity;
     }
 
-    await this.saveReviewFile(targetRelativeFilePath, reviewFile);
+    this.saveReviewFile(targetRelativeFilePath, reviewFile);
   }
 
   /**
@@ -178,12 +184,12 @@ export class ReviewService {
    * @param reviewIndex レビューのインデックス
    * @param options コメントオプション
    */
-  async addComment(
+  addComment(
     targetRelativeFilePath: string,
     reviewIndex: number,
     options: AddCommentOptions,
-  ): Promise<void> {
-    const reviewFile = await this.loadReviewFile(targetRelativeFilePath);
+  ): void {
+    const reviewFile = this.loadReviewFile(targetRelativeFilePath);
 
     if (!reviewFile) {
       throw new Error('レビューファイルが見つかりません');
@@ -208,7 +214,7 @@ export class ReviewService {
       created_at: new Date().toISOString(),
     });
 
-    await this.saveReviewFile(targetRelativeFilePath, reviewFile);
+    this.saveReviewFile(targetRelativeFilePath, reviewFile);
   }
 
   /**
@@ -216,8 +222,8 @@ export class ReviewService {
    * @param targetRelativeFilePath 対象ファイルのパス（小説ルートからの相対パス）
    * @param reviewIndex レビューのインデックス
    */
-  async deleteReview(targetRelativeFilePath: string, reviewIndex: number): Promise<void> {
-    const reviewFile = await this.loadReviewFile(targetRelativeFilePath);
+  deleteReview(targetRelativeFilePath: string, reviewIndex: number): void {
+    const reviewFile = this.loadReviewFile(targetRelativeFilePath);
 
     if (!reviewFile) {
       throw new Error('レビューファイルが見つかりません');
@@ -232,9 +238,9 @@ export class ReviewService {
     if (reviewFile.reviews.length === 0) {
       // レビューがない場合はファイルを削除
       const reviewFileUri = this.getReviewFileUri(targetRelativeFilePath);
-      await vscode.workspace.fs.delete(reviewFileUri);
+      this.fileOperationService.unlinkSync(reviewFileUri);
     } else {
-      await this.saveReviewFile(targetRelativeFilePath, reviewFile);
+      this.saveReviewFile(targetRelativeFilePath, reviewFile);
     }
   }
 
@@ -243,8 +249,8 @@ export class ReviewService {
    * @param targetRelativeFilePath 対象ファイルのパス（小説ルートからの相対パス）
    * @returns レビューサマリー
    */
-  async getReviewSummary(targetRelativeFilePath: string): Promise<ReviewSummary | null> {
-    const reviewFile = await this.loadReviewFile(targetRelativeFilePath);
+  getReviewSummary(targetRelativeFilePath: string): ReviewSummary | null {
+    const reviewFile = this.loadReviewFile(targetRelativeFilePath);
 
     if (!reviewFile || reviewFile.reviews.length === 0) {
       return null;
@@ -269,15 +275,15 @@ export class ReviewService {
    * @param targetRelativeFilePath 対象ファイルのパス（小説ルートからの相対パス）
    * @returns ファイルが変更されているかどうか
    */
-  async isFileChanged(targetRelativeFilePath: string): Promise<boolean> {
-    const reviewFile = await this.loadReviewFile(targetRelativeFilePath);
+  isFileChanged(targetRelativeFilePath: string): boolean {
+    const reviewFile = this.loadReviewFile(targetRelativeFilePath);
 
     if (!reviewFile) {
       return false;
     }
 
-    const targetFileUri = vscode.Uri.joinPath(this.workspaceRoot, targetRelativeFilePath);
-    const currentHash = await HashService.calculateFileHash(targetFileUri);
+    const targetFileUri = this.fileOperationService.joinPath(this.workspaceRoot, targetRelativeFilePath);
+    const currentHash = this.hashService.calculateFileHash(targetFileUri);
 
     return currentHash !== reviewFile.file_hash;
   }

@@ -1,19 +1,23 @@
-import * as fs from 'fs';
 import * as path from 'path';
+import { FileOperationService } from '../interfaces/FileOperationService.js';
 
 export class CharacterService {
+  constructor(private fileOperationService: FileOperationService) {}
+
   /**
    * マークダウンファイルから表示名を取得
    * @param fileAbsolutePath ファイルの絶対パス
    * @returns 表示名（見出しが見つからない場合はファイル名）
    */
-  static extractDisplayName(fileAbsolutePath: string): string {
+  extractDisplayName(fileAbsolutePath: string): string {
     try {
-      if (!fs.existsSync(fileAbsolutePath)) {
+      const fileUri = this.fileOperationService.createFileUri(fileAbsolutePath);
+      
+      if (!this.fileOperationService.existsSync(fileUri)) {
         return this.getFileNameWithoutExtension(fileAbsolutePath);
       }
 
-      const content = fs.readFileSync(fileAbsolutePath, 'utf-8');
+      const content = this.fileOperationService.readFileSync(fileUri, 'utf-8');
       const lines = content.split('\n');
 
       // 最初の # 見出しを探す
@@ -37,7 +41,7 @@ export class CharacterService {
    * @param fileAbsolutePath ファイルの絶対パス
    * @returns 拡張子を除いたファイル名
    */
-  private static getFileNameWithoutExtension(fileAbsolutePath: string): string {
+  private getFileNameWithoutExtension(fileAbsolutePath: string): string {
     const fileName = path.basename(fileAbsolutePath);
     const dotIndex = fileName.lastIndexOf('.');
     return dotIndex > 0 ? fileName.substring(0, dotIndex) : fileName;

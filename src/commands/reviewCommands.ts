@@ -3,6 +3,7 @@ import * as path from 'path';
 import { ReviewService } from '../services/ReviewService.js';
 import { MetaYamlUtils } from '../utils/MetaYamlUtils.js';
 import { CreateReviewOptions, ReviewSeverity } from '../models/Review.js';
+import { ServiceContainer } from '../di/ServiceContainer.js';
 
 /**
  * TreeViewアイテムの型定義
@@ -21,7 +22,10 @@ export function registerReviewCommands(
   context: vscode.ExtensionContext,
   workspaceRoot: vscode.Uri,
 ): void {
-  const reviewService = new ReviewService(workspaceRoot);
+  const container = ServiceContainer.getInstance();
+  const fileOperationService = container.getFileOperationService();
+  const workspaceUri = fileOperationService.createFileUri(workspaceRoot.fsPath);
+  const reviewService = container.getReviewService(workspaceUri);
 
   // レビューを追加するコマンド
   const addReviewCommand = vscode.commands.registerCommand(
@@ -172,10 +176,10 @@ async function addReviewHandler(reviewService: ReviewService, fileItem: FileItem
     content,
   };
 
-  const reviewIndex = await reviewService.addReview(targetRelativeFilePath, reviewOptions);
+  const reviewIndex = reviewService.addReview(targetRelativeFilePath, reviewOptions);
 
   // meta.yaml を更新
-  const reviewSummary = await reviewService.getReviewSummary(targetRelativeFilePath);
+  const reviewSummary = reviewService.getReviewSummary(targetRelativeFilePath);
   const dirAbsolutePath = path.dirname(fileItem.path);
   const fileName = path.basename(fileItem.path);
   MetaYamlUtils.updateReviewInfo(dirAbsolutePath, fileName, reviewSummary);
@@ -200,7 +204,7 @@ async function showReviewsHandler(reviewService: ReviewService, fileItem: FileIt
   }
 
   const targetRelativeFilePath = path.relative(workspaceRoot, fileItem.path);
-  const reviewFile = await reviewService.loadReviewFile(targetRelativeFilePath);
+  const reviewFile = reviewService.loadReviewFile(targetRelativeFilePath);
 
   if (!reviewFile || reviewFile.reviews.length === 0) {
     vscode.window.showInformationMessage('このファイルにはレビューがありません');
@@ -208,7 +212,7 @@ async function showReviewsHandler(reviewService: ReviewService, fileItem: FileIt
   }
 
   // ファイルの変更をチェック
-  const isChanged = await reviewService.isFileChanged(targetRelativeFilePath);
+  const isChanged = reviewService.isFileChanged(targetRelativeFilePath);
   let message = `📋 ${targetRelativeFilePath} のレビュー一覧\n\n`;
 
   if (isChanged) {
@@ -258,7 +262,7 @@ async function updateReviewStatusHandler(
   }
 
   const targetRelativeFilePath = path.relative(workspaceRoot, fileItem.path);
-  const reviewFile = await reviewService.loadReviewFile(targetRelativeFilePath);
+  const reviewFile = reviewService.loadReviewFile(targetRelativeFilePath);
 
   if (!reviewFile || reviewFile.reviews.length === 0) {
     vscode.window.showInformationMessage('このファイルにはレビューがありません');
@@ -295,12 +299,12 @@ async function updateReviewStatusHandler(
     return;
   }
 
-  await reviewService.updateReview(targetRelativeFilePath, selectedReview.value, {
+  reviewService.updateReview(targetRelativeFilePath, selectedReview.value, {
     status: selectedStatus.value as 'open' | 'in_progress' | 'resolved' | 'dismissed',
   });
 
   // meta.yaml を更新
-  const reviewSummary = await reviewService.getReviewSummary(targetRelativeFilePath);
+  const reviewSummary = reviewService.getReviewSummary(targetRelativeFilePath);
   const dirAbsolutePath = path.dirname(fileItem.path);
   const fileName = path.basename(fileItem.path);
   MetaYamlUtils.updateReviewInfo(dirAbsolutePath, fileName, reviewSummary);
@@ -328,7 +332,7 @@ async function deleteReviewHandler(
   }
 
   const targetRelativeFilePath = path.relative(workspaceRoot, fileItem.path);
-  const reviewFile = await reviewService.loadReviewFile(targetRelativeFilePath);
+  const reviewFile = reviewService.loadReviewFile(targetRelativeFilePath);
 
   if (!reviewFile || reviewFile.reviews.length === 0) {
     vscode.window.showInformationMessage('このファイルにはレビューがありません');
@@ -367,10 +371,10 @@ async function deleteReviewHandler(
     return;
   }
 
-  await reviewService.deleteReview(targetRelativeFilePath, selectedReview.value);
+  reviewService.deleteReview(targetRelativeFilePath, selectedReview.value);
 
   // meta.yaml を更新
-  const reviewSummary = await reviewService.getReviewSummary(targetRelativeFilePath);
+  const reviewSummary = reviewService.getReviewSummary(targetRelativeFilePath);
   const dirAbsolutePath = path.dirname(fileItem.path);
   const fileName = path.basename(fileItem.path);
   MetaYamlUtils.updateReviewInfo(dirAbsolutePath, fileName, reviewSummary);

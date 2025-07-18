@@ -2,14 +2,16 @@ import * as assert from 'assert';
 import * as path from 'path';
 import * as fs from 'fs';
 import * as os from 'os';
-import { FileOperationService } from './FileOperationService.js';
+import { VSCodeFileOperationService } from '../src/services/VSCodeFileOperationService.js';
 
-suite('FileOperationService テストスイート', () => {
+suite('VSCodeFileOperationService テストスイート', () => {
   let testDir: string;
+  let fileOperationService: VSCodeFileOperationService;
 
   setup(() => {
     // テスト用の一時ディレクトリを作成
     testDir = fs.mkdtempSync(path.join(os.tmpdir(), 'dialogoi-fileop-test-'));
+    fileOperationService = new VSCodeFileOperationService();
 
     // 基本的なmeta.yamlを作成
     const metaYaml = `
@@ -32,7 +34,7 @@ files:
 
   suite('createFile', () => {
     test('新しいファイルを作成する', () => {
-      const result = FileOperationService.createFile(
+      const result = fileOperationService.createFile(
         testDir,
         'new.txt',
         'content',
@@ -55,7 +57,7 @@ files:
     });
 
     test('サブディレクトリを作成する', () => {
-      const result = FileOperationService.createFile(testDir, 'newdir', 'subdirectory');
+      const result = fileOperationService.createFile(testDir, 'newdir', 'subdirectory');
 
       assert.strictEqual(result.success, true);
 
@@ -70,7 +72,7 @@ files:
     });
 
     test('既存ファイルの場合はエラーを返す', () => {
-      const result = FileOperationService.createFile(testDir, 'existing.txt', 'content');
+      const result = fileOperationService.createFile(testDir, 'existing.txt', 'content');
 
       assert.strictEqual(result.success, false);
       assert.ok(result.message.includes('既に存在します'));
@@ -79,7 +81,7 @@ files:
 
   suite('deleteFile', () => {
     test('ファイルを削除する', () => {
-      const result = FileOperationService.deleteFile(testDir, 'existing.txt');
+      const result = fileOperationService.deleteFile(testDir, 'existing.txt');
 
       assert.strictEqual(result.success, true);
       assert.ok(result.message.includes('existing.txt を削除しました'));
@@ -94,7 +96,7 @@ files:
     });
 
     test('存在しないファイルの場合はエラーを返す', () => {
-      const result = FileOperationService.deleteFile(testDir, 'nonexistent.txt');
+      const result = fileOperationService.deleteFile(testDir, 'nonexistent.txt');
 
       assert.strictEqual(result.success, false);
       assert.ok(result.message.includes('見つかりません'));
@@ -103,7 +105,7 @@ files:
 
   suite('renameFile', () => {
     test('ファイル名を変更する', () => {
-      const result = FileOperationService.renameFile(testDir, 'existing.txt', 'renamed.txt');
+      const result = fileOperationService.renameFile(testDir, 'existing.txt', 'renamed.txt');
 
       assert.strictEqual(result.success, true);
       assert.ok(result.message.includes('renamed.txt にリネームしました'));
@@ -120,7 +122,7 @@ files:
     });
 
     test('存在しないファイルの場合はエラーを返す', () => {
-      const result = FileOperationService.renameFile(testDir, 'nonexistent.txt', 'new.txt');
+      const result = fileOperationService.renameFile(testDir, 'nonexistent.txt', 'new.txt');
 
       assert.strictEqual(result.success, false);
       assert.ok(result.message.includes('見つかりません'));
@@ -130,7 +132,7 @@ files:
       // 別のファイルを作成
       fs.writeFileSync(path.join(testDir, 'another.txt'), 'another');
 
-      const result = FileOperationService.renameFile(testDir, 'existing.txt', 'another.txt');
+      const result = fileOperationService.renameFile(testDir, 'existing.txt', 'another.txt');
 
       assert.strictEqual(result.success, false);
       assert.ok(result.message.includes('既に存在します'));
@@ -154,7 +156,7 @@ files:
     });
 
     test('ファイルの順序を変更する', () => {
-      const result = FileOperationService.reorderFiles(testDir, 0, 2);
+      const result = fileOperationService.reorderFiles(testDir, 0, 2);
 
       assert.strictEqual(result.success, true);
       assert.ok(result.message.includes('順序を変更しました'));
@@ -167,7 +169,7 @@ files:
     });
 
     test('無効なインデックスの場合はエラーを返す', () => {
-      const result = FileOperationService.reorderFiles(testDir, 0, 10);
+      const result = fileOperationService.reorderFiles(testDir, 0, 10);
 
       assert.strictEqual(result.success, false);
       assert.ok(result.message.includes('無効なインデックス'));
@@ -176,7 +178,7 @@ files:
 
   suite('タグ操作', () => {
     test('タグを追加する', () => {
-      const result = FileOperationService.addTag(testDir, 'existing.txt', 'new-tag');
+      const result = fileOperationService.addTag(testDir, 'existing.txt', 'new-tag');
 
       assert.strictEqual(result.success, true);
       assert.ok(result.message.includes('タグ "new-tag" を追加しました'));
@@ -190,14 +192,14 @@ files:
     });
 
     test('既存のタグを追加しようとするとエラーを返す', () => {
-      const result = FileOperationService.addTag(testDir, 'existing.txt', '既存');
+      const result = fileOperationService.addTag(testDir, 'existing.txt', '既存');
 
       assert.strictEqual(result.success, false);
       assert.ok(result.message.includes('既に存在します'));
     });
 
     test('タグを削除する', () => {
-      const result = FileOperationService.removeTag(testDir, 'existing.txt', '既存');
+      const result = fileOperationService.removeTag(testDir, 'existing.txt', '既存');
 
       assert.strictEqual(result.success, true);
       assert.ok(result.message.includes('タグ "既存" を削除しました'));
@@ -210,7 +212,7 @@ files:
     });
 
     test('存在しないタグを削除しようとするとエラーを返す', () => {
-      const result = FileOperationService.removeTag(testDir, 'existing.txt', 'nonexistent');
+      const result = fileOperationService.removeTag(testDir, 'existing.txt', 'nonexistent');
 
       assert.strictEqual(result.success, false);
       assert.ok(result.message.includes('見つかりません'));
@@ -218,7 +220,7 @@ files:
 
     test('タグを一括設定する', () => {
       const newTags = ['tag1', 'tag2', 'tag3'];
-      const result = FileOperationService.setTags(testDir, 'existing.txt', newTags);
+      const result = fileOperationService.setTags(testDir, 'existing.txt', newTags);
 
       assert.strictEqual(result.success, true);
       assert.ok(result.message.includes('タグを設定しました'));
@@ -231,7 +233,7 @@ files:
     });
 
     test('空のタグ配列を設定するとタグが削除される', () => {
-      const result = FileOperationService.setTags(testDir, 'existing.txt', []);
+      const result = fileOperationService.setTags(testDir, 'existing.txt', []);
 
       assert.strictEqual(result.success, true);
 
@@ -244,7 +246,7 @@ files:
 
     test('重複したタグを設定すると重複が削除される', () => {
       const tagsWithDuplicates = ['tag1', 'tag2', 'tag1', 'tag3', 'tag2'];
-      const result = FileOperationService.setTags(testDir, 'existing.txt', tagsWithDuplicates);
+      const result = fileOperationService.setTags(testDir, 'existing.txt', tagsWithDuplicates);
 
       assert.strictEqual(result.success, true);
 
@@ -256,7 +258,7 @@ files:
     });
 
     test('存在しないファイルにタグを追加しようとするとエラーを返す', () => {
-      const result = FileOperationService.addTag(testDir, 'nonexistent.txt', 'tag');
+      const result = fileOperationService.addTag(testDir, 'nonexistent.txt', 'tag');
 
       assert.strictEqual(result.success, false);
       assert.ok(result.message.includes('見つかりません'));
@@ -265,7 +267,7 @@ files:
 
   suite('キャラクターメタデータ操作', () => {
     test('キャラクター重要度を設定する', () => {
-      const result = FileOperationService.setCharacterImportance(testDir, 'existing.txt', 'main');
+      const result = fileOperationService.setCharacterImportance(testDir, 'existing.txt', 'main');
       assert.strictEqual(result.success, true);
       assert.ok(result.message.includes('キャラクター重要度を "main" に設定しました'));
 
@@ -279,7 +281,7 @@ files:
     });
 
     test('複数キャラクターフラグを設定する', () => {
-      const result = FileOperationService.setMultipleCharacters(testDir, 'existing.txt', true);
+      const result = fileOperationService.setMultipleCharacters(testDir, 'existing.txt', true);
       assert.strictEqual(result.success, true);
       assert.ok(result.message.includes('複数キャラクターフラグを "有効" に設定しました'));
 
@@ -294,10 +296,10 @@ files:
 
     test('既存のキャラクター設定を更新する', () => {
       // 最初に設定
-      FileOperationService.setCharacterImportance(testDir, 'existing.txt', 'main');
+      fileOperationService.setCharacterImportance(testDir, 'existing.txt', 'main');
 
       // 複数キャラクターフラグを変更
-      const result = FileOperationService.setMultipleCharacters(testDir, 'existing.txt', true);
+      const result = fileOperationService.setMultipleCharacters(testDir, 'existing.txt', true);
       assert.strictEqual(result.success, true);
 
       // 重要度は保持、フラグのみ変更されていることを確認
@@ -311,10 +313,10 @@ files:
 
     test('キャラクター設定を削除する', () => {
       // 最初に設定
-      FileOperationService.setCharacterImportance(testDir, 'existing.txt', 'main');
+      fileOperationService.setCharacterImportance(testDir, 'existing.txt', 'main');
 
       // 削除
-      const result = FileOperationService.removeCharacter(testDir, 'existing.txt');
+      const result = fileOperationService.removeCharacter(testDir, 'existing.txt');
       assert.strictEqual(result.success, true);
       assert.ok(result.message.includes('キャラクター設定を削除しました'));
 
@@ -326,7 +328,7 @@ files:
     });
 
     test('存在しないファイルにキャラクター設定を追加しようとするとエラーを返す', () => {
-      const result = FileOperationService.setCharacterImportance(
+      const result = fileOperationService.setCharacterImportance(
         testDir,
         'nonexistent.txt',
         'main',

@@ -1,6 +1,6 @@
 import * as path from 'path';
-import * as fs from 'fs';
 import { MetaYamlUtils } from '../utils/MetaYamlUtils.js';
+import { FileOperationService } from '../interfaces/FileOperationService.js';
 
 export interface ReferenceInfo {
   references: string[]; // このファイルが参照しているファイル
@@ -11,6 +11,7 @@ export class ReferenceManager {
   private static instance: ReferenceManager | null = null;
   private referencesMap: Map<string, ReferenceInfo> = new Map();
   private novelRoot: string | null = null;
+  private fileOperationService: FileOperationService | null = null;
 
   private constructor() {}
 
@@ -24,8 +25,9 @@ export class ReferenceManager {
   /**
    * 参照関係を初期化（全meta.yamlを走査）
    */
-  initialize(novelRoot: string): void {
+  initialize(novelRoot: string, fileOperationService: FileOperationService): void {
     this.novelRoot = novelRoot;
+    this.fileOperationService = fileOperationService;
     this.referencesMap.clear();
     this.scanAllReferences(novelRoot);
   }
@@ -158,12 +160,13 @@ export class ReferenceManager {
    * 参照先ファイルが存在するかチェック
    */
   checkFileExists(referencedFile: string): boolean {
-    if (this.novelRoot === null) {
+    if (this.novelRoot === null || this.fileOperationService === null) {
       return false;
     }
 
     const fullPath = path.join(this.novelRoot, referencedFile);
-    return fs.existsSync(fullPath);
+    const fileUri = this.fileOperationService.createFileUri(fullPath);
+    return this.fileOperationService.existsSync(fileUri);
   }
 
   /**

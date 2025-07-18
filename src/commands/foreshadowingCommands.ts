@@ -1,8 +1,7 @@
 import * as vscode from 'vscode';
 import { DialogoiTreeDataProvider } from '../tree/DialogoiTreeDataProvider.js';
-import { FileOperationService } from '../services/FileOperationService.js';
+import { ServiceContainer } from '../di/ServiceContainer.js';
 import { DialogoiTreeItem } from '../utils/MetaYamlUtils.js';
-import { ForeshadowingService } from '../services/ForeshadowingService.js';
 
 export function registerForeshadowingCommands(
   context: vscode.ExtensionContext,
@@ -34,7 +33,8 @@ export function registerForeshadowingCommands(
           if (value === null || value === undefined || value.trim() === '') {
             return '埋蔵位置は必須です';
           }
-          if (!ForeshadowingService.validatePath(novelRoot, value)) {
+          const foreshadowingService = ServiceContainer.getInstance().getForeshadowingService();
+          if (!foreshadowingService.validatePath(novelRoot, value)) {
             return `指定されたファイルが存在しません: ${value}`;
           }
           return null;
@@ -54,7 +54,8 @@ export function registerForeshadowingCommands(
           if (value === null || value === undefined || value.trim() === '') {
             return '回収位置は必須です';
           }
-          if (!ForeshadowingService.validatePath(novelRoot, value)) {
+          const foreshadowingService = ServiceContainer.getInstance().getForeshadowingService();
+          if (!foreshadowingService.validatePath(novelRoot, value)) {
             return `指定されたファイルが存在しません: ${value}`;
           }
           return null;
@@ -67,7 +68,8 @@ export function registerForeshadowingCommands(
 
       // 伏線データの検証
       const foreshadowingData = { start: startPath, goal: goalPath };
-      const validation = ForeshadowingService.validateForeshadowing(novelRoot, foreshadowingData);
+      const foreshadowingService = ServiceContainer.getInstance().getForeshadowingService();
+      const validation = foreshadowingService.validateForeshadowing(novelRoot, foreshadowingData);
 
       if (!validation.valid) {
         vscode.window.showErrorMessage(
@@ -77,7 +79,7 @@ export function registerForeshadowingCommands(
       }
 
       // 確認ダイアログ
-      const status = ForeshadowingService.getForeshadowingStatus(novelRoot, foreshadowingData);
+      const status = foreshadowingService.getForeshadowingStatus(novelRoot, foreshadowingData);
       const statusText = {
         planted: '埋蔵済み',
         resolved: '回収済み',
@@ -97,7 +99,8 @@ export function registerForeshadowingCommands(
       );
 
       if (confirmation?.value === true) {
-        const result = FileOperationService.setForeshadowing(dirPath, fileName, foreshadowingData);
+        const fileOperationService = ServiceContainer.getInstance().getFileOperationService();
+        const result = fileOperationService.setForeshadowing(dirPath, fileName, foreshadowingData);
 
         if (result.success) {
           provider.refresh();
@@ -134,7 +137,8 @@ export function registerForeshadowingCommands(
       );
 
       if (confirmation?.value === true) {
-        const result = FileOperationService.removeForeshadowing(dirPath, fileName);
+        const fileOperationService = ServiceContainer.getInstance().getFileOperationService();
+        const result = fileOperationService.removeForeshadowing(dirPath, fileName);
 
         if (result.success) {
           provider.refresh();

@@ -1,7 +1,7 @@
-import * as fs from 'fs';
 import * as path from 'path';
 import * as yaml from 'js-yaml';
 import { ReviewSummary } from '../models/Review.js';
+import { FileOperationService, DirectoryEntry } from '../interfaces/FileOperationService.js';
 
 export interface DialogoiTreeItem {
   name: string;
@@ -48,49 +48,87 @@ export class MetaYamlUtils {
     }
   }
 
-  static loadMetaYaml(dirAbsolutePath: string): MetaYaml | null {
+  static loadMetaYaml(dirAbsolutePath: string, fileOperationService?: FileOperationService): MetaYaml | null {
     const metaAbsolutePath = path.join(dirAbsolutePath, 'meta.yaml');
 
     try {
-      if (!fs.existsSync(metaAbsolutePath)) {
-        return null;
+      if (fileOperationService) {
+        const metaUri = fileOperationService.createFileUri(metaAbsolutePath);
+        if (!fileOperationService.existsSync(metaUri)) {
+          return null;
+        }
+        const metaContent = fileOperationService.readFileSync(metaUri, 'utf8');
+        return this.parseMetaYaml(metaContent);
+      } else {
+        // 後方互換性のためのフォールバック（一時的）
+        const fs = require('fs');
+        if (!fs.existsSync(metaAbsolutePath)) {
+          return null;
+        }
+        const metaContent = fs.readFileSync(metaAbsolutePath, 'utf8');
+        return this.parseMetaYaml(metaContent);
       }
-
-      const metaContent = fs.readFileSync(metaAbsolutePath, 'utf8');
-      return this.parseMetaYaml(metaContent);
     } catch (error) {
       console.error('meta.yaml の読み込みエラー:', error);
       return null;
     }
   }
 
-  static getReadmeFilePath(dirAbsolutePath: string): string | null {
-    const meta = this.loadMetaYaml(dirAbsolutePath);
+  static getReadmeFilePath(dirAbsolutePath: string, fileOperationService?: FileOperationService): string | null {
+    const meta = this.loadMetaYaml(dirAbsolutePath, fileOperationService);
 
     if (meta === null || meta.readme === undefined) {
       return null;
     }
 
     const readmeAbsolutePath = path.join(dirAbsolutePath, meta.readme);
-    if (fs.existsSync(readmeAbsolutePath)) {
-      return readmeAbsolutePath;
+    if (fileOperationService) {
+      const readmeUri = fileOperationService.createFileUri(readmeAbsolutePath);
+      if (fileOperationService.existsSync(readmeUri)) {
+        return readmeAbsolutePath;
+      }
+    } else {
+      // 後方互換性のためのフォールバック（一時的）
+      const fs = require('fs');
+      if (fs.existsSync(readmeAbsolutePath)) {
+        return readmeAbsolutePath;
+      }
     }
 
     return null;
   }
 
-  static findNovelRoot(workspaceRootAbsolutePath: string): string | null {
+  static findNovelRoot(workspaceRootAbsolutePath: string, fileOperationService?: FileOperationService): string | null {
     const findDialogoiYaml = (dirAbsolutePath: string): string | null => {
-      const items = fs.readdirSync(dirAbsolutePath, { withFileTypes: true });
+      if (fileOperationService) {
+        const dirUri = fileOperationService.createFileUri(dirAbsolutePath);
+        const items = fileOperationService.readdirSync(dirUri, { withFileTypes: true }) as DirectoryEntry[];
 
-      for (const item of items) {
-        const fullAbsolutePath = path.join(dirAbsolutePath, item.name);
-        if (item.isFile() && item.name === 'dialogoi.yaml') {
-          return dirAbsolutePath;
-        } else if (item.isDirectory()) {
-          const result = findDialogoiYaml(fullAbsolutePath);
-          if (result !== null) {
-            return result;
+        for (const item of items) {
+          const fullAbsolutePath = path.join(dirAbsolutePath, item.name);
+          if (item.isFile() && item.name === 'dialogoi.yaml') {
+            return dirAbsolutePath;
+          } else if (item.isDirectory()) {
+            const result = findDialogoiYaml(fullAbsolutePath);
+            if (result !== null) {
+              return result;
+            }
+          }
+        }
+      } else {
+        // 後方互換性のためのフォールバック（一時的）
+        const fs = require('fs');
+        const items = fs.readdirSync(dirAbsolutePath, { withFileTypes: true });
+
+        for (const item of items) {
+          const fullAbsolutePath = path.join(dirAbsolutePath, item.name);
+          if (item.isFile() && item.name === 'dialogoi.yaml') {
+            return dirAbsolutePath;
+          } else if (item.isDirectory()) {
+            const result = findDialogoiYaml(fullAbsolutePath);
+            if (result !== null) {
+              return result;
+            }
           }
         }
       }
@@ -185,53 +223,105 @@ export class MetaYamlUtils {
     dirAbsolutePath: string,
     fileName: string,
     reviewSummary: ReviewSummary | null,
+    fileOperationService?: FileOperationService,
   ): boolean {
     const metaAbsolutePath = path.join(dirAbsolutePath, 'meta.yaml');
 
-    if (!fs.existsSync(metaAbsolutePath)) {
-      return false;
-    }
-
     try {
-      const content = fs.readFileSync(metaAbsolutePath, 'utf-8');
-      const meta = yaml.load(content) as MetaYaml;
-
-      const fileItem = meta.files.find((item) => item.name === fileName);
-      if (!fileItem) {
-        return false;
-      }
-
-      if (
-        reviewSummary &&
-        (reviewSummary.open > 0 ||
-          (reviewSummary.resolved !== undefined && reviewSummary.resolved > 0))
-      ) {
-        // レビューが存在する場合
-        const filePathInDir = path.join(path.basename(dirAbsolutePath), fileName);
-        fileItem.reviews = this.generateReviewFilePath(filePathInDir);
-
-        // レビューサマリーを設定（0でない値のみ）
-        fileItem.review_count = { open: reviewSummary.open };
-        if (reviewSummary.in_progress !== undefined && reviewSummary.in_progress > 0) {
-          fileItem.review_count.in_progress = reviewSummary.in_progress;
+      if (fileOperationService) {
+        const metaUri = fileOperationService.createFileUri(metaAbsolutePath);
+        
+        if (!fileOperationService.existsSync(metaUri)) {
+          return false;
         }
-        if (reviewSummary.resolved !== undefined && reviewSummary.resolved > 0) {
-          fileItem.review_count.resolved = reviewSummary.resolved;
+
+        const content = fileOperationService.readFileSync(metaUri, 'utf-8');
+        const meta = yaml.load(content) as MetaYaml;
+
+        const fileItem = meta.files.find((item) => item.name === fileName);
+        if (!fileItem) {
+          return false;
         }
-        if (reviewSummary.dismissed !== undefined && reviewSummary.dismissed > 0) {
-          fileItem.review_count.dismissed = reviewSummary.dismissed;
+
+        if (
+          reviewSummary &&
+          (reviewSummary.open > 0 ||
+            (reviewSummary.resolved !== undefined && reviewSummary.resolved > 0))
+        ) {
+          // レビューが存在する場合
+          const filePathInDir = path.join(path.basename(dirAbsolutePath), fileName);
+          fileItem.reviews = this.generateReviewFilePath(filePathInDir);
+
+          // レビューサマリーを設定（0でない値のみ）
+          fileItem.review_count = { open: reviewSummary.open };
+          if (reviewSummary.in_progress !== undefined && reviewSummary.in_progress > 0) {
+            fileItem.review_count.in_progress = reviewSummary.in_progress;
+          }
+          if (reviewSummary.resolved !== undefined && reviewSummary.resolved > 0) {
+            fileItem.review_count.resolved = reviewSummary.resolved;
+          }
+          if (reviewSummary.dismissed !== undefined && reviewSummary.dismissed > 0) {
+            fileItem.review_count.dismissed = reviewSummary.dismissed;
+          }
+        } else {
+          // レビューが存在しない場合は削除
+          delete fileItem.reviews;
+          delete fileItem.review_count;
         }
+
+        // meta.yaml を更新
+        const updatedContent = yaml.dump(meta, { indent: 2 });
+        fileOperationService.writeFileSync(metaUri, updatedContent, 'utf-8');
+
+        return true;
       } else {
-        // レビューが存在しない場合は削除
-        delete fileItem.reviews;
-        delete fileItem.review_count;
+        // 後方互換性のためのフォールバック（一時的）
+        const fs = require('fs');
+        
+        if (!fs.existsSync(metaAbsolutePath)) {
+          return false;
+        }
+
+        const content = fs.readFileSync(metaAbsolutePath, 'utf-8');
+        const meta = yaml.load(content) as MetaYaml;
+
+        const fileItem = meta.files.find((item) => item.name === fileName);
+        if (!fileItem) {
+          return false;
+        }
+
+        if (
+          reviewSummary &&
+          (reviewSummary.open > 0 ||
+            (reviewSummary.resolved !== undefined && reviewSummary.resolved > 0))
+        ) {
+          // レビューが存在する場合
+          const filePathInDir = path.join(path.basename(dirAbsolutePath), fileName);
+          fileItem.reviews = this.generateReviewFilePath(filePathInDir);
+
+          // レビューサマリーを設定（0でない値のみ）
+          fileItem.review_count = { open: reviewSummary.open };
+          if (reviewSummary.in_progress !== undefined && reviewSummary.in_progress > 0) {
+            fileItem.review_count.in_progress = reviewSummary.in_progress;
+          }
+          if (reviewSummary.resolved !== undefined && reviewSummary.resolved > 0) {
+            fileItem.review_count.resolved = reviewSummary.resolved;
+          }
+          if (reviewSummary.dismissed !== undefined && reviewSummary.dismissed > 0) {
+            fileItem.review_count.dismissed = reviewSummary.dismissed;
+          }
+        } else {
+          // レビューが存在しない場合は削除
+          delete fileItem.reviews;
+          delete fileItem.review_count;
+        }
+
+        // meta.yaml を更新
+        const updatedContent = yaml.dump(meta, { indent: 2 });
+        fs.writeFileSync(metaAbsolutePath, updatedContent, 'utf-8');
+
+        return true;
       }
-
-      // meta.yaml を更新
-      const updatedContent = yaml.dump(meta, { indent: 2 });
-      fs.writeFileSync(metaAbsolutePath, updatedContent, 'utf-8');
-
-      return true;
     } catch (error) {
       console.error('レビュー情報の更新に失敗しました:', error);
       return false;
@@ -244,7 +334,7 @@ export class MetaYamlUtils {
    * @param fileName ファイル名
    * @returns 削除が成功したかどうか
    */
-  static removeReviewInfo(dirAbsolutePath: string, fileName: string): boolean {
-    return this.updateReviewInfo(dirAbsolutePath, fileName, null);
+  static removeReviewInfo(dirAbsolutePath: string, fileName: string, fileOperationService?: FileOperationService): boolean {
+    return this.updateReviewInfo(dirAbsolutePath, fileName, null, fileOperationService);
   }
 }

@@ -1,0 +1,502 @@
+import { FileOperationService, FileOperationResult, FileStats, DirectoryEntry } from '../interfaces/FileOperationService.js';
+import { Uri } from '../interfaces/Uri.js';
+import { MetaYamlUtils, DialogoiTreeItem, MetaYaml } from '../utils/MetaYamlUtils.js';
+import { ForeshadowingData } from './ForeshadowingService.js';
+import * as path from 'path';
+import * as yaml from 'js-yaml';
+
+// TypeScriptの型定義を拡張
+type BufferEncoding = 'ascii' | 'utf8' | 'utf-8' | 'utf16le' | 'ucs2' | 'ucs-2' | 'base64' | 'base64url' | 'latin1' | 'binary' | 'hex';
+
+/**
+ * モック用のUri実装
+ */
+class MockUri implements Uri {
+  constructor(private _path: string) {}
+
+  get scheme(): string { return 'file'; }
+  get authority(): string { return ''; }
+  get path(): string { return this._path; }
+  get query(): string { return ''; }
+  get fragment(): string { return ''; }
+  get fsPath(): string { return this._path; }
+
+  toString(): string { return `file://${this._path}`; }
+  toJSON(): object { return { scheme: 'file', authority: '', path: this._path, query: '', fragment: '' }; }
+}
+
+/**
+ * モック用のファイル統計情報
+ */
+class MockFileStats implements FileStats {
+  constructor(
+    private _isFile: boolean,
+    private _isDirectory: boolean,
+    private _size: number = 0,
+    private _mtime: Date = new Date(),
+    private _birthtime: Date = new Date()
+  ) {}
+
+  isFile(): boolean { return this._isFile; }
+  isDirectory(): boolean { return this._isDirectory; }
+  get size(): number { return this._size; }
+  get mtime(): Date { return this._mtime; }
+  get birthtime(): Date { return this._birthtime; }
+}
+
+/**
+ * モック用のディレクトリエントリ
+ */
+class MockDirectoryEntry implements DirectoryEntry {
+  constructor(
+    private _name: string,
+    private _isFile: boolean,
+    private _isDirectory: boolean
+  ) {}
+
+  get name(): string { return this._name; }
+  isFile(): boolean { return this._isFile; }
+  isDirectory(): boolean { return this._isDirectory; }
+}
+
+/**
+ * テスト用のモックFileOperationService
+ */
+export class MockFileOperationService extends FileOperationService {
+  private files: Map<string, string | Buffer> = new Map();
+  private directories: Set<string> = new Set();
+
+  constructor() {
+    super();
+    // デフォルトでルートディレクトリを作成
+    this.directories.add('/');
+  }
+
+  // === ファイルシステム状態の管理 ===
+
+  /**
+   * ファイルシステム状態をリセット
+   */
+  reset(): void {
+    this.files.clear();
+    this.directories.clear();
+    this.directories.add('/');
+  }
+
+  /**
+   * ファイルを手動で追加（テスト用）
+   */
+  addFile(path: string, content: string | Buffer): void {
+    this.files.set(path, content);
+    // 親ディレクトリも作成
+    const parentDir = path.substring(0, path.lastIndexOf('/'));
+    if (parentDir && !this.directories.has(parentDir)) {
+      this.directories.add(parentDir);
+    }
+  }
+
+  /**
+   * ディレクトリを手動で追加（テスト用）
+   */
+  addDirectory(path: string): void {
+    this.directories.add(path);
+  }
+
+  // === 基本的なファイル操作メソッド ===
+
+  existsSync(uri: Uri): boolean {
+    const path = uri.fsPath;
+    return this.files.has(path) || this.directories.has(path);
+  }
+
+  readFileSync(uri: Uri, encoding?: BufferEncoding): string;
+  readFileSync(uri: Uri, encoding?: null): Buffer;
+  readFileSync(uri: Uri, encoding?: BufferEncoding | null): string | Buffer;
+  readFileSync(uri: Uri, encoding?: BufferEncoding | null): string | Buffer {
+    const path = uri.fsPath;
+    const content = this.files.get(path);
+    if (content === undefined) {
+      throw new Error(`ファイルが見つかりません: ${path}`);
+    }
+    
+    if (encoding === null) {
+      return Buffer.isBuffer(content) ? content : Buffer.from(content);
+    }
+    
+    return Buffer.isBuffer(content) ? content.toString(encoding || 'utf8') : content;
+  }
+
+  writeFileSync(uri: Uri, data: string | Buffer, _encoding?: BufferEncoding): void {
+    const path = uri.fsPath;
+    this.files.set(path, data);
+    
+    // 親ディレクトリも作成
+    const parentDir = path.substring(0, path.lastIndexOf('/'));
+    if (parentDir && !this.directories.has(parentDir)) {
+      this.directories.add(parentDir);
+    }
+  }
+
+  mkdirSync(uri: Uri): void {
+    const path = uri.fsPath;
+    this.directories.add(path);
+  }
+
+  unlinkSync(uri: Uri): void {
+    const path = uri.fsPath;
+    if (!this.files.has(path)) {
+      throw new Error(`ファイルが見つかりません: ${path}`);
+    }
+    this.files.delete(path);
+  }
+
+  rmSync(uri: Uri, options?: { recursive?: boolean; force?: boolean }): void {
+    const path = uri.fsPath;
+    
+    if (this.directories.has(path)) {
+      if (options?.recursive === true) {
+        // 再帰的に削除
+        const toDelete = Array.from(this.directories).filter(dir => dir.startsWith(path));
+        toDelete.forEach(dir => this.directories.delete(dir));
+        
+        const filesToDelete = Array.from(this.files.keys()).filter(file => file.startsWith(path));
+        filesToDelete.forEach(file => this.files.delete(file));
+      } else {
+        this.directories.delete(path);
+      }
+    } else if (this.files.has(path)) {
+      this.files.delete(path);
+    } else if (options?.force !== true) {
+      throw new Error(`ファイルまたはディレクトリが見つかりません: ${path}`);
+    }
+  }
+
+  readdirSync(uri: Uri, options?: { withFileTypes?: boolean }): string[] | DirectoryEntry[] {
+    const dirPath = uri.fsPath;
+    
+    if (!this.directories.has(dirPath)) {
+      throw new Error(`ディレクトリが見つかりません: ${dirPath}`);
+    }
+
+    const entries: string[] = [];
+    const entryObjects: DirectoryEntry[] = [];
+
+    // サブディレクトリを検索
+    for (const dir of this.directories) {
+      if (dir.startsWith(dirPath + '/')) {
+        const relativePath = dir.substring(dirPath.length + 1);
+        if (!relativePath.includes('/')) {
+          entries.push(relativePath);
+          entryObjects.push(new MockDirectoryEntry(relativePath, false, true));
+        }
+      }
+    }
+
+    // ファイルを検索
+    for (const file of this.files.keys()) {
+      if (file.startsWith(dirPath + '/')) {
+        const relativePath = file.substring(dirPath.length + 1);
+        if (!relativePath.includes('/')) {
+          entries.push(relativePath);
+          entryObjects.push(new MockDirectoryEntry(relativePath, true, false));
+        }
+      }
+    }
+
+    return options?.withFileTypes === true ? entryObjects : entries;
+  }
+
+  statSync(uri: Uri): FileStats {
+    const path = uri.fsPath;
+    
+    if (this.files.has(path)) {
+      const content = this.files.get(path);
+      if (content !== undefined) {
+        const size = Buffer.isBuffer(content) ? content.length : Buffer.byteLength(content);
+        return new MockFileStats(true, false, size);
+      }
+    } else if (this.directories.has(path)) {
+      return new MockFileStats(false, true);
+    }
+    throw new Error(`ファイルまたはディレクトリが見つかりません: ${path}`);
+  }
+
+  lstatSync(uri: Uri): FileStats {
+    return this.statSync(uri);
+  }
+
+  renameSync(oldUri: Uri, newUri: Uri): void {
+    const oldPath = oldUri.fsPath;
+    const newPath = newUri.fsPath;
+    
+    if (this.files.has(oldPath)) {
+      const content = this.files.get(oldPath);
+      if (content !== undefined) {
+        this.files.delete(oldPath);
+        this.files.set(newPath, content);
+      }
+    } else if (this.directories.has(oldPath)) {
+      this.directories.delete(oldPath);
+      this.directories.add(newPath);
+    } else {
+      throw new Error(`ファイルまたはディレクトリが見つかりません: ${oldPath}`);
+    }
+  }
+
+  // === Uriファクトリーメソッド ===
+
+  createFileUri(path: string): Uri {
+    return new MockUri(path);
+  }
+
+  parseUri(value: string): Uri {
+    const url = new URL(value);
+    return new MockUri(url.pathname);
+  }
+
+  joinPath(base: Uri, ...paths: string[]): Uri {
+    const basePath = base.fsPath;
+    const joinedPath = path.join(basePath, ...paths);
+    return new MockUri(joinedPath);
+  }
+
+  // === 高レベルなメタデータ操作メソッド ===
+  // 実際の実装では、これらのメソッドはVSCodeFileOperationServiceと同じロジックを使用
+
+  createFile(
+    dirPath: string,
+    fileName: string,
+    fileType: 'content' | 'setting' | 'subdirectory',
+    initialContent: string = '',
+    tags: string[] = [],
+  ): FileOperationResult {
+    try {
+      const filePath = path.join(dirPath, fileName);
+      const fileUri = this.createFileUri(filePath);
+
+      if (this.existsSync(fileUri)) {
+        return {
+          success: false,
+          message: `ファイル ${fileName} は既に存在します。`,
+        };
+      }
+
+      if (fileType === 'subdirectory') {
+        this.mkdirSync(fileUri);
+        const defaultMetaYaml = `readme: README.md\nfiles: []\n`;
+        const defaultReadme = `# ${fileName}\n\n`;
+        this.writeFileSync(this.joinPath(fileUri, 'meta.yaml'), defaultMetaYaml);
+        this.writeFileSync(this.joinPath(fileUri, 'README.md'), defaultReadme);
+      } else {
+        let content = initialContent;
+        if (content === '') {
+          if (fileType === 'content' && fileName.endsWith('.txt')) {
+            const baseName = fileName.substring(0, fileName.lastIndexOf('.'));
+            content = `${baseName}\n\n`;
+          } else if (fileType === 'setting' && fileName.endsWith('.md')) {
+            const baseName = fileName.substring(0, fileName.lastIndexOf('.'));
+            content = `# ${baseName}\n\n`;
+          }
+        }
+        this.writeFileSync(fileUri, content);
+      }
+
+      const result = this.updateMetaYaml(dirPath, (meta) => {
+        const newItem: DialogoiTreeItem = {
+          name: fileName,
+          type: fileType,
+          path: filePath,
+          tags: tags.length > 0 ? tags : undefined,
+        };
+        meta.files.push(newItem);
+        return meta;
+      });
+
+      if (!result.success) {
+        if (this.existsSync(fileUri)) {
+          if (fileType === 'subdirectory') {
+            this.rmSync(fileUri, { recursive: true, force: true });
+          } else {
+            this.unlinkSync(fileUri);
+          }
+        }
+        return result;
+      }
+
+      return {
+        success: true,
+        message: `${fileName} を作成しました。`,
+        updatedItems: result.updatedItems,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: `ファイル作成エラー: ${error instanceof Error ? error.message : String(error)}`,
+      };
+    }
+  }
+
+  deleteFile(dirPath: string, fileName: string): FileOperationResult {
+    try {
+      const filePath = path.join(dirPath, fileName);
+      const fileUri = this.createFileUri(filePath);
+
+      if (!this.existsSync(fileUri)) {
+        return {
+          success: false,
+          message: `ファイル ${fileName} が見つかりません。`,
+        };
+      }
+
+      const result = this.updateMetaYaml(dirPath, (meta) => {
+        meta.files = meta.files.filter((file: DialogoiTreeItem) => file.name !== fileName);
+        return meta;
+      });
+
+      if (!result.success) {
+        return result;
+      }
+
+      const isDirectory = this.lstatSync(fileUri).isDirectory();
+      if (isDirectory) {
+        this.rmSync(fileUri, { recursive: true, force: true });
+      } else {
+        this.unlinkSync(fileUri);
+      }
+
+      return {
+        success: true,
+        message: `${fileName} を削除しました。`,
+        updatedItems: result.updatedItems,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: `ファイル削除エラー: ${error instanceof Error ? error.message : String(error)}`,
+      };
+    }
+  }
+
+  // 他のメソッドも同様に実装（簡略化のため一部のみ実装）
+  reorderFiles(_dirPath: string, _fromIndex: number, _toIndex: number): FileOperationResult {
+    // 実装は省略（実際のプロジェクトでは完全に実装する）
+    return { success: true, message: '並び替え完了' };
+  }
+
+  renameFile(_dirPath: string, _oldName: string, _newName: string): FileOperationResult {
+    // 実装は省略（実際のプロジェクトでは完全に実装する）
+    return { success: true, message: 'リネーム完了' };
+  }
+
+  addTag(_dirPath: string, _fileName: string, _tag: string): FileOperationResult {
+    // 実装は省略（実際のプロジェクトでは完全に実装する）
+    return { success: true, message: 'タグ追加完了' };
+  }
+
+  removeTag(_dirPath: string, _fileName: string, _tag: string): FileOperationResult {
+    // 実装は省略（実際のプロジェクトでは完全に実装する）
+    return { success: true, message: 'タグ削除完了' };
+  }
+
+  setTags(_dirPath: string, _fileName: string, _tags: string[]): FileOperationResult {
+    // 実装は省略（実際のプロジェクトでは完全に実装する）
+    return { success: true, message: 'タグ設定完了' };
+  }
+
+  addReference(_dirPath: string, _fileName: string, _referencePath: string): FileOperationResult {
+    // 実装は省略（実際のプロジェクトでは完全に実装する）
+    return { success: true, message: '参照追加完了' };
+  }
+
+  removeReference(_dirPath: string, _fileName: string, _referencePath: string): FileOperationResult {
+    // 実装は省略（実際のプロジェクトでは完全に実装する）
+    return { success: true, message: '参照削除完了' };
+  }
+
+  setReferences(_dirPath: string, _fileName: string, _references: string[]): FileOperationResult {
+    // 実装は省略（実際のプロジェクトでは完全に実装する）
+    return { success: true, message: '参照設定完了' };
+  }
+
+  setCharacterImportance(_dirPath: string, _fileName: string, _importance: 'main' | 'sub' | 'background'): FileOperationResult {
+    // 実装は省略（実際のプロジェクトでは完全に実装する）
+    return { success: true, message: 'キャラクター重要度設定完了' };
+  }
+
+  setMultipleCharacters(_dirPath: string, _fileName: string, _multipleCharacters: boolean): FileOperationResult {
+    // 実装は省略（実際のプロジェクトでは完全に実装する）
+    return { success: true, message: '複数キャラクター設定完了' };
+  }
+
+  removeCharacter(_dirPath: string, _fileName: string): FileOperationResult {
+    // 実装は省略（実際のプロジェクトでは完全に実装する）
+    return { success: true, message: 'キャラクター削除完了' };
+  }
+
+  setForeshadowing(_dirPath: string, _fileName: string, _foreshadowingData: ForeshadowingData): FileOperationResult {
+    // 実装は省略（実際のプロジェクトでは完全に実装する）
+    return { success: true, message: '伏線設定完了' };
+  }
+
+  removeForeshadowing(_dirPath: string, _fileName: string): FileOperationResult {
+    // 実装は省略（実際のプロジェクトでは完全に実装する）
+    return { success: true, message: '伏線削除完了' };
+  }
+
+  // === プライベートメソッド ===
+
+  private updateMetaYaml(
+    dirPath: string,
+    updateFunction: (meta: MetaYaml) => MetaYaml,
+  ): FileOperationResult {
+    try {
+      const metaPath = path.join(dirPath, 'meta.yaml');
+      const metaUri = this.createFileUri(metaPath);
+
+      // meta.yamlを読み込み
+      const meta = MetaYamlUtils.loadMetaYaml(dirPath, this);
+      if (meta === null) {
+        return {
+          success: false,
+          message: 'meta.yamlが見つからないか、読み込みに失敗しました。',
+        };
+      }
+
+      // 更新を実行
+      const updatedMeta = updateFunction(meta);
+
+      // バリデーション
+      const validationErrors = MetaYamlUtils.validateMetaYaml(updatedMeta);
+      if (validationErrors.length > 0) {
+        return {
+          success: false,
+          message: `meta.yaml検証エラー: ${validationErrors.join(', ')}`,
+        };
+      }
+
+      // meta.yamlを保存
+      const yamlContent = yaml.dump(updatedMeta, {
+        flowLevel: -1,
+        lineWidth: -1,
+      });
+      this.writeFileSync(metaUri, yamlContent);
+
+      // パスを更新したアイテムを返す
+      const updatedItems = updatedMeta.files.map((file: DialogoiTreeItem) => ({
+        ...file,
+        path: path.join(dirPath, file.name),
+      }));
+
+      return {
+        success: true,
+        message: 'meta.yamlを更新しました。',
+        updatedItems,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: `meta.yaml更新エラー: ${error instanceof Error ? error.message : String(error)}`,
+      };
+    }
+  }
+}

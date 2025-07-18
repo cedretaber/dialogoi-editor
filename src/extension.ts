@@ -3,9 +3,13 @@ import { DialogoiTreeDataProvider } from './tree/DialogoiTreeDataProvider.js';
 import { registerReviewCommands } from './commands/reviewCommands.js';
 import { registerCharacterCommands } from './commands/characterCommands.js';
 import { registerForeshadowingCommands } from './commands/foreshadowingCommands.js';
+import { VSCodeServiceContainer } from './di/VSCodeServiceContainer.js';
 
-export function activate(context: vscode.ExtensionContext): void {
+export async function activate(context: vscode.ExtensionContext): Promise<void> {
   console.log('Dialogoi Editor が起動しました');
+
+  // VSCode環境でServiceContainerを初期化
+  await VSCodeServiceContainer.initialize();
 
   // TreeDataProviderの作成と登録
   const treeDataProvider = new DialogoiTreeDataProvider();
@@ -417,5 +421,8 @@ export function activate(context: vscode.ExtensionContext): void {
 }
 
 export function deactivate(): void {
-  // cleanup
+  // ServiceContainerのリセット
+  const { ServiceContainer } = require('./di/ServiceContainer.js');
+  const serviceContainer = ServiceContainer.getInstance();
+  serviceContainer.reset();
 }

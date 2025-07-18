@@ -1,5 +1,5 @@
-import * as fs from 'fs';
 import * as path from 'path';
+import { FileOperationService } from '../interfaces/FileOperationService.js';
 
 export interface ForeshadowingData {
   start: string;
@@ -7,18 +7,22 @@ export interface ForeshadowingData {
 }
 
 export class ForeshadowingService {
+  constructor(private fileOperationService: FileOperationService) {}
+
   /**
    * マークダウンファイルから表示名を取得
    * @param fileAbsolutePath ファイルの絶対パス
    * @returns 表示名（見出しが見つからない場合はファイル名）
    */
-  static extractDisplayName(fileAbsolutePath: string): string {
+  extractDisplayName(fileAbsolutePath: string): string {
     try {
-      if (!fs.existsSync(fileAbsolutePath)) {
+      const fileUri = this.fileOperationService.createFileUri(fileAbsolutePath);
+      
+      if (!this.fileOperationService.existsSync(fileUri)) {
         return this.getFileNameWithoutExtension(fileAbsolutePath);
       }
 
-      const content = fs.readFileSync(fileAbsolutePath, 'utf-8');
+      const content = this.fileOperationService.readFileSync(fileUri, 'utf-8');
       const lines = content.split('\n');
 
       // 最初の # 見出しを探す
@@ -43,13 +47,14 @@ export class ForeshadowingService {
    * @param relativePath 検証対象の相対パス
    * @returns 有効な場合true
    */
-  static validatePath(novelRootAbsolutePath: string, relativePath: string): boolean {
+  validatePath(novelRootAbsolutePath: string, relativePath: string): boolean {
     if (!relativePath || relativePath.trim() === '') {
       return false;
     }
 
     const absolutePath = path.join(novelRootAbsolutePath, relativePath);
-    return fs.existsSync(absolutePath);
+    const fileUri = this.fileOperationService.createFileUri(absolutePath);
+    return this.fileOperationService.existsSync(fileUri);
   }
 
   /**
@@ -58,7 +63,7 @@ export class ForeshadowingService {
    * @param foreshadowingData 伏線データ
    * @returns 検証結果（valid: 有効性, errors: エラーメッセージ配列）
    */
-  static validateForeshadowing(
+  validateForeshadowing(
     novelRootAbsolutePath: string,
     foreshadowingData: ForeshadowingData,
   ): { valid: boolean; errors: string[] } {
@@ -90,7 +95,7 @@ export class ForeshadowingService {
    * @param foreshadowingData 伏線データ
    * @returns 伏線の状態（planted: 埋蔵済み, resolved: 回収済み, planned: 計画中）
    */
-  static getForeshadowingStatus(
+  getForeshadowingStatus(
     novelRootAbsolutePath: string,
     foreshadowingData: ForeshadowingData,
   ): 'planted' | 'resolved' | 'planned' | 'error' {
@@ -117,7 +122,7 @@ export class ForeshadowingService {
    * @param fileAbsolutePath ファイルの絶対パス
    * @returns 拡張子を除いたファイル名
    */
-  private static getFileNameWithoutExtension(fileAbsolutePath: string): string {
+  private getFileNameWithoutExtension(fileAbsolutePath: string): string {
     const fileName = path.basename(fileAbsolutePath);
     const dotIndex = fileName.lastIndexOf('.');
     return dotIndex > 0 ? fileName.substring(0, dotIndex) : fileName;

@@ -1,48 +1,49 @@
 import * as assert from 'assert';
-import * as fs from 'fs';
 import * as path from 'path';
-import * as os from 'os';
 import { ForeshadowingService, ForeshadowingData } from './ForeshadowingService.js';
+import { MockFileOperationService } from './MockFileOperationService.js';
 
 suite('ForeshadowingService', () => {
-  let tempDir: string;
+  let mockFileService: MockFileOperationService;
+  let foreshadowingService: ForeshadowingService;
   let novelRootAbsolutePath: string;
 
   setup(() => {
-    // 一時ディレクトリを作成
-    tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'dialogoi-test-'));
-    novelRootAbsolutePath = path.join(tempDir, 'novel');
-    fs.mkdirSync(novelRootAbsolutePath);
+    // モックサービスを初期化
+    mockFileService = new MockFileOperationService();
+    foreshadowingService = new ForeshadowingService(mockFileService);
+    novelRootAbsolutePath = '/tmp/dialogoi-test/novel';
 
     // テスト用のファイル構造を作成
     const contentsDir = path.join(novelRootAbsolutePath, 'contents');
-    fs.mkdirSync(contentsDir);
-
-    fs.writeFileSync(path.join(contentsDir, 'chapter1.txt'), 'Chapter 1 content');
-    fs.writeFileSync(path.join(contentsDir, 'chapter2.txt'), 'Chapter 2 content');
-
     const settingsDir = path.join(novelRootAbsolutePath, 'settings');
-    fs.mkdirSync(settingsDir);
-
     const foreshadowingsDir = path.join(settingsDir, 'foreshadowings');
-    fs.mkdirSync(foreshadowingsDir);
 
-    fs.writeFileSync(
+    // ディレクトリを作成
+    mockFileService.addDirectory(novelRootAbsolutePath);
+    mockFileService.addDirectory(contentsDir);
+    mockFileService.addDirectory(settingsDir);
+    mockFileService.addDirectory(foreshadowingsDir);
+
+    // テスト用ファイルを作成
+    mockFileService.addFile(path.join(contentsDir, 'chapter1.txt'), 'Chapter 1 content');
+    mockFileService.addFile(path.join(contentsDir, 'chapter2.txt'), 'Chapter 2 content');
+    mockFileService.addFile(
       path.join(foreshadowingsDir, 'mystery.md'),
       '# 謎の手がかり\n\n重要な伏線の説明',
     );
-    fs.writeFileSync(path.join(foreshadowingsDir, 'no-heading.md'), '伏線の内容（見出しなし）');
+    mockFileService.addFile(path.join(foreshadowingsDir, 'no-heading.md'), '伏線の内容（見出しなし）');
   });
 
   teardown(() => {
-    // 一時ディレクトリを削除
-    fs.rmSync(tempDir, { recursive: true });
+    // モックサービスをリセット
+    mockFileService.reset();
   });
 
   suite('extractDisplayName', () => {
     test('マークダウンファイルの見出しから表示名を取得', () => {
       const filePath = path.join(novelRootAbsolutePath, 'settings', 'foreshadowings', 'mystery.md');
-      const displayName = ForeshadowingService.extractDisplayName(filePath);
+      const displayName = foreshadowingService.extractDisplayName(filePath);
       assert.strictEqual(displayName, '謎の手がかり');
     });
 
@@ -53,7 +54,7 @@ suite('ForeshadowingService', () => {
         'foreshadowings',
         'no-heading.md',
       );
-      const displayName = ForeshadowingService.extractDisplayName(filePath);
+      const displayName = foreshadowingService.extractDisplayName(filePath);
       assert.strictEqual(displayName, 'no-heading');
     });
 
@@ -64,14 +65,14 @@ suite('ForeshadowingService', () => {
         'foreshadowings',
         'nonexistent.md',
       );
-      const displayName = ForeshadowingService.extractDisplayName(filePath);
+      const displayName = foreshadowingService.extractDisplayName(filePath);
       assert.strictEqual(displayName, 'nonexistent');
     });
   });
 
   suite('validatePath', () => {
     test('存在するファイルパスは有効', () => {
-      const valid = ForeshadowingService.validatePath(
+      const valid = foreshadowingService.validatePath(
         novelRootAbsolutePath,
         'contents/chapter1.txt',
       );
@@ -79,7 +80,7 @@ suite('ForeshadowingService', () => {
     });
 
     test('存在しないファイルパスは無効', () => {
-      const valid = ForeshadowingService.validatePath(
+      const valid = foreshadowingService.validatePath(
         novelRootAbsolutePath,
         'contents/nonexistent.txt',
       );
@@ -87,7 +88,7 @@ suite('ForeshadowingService', () => {
     });
 
     test('空文字列は無効', () => {
-      const valid = ForeshadowingService.validatePath(novelRootAbsolutePath, '');
+      const valid = foreshadowingService.validatePath(novelRootAbsolutePath, '');
       assert.strictEqual(valid, false);
     });
   });
@@ -99,7 +100,7 @@ suite('ForeshadowingService', () => {
         goal: 'contents/chapter2.txt',
       };
 
-      const result = ForeshadowingService.validateForeshadowing(
+      const result = foreshadowingService.validateForeshadowing(
         novelRootAbsolutePath,
         foreshadowingData,
       );
@@ -113,7 +114,7 @@ suite('ForeshadowingService', () => {
         goal: 'contents/chapter2.txt',
       };
 
-      const result = ForeshadowingService.validateForeshadowing(
+      const result = foreshadowingService.validateForeshadowing(
         novelRootAbsolutePath,
         foreshadowingData,
       );
@@ -128,7 +129,7 @@ suite('ForeshadowingService', () => {
         goal: '',
       };
 
-      const result = ForeshadowingService.validateForeshadowing(
+      const result = foreshadowingService.validateForeshadowing(
         novelRootAbsolutePath,
         foreshadowingData,
       );
@@ -143,7 +144,7 @@ suite('ForeshadowingService', () => {
         goal: 'contents/nonexistent2.txt',
       };
 
-      const result = ForeshadowingService.validateForeshadowing(
+      const result = foreshadowingService.validateForeshadowing(
         novelRootAbsolutePath,
         foreshadowingData,
       );
@@ -167,7 +168,7 @@ suite('ForeshadowingService', () => {
         goal: 'contents/chapter2.txt',
       };
 
-      const status = ForeshadowingService.getForeshadowingStatus(
+      const status = foreshadowingService.getForeshadowingStatus(
         novelRootAbsolutePath,
         foreshadowingData,
       );
@@ -180,7 +181,7 @@ suite('ForeshadowingService', () => {
         goal: 'contents/nonexistent.txt',
       };
 
-      const status = ForeshadowingService.getForeshadowingStatus(
+      const status = foreshadowingService.getForeshadowingStatus(
         novelRootAbsolutePath,
         foreshadowingData,
       );
@@ -193,7 +194,7 @@ suite('ForeshadowingService', () => {
         goal: 'contents/chapter2.txt',
       };
 
-      const status = ForeshadowingService.getForeshadowingStatus(
+      const status = foreshadowingService.getForeshadowingStatus(
         novelRootAbsolutePath,
         foreshadowingData,
       );
@@ -206,7 +207,7 @@ suite('ForeshadowingService', () => {
         goal: 'contents/nonexistent2.txt',
       };
 
-      const status = ForeshadowingService.getForeshadowingStatus(
+      const status = foreshadowingService.getForeshadowingStatus(
         novelRootAbsolutePath,
         foreshadowingData,
       );

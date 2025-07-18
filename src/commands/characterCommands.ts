@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 import { DialogoiTreeDataProvider } from '../tree/DialogoiTreeDataProvider.js';
-import { FileOperationService } from '../services/FileOperationService.js';
+import { ServiceContainer } from '../di/ServiceContainer.js';
 import { DialogoiTreeItem } from '../utils/MetaYamlUtils.js';
 
 export function registerCharacterCommands(
@@ -30,7 +30,8 @@ export function registerCharacterCommands(
       });
 
       if (selected !== undefined) {
-        const result = FileOperationService.setCharacterImportance(
+        const fileOperationService = ServiceContainer.getInstance().getFileOperationService();
+        const result = fileOperationService.setCharacterImportance(
           dirPath,
           fileName,
           selected.value,
@@ -71,7 +72,8 @@ export function registerCharacterCommands(
       );
 
       if (confirmation?.value === true) {
-        const result = FileOperationService.setMultipleCharacters(dirPath, fileName, newValue);
+        const fileOperationService = ServiceContainer.getInstance().getFileOperationService();
+        const result = fileOperationService.setMultipleCharacters(dirPath, fileName, newValue);
 
         if (result.success) {
           provider.refresh();

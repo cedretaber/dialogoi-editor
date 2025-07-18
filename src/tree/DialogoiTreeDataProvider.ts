@@ -1,10 +1,8 @@
 import * as vscode from 'vscode';
 import * as path from 'path';
 import { MetaYamlUtils, DialogoiTreeItem } from '../utils/MetaYamlUtils.js';
-import { FileOperationService } from '../services/FileOperationService.js';
+import { ServiceContainer } from '../di/ServiceContainer.js';
 import { ReferenceManager } from '../services/ReferenceManager.js';
-import { CharacterService } from '../services/CharacterService.js';
-import { ForeshadowingService } from '../services/ForeshadowingService.js';
 
 export class DialogoiTreeDataProvider implements vscode.TreeDataProvider<DialogoiTreeItem> {
   private _onDidChangeTreeData: vscode.EventEmitter<DialogoiTreeItem | undefined | null | void> =
@@ -28,7 +26,8 @@ export class DialogoiTreeDataProvider implements vscode.TreeDataProvider<Dialogo
 
       // 参照関係を初期化
       const referenceManager = ReferenceManager.getInstance();
-      referenceManager.initialize(this.novelRoot);
+      const fileOperationService = ServiceContainer.getInstance().getFileOperationService();
+      referenceManager.initialize(this.novelRoot, fileOperationService);
     }
   }
 
@@ -49,7 +48,8 @@ export class DialogoiTreeDataProvider implements vscode.TreeDataProvider<Dialogo
       displayName = element.character.display_name;
     } else if (element.character !== undefined && !isDirectory) {
       // display_nameが設定されていない場合は自動取得
-      displayName = CharacterService.extractDisplayName(element.path);
+      const characterService = ServiceContainer.getInstance().getCharacterService();
+      displayName = characterService.extractDisplayName(element.path);
     }
 
     const item = new vscode.TreeItem(displayName, collapsibleState);
@@ -162,7 +162,8 @@ export class DialogoiTreeDataProvider implements vscode.TreeDataProvider<Dialogo
     initialContent: string = '',
     tags: string[] = [],
   ): void {
-    const result = FileOperationService.createFile(
+    const fileOperationService = ServiceContainer.getInstance().getFileOperationService();
+    const result = fileOperationService.createFile(
       dirPath,
       fileName,
       fileType,
@@ -179,7 +180,8 @@ export class DialogoiTreeDataProvider implements vscode.TreeDataProvider<Dialogo
   }
 
   deleteFile(dirPath: string, fileName: string): void {
-    const result = FileOperationService.deleteFile(dirPath, fileName);
+    const fileOperationService = ServiceContainer.getInstance().getFileOperationService();
+    const result = fileOperationService.deleteFile(dirPath, fileName);
 
     if (result.success) {
       this.refresh();
@@ -190,7 +192,8 @@ export class DialogoiTreeDataProvider implements vscode.TreeDataProvider<Dialogo
   }
 
   reorderFiles(dirPath: string, fromIndex: number, toIndex: number): void {
-    const result = FileOperationService.reorderFiles(dirPath, fromIndex, toIndex);
+    const fileOperationService = ServiceContainer.getInstance().getFileOperationService();
+    const result = fileOperationService.reorderFiles(dirPath, fromIndex, toIndex);
 
     if (result.success) {
       this.refresh();
@@ -201,7 +204,8 @@ export class DialogoiTreeDataProvider implements vscode.TreeDataProvider<Dialogo
   }
 
   renameFile(dirPath: string, oldName: string, newName: string): void {
-    const result = FileOperationService.renameFile(dirPath, oldName, newName);
+    const fileOperationService = ServiceContainer.getInstance().getFileOperationService();
+    const result = fileOperationService.renameFile(dirPath, oldName, newName);
 
     if (result.success) {
       this.refresh();
@@ -235,7 +239,8 @@ export class DialogoiTreeDataProvider implements vscode.TreeDataProvider<Dialogo
     if (element.character !== undefined) {
       let displayName = element.character.display_name;
       if (displayName === undefined && element.type !== 'subdirectory') {
-        displayName = CharacterService.extractDisplayName(element.path);
+        const characterService = ServiceContainer.getInstance().getCharacterService();
+        displayName = characterService.extractDisplayName(element.path);
       }
       if (displayName !== undefined) {
         tooltipParts.push(`${displayName} (${element.character.importance})`);
@@ -347,7 +352,8 @@ export class DialogoiTreeDataProvider implements vscode.TreeDataProvider<Dialogo
 
   // タグ操作メソッド
   addTag(dirPath: string, fileName: string, tag: string): { success: boolean; message: string } {
-    const result = FileOperationService.addTag(dirPath, fileName, tag);
+    const fileOperationService = ServiceContainer.getInstance().getFileOperationService();
+    const result = fileOperationService.addTag(dirPath, fileName, tag);
 
     if (result.success) {
       this.refresh();
@@ -357,7 +363,8 @@ export class DialogoiTreeDataProvider implements vscode.TreeDataProvider<Dialogo
   }
 
   removeTag(dirPath: string, fileName: string, tag: string): { success: boolean; message: string } {
-    const result = FileOperationService.removeTag(dirPath, fileName, tag);
+    const fileOperationService = ServiceContainer.getInstance().getFileOperationService();
+    const result = fileOperationService.removeTag(dirPath, fileName, tag);
 
     if (result.success) {
       this.refresh();
@@ -371,7 +378,8 @@ export class DialogoiTreeDataProvider implements vscode.TreeDataProvider<Dialogo
     fileName: string,
     tags: string[],
   ): { success: boolean; message: string } {
-    const result = FileOperationService.setTags(dirPath, fileName, tags);
+    const fileOperationService = ServiceContainer.getInstance().getFileOperationService();
+    const result = fileOperationService.setTags(dirPath, fileName, tags);
 
     if (result.success) {
       this.refresh();
@@ -386,7 +394,8 @@ export class DialogoiTreeDataProvider implements vscode.TreeDataProvider<Dialogo
     fileName: string,
     referencePath: string,
   ): { success: boolean; message: string } {
-    const result = FileOperationService.addReference(dirPath, fileName, referencePath);
+    const fileOperationService = ServiceContainer.getInstance().getFileOperationService();
+    const result = fileOperationService.addReference(dirPath, fileName, referencePath);
 
     if (result.success) {
       // ReferenceManagerを更新
@@ -407,7 +416,8 @@ export class DialogoiTreeDataProvider implements vscode.TreeDataProvider<Dialogo
     fileName: string,
     referencePath: string,
   ): { success: boolean; message: string } {
-    const result = FileOperationService.removeReference(dirPath, fileName, referencePath);
+    const fileOperationService = ServiceContainer.getInstance().getFileOperationService();
+    const result = fileOperationService.removeReference(dirPath, fileName, referencePath);
 
     if (result.success) {
       // ReferenceManagerを更新
@@ -428,7 +438,8 @@ export class DialogoiTreeDataProvider implements vscode.TreeDataProvider<Dialogo
     fileName: string,
     references: string[],
   ): { success: boolean; message: string } {
-    const result = FileOperationService.setReferences(dirPath, fileName, references);
+    const fileOperationService = ServiceContainer.getInstance().getFileOperationService();
+    const result = fileOperationService.setReferences(dirPath, fileName, references);
 
     if (result.success) {
       // ReferenceManagerを更新
@@ -451,7 +462,8 @@ export class DialogoiTreeDataProvider implements vscode.TreeDataProvider<Dialogo
     if (this.novelRoot === null || this.novelRoot === undefined) {
       return 'error';
     }
-    return ForeshadowingService.getForeshadowingStatus(this.novelRoot, foreshadowing);
+    const foreshadowingService = ServiceContainer.getInstance().getForeshadowingService();
+    return foreshadowingService.getForeshadowingStatus(this.novelRoot, foreshadowing);
   }
 
   private getContextValue(element: DialogoiTreeItem): string {
