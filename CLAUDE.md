@@ -258,7 +258,12 @@ const relativeFilePath = 'relative/path/to/file.txt';
 1. `npm test` - 全単体テストの実行
 2. `npm run typecheck` - TypeScript 型チェック
 3. `npm run format` - Prettier フォーマット
-4. `npm run lint` - ESLint チェック（警告0個必須）
+4. `npm run format:check` - Prettier フォーマット確認
+5. `npm run lint` - ESLint チェック（警告0個必須）
 
 これらのチェックを怠ると GitHub Actions CI が失敗する。コミット前に必ず実行すること。
 どこかの段階で失敗したら、修正後に、必ず最初から確認をやり直すこと。
+
+**フォーマットチェックについて：**
+- `npm run format`でフォーマットを適用した後、`npm run format:check`で確認する
+- `format:check`が失敗した場合は再度`npm run format`を実行してからコミットする
