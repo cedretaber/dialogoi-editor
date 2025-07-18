@@ -1,6 +1,6 @@
 import * as path from 'path';
-import { MetaYamlUtils } from '../utils/MetaYamlUtils.js';
 import { FileRepository } from '../repositories/FileRepository.js';
+import { ServiceContainer } from '../di/ServiceContainer.js';
 
 export interface ReferenceInfo {
   references: string[]; // このファイルが参照しているファイル
@@ -80,7 +80,8 @@ export class ReferenceManager {
     if (!this.fileRepository) {
       return;
     }
-    const meta = MetaYamlUtils.loadMetaYaml(dirPath, this.fileRepository);
+    const metaYamlService = ServiceContainer.getInstance().getMetaYamlService();
+    const meta = metaYamlService.loadMetaYaml(dirPath);
     if (!meta) {
       return;
     }

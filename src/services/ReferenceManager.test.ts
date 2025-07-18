@@ -2,16 +2,23 @@ import * as assert from 'assert';
 import * as path from 'path';
 import { ReferenceManager } from './ReferenceManager.js';
 import { MockFileRepository } from '../repositories/MockFileRepository.js';
+import { TestServiceContainer } from '../di/TestServiceContainer.js';
+import { ServiceContainer } from '../di/ServiceContainer.js';
 
 suite('ReferenceManager テストスイート', () => {
   let testDir: string;
   let refManager: ReferenceManager;
   let mockFileRepository: MockFileRepository;
+  let testContainer: TestServiceContainer;
 
   setup(() => {
-    // モックファイルサービスを初期化
-    mockFileRepository = new MockFileRepository();
+    // TestServiceContainerを初期化
+    testContainer = TestServiceContainer.create();
+    mockFileRepository = testContainer.getFileRepository() as MockFileRepository;
     testDir = '/tmp/dialogoi-ref-test';
+
+    // ServiceContainerをテスト用に設定
+    ServiceContainer.setTestInstance(testContainer);
 
     // テスト用のプロジェクト構造を作成
     createTestProject();
@@ -25,6 +32,8 @@ suite('ReferenceManager テストスイート', () => {
     // モックファイルサービスをリセット
     mockFileRepository.reset();
     refManager.clear();
+    testContainer.cleanup();
+    ServiceContainer.clearTestInstance();
   });
 
   function createTestProject(): void {

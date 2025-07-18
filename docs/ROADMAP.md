@@ -65,6 +65,38 @@
   - [x] プロジェクトテンプレート機能
   - [x] 包括的なテストスイート（106テスト）
 
+### 🔧 Phase 2.5: アーキテクチャリファクタリング ✅ **完了**
+**目標**: Repository/Service層の設計問題を解決し、適切な責務分離を実装
+
+**問題の分析**:
+- Repository が複雑すぎる（meta.yaml更新など高レベル操作を担当）
+- Service層への循環依存が発生
+- テスト可能性の低下
+
+**実装完了**:
+- [x] Repository/Service設計の問題分析
+- [x] MetaYamlService の作成（依存関係注入パターン）
+- [x] FileOperationService の新規実装
+- [x] Repository から高レベルメソッドを削除
+- [x] ServiceContainer への新サービス追加
+- [x] MetaYamlUtils の純粋化（YAML処理のみ）
+- [x] 全ファイルでの Repository → Service 呼び出し更新
+- [x] 単体テストの修正
+- [x] エラー解消
+
+**結果**:
+- ✅ 全 106 テストが成功
+- ✅ TypeScript コンパイルエラー 0 個
+- ✅ ESLint エラー 0 個
+- ✅ 適切な責務分離により保守性が向上
+- ✅ テスト環境での依存関係注入が正しく動作
+- ✅ IServiceContainer インターフェースによる柔軟な実装
+
+**設計改善**:
+- **Repository**: 純粋なデータアクセス層（ファイル読み書きのみ）
+- **Service**: ビジネスロジック（複雑な操作・バリデーション）
+- **適切な依存関係**: Service → Repository（循環依存なし）
+
 ### 🎨 Phase 3: UI/UX改善
 **目標**: より使いやすいインターフェースの提供
 

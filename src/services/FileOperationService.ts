@@ -1,20 +1,31 @@
-import * as fs from 'fs';
 import * as path from 'path';
-import * as yaml from 'js-yaml';
+import { FileRepository } from '../repositories/FileRepository.js';
+import { MetaYamlService } from './MetaYamlService.js';
 import { MetaYamlUtils, DialogoiTreeItem, MetaYaml } from '../utils/MetaYamlUtils.js';
 import { ForeshadowingData } from './ForeshadowingService.js';
 
+/**
+ * ファイル操作の結果を表すインターフェイス
+ */
 export interface FileOperationResult {
   success: boolean;
   message: string;
   updatedItems?: DialogoiTreeItem[];
 }
 
+/**
+ * ファイル操作とメタデータ管理を組み合わせた高レベルな操作を提供するサービス
+ */
 export class FileOperationService {
+  constructor(
+    private fileRepository: FileRepository,
+    private metaYamlService: MetaYamlService,
+  ) {}
+
   /**
    * 新しいファイルを作成し、meta.yamlに追加する
    */
-  static createFile(
+  createFile(
     dirPath: string,
     fileName: string,
     fileType: 'content' | 'setting' | 'subdirectory',
@@ -23,9 +34,10 @@ export class FileOperationService {
   ): FileOperationResult {
     try {
       const filePath = path.join(dirPath, fileName);
+      const fileUri = this.fileRepository.createFileUri(filePath);
 
       // ファイルが既に存在する場合はエラー
-      if (fs.existsSync(filePath)) {
+      if (this.fileRepository.existsSync(fileUri)) {
         return {
           success: false,
           message: `ファイル ${fileName} は既に存在します。`,
@@ -34,29 +46,34 @@ export class FileOperationService {
 
       // ファイルを作成
       if (fileType === 'subdirectory') {
-        fs.mkdirSync(filePath);
+        this.fileRepository.mkdirSync(fileUri);
 
         // サブディレクトリにはデフォルトのmeta.yamlとREADME.mdを作成
-        const defaultMetaYaml = `readme: README.md\nfiles: []\n`;
+        const defaultMeta = MetaYamlUtils.createMetaYaml('README.md');
         const defaultReadme = `# ${fileName}\n\n`;
 
-        fs.writeFileSync(path.join(filePath, 'meta.yaml'), defaultMetaYaml);
-        fs.writeFileSync(path.join(filePath, 'README.md'), defaultReadme);
+        const metaYamlContent = MetaYamlUtils.stringifyMetaYaml(defaultMeta);
+        this.fileRepository.writeFileSync(
+          this.fileRepository.joinPath(fileUri, 'meta.yaml'),
+          metaYamlContent,
+        );
+        this.fileRepository.writeFileSync(
+          this.fileRepository.joinPath(fileUri, 'README.md'),
+          defaultReadme,
+        );
       } else {
         // ファイルタイプに応じて初期コンテンツを設定
         let content = initialContent;
         if (content === '') {
           if (fileType === 'content' && fileName.endsWith('.txt')) {
-            // 拡張子を除いたベース名を取得
             const baseName = fileName.substring(0, fileName.lastIndexOf('.'));
             content = `${baseName}\n\n`;
           } else if (fileType === 'setting' && fileName.endsWith('.md')) {
-            // 拡張子を除いたベース名を取得
             const baseName = fileName.substring(0, fileName.lastIndexOf('.'));
             content = `# ${baseName}\n\n`;
           }
         }
-        fs.writeFileSync(filePath, content);
+        this.fileRepository.writeFileSync(fileUri, content);
       }
 
       // meta.yamlを更新
@@ -74,11 +91,11 @@ export class FileOperationService {
 
       if (!result.success) {
         // meta.yaml更新に失敗した場合は作成したファイルを削除
-        if (fs.existsSync(filePath)) {
+        if (this.fileRepository.existsSync(fileUri)) {
           if (fileType === 'subdirectory') {
-            fs.rmSync(filePath, { recursive: true, force: true });
+            this.fileRepository.rmSync(fileUri, { recursive: true, force: true });
           } else {
-            fs.unlinkSync(filePath);
+            this.fileRepository.unlinkSync(fileUri);
           }
         }
         return result;
@@ -100,12 +117,13 @@ export class FileOperationService {
   /**
    * ファイルを削除し、meta.yamlから除去する
    */
-  static deleteFile(dirPath: string, fileName: string): FileOperationResult {
+  deleteFile(dirPath: string, fileName: string): FileOperationResult {
     try {
       const filePath = path.join(dirPath, fileName);
+      const fileUri = this.fileRepository.createFileUri(filePath);
 
       // ファイルが存在しない場合はエラー
-      if (!fs.existsSync(filePath)) {
+      if (!this.fileRepository.existsSync(fileUri)) {
         return {
           success: false,
           message: `ファイル ${fileName} が見つかりません。`,
@@ -123,11 +141,11 @@ export class FileOperationService {
       }
 
       // ファイルを削除
-      const isDirectory = fs.lstatSync(filePath).isDirectory();
+      const isDirectory = this.fileRepository.lstatSync(fileUri).isDirectory();
       if (isDirectory) {
-        fs.rmSync(filePath, { recursive: true, force: true });
+        this.fileRepository.rmSync(fileUri, { recursive: true, force: true });
       } else {
-        fs.unlinkSync(filePath);
+        this.fileRepository.unlinkSync(fileUri);
       }
 
       return {
@@ -146,7 +164,7 @@ export class FileOperationService {
   /**
    * ファイルの順序を変更する
    */
-  static reorderFiles(dirPath: string, fromIndex: number, toIndex: number): FileOperationResult {
+  reorderFiles(dirPath: string, fromIndex: number, toIndex: number): FileOperationResult {
     try {
       const result = this.updateMetaYaml(dirPath, (meta) => {
         if (
@@ -187,13 +205,15 @@ export class FileOperationService {
   /**
    * ファイル名を変更する
    */
-  static renameFile(dirPath: string, oldName: string, newName: string): FileOperationResult {
+  renameFile(dirPath: string, oldName: string, newName: string): FileOperationResult {
     try {
       const oldPath = path.join(dirPath, oldName);
       const newPath = path.join(dirPath, newName);
+      const oldUri = this.fileRepository.createFileUri(oldPath);
+      const newUri = this.fileRepository.createFileUri(newPath);
 
       // 元ファイルが存在しない場合はエラー
-      if (!fs.existsSync(oldPath)) {
+      if (!this.fileRepository.existsSync(oldUri)) {
         return {
           success: false,
           message: `ファイル ${oldName} が見つかりません。`,
@@ -201,7 +221,7 @@ export class FileOperationService {
       }
 
       // 新しい名前のファイルが既に存在する場合はエラー
-      if (fs.existsSync(newPath)) {
+      if (this.fileRepository.existsSync(newUri)) {
         return {
           success: false,
           message: `ファイル ${newName} は既に存在します。`,
@@ -228,7 +248,7 @@ export class FileOperationService {
       }
 
       // ファイルをリネーム
-      fs.renameSync(oldPath, newPath);
+      this.fileRepository.renameSync(oldUri, newUri);
 
       return {
         success: true,
@@ -246,7 +266,7 @@ export class FileOperationService {
   /**
    * ファイルにタグを追加する
    */
-  static addTag(dirPath: string, fileName: string, tag: string): FileOperationResult {
+  addTag(dirPath: string, fileName: string, tag: string): FileOperationResult {
     try {
       const result = this.updateMetaYaml(dirPath, (meta) => {
         const fileIndex = meta.files.findIndex((file) => file.name === fileName);
@@ -259,7 +279,6 @@ export class FileOperationService {
           if (!fileItem.tags) {
             fileItem.tags = [];
           }
-          // 既にタグが存在する場合は追加しない
           if (!fileItem.tags.includes(tag)) {
             fileItem.tags.push(tag);
           } else {
@@ -289,7 +308,7 @@ export class FileOperationService {
   /**
    * ファイルからタグを削除する
    */
-  static removeTag(dirPath: string, fileName: string, tag: string): FileOperationResult {
+  removeTag(dirPath: string, fileName: string, tag: string): FileOperationResult {
     try {
       const result = this.updateMetaYaml(dirPath, (meta) => {
         const fileIndex = meta.files.findIndex((file) => file.name === fileName);
@@ -303,7 +322,6 @@ export class FileOperationService {
             throw new Error(`タグ "${tag}" が見つかりません。`);
           }
           fileItem.tags = fileItem.tags.filter((t) => t !== tag);
-          // タグが空になった場合はundefinedに設定
           if (fileItem.tags.length === 0) {
             fileItem.tags = undefined;
           }
@@ -331,7 +349,7 @@ export class FileOperationService {
   /**
    * ファイルのタグを一括で設定する
    */
-  static setTags(dirPath: string, fileName: string, tags: string[]): FileOperationResult {
+  setTags(dirPath: string, fileName: string, tags: string[]): FileOperationResult {
     try {
       const result = this.updateMetaYaml(dirPath, (meta) => {
         const fileIndex = meta.files.findIndex((file) => file.name === fileName);
@@ -341,7 +359,6 @@ export class FileOperationService {
 
         const fileItem = meta.files[fileIndex];
         if (fileItem !== undefined) {
-          // 重複を削除してソート
           const uniqueTags = [...new Set(tags)].sort();
           fileItem.tags = uniqueTags.length > 0 ? uniqueTags : undefined;
         }
@@ -368,11 +385,7 @@ export class FileOperationService {
   /**
    * ファイルに参照を追加する
    */
-  static addReference(
-    dirPath: string,
-    fileName: string,
-    referencePath: string,
-  ): FileOperationResult {
+  addReference(dirPath: string, fileName: string, referencePath: string): FileOperationResult {
     try {
       const result = this.updateMetaYaml(dirPath, (meta) => {
         const fileIndex = meta.files.findIndex((file) => file.name === fileName);
@@ -385,7 +398,6 @@ export class FileOperationService {
           if (!fileItem.references) {
             fileItem.references = [];
           }
-          // 既に参照が存在する場合は追加しない
           if (!fileItem.references.includes(referencePath)) {
             fileItem.references.push(referencePath);
           } else {
@@ -415,11 +427,7 @@ export class FileOperationService {
   /**
    * ファイルから参照を削除する
    */
-  static removeReference(
-    dirPath: string,
-    fileName: string,
-    referencePath: string,
-  ): FileOperationResult {
+  removeReference(dirPath: string, fileName: string, referencePath: string): FileOperationResult {
     try {
       const result = this.updateMetaYaml(dirPath, (meta) => {
         const fileIndex = meta.files.findIndex((file) => file.name === fileName);
@@ -433,7 +441,6 @@ export class FileOperationService {
             throw new Error(`参照 "${referencePath}" が見つかりません。`);
           }
           fileItem.references = fileItem.references.filter((ref) => ref !== referencePath);
-          // 参照が空になった場合はundefinedに設定
           if (fileItem.references.length === 0) {
             fileItem.references = undefined;
           }
@@ -461,11 +468,7 @@ export class FileOperationService {
   /**
    * ファイルの参照を一括で設定する
    */
-  static setReferences(
-    dirPath: string,
-    fileName: string,
-    references: string[],
-  ): FileOperationResult {
+  setReferences(dirPath: string, fileName: string, references: string[]): FileOperationResult {
     try {
       const result = this.updateMetaYaml(dirPath, (meta) => {
         const fileIndex = meta.files.findIndex((file) => file.name === fileName);
@@ -475,7 +478,6 @@ export class FileOperationService {
 
         const fileItem = meta.files[fileIndex];
         if (fileItem !== undefined) {
-          // 重複を削除
           const uniqueReferences = [...new Set(references)];
           fileItem.references = uniqueReferences.length > 0 ? uniqueReferences : undefined;
         }
@@ -500,66 +502,9 @@ export class FileOperationService {
   }
 
   /**
-   * meta.yamlを更新する共通メソッド
-   */
-  private static updateMetaYaml(
-    dirPath: string,
-    updateFunction: (meta: MetaYaml) => MetaYaml,
-  ): FileOperationResult {
-    try {
-      const metaPath = path.join(dirPath, 'meta.yaml');
-
-      // meta.yamlを読み込み
-      const meta = MetaYamlUtils.loadMetaYaml(dirPath);
-      if (meta === null) {
-        return {
-          success: false,
-          message: 'meta.yamlが見つからないか、読み込みに失敗しました。',
-        };
-      }
-
-      // 更新を実行
-      const updatedMeta = updateFunction(meta);
-
-      // バリデーション
-      const validationErrors = MetaYamlUtils.validateMetaYaml(updatedMeta);
-      if (validationErrors.length > 0) {
-        return {
-          success: false,
-          message: `meta.yaml検証エラー: ${validationErrors.join(', ')}`,
-        };
-      }
-
-      // meta.yamlを保存
-      const yamlContent = yaml.dump(updatedMeta, {
-        flowLevel: -1,
-        lineWidth: -1,
-      });
-      fs.writeFileSync(metaPath, yamlContent);
-
-      // パスを更新したアイテムを返す
-      const updatedItems = updatedMeta.files.map((file) => ({
-        ...file,
-        path: path.join(dirPath, file.name),
-      }));
-
-      return {
-        success: true,
-        message: 'meta.yamlを更新しました。',
-        updatedItems,
-      };
-    } catch (error) {
-      return {
-        success: false,
-        message: `meta.yaml更新エラー: ${error instanceof Error ? error.message : String(error)}`,
-      };
-    }
-  }
-
-  /**
    * ファイルのキャラクター重要度を設定する
    */
-  static setCharacterImportance(
+  setCharacterImportance(
     dirPath: string,
     fileName: string,
     importance: 'main' | 'sub' | 'background',
@@ -605,7 +550,7 @@ export class FileOperationService {
   /**
    * ファイルの複数キャラクターフラグを設定する
    */
-  static setMultipleCharacters(
+  setMultipleCharacters(
     dirPath: string,
     fileName: string,
     multipleCharacters: boolean,
@@ -651,7 +596,7 @@ export class FileOperationService {
   /**
    * ファイルのキャラクター設定を削除する
    */
-  static removeCharacter(dirPath: string, fileName: string): FileOperationResult {
+  removeCharacter(dirPath: string, fileName: string): FileOperationResult {
     try {
       const result = this.updateMetaYaml(dirPath, (meta) => {
         const fileIndex = meta.files.findIndex((file) => file.name === fileName);
@@ -686,7 +631,7 @@ export class FileOperationService {
   /**
    * ファイルの伏線設定を設定する
    */
-  static setForeshadowing(
+  setForeshadowing(
     dirPath: string,
     fileName: string,
     foreshadowingData: ForeshadowingData,
@@ -728,7 +673,7 @@ export class FileOperationService {
   /**
    * ファイルの伏線設定を削除する
    */
-  static removeForeshadowing(dirPath: string, fileName: string): FileOperationResult {
+  removeForeshadowing(dirPath: string, fileName: string): FileOperationResult {
     try {
       const result = this.updateMetaYaml(dirPath, (meta) => {
         const fileIndex = meta.files.findIndex((file) => file.name === fileName);
@@ -756,6 +701,54 @@ export class FileOperationService {
       return {
         success: false,
         message: `伏線設定削除エラー: ${error instanceof Error ? error.message : String(error)}`,
+      };
+    }
+  }
+
+  /**
+   * meta.yamlを更新する共通ロジック
+   */
+  private updateMetaYaml(
+    dirPath: string,
+    updateFunction: (meta: MetaYaml) => MetaYaml,
+  ): FileOperationResult {
+    try {
+      // meta.yamlを読み込み
+      const meta = this.metaYamlService.loadMetaYaml(dirPath);
+      if (meta === null) {
+        return {
+          success: false,
+          message: 'meta.yamlが見つからないか、読み込みに失敗しました。',
+        };
+      }
+
+      // 更新を実行
+      const updatedMeta = updateFunction(meta);
+
+      // meta.yamlを保存
+      const saveResult = this.metaYamlService.saveMetaYaml(dirPath, updatedMeta);
+      if (!saveResult) {
+        return {
+          success: false,
+          message: 'meta.yamlの保存に失敗しました。',
+        };
+      }
+
+      // パスを更新したアイテムを返す
+      const updatedItems = updatedMeta.files.map((file: DialogoiTreeItem) => ({
+        ...file,
+        path: path.join(dirPath, file.name),
+      }));
+
+      return {
+        success: true,
+        message: 'meta.yamlを更新しました。',
+        updatedItems,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: `meta.yaml更新エラー: ${error instanceof Error ? error.message : String(error)}`,
       };
     }
   }

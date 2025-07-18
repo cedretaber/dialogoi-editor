@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 import * as path from 'path';
-import { MetaYamlUtils, DialogoiTreeItem } from '../utils/MetaYamlUtils.js';
+import { DialogoiTreeItem } from '../utils/MetaYamlUtils.js';
 import { ServiceContainer } from '../di/ServiceContainer.js';
 import { ReferenceManager } from '../services/ReferenceManager.js';
 
@@ -23,8 +23,8 @@ export class DialogoiTreeDataProvider implements vscode.TreeDataProvider<Dialogo
 
   private findNovelRoot(): void {
     console.warn('findNovelRoot 開始');
-    const fileRepository = ServiceContainer.getInstance().getFileRepository();
-    this.novelRoot = MetaYamlUtils.findNovelRoot(this.workspaceRoot, fileRepository);
+    const metaYamlService = ServiceContainer.getInstance().getMetaYamlService();
+    this.novelRoot = metaYamlService.findNovelRoot(this.workspaceRoot);
     console.warn('Novel root 検出結果:', this.novelRoot);
     if (this.novelRoot !== null) {
       // コンテキストにノベルプロジェクトが存在することを設定
@@ -157,8 +157,8 @@ export class DialogoiTreeDataProvider implements vscode.TreeDataProvider<Dialogo
 
   private loadMetaYaml(dirPath: string): DialogoiTreeItem[] {
     console.warn('loadMetaYaml 呼び出し, dirPath:', dirPath);
-    const fileRepository = ServiceContainer.getInstance().getFileRepository();
-    const meta = MetaYamlUtils.loadMetaYaml(dirPath, fileRepository);
+    const metaYamlService = ServiceContainer.getInstance().getMetaYamlService();
+    const meta = metaYamlService.loadMetaYaml(dirPath);
     console.warn('loadMetaYaml 結果:', meta);
 
     if (meta === null) {
@@ -176,8 +176,8 @@ export class DialogoiTreeDataProvider implements vscode.TreeDataProvider<Dialogo
   }
 
   private getReadmeFilePath(dirPath: string): string | null {
-    const fileRepository = ServiceContainer.getInstance().getFileRepository();
-    return MetaYamlUtils.getReadmeFilePath(dirPath, fileRepository);
+    const metaYamlService = ServiceContainer.getInstance().getMetaYamlService();
+    return metaYamlService.getReadmeFilePath(dirPath);
   }
 
   // ファイル操作メソッド
@@ -188,8 +188,8 @@ export class DialogoiTreeDataProvider implements vscode.TreeDataProvider<Dialogo
     initialContent: string = '',
     tags: string[] = [],
   ): void {
-    const fileRepository = ServiceContainer.getInstance().getFileRepository();
-    const result = fileRepository.createFile(dirPath, fileName, fileType, initialContent, tags);
+    const fileOperationService = ServiceContainer.getInstance().getFileOperationService();
+    const result = fileOperationService.createFile(dirPath, fileName, fileType, initialContent, tags);
 
     if (result.success) {
       this.refresh();
@@ -200,8 +200,8 @@ export class DialogoiTreeDataProvider implements vscode.TreeDataProvider<Dialogo
   }
 
   deleteFile(dirPath: string, fileName: string): void {
-    const fileRepository = ServiceContainer.getInstance().getFileRepository();
-    const result = fileRepository.deleteFile(dirPath, fileName);
+    const fileOperationService = ServiceContainer.getInstance().getFileOperationService();
+    const result = fileOperationService.deleteFile(dirPath, fileName);
 
     if (result.success) {
       this.refresh();
@@ -212,8 +212,8 @@ export class DialogoiTreeDataProvider implements vscode.TreeDataProvider<Dialogo
   }
 
   reorderFiles(dirPath: string, fromIndex: number, toIndex: number): void {
-    const fileRepository = ServiceContainer.getInstance().getFileRepository();
-    const result = fileRepository.reorderFiles(dirPath, fromIndex, toIndex);
+    const fileOperationService = ServiceContainer.getInstance().getFileOperationService();
+    const result = fileOperationService.reorderFiles(dirPath, fromIndex, toIndex);
 
     if (result.success) {
       this.refresh();
@@ -224,8 +224,8 @@ export class DialogoiTreeDataProvider implements vscode.TreeDataProvider<Dialogo
   }
 
   renameFile(dirPath: string, oldName: string, newName: string): void {
-    const fileRepository = ServiceContainer.getInstance().getFileRepository();
-    const result = fileRepository.renameFile(dirPath, oldName, newName);
+    const fileOperationService = ServiceContainer.getInstance().getFileOperationService();
+    const result = fileOperationService.renameFile(dirPath, oldName, newName);
 
     if (result.success) {
       this.refresh();
@@ -372,8 +372,8 @@ export class DialogoiTreeDataProvider implements vscode.TreeDataProvider<Dialogo
 
   // タグ操作メソッド
   addTag(dirPath: string, fileName: string, tag: string): { success: boolean; message: string } {
-    const fileRepository = ServiceContainer.getInstance().getFileRepository();
-    const result = fileRepository.addTag(dirPath, fileName, tag);
+    const fileOperationService = ServiceContainer.getInstance().getFileOperationService();
+    const result = fileOperationService.addTag(dirPath, fileName, tag);
 
     if (result.success) {
       this.refresh();
@@ -383,8 +383,8 @@ export class DialogoiTreeDataProvider implements vscode.TreeDataProvider<Dialogo
   }
 
   removeTag(dirPath: string, fileName: string, tag: string): { success: boolean; message: string } {
-    const fileRepository = ServiceContainer.getInstance().getFileRepository();
-    const result = fileRepository.removeTag(dirPath, fileName, tag);
+    const fileOperationService = ServiceContainer.getInstance().getFileOperationService();
+    const result = fileOperationService.removeTag(dirPath, fileName, tag);
 
     if (result.success) {
       this.refresh();
@@ -398,8 +398,8 @@ export class DialogoiTreeDataProvider implements vscode.TreeDataProvider<Dialogo
     fileName: string,
     tags: string[],
   ): { success: boolean; message: string } {
-    const fileRepository = ServiceContainer.getInstance().getFileRepository();
-    const result = fileRepository.setTags(dirPath, fileName, tags);
+    const fileOperationService = ServiceContainer.getInstance().getFileOperationService();
+    const result = fileOperationService.setTags(dirPath, fileName, tags);
 
     if (result.success) {
       this.refresh();
@@ -414,8 +414,8 @@ export class DialogoiTreeDataProvider implements vscode.TreeDataProvider<Dialogo
     fileName: string,
     referencePath: string,
   ): { success: boolean; message: string } {
-    const fileRepository = ServiceContainer.getInstance().getFileRepository();
-    const result = fileRepository.addReference(dirPath, fileName, referencePath);
+    const fileOperationService = ServiceContainer.getInstance().getFileOperationService();
+    const result = fileOperationService.addReference(dirPath, fileName, referencePath);
 
     if (result.success) {
       // ReferenceManagerを更新
@@ -436,8 +436,8 @@ export class DialogoiTreeDataProvider implements vscode.TreeDataProvider<Dialogo
     fileName: string,
     referencePath: string,
   ): { success: boolean; message: string } {
-    const fileRepository = ServiceContainer.getInstance().getFileRepository();
-    const result = fileRepository.removeReference(dirPath, fileName, referencePath);
+    const fileOperationService = ServiceContainer.getInstance().getFileOperationService();
+    const result = fileOperationService.removeReference(dirPath, fileName, referencePath);
 
     if (result.success) {
       // ReferenceManagerを更新
@@ -458,8 +458,8 @@ export class DialogoiTreeDataProvider implements vscode.TreeDataProvider<Dialogo
     fileName: string,
     references: string[],
   ): { success: boolean; message: string } {
-    const fileRepository = ServiceContainer.getInstance().getFileRepository();
-    const result = fileRepository.setReferences(dirPath, fileName, references);
+    const fileOperationService = ServiceContainer.getInstance().getFileOperationService();
+    const result = fileOperationService.setReferences(dirPath, fileName, references);
 
     if (result.success) {
       // ReferenceManagerを更新

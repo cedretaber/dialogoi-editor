@@ -1,7 +1,6 @@
 import * as vscode from 'vscode';
 import * as path from 'path';
 import { ReviewService } from '../services/ReviewService.js';
-import { MetaYamlUtils } from '../utils/MetaYamlUtils.js';
 import { CreateReviewOptions, ReviewSeverity } from '../models/Review.js';
 import { ServiceContainer } from '../di/ServiceContainer.js';
 
@@ -183,8 +182,8 @@ async function addReviewHandler(reviewService: ReviewService, fileItem: FileItem
   const dirAbsolutePath = path.dirname(fileItem.path);
   const fileName = path.basename(fileItem.path);
   const { ServiceContainer } = await import('../di/ServiceContainer.js');
-  const fileRepository = ServiceContainer.getInstance().getFileRepository();
-  MetaYamlUtils.updateReviewInfo(dirAbsolutePath, fileName, reviewSummary, fileRepository);
+  const metaYamlService = ServiceContainer.getInstance().getMetaYamlService();
+  metaYamlService.updateReviewInfo(dirAbsolutePath, fileName, reviewSummary);
 
   vscode.window.showInformationMessage(`レビューを追加しました (ID: ${reviewIndex})`);
 }
@@ -310,8 +309,8 @@ async function updateReviewStatusHandler(
   const dirAbsolutePath = path.dirname(fileItem.path);
   const fileName = path.basename(fileItem.path);
   const { ServiceContainer } = await import('../di/ServiceContainer.js');
-  const fileRepository = ServiceContainer.getInstance().getFileRepository();
-  MetaYamlUtils.updateReviewInfo(dirAbsolutePath, fileName, reviewSummary, fileRepository);
+  const metaYamlService = ServiceContainer.getInstance().getMetaYamlService();
+  metaYamlService.updateReviewInfo(dirAbsolutePath, fileName, reviewSummary);
 
   vscode.window.showInformationMessage(`レビューステータスを更新しました`);
 }
@@ -382,8 +381,8 @@ async function deleteReviewHandler(
   const dirAbsolutePath = path.dirname(fileItem.path);
   const fileName = path.basename(fileItem.path);
   const { ServiceContainer } = await import('../di/ServiceContainer.js');
-  const fileRepository = ServiceContainer.getInstance().getFileRepository();
-  MetaYamlUtils.updateReviewInfo(dirAbsolutePath, fileName, reviewSummary, fileRepository);
+  const metaYamlService = ServiceContainer.getInstance().getMetaYamlService();
+  metaYamlService.updateReviewInfo(dirAbsolutePath, fileName, reviewSummary);
 
   vscode.window.showInformationMessage(`レビューを削除しました`);
 }

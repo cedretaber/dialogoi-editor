@@ -8,13 +8,16 @@ import { ReviewService } from '../services/ReviewService.js';
 import { DialogoiYamlService } from '../services/DialogoiYamlService.js';
 import { DialogoiTemplateService } from '../services/DialogoiTemplateService.js';
 import { ProjectCreationService } from '../services/ProjectCreationService.js';
+import { MetaYamlService } from '../services/MetaYamlService.js';
+import { FileOperationService } from '../services/FileOperationService.js';
 import { Uri } from '../interfaces/Uri.js';
+import { IServiceContainer } from './ServiceContainer.js';
 
 /**
  * テスト専用の依存関係注入コンテナ
  * VSCode依存を完全に排除し、すべてモックを使用
  */
-export class TestServiceContainer {
+export class TestServiceContainer implements IServiceContainer {
   private static instance: TestServiceContainer | null = null;
   private fileRepository: FileRepository;
   private characterService: CharacterService | null = null;
@@ -25,6 +28,8 @@ export class TestServiceContainer {
   private dialogoiYamlService: DialogoiYamlService | null = null;
   private dialogoiTemplateService: DialogoiTemplateService | null = null;
   private projectCreationService: ProjectCreationService | null = null;
+  private metaYamlService: MetaYamlService | null = null;
+  private fileOperationService: FileOperationService | null = null;
 
   private constructor() {
     // テスト環境では常にMockFileRepositoryを使用
@@ -134,6 +139,29 @@ export class TestServiceContainer {
   }
 
   /**
+   * MetaYamlServiceを取得
+   */
+  getMetaYamlService(): MetaYamlService {
+    if (!this.metaYamlService) {
+      this.metaYamlService = new MetaYamlService(this.fileRepository);
+    }
+    return this.metaYamlService;
+  }
+
+  /**
+   * FileOperationServiceを取得
+   */
+  getFileOperationService(): FileOperationService {
+    if (!this.fileOperationService) {
+      this.fileOperationService = new FileOperationService(
+        this.fileRepository,
+        this.getMetaYamlService(),
+      );
+    }
+    return this.fileOperationService;
+  }
+
+  /**
    * すべてのサービスをリセット（テスト用）
    */
   reset(): void {
@@ -146,6 +174,8 @@ export class TestServiceContainer {
     this.dialogoiYamlService = null;
     this.dialogoiTemplateService = null;
     this.projectCreationService = null;
+    this.metaYamlService = null;
+    this.fileOperationService = null;
   }
 
   /**
@@ -160,5 +190,20 @@ export class TestServiceContainer {
    */
   static create(): TestServiceContainer {
     return new TestServiceContainer();
+  }
+
+  /**
+   * テストクリーンアップ
+   */
+  cleanup(): void {
+    // MockFileRepositoryのリセット
+    if (this.fileRepository instanceof MockFileRepository) {
+      this.fileRepository.reset();
+    }
+    
+    // ReferenceManagerのクリア
+    if (this.referenceManager) {
+      this.referenceManager.clear();
+    }
   }
 }
