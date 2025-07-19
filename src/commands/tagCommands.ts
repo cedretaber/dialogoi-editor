@@ -121,7 +121,13 @@ export function registerTagCommands(
       }
 
       // 空文字列の場合は空配列、それ以外はカンマで分割してトリム
-      const newTags = newTagsStr === '' ? [] : newTagsStr.split(',').map((t) => t.trim()).filter((t) => t !== '');
+      const newTags =
+        newTagsStr === ''
+          ? []
+          : newTagsStr
+              .split(',')
+              .map((t) => t.trim())
+              .filter((t) => t !== '');
 
       const dirPath = treeDataProvider.getDirectoryPath(item);
       const result = treeDataProvider.setTags(dirPath, item.name, newTags);

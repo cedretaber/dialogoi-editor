@@ -103,9 +103,13 @@ export function registerReferenceCommands(
       }
 
       // 空文字列の場合は空配列、それ以外はカンマで分割してトリム
-      const newReferences = newReferencesStr === '' 
-        ? [] 
-        : newReferencesStr.split(',').map((r) => r.trim()).filter((r) => r !== '');
+      const newReferences =
+        newReferencesStr === ''
+          ? []
+          : newReferencesStr
+              .split(',')
+              .map((r) => r.trim())
+              .filter((r) => r !== '');
 
       const dirPath = treeDataProvider.getDirectoryPath(item);
       const result = treeDataProvider.setReferences(dirPath, item.name, newReferences);
