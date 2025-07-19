@@ -8,27 +8,29 @@ import { registerTagCommands } from './commands/tagCommands.js';
 import { registerReferenceCommands } from './commands/referenceCommands.js';
 import { VSCodeServiceContainer } from './di/VSCodeServiceContainer.js';
 import { ServiceContainer } from './di/ServiceContainer.js';
+import { Logger } from './utils/Logger.js';
 
 export async function activate(context: vscode.ExtensionContext): Promise<void> {
-  console.warn('Dialogoi Editor が起動しました');
+  const logger = Logger.getInstance();
+  logger.info('Dialogoi Editor が起動しました');
 
   try {
     // VSCode環境でServiceContainerを初期化
-    console.warn('ServiceContainer初期化を開始...');
+    logger.debug('ServiceContainer初期化を開始...');
     await VSCodeServiceContainer.initialize(context);
-    console.warn('ServiceContainer初期化完了');
+    logger.debug('ServiceContainer初期化完了');
 
     // TreeDataProviderの作成と登録
-    console.warn('TreeDataProvider作成を開始...');
+    logger.debug('TreeDataProvider作成を開始...');
     const treeDataProvider = new DialogoiTreeDataProvider();
-    console.warn('TreeDataProvider作成完了');
+    logger.debug('TreeDataProvider作成完了');
 
-    console.warn('TreeView作成を開始...');
+    logger.debug('TreeView作成を開始...');
     const treeView = vscode.window.createTreeView('dialogoi-explorer', {
       treeDataProvider: treeDataProvider,
       showCollapseAll: true,
     });
-    console.warn('TreeView作成完了');
+    logger.debug('TreeView作成完了');
 
     // 更新コマンドの実装
     const refreshCommand = vscode.commands.registerCommand('dialogoi.refreshExplorer', () => {
@@ -58,7 +60,10 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
 
     context.subscriptions.push(treeView, refreshCommand);
   } catch (error) {
-    console.error('拡張機能の初期化中にエラーが発生しました:', error);
+    logger.error(
+      '拡張機能の初期化中にエラーが発生しました',
+      error instanceof Error ? error : String(error),
+    );
     vscode.window.showErrorMessage(
       `Dialogoi Editor の初期化に失敗しました: ${error instanceof Error ? error.message : String(error)}`,
     );

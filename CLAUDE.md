@@ -201,9 +201,16 @@ suite('NewService テストスイート', () => {
 
 ## 開発の進め方
 
-- 複数のフェーズに分かれている開発の場合は、フェーズが1つ終わるごとに必ず　lint, typecheck, test を行うこと
+- 複数のフェーズに分かれている開発の場合は、フェーズが1つ終わるごとに必ず `npm run check-all` を行うこと
 - そのフェーズで作成したファイルにはテストを書くこと
-- lint, typecheck, test が通ったら git commit する
+- `npm run check-all` が通ったら git commit する
+
+**コミット前のワークフロー：**
+1. コード変更・ファイル作成
+2. テスト作成（新機能の場合）
+3. `npm run check-all` 実行
+4. エラーがあれば修正して再度 `npm run check-all`
+5. 全チェック通過後に git commit
 
 ### コーディング規約と型安全性
 
@@ -251,19 +258,28 @@ const relativeFilePath = 'relative/path/to/file.txt';
 
 この規則により、パスの種類の取り違えによるバグを防ぐ。
 
-## **重要：作業完了前の必須チェック**
+## **重要：git commit 前の必須チェック**
 
-**新しいファイルを作成・編集した後は、必ず以下のコマンドを実行してCIの通過を確保すること：**
+**新しいファイルを作成・編集した後は、git commit前に必ず以下のコマンドを実行してCIの通過を確保すること：**
 
-1. `npm test` - 全単体テストの実行
-2. `npm run typecheck` - TypeScript 型チェック
-3. `npm run format` - Prettier フォーマット
-4. `npm run format:check` - Prettier フォーマット確認
-5. `npm run lint` - ESLint チェック（警告0個必須）
+```bash
+npm run check-all
+```
 
-これらのチェックを怠ると GitHub Actions CI が失敗する。コミット前に必ず実行すること。
-どこかの段階で失敗したら、修正後に、必ず最初から確認をやり直すこと。
+このコマンドは以下を一括実行します：
+1. `npm run typecheck` - TypeScript 型チェック
+2. `npm run lint` - ESLint チェック（警告0個必須）
+3. `npm run format:check` - Prettier フォーマット確認
+4. `npm test` - 全単体テストの実行
 
-**フォーマットチェックについて：**
-- `npm run format`でフォーマットを適用した後、`npm run format:check`で確認する
-- `format:check`が失敗した場合は再度`npm run format`を実行してからコミットする
+**重要な注意事項：**
+- `check-all`が失敗した場合は、必ず修正後に再度`check-all`を実行すること
+- フォーマットエラーの場合は`npm run format`で修正してから再実行
+- これらのチェックを怠ると GitHub Actions CI が失敗する
+- **どんな小さな変更でも必ずコミット前に実行すること**
+
+**個別チェックが必要な場合：**
+- フォーマット修正：`npm run format`
+- 型チェックのみ：`npm run typecheck`
+- リントのみ：`npm run lint`
+- テストのみ：`npm test`
