@@ -779,4 +779,337 @@ files:
       }
     });
   });
+
+  suite('タグ操作テスト', () => {
+    test('updateFileTagsでタグを正常に更新する', () => {
+      const testDir = '/test/project';
+      const fileName = 'chapter1.txt';
+      const meta: MetaYaml = {
+        readme: 'README.md',
+        files: [
+          {
+            name: fileName,
+            type: 'content',
+            path: `${testDir}/${fileName}`,
+            tags: ['既存タグ1', '既存タグ2'],
+          },
+        ],
+      };
+
+      mockFileRepository.addDirectory(testDir);
+      service.saveMetaYaml(testDir, meta);
+
+      // タグを更新
+      const newTags = ['新タグ1', '新タグ2', '新タグ3'];
+      const result = service.updateFileTags(testDir, fileName, newTags);
+      assert.strictEqual(result, true);
+
+      // 更新されたタグを確認
+      const updatedMeta = service.loadMetaYaml(testDir);
+      assert.notStrictEqual(updatedMeta, null);
+
+      if (updatedMeta !== null) {
+        const fileItem = updatedMeta.files.find((f) => f.name === fileName);
+        assert.notStrictEqual(fileItem, undefined);
+
+        if (fileItem !== undefined) {
+          assert.deepStrictEqual(fileItem.tags, newTags);
+        }
+      }
+    });
+
+    test('updateFileTagsでタグを空にする', () => {
+      const testDir = '/test/project';
+      const fileName = 'chapter1.txt';
+      const meta: MetaYaml = {
+        readme: 'README.md',
+        files: [
+          {
+            name: fileName,
+            type: 'content',
+            path: `${testDir}/${fileName}`,
+            tags: ['既存タグ1', '既存タグ2'],
+          },
+        ],
+      };
+
+      mockFileRepository.addDirectory(testDir);
+      service.saveMetaYaml(testDir, meta);
+
+      // タグを空にする
+      const result = service.updateFileTags(testDir, fileName, []);
+      assert.strictEqual(result, true);
+
+      // タグが削除されていることを確認
+      const updatedMeta = service.loadMetaYaml(testDir);
+      assert.notStrictEqual(updatedMeta, null);
+
+      if (updatedMeta !== null) {
+        const fileItem = updatedMeta.files.find((f) => f.name === fileName);
+        assert.notStrictEqual(fileItem, undefined);
+
+        if (fileItem !== undefined) {
+          assert.strictEqual(fileItem.tags, undefined);
+        }
+      }
+    });
+
+    test('addFileTagで新しいタグを追加する', () => {
+      const testDir = '/test/project';
+      const fileName = 'chapter1.txt';
+      const meta: MetaYaml = {
+        readme: 'README.md',
+        files: [
+          {
+            name: fileName,
+            type: 'content',
+            path: `${testDir}/${fileName}`,
+            tags: ['既存タグ1'],
+          },
+        ],
+      };
+
+      mockFileRepository.addDirectory(testDir);
+      service.saveMetaYaml(testDir, meta);
+
+      // 新しいタグを追加
+      const result = service.addFileTag(testDir, fileName, '新タグ');
+      assert.strictEqual(result, true);
+
+      // タグが追加されていることを確認
+      const updatedMeta = service.loadMetaYaml(testDir);
+      assert.notStrictEqual(updatedMeta, null);
+
+      if (updatedMeta !== null) {
+        const fileItem = updatedMeta.files.find((f) => f.name === fileName);
+        assert.notStrictEqual(fileItem, undefined);
+
+        if (fileItem !== undefined) {
+          assert.deepStrictEqual(fileItem.tags, ['既存タグ1', '新タグ']);
+        }
+      }
+    });
+
+    test('addFileTagで重複タグを追加しても成功する', () => {
+      const testDir = '/test/project';
+      const fileName = 'chapter1.txt';
+      const meta: MetaYaml = {
+        readme: 'README.md',
+        files: [
+          {
+            name: fileName,
+            type: 'content',
+            path: `${testDir}/${fileName}`,
+            tags: ['既存タグ1'],
+          },
+        ],
+      };
+
+      mockFileRepository.addDirectory(testDir);
+      service.saveMetaYaml(testDir, meta);
+
+      // 既存のタグを追加
+      const result = service.addFileTag(testDir, fileName, '既存タグ1');
+      assert.strictEqual(result, true);
+
+      // タグが重複していないことを確認
+      const updatedMeta = service.loadMetaYaml(testDir);
+      assert.notStrictEqual(updatedMeta, null);
+
+      if (updatedMeta !== null) {
+        const fileItem = updatedMeta.files.find((f) => f.name === fileName);
+        assert.notStrictEqual(fileItem, undefined);
+
+        if (fileItem !== undefined) {
+          assert.deepStrictEqual(fileItem.tags, ['既存タグ1']);
+        }
+      }
+    });
+
+    test('addFileTagでタグがないファイルに新規追加', () => {
+      const testDir = '/test/project';
+      const fileName = 'chapter1.txt';
+      const meta: MetaYaml = {
+        readme: 'README.md',
+        files: [
+          {
+            name: fileName,
+            type: 'content',
+            path: `${testDir}/${fileName}`,
+          },
+        ],
+      };
+
+      mockFileRepository.addDirectory(testDir);
+      service.saveMetaYaml(testDir, meta);
+
+      // 新しいタグを追加
+      const result = service.addFileTag(testDir, fileName, '新タグ');
+      assert.strictEqual(result, true);
+
+      // タグが追加されていることを確認
+      const updatedMeta = service.loadMetaYaml(testDir);
+      assert.notStrictEqual(updatedMeta, null);
+
+      if (updatedMeta !== null) {
+        const fileItem = updatedMeta.files.find((f) => f.name === fileName);
+        assert.notStrictEqual(fileItem, undefined);
+
+        if (fileItem !== undefined) {
+          assert.deepStrictEqual(fileItem.tags, ['新タグ']);
+        }
+      }
+    });
+
+    test('removeFileTagでタグを削除する', () => {
+      const testDir = '/test/project';
+      const fileName = 'chapter1.txt';
+      const meta: MetaYaml = {
+        readme: 'README.md',
+        files: [
+          {
+            name: fileName,
+            type: 'content',
+            path: `${testDir}/${fileName}`,
+            tags: ['タグ1', 'タグ2', 'タグ3'],
+          },
+        ],
+      };
+
+      mockFileRepository.addDirectory(testDir);
+      service.saveMetaYaml(testDir, meta);
+
+      // タグを削除
+      const result = service.removeFileTag(testDir, fileName, 'タグ2');
+      assert.strictEqual(result, true);
+
+      // タグが削除されていることを確認
+      const updatedMeta = service.loadMetaYaml(testDir);
+      assert.notStrictEqual(updatedMeta, null);
+
+      if (updatedMeta !== null) {
+        const fileItem = updatedMeta.files.find((f) => f.name === fileName);
+        assert.notStrictEqual(fileItem, undefined);
+
+        if (fileItem !== undefined) {
+          assert.deepStrictEqual(fileItem.tags, ['タグ1', 'タグ3']);
+        }
+      }
+    });
+
+    test('removeFileTagで最後のタグを削除するとtagsフィールドが削除される', () => {
+      const testDir = '/test/project';
+      const fileName = 'chapter1.txt';
+      const meta: MetaYaml = {
+        readme: 'README.md',
+        files: [
+          {
+            name: fileName,
+            type: 'content',
+            path: `${testDir}/${fileName}`,
+            tags: ['タグ1'],
+          },
+        ],
+      };
+
+      mockFileRepository.addDirectory(testDir);
+      service.saveMetaYaml(testDir, meta);
+
+      // 最後のタグを削除
+      const result = service.removeFileTag(testDir, fileName, 'タグ1');
+      assert.strictEqual(result, true);
+
+      // tagsフィールドが削除されていることを確認
+      const updatedMeta = service.loadMetaYaml(testDir);
+      assert.notStrictEqual(updatedMeta, null);
+
+      if (updatedMeta !== null) {
+        const fileItem = updatedMeta.files.find((f) => f.name === fileName);
+        assert.notStrictEqual(fileItem, undefined);
+
+        if (fileItem !== undefined) {
+          assert.strictEqual(fileItem.tags, undefined);
+        }
+      }
+    });
+
+    test('removeFileTagで存在しないタグを削除しても成功する', () => {
+      const testDir = '/test/project';
+      const fileName = 'chapter1.txt';
+      const meta: MetaYaml = {
+        readme: 'README.md',
+        files: [
+          {
+            name: fileName,
+            type: 'content',
+            path: `${testDir}/${fileName}`,
+            tags: ['タグ1'],
+          },
+        ],
+      };
+
+      mockFileRepository.addDirectory(testDir);
+      service.saveMetaYaml(testDir, meta);
+
+      // 存在しないタグを削除
+      const result = service.removeFileTag(testDir, fileName, '存在しないタグ');
+      assert.strictEqual(result, true);
+
+      // タグが変更されていないことを確認
+      const updatedMeta = service.loadMetaYaml(testDir);
+      assert.notStrictEqual(updatedMeta, null);
+
+      if (updatedMeta !== null) {
+        const fileItem = updatedMeta.files.find((f) => f.name === fileName);
+        assert.notStrictEqual(fileItem, undefined);
+
+        if (fileItem !== undefined) {
+          assert.deepStrictEqual(fileItem.tags, ['タグ1']);
+        }
+      }
+    });
+
+    test('.dialogoi-meta.yamlが存在しない場合はfalseを返す', () => {
+      const testDir = '/test/project';
+      const fileName = 'chapter1.txt';
+
+      mockFileRepository.addDirectory(testDir);
+
+      const updateResult = service.updateFileTags(testDir, fileName, ['タグ']);
+      assert.strictEqual(updateResult, false);
+
+      const addResult = service.addFileTag(testDir, fileName, 'タグ');
+      assert.strictEqual(addResult, false);
+
+      const removeResult = service.removeFileTag(testDir, fileName, 'タグ');
+      assert.strictEqual(removeResult, false);
+    });
+
+    test('ファイルが存在しない場合はfalseを返す', () => {
+      const testDir = '/test/project';
+      const fileName = 'nonexistent.txt';
+      const meta: MetaYaml = {
+        readme: 'README.md',
+        files: [
+          {
+            name: 'chapter1.txt',
+            type: 'content',
+            path: `${testDir}/chapter1.txt`,
+          },
+        ],
+      };
+
+      mockFileRepository.addDirectory(testDir);
+      service.saveMetaYaml(testDir, meta);
+
+      const updateResult = service.updateFileTags(testDir, fileName, ['タグ']);
+      assert.strictEqual(updateResult, false);
+
+      const addResult = service.addFileTag(testDir, fileName, 'タグ');
+      assert.strictEqual(addResult, false);
+
+      const removeResult = service.removeFileTag(testDir, fileName, 'タグ');
+      assert.strictEqual(removeResult, true); // タグがない場合は成功とする仕様
+    });
+  });
 });

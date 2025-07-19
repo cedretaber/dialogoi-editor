@@ -32,8 +32,10 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     logger.debug('TreeView作成完了');
 
     logger.debug('FileDetailsViewProvider作成を開始...');
+    const serviceContainer = ServiceContainer.getInstance();
     const fileDetailsProvider = new FileDetailsViewProvider(context.extensionUri);
     fileDetailsProvider.setTreeDataProvider(treeDataProvider);
+    fileDetailsProvider.setMetaYamlService(serviceContainer.getMetaYamlService());
     context.subscriptions.push(
       vscode.window.registerWebviewViewProvider(
         FileDetailsViewProvider.viewType,

@@ -170,4 +170,88 @@ export class MetaYamlService {
   removeReviewInfo(dirAbsolutePath: string, fileName: string): boolean {
     return this.updateReviewInfo(dirAbsolutePath, fileName, null);
   }
+
+  /**
+   * ファイルのタグを更新
+   */
+  updateFileTags(dirAbsolutePath: string, fileName: string, tags: string[]): boolean {
+    const metaUri = this.fileRepository.createFileUri(
+      path.join(dirAbsolutePath, '.dialogoi-meta.yaml'),
+    );
+
+    try {
+      // 既存の .dialogoi-meta.yaml を読み込む
+      const meta = this.loadMetaYaml(dirAbsolutePath);
+      if (!meta) {
+        return false;
+      }
+
+      const fileItem = meta.files.find((item) => item.name === fileName);
+      if (!fileItem) {
+        return false;
+      }
+
+      // タグを更新
+      if (tags.length > 0) {
+        fileItem.tags = tags;
+      } else {
+        delete fileItem.tags;
+      }
+
+      // .dialogoi-meta.yaml を更新
+      const updatedContent = MetaYamlUtils.stringifyMetaYaml(meta);
+      this.fileRepository.writeFileSync(metaUri, updatedContent, 'utf-8');
+
+      return true;
+    } catch (error) {
+      console.error('タグの更新に失敗しました:', error);
+      return false;
+    }
+  }
+
+  /**
+   * ファイルにタグを追加
+   */
+  addFileTag(dirAbsolutePath: string, fileName: string, tag: string): boolean {
+    const meta = this.loadMetaYaml(dirAbsolutePath);
+    if (!meta) {
+      return false;
+    }
+
+    const fileItem = meta.files.find((item) => item.name === fileName);
+    if (!fileItem) {
+      return false;
+    }
+
+    // 既存のタグを取得
+    const currentTags = fileItem.tags || [];
+
+    // 重複チェック
+    if (currentTags.includes(tag)) {
+      return true; // 既に存在する場合は成功とする
+    }
+
+    // タグを追加
+    const newTags = [...currentTags, tag];
+    return this.updateFileTags(dirAbsolutePath, fileName, newTags);
+  }
+
+  /**
+   * ファイルからタグを削除
+   */
+  removeFileTag(dirAbsolutePath: string, fileName: string, tag: string): boolean {
+    const meta = this.loadMetaYaml(dirAbsolutePath);
+    if (!meta) {
+      return false;
+    }
+
+    const fileItem = meta.files.find((item) => item.name === fileName);
+    if (!fileItem || !fileItem.tags) {
+      return true; // タグがない場合は成功とする
+    }
+
+    // タグを削除
+    const newTags = fileItem.tags.filter((t) => t !== tag);
+    return this.updateFileTags(dirAbsolutePath, fileName, newTags);
+  }
 }

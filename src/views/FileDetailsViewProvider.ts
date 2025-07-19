@@ -1,7 +1,9 @@
 import * as vscode from 'vscode';
+import * as path from 'path';
 import { DialogoiTreeItem } from '../utils/MetaYamlUtils.js';
 import { Logger } from '../utils/Logger.js';
 import { DialogoiTreeDataProvider } from '../tree/DialogoiTreeDataProvider.js';
+import { MetaYamlService } from '../services/MetaYamlService.js';
 
 /**
  * WebViewからのメッセージの型定義
@@ -32,6 +34,7 @@ export class FileDetailsViewProvider implements vscode.WebviewViewProvider {
   private currentItem: DialogoiTreeItem | null = null;
   private logger = Logger.getInstance();
   private treeDataProvider: DialogoiTreeDataProvider | null = null;
+  private metaYamlService: MetaYamlService | null = null;
 
   constructor(private readonly _extensionUri: vscode.Uri) {}
 
@@ -40,6 +43,13 @@ export class FileDetailsViewProvider implements vscode.WebviewViewProvider {
    */
   public setTreeDataProvider(treeDataProvider: DialogoiTreeDataProvider): void {
     this.treeDataProvider = treeDataProvider;
+  }
+
+  /**
+   * MetaYamlServiceを設定
+   */
+  public setMetaYamlService(metaYamlService: MetaYamlService): void {
+    this.metaYamlService = metaYamlService;
   }
 
   public resolveWebviewView(
@@ -148,15 +158,25 @@ export class FileDetailsViewProvider implements vscode.WebviewViewProvider {
     }
 
     try {
-      // TODO: 実際のタグ追加処理を実装
-      // 現在はログ出力のみ
-      this.logger.info(`タグ追加: ${tag} → ${this.currentItem.name}`);
+      // ファイルのパスを取得
+      const dirPath = path.dirname(this.currentItem.path || '');
+      const fileName = this.currentItem.name;
 
-      // 成功メッセージを表示
-      vscode.window.showInformationMessage(`タグ "${tag}" を追加しました`);
+      // MetaYamlServiceを使ってタグを追加
+      const success = this.metaYamlService?.addFileTag(dirPath, fileName, tag);
 
-      // 表示を更新（将来的にはリアルタイム更新で自動実行）
-      this.updateFileDetails(this.currentItem);
+      if (success === true) {
+        this.logger.info(`タグ追加: ${tag} → ${fileName}`);
+        vscode.window.showInformationMessage(`タグ "${tag}" を追加しました`);
+
+        // TreeViewとWebViewを更新
+        if (this.treeDataProvider) {
+          this.treeDataProvider.refresh();
+        }
+        this.updateFileDetails(this.currentItem);
+      } else {
+        throw new Error('タグの追加に失敗しました');
+      }
     } catch (error) {
       this.logger.error('タグ追加エラー', error instanceof Error ? error : String(error));
       vscode.window.showErrorMessage(
@@ -174,10 +194,25 @@ export class FileDetailsViewProvider implements vscode.WebviewViewProvider {
     }
 
     try {
-      // TODO: 実際のタグ削除処理を実装
-      this.logger.info(`タグ削除: ${tag} ← ${this.currentItem.name}`);
-      vscode.window.showInformationMessage(`タグ "${tag}" を削除しました`);
-      this.updateFileDetails(this.currentItem);
+      // ファイルのパスを取得
+      const dirPath = path.dirname(this.currentItem.path || '');
+      const fileName = this.currentItem.name;
+
+      // MetaYamlServiceを使ってタグを削除
+      const success = this.metaYamlService?.removeFileTag(dirPath, fileName, tag);
+
+      if (success === true) {
+        this.logger.info(`タグ削除: ${tag} ← ${fileName}`);
+        vscode.window.showInformationMessage(`タグ "${tag}" を削除しました`);
+
+        // TreeViewとWebViewを更新
+        if (this.treeDataProvider) {
+          this.treeDataProvider.refresh();
+        }
+        this.updateFileDetails(this.currentItem);
+      } else {
+        throw new Error('タグの削除に失敗しました');
+      }
     } catch (error) {
       this.logger.error('タグ削除エラー', error instanceof Error ? error : String(error));
       vscode.window.showErrorMessage(
@@ -469,7 +504,8 @@ export class FileDetailsViewProvider implements vscode.WebviewViewProvider {
         }
         
         .tag {
-          display: inline-block;
+          display: inline-flex;
+          align-items: center;
           background-color: var(--vscode-badge-background);
           color: var(--vscode-badge-foreground);
           padding: 2px 6px;
@@ -477,6 +513,69 @@ export class FileDetailsViewProvider implements vscode.WebviewViewProvider {
           font-size: 10px;
           margin: 2px 2px 2px 0;
           font-weight: 500;
+        }
+        
+        /* タグ編集機能用のスタイル */
+        .tag-container {
+          margin-top: 4px;
+        }
+        
+        .tag-list {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 2px;
+          margin-bottom: 8px;
+        }
+        
+        .tag-remove {
+          background: none;
+          border: none;
+          color: var(--vscode-badge-foreground);
+          cursor: pointer;
+          font-size: 10px;
+          font-weight: bold;
+          margin-left: 4px;
+          padding: 0;
+          width: 12px;
+          height: 12px;
+          border-radius: 2px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          transition: background-color 0.1s ease, color 0.1s ease;
+        }
+        
+        .tag-remove:hover {
+          background-color: var(--vscode-inputValidation-errorBackground);
+          color: var(--vscode-inputValidation-errorForeground);
+        }
+        
+        .tag-remove:focus {
+          background-color: var(--vscode-inputValidation-errorBackground);
+          color: var(--vscode-inputValidation-errorForeground);
+          outline: 1px solid var(--vscode-focusBorder);
+        }
+        
+        .tag-input {
+          width: 100%;
+          background-color: var(--vscode-input-background);
+          border: 1px solid var(--vscode-input-border);
+          color: var(--vscode-input-foreground);
+          font-size: 11px;
+          padding: 4px 6px;
+          border-radius: 2px;
+          outline: none;
+          box-sizing: border-box;
+        }
+        
+        .tag-input:focus {
+          border-color: var(--vscode-focusBorder);
+          box-shadow: 0 0 0 1px var(--vscode-focusBorder);
+        }
+        
+        .tag-input::placeholder {
+          color: var(--vscode-input-placeholderForeground);
+          font-style: italic;
         }
         
         .reference-item {
@@ -616,16 +715,25 @@ export class FileDetailsViewProvider implements vscode.WebviewViewProvider {
           html += '</button>';
           html += '<div class="section-content" id="tags">';
           
+          // タグコンテナ
+          html += '<div class="tag-container">';
+          html += '<div class="tag-list">';
+          
           if (file.tags && file.tags.length > 0) {
             file.tags.forEach(tag => {
-              html += '<span class="tag">#' + escapeHtml(tag) + '</span>';
+              html += '<span class="tag">';
+              html += '#' + escapeHtml(tag);
+              html += '<button class="tag-remove" data-tag="' + escapeHtml(tag) + '" title="タグを削除">×</button>';
+              html += '</span>';
             });
           } else {
             html += '<div class="no-data">タグがありません</div>';
           }
           
-          html += '<br><button class="button" onclick="addTag()">タグ追加</button>';
-          html += '</div></div>';
+          html += '</div>'; // .tag-list
+          html += '<input class="tag-input" placeholder="新しいタグを入力してEnterキーを押してください..." />';
+          html += '</div>'; // .tag-container
+          html += '</div></div>'; // .section-content, .section
           
           // キャラクター・設定情報セクション
           if (file.character || file.type === 'character') {
@@ -732,6 +840,69 @@ export class FileDetailsViewProvider implements vscode.WebviewViewProvider {
               content.classList.toggle('expanded');
               chevron.classList.toggle('expanded');
             });
+          });
+          
+          // タグ削除ボタンのイベントリスナー
+          document.querySelectorAll('.tag-remove').forEach(button => {
+            button.addEventListener('click', (e) => {
+              e.stopPropagation();
+              const tag = button.getAttribute('data-tag');
+              if (tag) {
+                handleTagRemove(tag);
+              }
+            });
+          });
+          
+          // タグ入力フィールドのイベントリスナー
+          const tagInput = document.querySelector('.tag-input');
+          if (tagInput) {
+            tagInput.addEventListener('keypress', (e) => {
+              if (e.key === 'Enter') {
+                e.preventDefault();
+                const value = tagInput.value.trim();
+                if (value) {
+                  handleTagAdd(value);
+                  tagInput.value = '';
+                }
+              }
+            });
+          }
+        }
+        
+        function handleTagRemove(tag) {
+          vscode.postMessage({
+            type: 'removeTag',
+            payload: { tag: tag }
+          });
+        }
+        
+        function handleTagAdd(tag) {
+          // 空文字列チェック
+          if (!tag || tag.trim() === '') {
+            return;
+          }
+          
+          // 重複チェック（現在のタグリストから確認）
+          const existingTags = Array.from(document.querySelectorAll('.tag')).map(el => {
+            const text = el.textContent.trim();
+            return text.startsWith('#') ? text.substring(1).replace('×', '').trim() : text.replace('×', '').trim();
+          });
+          
+          if (existingTags.includes(tag)) {
+            // 重複している場合は入力フィールドに簡単なフィードバック
+            const tagInput = document.querySelector('.tag-input');
+            if (tagInput) {
+              tagInput.style.borderColor = 'var(--vscode-inputValidation-errorBorder)';
+              setTimeout(() => {
+                tagInput.style.borderColor = '';
+              }, 1000);
+            }
+            return;
+          }
+          
+          vscode.postMessage({
+            type: 'addTag',
+            payload: { tag: tag }
           });
         }
         
