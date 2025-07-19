@@ -6,6 +6,7 @@ import { registerForeshadowingCommands } from './commands/foreshadowingCommands.
 import { registerFileCommands } from './commands/fileCommands.js';
 import { registerTagCommands } from './commands/tagCommands.js';
 import { registerReferenceCommands } from './commands/referenceCommands.js';
+import { FileDetailsViewProvider } from './views/FileDetailsViewProvider.js';
 import { VSCodeServiceContainer } from './di/VSCodeServiceContainer.js';
 import { ServiceContainer } from './di/ServiceContainer.js';
 import { Logger } from './utils/Logger.js';
@@ -29,6 +30,27 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
       showCollapseAll: true,
     });
     logger.debug('TreeView作成完了');
+
+    logger.debug('FileDetailsViewProvider作成を開始...');
+    const fileDetailsProvider = new FileDetailsViewProvider(context.extensionUri);
+    fileDetailsProvider.setTreeDataProvider(treeDataProvider);
+    context.subscriptions.push(
+      vscode.window.registerWebviewViewProvider(
+        FileDetailsViewProvider.viewType,
+        fileDetailsProvider,
+      ),
+    );
+    logger.debug('FileDetailsViewProvider作成完了');
+
+    // TreeView選択変更イベントをリスニング
+    treeView.onDidChangeSelection((e) => {
+      if (e.selection.length > 0) {
+        const selectedItem = e.selection[0];
+        fileDetailsProvider.updateFileDetails(selectedItem || null);
+      } else {
+        fileDetailsProvider.updateFileDetails(null);
+      }
+    });
 
     const refreshCommand = vscode.commands.registerCommand('dialogoi.refreshExplorer', () => {
       treeDataProvider.refresh();

@@ -50,10 +50,26 @@
 - ✅ 一貫したエラーハンドリング
 - ✅ 182個のテストが全て成功
 
-### 🎨 Phase 3: UI/UX改善
+### 🎨 Phase 3: UI/UX改善 🔄 **進行中**
 **目標**: より使いやすいインターフェースの提供
 
-- [ ] WebView による詳細設定画面
+#### Phase 3.1: WebView詳細画面 ✅ **完了**
+- [x] 設計仕様策定（アコーディオンパネル形式、サイドパネル配置）
+- [x] 技術アーキテクチャ設計（WebViewView、メッセージング）
+- [x] 基本WebView実装（package.json、ViewProvider、extension.ts統合）
+- [x] VSCodeエクスプローラー風セクションUI実装（HTML/CSS、JavaScript制御）
+- [x] 表示内容実装（タグ、参照関係、キャラクター情報、レビュー、基本情報）
+- [x] TreeViewとWebViewの統合（Activity Bar配置、リアルタイム連携）
+- [x] 統合UI実装（1つのViewContainerでファイル選択と詳細表示）
+
+**実装成果**:
+- ✅ Activity BarにDialogoi ViewContainerを追加
+- ✅ TreeView（ファイルツリー）とWebView（ファイル詳細）の統合
+- ✅ VSCodeエクスプローラー風の折りたたみ可能セクション
+- ✅ TreeView選択時のリアルタイム詳細表示更新
+- ✅ ワークフロー改善（エクスプローラー⇔詳細パネルの行き来が不要）
+
+#### Phase 3.2: その他UI改善 **未着手**
 - [ ] ドラッグ&ドロップでの並び替え改善
 - [ ] 検索・フィルタリング機能
 - [ ] ハイパーリンク機能

@@ -25,13 +25,29 @@
     "workspaceContains:**/dialogoi.yaml"
   ],
   "contributes": {
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "dialogoi-details",
+          "title": "Dialogoi 詳細",
+          "icon": "$(info)"
+        }
+      ]
+    },
     "views": {
-      "explorer": [
+      "dialogoi-details": [
         {
           "id": "dialogoi-explorer",
-          "name": "Dialogoi",
+          "name": "ファイルツリー",
           "when": "dialogoi:hasNovelProject",
           "icon": "$(book)"
+        },
+        {
+          "type": "webview",
+          "id": "dialogoi-file-details",
+          "name": "ファイル詳細",
+          "when": "dialogoi:hasNovelProject",
+          "icon": "$(info)"
         }
       ]
     },
