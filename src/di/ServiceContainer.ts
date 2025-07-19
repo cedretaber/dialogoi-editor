@@ -22,7 +22,7 @@ export interface IServiceContainer {
   getHashService(): HashService;
   getReviewService(workspaceRoot: Uri): ReviewService;
   getDialogoiYamlService(): DialogoiYamlService;
-  getDialogiTemplateService(): DialogoiTemplateService;
+  getDialogoiTemplateService(): DialogoiTemplateService;
   getMetaYamlService(): MetaYamlService;
   getFileOperationService(): FileOperationService;
   reset(): void;
@@ -156,7 +156,7 @@ export class ServiceContainer implements IServiceContainer {
   /**
    * DialogoiTemplateServiceを取得
    */
-  getDialogiTemplateService(): DialogoiTemplateService {
+  getDialogoiTemplateService(): DialogoiTemplateService {
     if (!this.dialogoiTemplateService) {
       this.dialogoiTemplateService = new DialogoiTemplateService(this.getFileRepository());
     }

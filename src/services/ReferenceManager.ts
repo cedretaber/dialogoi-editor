@@ -180,16 +180,4 @@ export class ReferenceManager {
     const references = this.getReferences(filePath);
     return references.references.filter((ref) => !this.checkFileExists(ref));
   }
-
-  /**
-   * デバッグ用：現在の参照関係を表示
-   */
-  debugPrintReferences(): void {
-    console.warn('=== Reference Manager Debug ===');
-    for (const [file, info] of this.referencesMap) {
-      console.warn(`${file}:`);
-      console.warn(`  references: [${info.references.join(', ')}]`);
-      console.warn(`  referencedBy: [${info.referencedBy.join(', ')}]`);
-    }
-  }
 }

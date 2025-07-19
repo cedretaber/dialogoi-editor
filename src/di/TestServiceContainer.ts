@@ -117,7 +117,7 @@ export class TestServiceContainer implements IServiceContainer {
   /**
    * DialogoiTemplateServiceを取得
    */
-  getDialogiTemplateService(): DialogoiTemplateService {
+  getDialogoiTemplateService(): DialogoiTemplateService {
     if (!this.dialogoiTemplateService) {
       this.dialogoiTemplateService = new DialogoiTemplateService(this.fileRepository);
     }
@@ -132,7 +132,7 @@ export class TestServiceContainer implements IServiceContainer {
       this.projectCreationService = new ProjectCreationService(
         this.fileRepository,
         this.getDialogoiYamlService(),
-        this.getDialogiTemplateService(),
+        this.getDialogoiTemplateService(),
       );
     }
     return this.projectCreationService;

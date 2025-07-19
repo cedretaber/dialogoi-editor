@@ -13,6 +13,17 @@ interface FileItem {
 }
 
 /**
+ * ワークスペースルートを取得する共通関数
+ */
+function getWorkspaceRoot(): string | null {
+  const workspaceRoot = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
+  if (workspaceRoot === undefined || workspaceRoot === null || workspaceRoot.trim() === '') {
+    return null;
+  }
+  return workspaceRoot;
+}
+
+/**
  * レビューコマンドを登録
  * @param context VSCodeエクステンションコンテキスト
  * @param workspaceRoot ワークスペースルート
@@ -96,8 +107,8 @@ async function addReviewHandler(reviewService: ReviewService, fileItem: FileItem
   }
 
   // 絶対パスから相対パスに変換
-  const workspaceRoot = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
-  if (workspaceRoot === undefined || workspaceRoot === null || workspaceRoot.trim() === '') {
+  const workspaceRoot = getWorkspaceRoot();
+  if (workspaceRoot === null) {
     vscode.window.showErrorMessage('ワークスペースが開かれていません');
     return;
   }
@@ -198,8 +209,8 @@ function showReviewsHandler(reviewService: ReviewService, fileItem: FileItem): v
   }
 
   // 絶対パスから相対パスに変換
-  const workspaceRoot = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
-  if (workspaceRoot === undefined || workspaceRoot === null || workspaceRoot.trim() === '') {
+  const workspaceRoot = getWorkspaceRoot();
+  if (workspaceRoot === null) {
     vscode.window.showErrorMessage('ワークスペースが開かれていません');
     return;
   }
@@ -256,8 +267,8 @@ async function updateReviewStatusHandler(
   }
 
   // 絶対パスから相対パスに変換
-  const workspaceRoot = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
-  if (workspaceRoot === undefined || workspaceRoot === null || workspaceRoot.trim() === '') {
+  const workspaceRoot = getWorkspaceRoot();
+  if (workspaceRoot === null) {
     vscode.window.showErrorMessage('ワークスペースが開かれていません');
     return;
   }
@@ -328,8 +339,8 @@ async function deleteReviewHandler(
   }
 
   // 絶対パスから相対パスに変換
-  const workspaceRoot = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
-  if (workspaceRoot === undefined || workspaceRoot === null || workspaceRoot.trim() === '') {
+  const workspaceRoot = getWorkspaceRoot();
+  if (workspaceRoot === null) {
     vscode.window.showErrorMessage('ワークスペースが開かれていません');
     return;
   }

@@ -31,7 +31,7 @@ project_settings:
     const container = TestServiceContainer.create();
     mockFileRepository = container.getFileRepository() as MockFileRepository;
     dialogoiYamlService = container.getDialogoiYamlService();
-    templateService = container.getDialogiTemplateService();
+    templateService = container.getDialogoiTemplateService();
 
     // テスト用テンプレートを設定
     mockFileRepository.setExtensionResource('templates/default-dialogoi.yaml', testTemplate);
