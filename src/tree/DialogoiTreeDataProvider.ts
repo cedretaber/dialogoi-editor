@@ -3,7 +3,19 @@ import * as path from 'path';
 import { DialogoiTreeItem } from '../utils/MetaYamlUtils.js';
 import { ServiceContainer } from '../di/ServiceContainer.js';
 import { ReferenceManager } from '../services/ReferenceManager.js';
+import { TreeViewFilterService, FilterState } from '../services/TreeViewFilterService.js';
+import { Logger } from '../utils/Logger.js';
 
+/**
+ * TreeViewのデータプロバイダー
+ *
+ * ⚠️ 重要な注意事項:
+ * - このファイルはVSCode APIに依存しているため、単体テストが書けません
+ * - そのため、できる限りロジックをこのクラスに書かず、VSCodeに依存しないクラスに実装してください
+ * - 特に、ビジネスロジックは必ずservices/にサービスクラスを作成し、そこに実装してください
+ * - 例: フィルタリングロジック → TreeViewFilterService
+ * - このクラスは主にVSCode APIとの橋渡し役に徹し、ロジック部分は外部サービスに委譲してください
+ */
 export class DialogoiTreeDataProvider implements vscode.TreeDataProvider<DialogoiTreeItem> {
   private _onDidChangeTreeData: vscode.EventEmitter<DialogoiTreeItem | undefined | null | void> =
     new vscode.EventEmitter<DialogoiTreeItem | undefined | null | void>();
@@ -12,6 +24,8 @@ export class DialogoiTreeDataProvider implements vscode.TreeDataProvider<Dialogo
 
   private workspaceRoot: string;
   private novelRoot: string | null = null;
+  private filterService: TreeViewFilterService = new TreeViewFilterService();
+  private logger = Logger.getInstance();
 
   constructor() {
     this.workspaceRoot = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath ?? '';
@@ -35,6 +49,36 @@ export class DialogoiTreeDataProvider implements vscode.TreeDataProvider<Dialogo
   refresh(): void {
     this.findNovelRoot();
     this._onDidChangeTreeData.fire();
+  }
+
+  /**
+   * タグでフィルタリングを設定
+   */
+  setTagFilter(tagValue: string): void {
+    this.filterService.setTagFilter(tagValue);
+    this._onDidChangeTreeData.fire();
+  }
+
+  /**
+   * フィルターを解除
+   */
+  clearFilter(): void {
+    this.filterService.clearFilter();
+    this._onDidChangeTreeData.fire();
+  }
+
+  /**
+   * 現在のフィルター状態を取得
+   */
+  getFilterState(): FilterState {
+    return this.filterService.getFilterState();
+  }
+
+  /**
+   * フィルターが適用されているかチェック
+   */
+  isFilterActive(): boolean {
+    return this.filterService.isFilterActive();
   }
 
   /**
@@ -145,15 +189,100 @@ export class DialogoiTreeDataProvider implements vscode.TreeDataProvider<Dialogo
       return Promise.resolve([]);
     }
 
+    let result: DialogoiTreeItem[];
     if (element) {
       // サブディレクトリの場合、その中の.dialogoi-meta.yamlを読み込む
-      const result = this.loadMetaYaml(element.path);
-      return Promise.resolve(result);
+      result = this.loadMetaYaml(element.path);
+
+      // サブディレクトリが展開された時も再帰的フィルタリングを適用
+      if (this.filterService.isFilterActive()) {
+        this.logger.info(
+          `サブディレクトリ ${element.name} 内で再帰的フィルタリング適用: ${result.length}個のアイテム`,
+        );
+        result = this.applyRecursiveFilter(result);
+        this.logger.debug(`サブディレクトリ再帰的フィルタリング後: ${result.length}個のアイテム`);
+      }
     } else {
       // ルートの場合、ノベルルートの.dialogoi-meta.yamlを読み込む
-      const result = this.loadMetaYaml(this.novelRoot);
-      return Promise.resolve(result);
+      result = this.loadMetaYaml(this.novelRoot);
+
+      // ルートレベルで再帰的フィルタリングを適用
+      if (this.filterService.isFilterActive()) {
+        const filterState = this.filterService.getFilterState();
+        this.logger.debug(
+          `フィルタリング適用前: ${result.length}個のアイテム, フィルター: ${filterState.filterType}="${filterState.filterValue}"`,
+        );
+
+        result = this.applyRecursiveFilter(result);
+
+        this.logger.debug(`フィルタリング適用後: ${result.length}個のアイテム`);
+
+        // デバッグ用：各アイテムのタグを出力
+        result.forEach((item, index) => {
+          this.logger.debug(`  [${index}] ${item.name}: tags=${JSON.stringify(item.tags || [])}`);
+        });
+      }
     }
+
+    return Promise.resolve(result);
+  }
+
+  /**
+   * 再帰的フィルタリングを適用
+   * サブディレクトリ内のファイルも含めてフィルタリングし、
+   * マッチするファイルを含むディレクトリは表示、含まないディレクトリは除外
+   */
+  private applyRecursiveFilter(items: DialogoiTreeItem[]): DialogoiTreeItem[] {
+    const result: DialogoiTreeItem[] = [];
+
+    for (const item of items) {
+      if (item.type === 'subdirectory') {
+        // サブディレクトリの場合、再帰的にチェック
+        const hasMatchingContent = this.hasMatchingContentInDirectory(item.path);
+
+        this.logger.debug(
+          `ディレクトリ ${item.name}: ${hasMatchingContent ? 'マッチする内容あり' : 'マッチする内容なし'}`,
+        );
+
+        // マッチするファイルがある場合、ディレクトリを含める
+        if (hasMatchingContent) {
+          result.push(item);
+        }
+      } else {
+        // ファイルの場合、直接フィルタリングを適用
+        const matchedItems = this.filterService.applyFilter([item]);
+        if (matchedItems.length > 0) {
+          result.push(item);
+        }
+      }
+    }
+
+    return result;
+  }
+
+  /**
+   * ディレクトリ内に（再帰的に）マッチするコンテンツがあるかチェック
+   */
+  private hasMatchingContentInDirectory(dirPath: string): boolean {
+    const subItems = this.loadMetaYaml(dirPath);
+
+    for (const subItem of subItems) {
+      if (subItem.type === 'subdirectory') {
+        // サブディレクトリの場合、さらに再帰的にチェック
+        if (this.hasMatchingContentInDirectory(subItem.path)) {
+          return true;
+        }
+      } else {
+        // ファイルの場合、フィルター条件に一致するかチェック
+        const matchedItems = this.filterService.applyFilter([subItem]);
+        if (matchedItems.length > 0) {
+          this.logger.info(`  → ${subItem.name} がマッチ`);
+          return true;
+        }
+      }
+    }
+
+    return false;
   }
 
   private loadMetaYaml(dirPath: string): DialogoiTreeItem[] {

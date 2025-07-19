@@ -30,7 +30,7 @@
         {
           "id": "dialogoi-details",
           "title": "Dialogoi 詳細",
-          "icon": "$(info)"
+          "icon": "media/dialogoi-icon.svg"
         }
       ]
     },
@@ -146,6 +146,36 @@
         "command": "dialogoi.removeForeshadowing",
         "title": "伏線を削除",
         "icon": "$(eye-closed)"
+      },
+      {
+        "command": "dialogoi.filterByTag",
+        "title": "タグでフィルター",
+        "icon": "$(filter)"
+      },
+      {
+        "command": "dialogoi.clearFilter",
+        "title": "フィルター解除",
+        "icon": "$(clear-all)"
+      },
+      {
+        "command": "dialogoi.filterByReference",
+        "title": "参照でフィルター",
+        "icon": "$(references)"
+      },
+      {
+        "command": "dialogoi.filterByFileType",
+        "title": "種別でフィルター",
+        "icon": "$(filter)"
+      },
+      {
+        "command": "dialogoi.showFilterStatus",
+        "title": "フィルター状態表示",
+        "icon": "$(info)"
+      },
+      {
+        "command": "dialogoi.manageExcludeSettings",
+        "title": "検索除外設定を管理",
+        "icon": "$(gear)"
       }
     ],
     "menus": {
@@ -153,12 +183,22 @@
         {
           "command": "dialogoi.refreshExplorer",
           "when": "view == dialogoi-explorer",
-          "group": "navigation"
+          "group": "navigation@0"
         },
         {
           "command": "dialogoi.createFile",
           "when": "view == dialogoi-explorer",
-          "group": "navigation"
+          "group": "navigation@1"
+        },
+        {
+          "command": "dialogoi.filterByTag",
+          "when": "view == dialogoi-explorer",
+          "group": "navigation@2"
+        },
+        {
+          "command": "dialogoi.clearFilter",
+          "when": "view == dialogoi-explorer",
+          "group": "navigation@3"
         }
       ],
       "view/item/context": [

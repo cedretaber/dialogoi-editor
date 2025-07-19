@@ -6,7 +6,9 @@ import { registerForeshadowingCommands } from './commands/foreshadowingCommands.
 import { registerFileCommands } from './commands/fileCommands.js';
 import { registerTagCommands } from './commands/tagCommands.js';
 import { registerReferenceCommands } from './commands/referenceCommands.js';
+import { registerFilterCommands } from './commands/filterCommands.js';
 import { FileDetailsViewProvider } from './views/FileDetailsViewProvider.js';
+import { VSCodeSettingsService } from './services/VSCodeSettingsService.js';
 import { VSCodeServiceContainer } from './di/VSCodeServiceContainer.js';
 import { ServiceContainer } from './di/ServiceContainer.js';
 import { Logger } from './utils/Logger.js';
@@ -19,6 +21,22 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     logger.debug('ServiceContainer初期化を開始...');
     await VSCodeServiceContainer.initialize(context);
     logger.debug('ServiceContainer初期化完了');
+
+    // VSCode設定の初期化
+    logger.debug('VSCode設定の初期化を開始...');
+    const settingsService = new VSCodeSettingsService();
+
+    // Dialogoi関連ファイルが設定されていない場合は追加
+    if (!settingsService.hasDialogoiExcludePatterns()) {
+      const success = await settingsService.addDialogoiExcludePatterns();
+      if (success) {
+        logger.info('Dialogoi関連ファイルを検索対象から除外しました');
+        vscode.window.showInformationMessage(
+          'Dialogoi設定ファイルをVSCode検索から除外しました（設定で変更可能）',
+        );
+      }
+    }
+    logger.debug('VSCode設定の初期化完了');
 
     logger.debug('TreeDataProvider作成を開始...');
     const treeDataProvider = new DialogoiTreeDataProvider();
@@ -62,6 +80,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     registerFileCommands(context, treeDataProvider, treeView);
     registerTagCommands(context, treeDataProvider);
     registerReferenceCommands(context, treeDataProvider);
+    registerFilterCommands(context, treeDataProvider);
     if (vscode.workspace.workspaceFolders && vscode.workspace.workspaceFolders[0]) {
       registerReviewCommands(context, vscode.workspace.workspaceFolders[0].uri);
     }
