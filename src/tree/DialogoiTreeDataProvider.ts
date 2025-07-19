@@ -37,6 +37,23 @@ export class DialogoiTreeDataProvider implements vscode.TreeDataProvider<Dialogo
     this._onDidChangeTreeData.fire();
   }
 
+  /**
+   * 特定のファイルアイテムを再読み込みして返す
+   */
+  refreshFileItem(originalItem: DialogoiTreeItem): DialogoiTreeItem | null {
+    if (!originalItem.path) {
+      return null;
+    }
+
+    const dirPath = path.dirname(originalItem.path);
+    const fileName = originalItem.name;
+
+    const items = this.loadMetaYaml(dirPath);
+    const updatedItem = items.find((item) => item.name === fileName);
+
+    return updatedItem || null;
+  }
+
   getTreeItem(element: DialogoiTreeItem): vscode.TreeItem {
     const isDirectory = element.type === 'subdirectory';
     const collapsibleState = isDirectory

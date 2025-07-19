@@ -170,10 +170,15 @@ export class FileDetailsViewProvider implements vscode.WebviewViewProvider {
         vscode.window.showInformationMessage(`タグ "${tag}" を追加しました`);
 
         // TreeViewとWebViewを更新
-        if (this.treeDataProvider) {
+        if (this.treeDataProvider !== null && this.currentItem !== null) {
           this.treeDataProvider.refresh();
+          // 最新のファイル情報を取得して表示を更新
+          const updatedItem = this.treeDataProvider.refreshFileItem(this.currentItem);
+          if (updatedItem !== null) {
+            this.currentItem = updatedItem;
+            this.updateFileDetails(this.currentItem);
+          }
         }
-        this.updateFileDetails(this.currentItem);
       } else {
         throw new Error('タグの追加に失敗しました');
       }
@@ -206,10 +211,15 @@ export class FileDetailsViewProvider implements vscode.WebviewViewProvider {
         vscode.window.showInformationMessage(`タグ "${tag}" を削除しました`);
 
         // TreeViewとWebViewを更新
-        if (this.treeDataProvider) {
+        if (this.treeDataProvider !== null && this.currentItem !== null) {
           this.treeDataProvider.refresh();
+          // 最新のファイル情報を取得して表示を更新
+          const updatedItem = this.treeDataProvider.refreshFileItem(this.currentItem);
+          if (updatedItem !== null) {
+            this.currentItem = updatedItem;
+            this.updateFileDetails(this.currentItem);
+          }
         }
-        this.updateFileDetails(this.currentItem);
       } else {
         throw new Error('タグの削除に失敗しました');
       }
@@ -400,21 +410,22 @@ export class FileDetailsViewProvider implements vscode.WebviewViewProvider {
           text-align: center;
           transition: transform 0.15s ease;
           color: var(--vscode-icon-foreground);
-        }
-        
-        .section-chevron.expanded {
           transform: rotate(90deg);
         }
         
+        .section-chevron.collapsed {
+          transform: rotate(0deg);
+        }
+        
         .section-content {
-          display: none;
+          display: block;
           padding: 8px 16px;
           background-color: transparent;
           font-size: 11px;
         }
         
-        .section-content.expanded {
-          display: block;
+        .section-content.collapsed {
+          display: none;
         }
         
         /* ツリービュー用スタイル */
@@ -837,8 +848,8 @@ export class FileDetailsViewProvider implements vscode.WebviewViewProvider {
               const content = document.getElementById(target);
               const chevron = header.querySelector('.section-chevron');
               
-              content.classList.toggle('expanded');
-              chevron.classList.toggle('expanded');
+              content.classList.toggle('collapsed');
+              chevron.classList.toggle('collapsed');
             });
           });
           
