@@ -43,6 +43,7 @@
 ├─────────────────────────────────────────────────┤
 │  Presentation Layer                             │
 │  ├─ TreeDataProvider (左サイドバー)             │
+│  │   └─ TreeDragAndDropController ✅ (D&D対応)  │
 │  ├─ WebView Provider (詳細画面)                 │
 │  └─ Commands (コマンドパレット)                 │
 ├─────────────────────────────────────────────────┤

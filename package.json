@@ -149,6 +149,11 @@
         "icon": "$(eye)"
       },
       {
+        "command": "dialogoi.deleteDirectory",
+        "title": "ディレクトリを削除",
+        "icon": "$(trash)"
+      },
+      {
         "command": "dialogoi.removeForeshadowing",
         "title": "伏線を削除",
         "icon": "$(eye-closed)"
@@ -307,6 +312,11 @@
           "command": "dialogoi.removeForeshadowing",
           "when": "view == dialogoi-explorer && viewItem == dialogoi-file-setting-foreshadowing",
           "group": "8_foreshadowing"
+        },
+        {
+          "command": "dialogoi.deleteDirectory",
+          "when": "view == dialogoi-explorer && viewItem == dialogoi-directory",
+          "group": "9_directory"
         }
       ]
     }

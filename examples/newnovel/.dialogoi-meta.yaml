@@ -6,3 +6,6 @@ files:
   - name: 設定
     type: subdirectory
     path: /home/cedretaber/src/ts/dialogoi-editor/examples/newnovel/設定
+  - name: sub1
+    type: subdirectory
+    path: /home/cedretaber/src/ts/dialogoi-editor/examples/newnovel/sub1

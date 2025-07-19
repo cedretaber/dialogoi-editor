@@ -11,3 +11,6 @@ files:
     path: /home/cedretaber/src/ts/dialogoi-editor/examples/newnovel/本文/第二話.txt
     tags:
       - 魔法
+  - name: 第三話.txt
+    type: content
+    path: /home/cedretaber/src/ts/dialogoi-editor/examples/newnovel/本文/第三話.txt

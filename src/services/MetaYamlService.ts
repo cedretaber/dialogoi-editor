@@ -1,7 +1,7 @@
 import * as path from 'path';
 import { ReviewSummary } from '../models/Review.js';
 import { FileRepository, DirectoryEntry } from '../repositories/FileRepository.js';
-import { MetaYamlUtils, MetaYaml } from '../utils/MetaYamlUtils.js';
+import { MetaYamlUtils, MetaYaml, DialogoiTreeItem } from '../utils/MetaYamlUtils.js';
 
 /**
  * .dialogoi-meta.yaml ファイルの操作を行うサービス
@@ -253,5 +253,233 @@ export class MetaYamlService {
     // タグを削除
     const newTags = fileItem.tags.filter((t) => t !== tag);
     return this.updateFileTags(dirAbsolutePath, fileName, newTags);
+  }
+
+  /**
+   * ディレクトリをメタデータ内で移動する
+   */
+  moveDirectoryInMetadata(
+    sourceParentDir: string,
+    targetParentDir: string,
+    dirName: string,
+    newIndex?: number,
+  ): { success: boolean; message: string; updatedItems?: DialogoiTreeItem[] } {
+    try {
+      // 移動元の親ディレクトリのメタデータを読み込み
+      const sourceParentMeta = this.loadMetaYaml(sourceParentDir);
+      if (sourceParentMeta === null) {
+        return {
+          success: false,
+          message:
+            '移動元の親ディレクトリの.dialogoi-meta.yamlが見つからないか、読み込みに失敗しました。',
+        };
+      }
+
+      // 移動先の親ディレクトリのメタデータを読み込み
+      const targetParentMeta = this.loadMetaYaml(targetParentDir);
+      if (targetParentMeta === null) {
+        return {
+          success: false,
+          message:
+            '移動先の親ディレクトリの.dialogoi-meta.yamlが見つからないか、読み込みに失敗しました。',
+        };
+      }
+
+      // 移動元からディレクトリアイテムを取得
+      const dirIndex = sourceParentMeta.files.findIndex(
+        (file) => file.name === dirName && file.type === 'subdirectory',
+      );
+      if (dirIndex === -1) {
+        return {
+          success: false,
+          message: `移動元の.dialogoi-meta.yaml内にディレクトリ ${dirName} が見つかりません。`,
+        };
+      }
+
+      const dirItem = sourceParentMeta.files[dirIndex];
+      if (dirItem === undefined) {
+        return {
+          success: false,
+          message: `ディレクトリ ${dirName} の情報を取得できませんでした。`,
+        };
+      }
+
+      // 移動先に同名ディレクトリが既に存在する場合はエラー
+      const existingDir = targetParentMeta.files.find(
+        (file) => file.name === dirName && file.type === 'subdirectory',
+      );
+      if (existingDir) {
+        return {
+          success: false,
+          message: `移動先に同名ディレクトリ ${dirName} が既に存在します。`,
+        };
+      }
+
+      // ディレクトリアイテムのパスを更新
+      const updatedDirItem = {
+        ...dirItem,
+        path: path.join(targetParentDir, dirName),
+      };
+
+      // 移動元から削除
+      sourceParentMeta.files.splice(dirIndex, 1);
+
+      // 移動先に追加
+      if (newIndex !== undefined && newIndex >= 0 && newIndex < targetParentMeta.files.length) {
+        targetParentMeta.files.splice(newIndex, 0, updatedDirItem);
+      } else {
+        targetParentMeta.files.push(updatedDirItem);
+      }
+
+      // 移動元の親ディレクトリのメタデータを保存
+      const saveSourceResult = this.saveMetaYaml(sourceParentDir, sourceParentMeta);
+      if (!saveSourceResult) {
+        return {
+          success: false,
+          message: '移動元の親ディレクトリの.dialogoi-meta.yamlの保存に失敗しました。',
+        };
+      }
+
+      // 移動先の親ディレクトリのメタデータを保存
+      const saveTargetResult = this.saveMetaYaml(targetParentDir, targetParentMeta);
+      if (!saveTargetResult) {
+        // 移動元をロールバック
+        sourceParentMeta.files.splice(dirIndex, 0, dirItem);
+        this.saveMetaYaml(sourceParentDir, sourceParentMeta);
+
+        return {
+          success: false,
+          message: '移動先の親ディレクトリの.dialogoi-meta.yamlの保存に失敗しました。',
+        };
+      }
+
+      // 更新されたアイテムを返す
+      const updatedItems = targetParentMeta.files.map((file) => ({
+        ...file,
+        path: path.join(targetParentDir, file.name),
+      }));
+
+      return {
+        success: true,
+        message: 'メタデータ内でディレクトリを移動しました。',
+        updatedItems,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: `メタデータディレクトリ移動エラー: ${error instanceof Error ? error.message : String(error)}`,
+      };
+    }
+  }
+
+  /**
+   * ファイルをメタデータ内で移動する
+   */
+  moveFileInMetadata(
+    sourceDir: string,
+    targetDir: string,
+    fileName: string,
+    newIndex?: number,
+  ): { success: boolean; message: string; updatedItems?: DialogoiTreeItem[] } {
+    try {
+      // 移動元のメタデータを読み込み
+      const sourceMeta = this.loadMetaYaml(sourceDir);
+      if (sourceMeta === null) {
+        return {
+          success: false,
+          message: '移動元の.dialogoi-meta.yamlが見つからないか、読み込みに失敗しました。',
+        };
+      }
+
+      // 移動先のメタデータを読み込み
+      const targetMeta = this.loadMetaYaml(targetDir);
+      if (targetMeta === null) {
+        return {
+          success: false,
+          message: '移動先の.dialogoi-meta.yamlが見つからないか、読み込みに失敗しました。',
+        };
+      }
+
+      // 移動元からファイルアイテムを取得
+      const fileIndex = sourceMeta.files.findIndex((file) => file.name === fileName);
+      if (fileIndex === -1) {
+        return {
+          success: false,
+          message: `移動元の.dialogoi-meta.yaml内にファイル ${fileName} が見つかりません。`,
+        };
+      }
+
+      const fileItem = sourceMeta.files[fileIndex];
+      if (fileItem === undefined) {
+        return {
+          success: false,
+          message: `ファイル ${fileName} の情報を取得できませんでした。`,
+        };
+      }
+
+      // 移動先に同名ファイルが既に存在する場合はエラー
+      const existingFile = targetMeta.files.find((file) => file.name === fileName);
+      if (existingFile) {
+        return {
+          success: false,
+          message: `移動先に同名ファイル ${fileName} が既に存在します。`,
+        };
+      }
+
+      // ファイルアイテムのパスを更新
+      const updatedFileItem = {
+        ...fileItem,
+        path: path.join(targetDir, fileName),
+      };
+
+      // 移動元から削除
+      sourceMeta.files.splice(fileIndex, 1);
+
+      // 移動先に追加
+      if (newIndex !== undefined && newIndex >= 0 && newIndex < targetMeta.files.length) {
+        targetMeta.files.splice(newIndex, 0, updatedFileItem);
+      } else {
+        targetMeta.files.push(updatedFileItem);
+      }
+
+      // 移動元のメタデータを保存
+      const saveSourceResult = this.saveMetaYaml(sourceDir, sourceMeta);
+      if (!saveSourceResult) {
+        return {
+          success: false,
+          message: '移動元の.dialogoi-meta.yamlの保存に失敗しました。',
+        };
+      }
+
+      // 移動先のメタデータを保存
+      const saveTargetResult = this.saveMetaYaml(targetDir, targetMeta);
+      if (!saveTargetResult) {
+        // 移動元をロールバック
+        sourceMeta.files.splice(fileIndex, 0, fileItem);
+        this.saveMetaYaml(sourceDir, sourceMeta);
+
+        return {
+          success: false,
+          message: '移動先の.dialogoi-meta.yamlの保存に失敗しました。',
+        };
+      }
+
+      // 更新されたアイテムを返す
+      const updatedItems = targetMeta.files.map((file) => ({
+        ...file,
+        path: path.join(targetDir, file.name),
+      }));
+
+      return {
+        success: true,
+        message: 'メタデータ内でファイルを移動しました。',
+        updatedItems,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: `メタデータファイル移動エラー: ${error instanceof Error ? error.message : String(error)}`,
+      };
+    }
   }
 }

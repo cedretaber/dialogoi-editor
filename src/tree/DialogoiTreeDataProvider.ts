@@ -16,7 +16,11 @@ import { Logger } from '../utils/Logger.js';
  * - 例: フィルタリングロジック → TreeViewFilterService
  * - このクラスは主にVSCode APIとの橋渡し役に徹し、ロジック部分は外部サービスに委譲してください
  */
-export class DialogoiTreeDataProvider implements vscode.TreeDataProvider<DialogoiTreeItem> {
+export class DialogoiTreeDataProvider
+  implements
+    vscode.TreeDataProvider<DialogoiTreeItem>,
+    vscode.TreeDragAndDropController<DialogoiTreeItem>
+{
   private _onDidChangeTreeData: vscode.EventEmitter<DialogoiTreeItem | undefined | null | void> =
     new vscode.EventEmitter<DialogoiTreeItem | undefined | null | void>();
   readonly onDidChangeTreeData: vscode.Event<DialogoiTreeItem | undefined | null | void> =
@@ -26,6 +30,10 @@ export class DialogoiTreeDataProvider implements vscode.TreeDataProvider<Dialogo
   private novelRoot: string | null = null;
   private filterService: TreeViewFilterService = new TreeViewFilterService();
   private logger = Logger.getInstance();
+
+  // ドラッグ&ドロップ用のMIMEタイプ定義
+  readonly dropMimeTypes = ['application/vnd.code.tree.dialogoi-explorer'];
+  readonly dragMimeTypes = ['application/vnd.code.tree.dialogoi-explorer'];
 
   constructor() {
     this.workspaceRoot = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath ?? '';
@@ -348,6 +356,32 @@ export class DialogoiTreeDataProvider implements vscode.TreeDataProvider<Dialogo
     }
   }
 
+  async deleteDirectory(parentDir: string, dirName: string): Promise<void> {
+    // 削除確認ダイアログ
+    const confirmation = await vscode.window.showWarningMessage(
+      `ディレクトリ「${dirName}」を削除しますか？`,
+      {
+        detail: 'この操作は取り消せません。ディレクトリとその中身がすべて削除されます。',
+        modal: true,
+      },
+      '削除',
+    );
+
+    if (confirmation !== '削除') {
+      return; // ユーザーがキャンセル
+    }
+
+    const fileOperationService = ServiceContainer.getInstance().getFileOperationService();
+    const result = fileOperationService.deleteDirectory(parentDir, dirName);
+
+    if (result.success) {
+      this.refresh();
+      vscode.window.showInformationMessage(result.message);
+    } else {
+      vscode.window.showErrorMessage(result.message);
+    }
+  }
+
   reorderFiles(dirPath: string, fromIndex: number, toIndex: number): void {
     const fileOperationService = ServiceContainer.getInstance().getFileOperationService();
     const result = fileOperationService.reorderFiles(dirPath, fromIndex, toIndex);
@@ -650,5 +684,225 @@ export class DialogoiTreeDataProvider implements vscode.TreeDataProvider<Dialogo
     }
 
     return contextParts.join('-');
+  }
+
+  // ドラッグ&ドロップ操作の確認ダイアログ
+  private async confirmDropOperation(
+    draggedItem: DialogoiTreeItem,
+    target: DialogoiTreeItem,
+  ): Promise<'reorder' | 'move' | null> {
+    const choice = await vscode.window.showQuickPick(
+      [
+        {
+          label: '$(arrow-up) 前に並び替え',
+          description: `「${target.name}」の前に「${draggedItem.name}」を移動`,
+          detail: '同じ階層内での並び替え',
+          action: 'reorder' as const,
+        },
+        {
+          label: '$(folder) ディレクトリ内に移動',
+          description: `「${draggedItem.name}」を「${target.name}」フォルダ内に移動`,
+          detail: '異なるディレクトリへの移動',
+          action: 'move' as const,
+        },
+      ],
+      {
+        placeHolder: 'どの操作を実行しますか？',
+        ignoreFocusOut: true,
+      },
+    );
+
+    return choice?.action || null;
+  }
+
+  // ドラッグ&ドロップ関連メソッド
+  handleDrag(
+    source: readonly DialogoiTreeItem[],
+    dataTransfer: vscode.DataTransfer,
+    _token: vscode.CancellationToken,
+  ): void {
+    if (source.length === 0) {
+      return;
+    }
+
+    // ドラッグするアイテムをデータ転送オブジェクトに設定
+    dataTransfer.set(
+      'application/vnd.code.tree.dialogoi-explorer',
+      new vscode.DataTransferItem(source),
+    );
+  }
+
+  async handleDrop(
+    target: DialogoiTreeItem | undefined,
+    dataTransfer: vscode.DataTransfer,
+    _token: vscode.CancellationToken,
+  ): Promise<void> {
+    const transferItem = dataTransfer.get('application/vnd.code.tree.dialogoi-explorer');
+    if (!transferItem) {
+      return;
+    }
+
+    const draggedItems = transferItem.value as DialogoiTreeItem[];
+    if (draggedItems.length === 0) {
+      return;
+    }
+
+    const draggedItem = draggedItems[0]; // 現在は単一選択のみサポート
+    if (!draggedItem) {
+      return;
+    }
+
+    // ターゲットディレクトリを特定
+    let targetDir: string;
+    if (!target) {
+      // ルートにドロップ
+      if (this.novelRoot === null || this.novelRoot === undefined) {
+        return;
+      }
+      targetDir = this.novelRoot;
+    } else if (target.type === 'subdirectory') {
+      // ディレクトリにドロップ - 操作種別を確認
+      const operation = await this.confirmDropOperation(draggedItem, target);
+      if (!operation) {
+        return; // ユーザーがキャンセル
+      }
+
+      if (operation === 'reorder') {
+        // 並び替え: ターゲットの親ディレクトリ
+        targetDir = path.dirname(target.path);
+      } else {
+        // 移動: ターゲットディレクトリ内
+        targetDir = target.path;
+      }
+    } else {
+      // ファイルにドロップ（同じディレクトリ内での並び替え）
+      targetDir = path.dirname(target.path);
+    }
+
+    // ドラッグ元のディレクトリ
+    const sourceDir =
+      draggedItem.type === 'subdirectory'
+        ? path.dirname(draggedItem.path) // ディレクトリの場合は親ディレクトリ
+        : path.dirname(draggedItem.path); // ファイルの場合は所属ディレクトリ
+
+    // 異なるディレクトリ間でのファイル移動をサポート（Phase 3）
+    if (sourceDir !== targetDir) {
+      // ファイルの移動処理
+      if (draggedItem.type !== 'subdirectory') {
+        // 移動先のインデックスを計算
+        let newIndex: number | undefined;
+        if (target && target.type !== 'subdirectory') {
+          // 特定のファイルにドロップした場合、そのファイルの位置に挿入
+          const metaYamlService = ServiceContainer.getInstance().getMetaYamlService();
+          const targetMeta = metaYamlService.loadMetaYaml(targetDir);
+          if (targetMeta) {
+            newIndex = targetMeta.files.findIndex(
+              (item: DialogoiTreeItem) => item.name === target.name,
+            );
+            if (newIndex === -1) {
+              newIndex = undefined; // 見つからない場合は末尾に追加
+            }
+          }
+        }
+        // target が subdirectory または undefined の場合は newIndex は undefined のまま（末尾に追加）
+
+        const fileOperationService = ServiceContainer.getInstance().getFileOperationService();
+        const result = fileOperationService.moveFile(
+          sourceDir,
+          draggedItem.name,
+          targetDir,
+          newIndex,
+        );
+
+        if (result.success) {
+          this.refresh();
+          vscode.window.showInformationMessage(result.message);
+        } else {
+          vscode.window.showErrorMessage(result.message);
+        }
+        return;
+      } else {
+        // ディレクトリの移動処理（Phase 4）
+        let newIndex: number | undefined;
+        if (target && target.type !== 'subdirectory') {
+          // 特定のファイルまたはディレクトリにドロップした場合、その位置に挿入
+          const metaYamlService = ServiceContainer.getInstance().getMetaYamlService();
+          const targetMeta = metaYamlService.loadMetaYaml(targetDir);
+          if (targetMeta) {
+            newIndex = targetMeta.files.findIndex(
+              (item: DialogoiTreeItem) => item.name === target.name,
+            );
+            if (newIndex === -1) {
+              newIndex = undefined; // 見つからない場合は末尾に追加
+            }
+          }
+        }
+        // target が subdirectory または undefined の場合は newIndex は undefined のまま（末尾に追加）
+
+        const fileOperationService = ServiceContainer.getInstance().getFileOperationService();
+        const result = fileOperationService.moveDirectory(
+          sourceDir,
+          draggedItem.name,
+          targetDir,
+          newIndex,
+        );
+
+        if (result.success) {
+          this.refresh();
+          vscode.window.showInformationMessage(result.message);
+        } else {
+          vscode.window.showErrorMessage(result.message);
+        }
+        return;
+      }
+    }
+
+    // 並び替え処理
+    try {
+      const metaYamlService = ServiceContainer.getInstance().getMetaYamlService();
+      const metaData = metaYamlService.loadMetaYaml(targetDir);
+      if (!metaData) {
+        vscode.window.showErrorMessage('メタデータの読み込みに失敗しました。');
+        return;
+      }
+
+      // 現在のインデックスを取得
+      const fromIndex = metaData.files.findIndex(
+        (item: DialogoiTreeItem) => item.name === draggedItem.name,
+      );
+      if (fromIndex === -1) {
+        vscode.window.showErrorMessage('ドラッグ元のアイテムが見つかりません。');
+        return;
+      }
+
+      // ドロップ先のインデックスを計算
+      let toIndex: number;
+      if (!target) {
+        // ルートにドロップした場合は最後に移動
+        toIndex = metaData.files.length - 1;
+      } else {
+        // ファイルまたはディレクトリにドロップした場合はそのアイテムの位置を取得
+        toIndex = metaData.files.findIndex((item: DialogoiTreeItem) => item.name === target.name);
+        if (toIndex === -1) {
+          vscode.window.showErrorMessage('ドロップ先のアイテムが見つかりません。');
+          return;
+        }
+
+        // ドロップ位置はそのまま使用（調整不要）
+        // VSCodeのTreeViewでは、ターゲットの位置に直接挿入される動作が
+        // ユーザーの期待と一致している
+      }
+
+      // 同じ位置の場合は何もしない
+      if (fromIndex === toIndex) {
+        return;
+      }
+
+      // 並び替え実行
+      this.reorderFiles(targetDir, fromIndex, toIndex);
+    } catch (error) {
+      this.logger.error('ドラッグ&ドロップエラー', error instanceof Error ? error : String(error));
+      vscode.window.showErrorMessage('ファイルの並び替えに失敗しました。');
+    }
   }
 }

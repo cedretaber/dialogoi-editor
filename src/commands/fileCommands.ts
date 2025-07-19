@@ -1,4 +1,5 @@
 import * as vscode from 'vscode';
+import * as path from 'path';
 import { DialogoiTreeDataProvider } from '../tree/DialogoiTreeDataProvider.js';
 import { DialogoiTreeItem } from '../utils/MetaYamlUtils.js';
 
@@ -91,11 +92,31 @@ export function registerFileCommands(
     },
   );
 
+  const deleteDirectoryCommand = vscode.commands.registerCommand(
+    'dialogoi.deleteDirectory',
+    async (item: DialogoiTreeItem) => {
+      if (
+        item === undefined ||
+        item.name === undefined ||
+        item.name === '' ||
+        item.type !== 'subdirectory'
+      ) {
+        vscode.window.showErrorMessage('削除するディレクトリを選択してください。');
+        return;
+      }
+
+      // ディレクトリの場合、親ディレクトリを取得する必要がある
+      const parentDir = path.dirname(item.path);
+      await treeDataProvider.deleteDirectory(parentDir, item.name);
+    },
+  );
+
   context.subscriptions.push(
     createFileCommand,
     createFileInDirectoryCommand,
     deleteFileCommand,
     renameFileCommand,
+    deleteDirectoryCommand,
   );
 }
 

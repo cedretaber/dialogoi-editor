@@ -47,6 +47,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     const treeView = vscode.window.createTreeView('dialogoi-explorer', {
       treeDataProvider: treeDataProvider,
       showCollapseAll: true,
+      dragAndDropController: treeDataProvider,
     });
     logger.debug('TreeView作成完了');
 

@@ -722,6 +722,244 @@ export class FileOperationService {
   }
 
   /**
+   * ディレクトリを削除し、親ディレクトリの.dialogoi-meta.yamlから除去する
+   */
+  deleteDirectory(parentDir: string, dirName: string): FileOperationResult {
+    try {
+      const dirPath = path.join(parentDir, dirName);
+      const dirUri = this.fileRepository.createFileUri(dirPath);
+
+      // ディレクトリが存在しない場合はエラー
+      if (!this.fileRepository.existsSync(dirUri)) {
+        return {
+          success: false,
+          message: `ディレクトリ ${dirName} が見つかりません。`,
+        };
+      }
+
+      // ディレクトリかどうかチェック
+      const stats = this.fileRepository.lstatSync(dirUri);
+      if (!stats.isDirectory()) {
+        return {
+          success: false,
+          message: `${dirName} はディレクトリではありません。`,
+        };
+      }
+
+      // 親ディレクトリの.dialogoi-meta.yamlから削除
+      const result = this.updateMetaYaml(parentDir, (meta) => {
+        meta.files = meta.files.filter((file) => file.name !== dirName);
+        return meta;
+      });
+
+      if (!result.success) {
+        return result;
+      }
+
+      // ディレクトリを物理削除（再帰的）
+      this.fileRepository.rmSync(dirUri, { recursive: true, force: true });
+
+      return {
+        success: true,
+        message: `ディレクトリ ${dirName} を削除しました。`,
+        updatedItems: result.updatedItems,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: `ディレクトリ削除エラー: ${error instanceof Error ? error.message : String(error)}`,
+      };
+    }
+  }
+
+  /**
+   * ディレクトリを異なる階層に移動する
+   */
+  moveDirectory(
+    sourceParentDir: string,
+    dirName: string,
+    targetParentDir: string,
+    newIndex?: number,
+  ): FileOperationResult {
+    try {
+      const sourceDirPath = path.join(sourceParentDir, dirName);
+      const targetDirPath = path.join(targetParentDir, dirName);
+      const sourceDirUri = this.fileRepository.createFileUri(sourceDirPath);
+      const targetDirUri = this.fileRepository.createFileUri(targetDirPath);
+
+      // 移動元ディレクトリが存在しない場合はエラー
+      if (!this.fileRepository.existsSync(sourceDirUri)) {
+        return {
+          success: false,
+          message: `移動元ディレクトリ ${dirName} が見つかりません。`,
+        };
+      }
+
+      // 移動元がディレクトリかどうかチェック
+      const sourceStats = this.fileRepository.lstatSync(sourceDirUri);
+      if (!sourceStats.isDirectory()) {
+        return {
+          success: false,
+          message: `${dirName} はディレクトリではありません。`,
+        };
+      }
+
+      // 移動先に同名ディレクトリが既に存在する場合はエラー
+      if (this.fileRepository.existsSync(targetDirUri)) {
+        return {
+          success: false,
+          message: `移動先に同名ディレクトリ ${dirName} が既に存在します。`,
+        };
+      }
+
+      // 循環参照チェック（移動先が移動元の子孫でないことを確認）
+      if (targetDirPath.startsWith(sourceDirPath + path.sep)) {
+        return {
+          success: false,
+          message: 'ディレクトリを自分自身の子孫に移動することはできません。',
+        };
+      }
+
+      // メタデータの更新（ロールバック対応のため、まずメタデータを更新）
+      const moveResult = this.metaYamlService.moveDirectoryInMetadata(
+        sourceParentDir,
+        targetParentDir,
+        dirName,
+        newIndex,
+      );
+      if (!moveResult.success) {
+        return moveResult;
+      }
+
+      try {
+        // 物理ディレクトリの移動
+        this.fileRepository.renameSync(sourceDirUri, targetDirUri);
+
+        return {
+          success: true,
+          message: `ディレクトリ ${dirName} を ${sourceParentDir} から ${targetParentDir} に移動しました。`,
+          updatedItems: moveResult.updatedItems,
+        };
+      } catch (physicalMoveError) {
+        // 物理ディレクトリ移動に失敗した場合、メタデータをロールバック
+        this.metaYamlService.moveDirectoryInMetadata(targetParentDir, sourceParentDir, dirName);
+
+        return {
+          success: false,
+          message: `ディレクトリの物理移動に失敗しました: ${physicalMoveError instanceof Error ? physicalMoveError.message : String(physicalMoveError)}`,
+        };
+      }
+    } catch (error) {
+      return {
+        success: false,
+        message: `ディレクトリ移動エラー: ${error instanceof Error ? error.message : String(error)}`,
+      };
+    }
+  }
+
+  /**
+   * ファイルを異なるディレクトリに移動する
+   */
+  moveFile(
+    sourceDir: string,
+    fileName: string,
+    targetDir: string,
+    newIndex?: number,
+  ): FileOperationResult {
+    try {
+      const sourceFilePath = path.join(sourceDir, fileName);
+      const targetFilePath = path.join(targetDir, fileName);
+      const sourceUri = this.fileRepository.createFileUri(sourceFilePath);
+      const targetUri = this.fileRepository.createFileUri(targetFilePath);
+
+      // 移動元ファイルが存在しない場合はエラー
+      if (!this.fileRepository.existsSync(sourceUri)) {
+        return {
+          success: false,
+          message: `移動元ファイル ${fileName} が見つかりません。`,
+        };
+      }
+
+      // 移動先に同名ファイルが既に存在する場合はエラー
+      if (this.fileRepository.existsSync(targetUri)) {
+        return {
+          success: false,
+          message: `移動先に同名ファイル ${fileName} が既に存在します。`,
+        };
+      }
+
+      // 移動元のメタデータからアイテムを取得
+      const sourceMeta = this.metaYamlService.loadMetaYaml(sourceDir);
+      if (sourceMeta === null) {
+        return {
+          success: false,
+          message: '移動元の.dialogoi-meta.yamlが見つからないか、読み込みに失敗しました。',
+        };
+      }
+
+      const fileIndex = sourceMeta.files.findIndex((file) => file.name === fileName);
+      if (fileIndex === -1) {
+        return {
+          success: false,
+          message: `移動元の.dialogoi-meta.yaml内にファイル ${fileName} が見つかりません。`,
+        };
+      }
+
+      const fileItem = sourceMeta.files[fileIndex];
+      if (fileItem === undefined) {
+        return {
+          success: false,
+          message: `ファイル ${fileName} の情報を取得できませんでした。`,
+        };
+      }
+
+      // 移動先ディレクトリのメタデータを取得
+      const targetMeta = this.metaYamlService.loadMetaYaml(targetDir);
+      if (targetMeta === null) {
+        return {
+          success: false,
+          message: '移動先の.dialogoi-meta.yamlが見つからないか、読み込みに失敗しました。',
+        };
+      }
+
+      // メタデータの更新（ロールバック対応のため、まずメタデータを更新）
+      const moveFileResult = this.metaYamlService.moveFileInMetadata(
+        sourceDir,
+        targetDir,
+        fileName,
+        newIndex,
+      );
+      if (!moveFileResult.success) {
+        return moveFileResult;
+      }
+
+      try {
+        // 物理ファイルの移動
+        this.fileRepository.renameSync(sourceUri, targetUri);
+
+        return {
+          success: true,
+          message: `${fileName} を ${sourceDir} から ${targetDir} に移動しました。`,
+          updatedItems: moveFileResult.updatedItems,
+        };
+      } catch (physicalMoveError) {
+        // 物理ファイル移動に失敗した場合、メタデータをロールバック
+        this.metaYamlService.moveFileInMetadata(targetDir, sourceDir, fileName);
+
+        return {
+          success: false,
+          message: `ファイルの物理移動に失敗しました: ${physicalMoveError instanceof Error ? physicalMoveError.message : String(physicalMoveError)}`,
+        };
+      }
+    } catch (error) {
+      return {
+        success: false,
+        message: `ファイル移動エラー: ${error instanceof Error ? error.message : String(error)}`,
+      };
+    }
+  }
+
+  /**
    * .dialogoi-meta.yamlを更新する共通ロジック
    */
   private updateMetaYaml(

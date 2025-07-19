@@ -1,0 +1,5 @@
+readme: README.md
+files:
+  - name: set1.md
+    type: setting
+    path: /home/cedretaber/src/ts/dialogoi-editor/examples/newnovel/sub1/sub3/set1.md
