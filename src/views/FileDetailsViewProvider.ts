@@ -747,7 +747,7 @@ export class FileDetailsViewProvider implements vscode.WebviewViewProvider {
           html += '</div></div>'; // .section-content, .section
           
           // キャラクター・設定情報セクション
-          if (file.character || file.type === 'character') {
+          if (file.character) {
             html += '<div class="section">';
             html += '<button class="section-header" data-target="character">';
             html += '<span class="section-chevron">▶</span>';

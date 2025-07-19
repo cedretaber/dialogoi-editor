@@ -31,6 +31,7 @@ export class FileOperationService {
     fileType: 'content' | 'setting' | 'subdirectory',
     initialContent: string = '',
     tags: string[] = [],
+    subtype?: 'character' | 'foreshadowing' | 'glossary',
   ): FileOperationResult {
     try {
       const filePath = path.join(dirPath, fileName);
@@ -84,6 +85,21 @@ export class FileOperationService {
           path: filePath,
           tags: tags.length > 0 ? tags : undefined,
         };
+
+        // サブタイプに応じてプロパティを設定
+        if (subtype === 'character') {
+          newItem.character = {
+            importance: 'main',
+            multiple_characters: false,
+          };
+        } else if (subtype === 'foreshadowing') {
+          newItem.foreshadowing = {
+            start: '',
+            goal: '',
+          };
+        } else if (subtype === 'glossary') {
+          newItem.glossary = true;
+        }
 
         meta.files.push(newItem);
         return meta;

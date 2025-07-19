@@ -39,7 +39,6 @@
         {
           "id": "dialogoi-explorer",
           "name": "ファイルツリー",
-          "when": "dialogoi:hasNovelProject",
           "icon": "$(book)"
         },
         {
@@ -51,6 +50,13 @@
         }
       ]
     },
+    "viewsWelcome": [
+      {
+        "view": "dialogoi-explorer",
+        "contents": "Dialogoi小説プロジェクトが見つかりません。\n新しい小説プロジェクトを作成して執筆を開始しましょう。\n[新しい小説を開始](command:dialogoi.startNewNovel)\n詳細については [ドキュメント](https://github.com/cedretaber/dialogoi-editor) をご覧ください。",
+        "when": "!dialogoi:hasNovelProject"
+      }
+    ],
     "commands": [
       {
         "command": "dialogoi.refreshExplorer",
@@ -176,6 +182,16 @@
         "command": "dialogoi.manageExcludeSettings",
         "title": "検索除外設定を管理",
         "icon": "$(gear)"
+      },
+      {
+        "command": "dialogoi.startNewNovel",
+        "title": "新しい小説を開始",
+        "icon": "$(add)"
+      },
+      {
+        "command": "dialogoi.editProjectSettings",
+        "title": "プロジェクト設定を編集",
+        "icon": "$(gear)"
       }
     ],
     "menus": {
@@ -199,6 +215,11 @@
           "command": "dialogoi.clearFilter",
           "when": "view == dialogoi-explorer",
           "group": "navigation@3"
+        },
+        {
+          "command": "dialogoi.editProjectSettings",
+          "when": "view == dialogoi-explorer && dialogoi:hasNovelProject",
+          "group": "navigation@4"
         }
       ],
       "view/item/context": [

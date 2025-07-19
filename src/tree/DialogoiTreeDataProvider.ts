@@ -43,6 +43,9 @@ export class DialogoiTreeDataProvider implements vscode.TreeDataProvider<Dialogo
       const referenceManager = ReferenceManager.getInstance();
       const fileRepository = ServiceContainer.getInstance().getFileRepository();
       referenceManager.initialize(this.novelRoot, fileRepository);
+    } else {
+      // プロジェクトが見つからない場合は明示的にfalseに設定
+      vscode.commands.executeCommand('setContext', 'dialogoi:hasNovelProject', false);
     }
   }
 
@@ -313,6 +316,7 @@ export class DialogoiTreeDataProvider implements vscode.TreeDataProvider<Dialogo
     fileType: 'content' | 'setting' | 'subdirectory',
     initialContent: string = '',
     tags: string[] = [],
+    subtype?: 'character' | 'foreshadowing' | 'glossary',
   ): void {
     const fileOperationService = ServiceContainer.getInstance().getFileOperationService();
     const result = fileOperationService.createFile(
@@ -321,6 +325,7 @@ export class DialogoiTreeDataProvider implements vscode.TreeDataProvider<Dialogo
       fileType,
       initialContent,
       tags,
+      subtype,
     );
 
     if (result.success) {

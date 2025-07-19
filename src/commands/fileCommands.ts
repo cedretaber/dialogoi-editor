@@ -107,11 +107,12 @@ async function createFileInDirectory(
   treeDataProvider: DialogoiTreeDataProvider,
 ): Promise<void> {
   const fileTypes = [
-    { label: '本文', value: 'content' },
-    { label: '設定（キャラクター）', value: 'character' },
-    { label: '設定（伏線）', value: 'foreshadowing' },
-    { label: '設定（その他）', value: 'setting' },
-    { label: 'サブディレクトリ', value: 'subdirectory' },
+    { label: '本文', value: 'content', subtype: undefined },
+    { label: '設定（キャラクター）', value: 'setting', subtype: 'character' },
+    { label: '設定（伏線）', value: 'setting', subtype: 'foreshadowing' },
+    { label: '設定（用語集）', value: 'setting', subtype: 'glossary' },
+    { label: '設定（その他）', value: 'setting', subtype: undefined },
+    { label: 'サブディレクトリ', value: 'subdirectory', subtype: undefined },
   ];
 
   const fileType = await vscode.window.showQuickPick(fileTypes, {
@@ -135,12 +136,21 @@ async function createFileInDirectory(
   if (fileType.value === 'subdirectory') {
     fileName = baseFileName;
   } else {
-    fileName = baseFileName.endsWith('.md') ? baseFileName : `${baseFileName}.md`;
+    // ファイル種別に応じて適切な拡張子を設定
+    // content（本文）→ .txt、setting（設定）→ .md
+    if (fileType.value === 'content') {
+      fileName = baseFileName.endsWith('.txt') ? baseFileName : `${baseFileName}.txt`;
+    } else {
+      fileName = baseFileName.endsWith('.md') ? baseFileName : `${baseFileName}.md`;
+    }
   }
 
   treeDataProvider.createFile(
     targetDir,
     fileName,
     fileType.value as 'content' | 'setting' | 'subdirectory',
+    '',
+    [],
+    fileType.subtype as 'character' | 'foreshadowing' | 'glossary' | undefined,
   );
 }

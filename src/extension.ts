@@ -7,6 +7,7 @@ import { registerFileCommands } from './commands/fileCommands.js';
 import { registerTagCommands } from './commands/tagCommands.js';
 import { registerReferenceCommands } from './commands/referenceCommands.js';
 import { registerFilterCommands } from './commands/filterCommands.js';
+import { registerProjectCommands } from './commands/projectCommands.js';
 import { FileDetailsViewProvider } from './views/FileDetailsViewProvider.js';
 import { VSCodeSettingsService } from './services/VSCodeSettingsService.js';
 import { VSCodeServiceContainer } from './di/VSCodeServiceContainer.js';
@@ -81,6 +82,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     registerTagCommands(context, treeDataProvider);
     registerReferenceCommands(context, treeDataProvider);
     registerFilterCommands(context, treeDataProvider);
+    registerProjectCommands(context, treeDataProvider);
     if (vscode.workspace.workspaceFolders && vscode.workspace.workspaceFolders[0]) {
       registerReviewCommands(context, vscode.workspace.workspaceFolders[0].uri);
     }

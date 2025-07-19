@@ -1,0 +1,8 @@
+readme: README.md
+files:
+  - name: 本文
+    type: subdirectory
+    path: /home/cedretaber/src/ts/dialogoi-editor/examples/newnovel/本文
+  - name: 設定
+    type: subdirectory
+    path: /home/cedretaber/src/ts/dialogoi-editor/examples/newnovel/設定

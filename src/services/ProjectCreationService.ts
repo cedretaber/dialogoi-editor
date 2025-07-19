@@ -269,18 +269,18 @@ export class ProjectCreationService {
     }
 
     // .dialogoi-meta.yamlを作成または更新
-    const metaYamlPath = path.join(currentAbsolutePath, '.dialogoi-meta.yaml');
-    const metaYamlUri = this.fileRepository.createFileUri(metaYamlPath);
+    const metaYamlAbsolutePath = path.join(currentAbsolutePath, '.dialogoi-meta.yaml');
+    const metaYamlUri = this.fileRepository.createFileUri(metaYamlAbsolutePath);
     const metaYamlExists = this.fileRepository.existsSync(metaYamlUri);
 
     if (metaYamlExists === true && overwriteMetaYaml !== true) {
-      result.skippedFiles?.push(metaYamlPath);
+      result.skippedFiles?.push(metaYamlAbsolutePath);
     } else {
-      const metaYaml = this.createMetaYamlFromFiles(files, readmeFilename);
+      const metaYaml = this.createMetaYamlFromFiles(files, subdirectories, readmeFilename);
       const yamlContent = yaml.dump(metaYaml, { flowLevel: -1, lineWidth: -1 });
 
       this.fileRepository.writeFileSync(metaYamlUri, yamlContent);
-      result.createdFiles?.push(metaYamlPath);
+      result.createdFiles?.push(metaYamlAbsolutePath);
     }
 
     // サブディレクトリを再帰的にスキャン
@@ -299,26 +299,46 @@ export class ProjectCreationService {
   /**
    * ファイルリストから.dialogoi-meta.yamlを作成
    */
-  private createMetaYamlFromFiles(files: string[], readmeFilename: string): MetaYaml {
+  private createMetaYamlFromFiles(
+    files: string[],
+    subdirectories: string[],
+    readmeFilename: string,
+  ): MetaYaml {
     const metaYaml: MetaYaml = {
       readme: readmeFilename,
       files: [],
     };
 
+    // ファイルを処理
     for (const fileName of files) {
-      // .dialogoi-meta.yamlとREADMEファイルはスキップ
-      if (fileName === '.dialogoi-meta.yaml' || fileName === readmeFilename) {
+      // .dialogoi-meta.yaml、dialogoi.yaml、READMEファイルはスキップ
+      if (
+        fileName === '.dialogoi-meta.yaml' ||
+        fileName === 'dialogoi.yaml' ||
+        fileName === readmeFilename
+      ) {
         continue;
       }
 
       // ファイル種別の自動判定
       const fileType = this.determineFileType(fileName);
-      const filePath = fileName; // 同じディレクトリ内なのでファイル名のみ
+      const relativeFilePath = fileName; // 同じディレクトリ内なのでファイル名のみ
 
       metaYaml.files.push({
         name: fileName,
         type: fileType,
-        path: filePath,
+        path: relativeFilePath,
+      });
+    }
+
+    // サブディレクトリを処理
+    for (const subdirAbsolutePath of subdirectories) {
+      const subdirName = path.basename(subdirAbsolutePath);
+      const relativeDirPath = subdirName; // サブディレクトリのパスは同じディレクトリ内なのでディレクトリ名のみ
+      metaYaml.files.push({
+        name: subdirName,
+        type: 'subdirectory',
+        path: relativeDirPath,
       });
     }
 
@@ -327,13 +347,14 @@ export class ProjectCreationService {
 
   /**
    * ファイル種別の自動判定
+   * 本文ファイル（.md）→ content、設定ファイル（.txt）→ setting
    */
   private determineFileType(fileName: string): 'content' | 'setting' | 'subdirectory' {
     const extension = path.extname(fileName).toLowerCase();
 
-    if (extension === '.txt') {
+    if (extension === '.md') {
       return 'content';
-    } else if (extension === '.md') {
+    } else if (extension === '.txt') {
       return 'setting';
     } else {
       // デフォルトは setting として扱う
