@@ -25,6 +25,7 @@ export interface IServiceContainer {
   getDialogiTemplateService(): DialogoiTemplateService;
   getMetaYamlService(): MetaYamlService;
   getFileOperationService(): FileOperationService;
+  reset(): void;
 }
 
 /**

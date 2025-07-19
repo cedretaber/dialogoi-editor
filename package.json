@@ -240,7 +240,7 @@
     "compile:watch": "tsc -watch -p ./",
     "watch": "tsc -watch -p ./",
     "pretest": "npm run compile",
-    "lint": "eslint src/**/*.ts",
+    "lint": "eslint \"src/**/*.ts\" --max-warnings 0",
     "test": "NODE_ENV=test mocha --import=tsx --ui tdd \"src/**/*.test.ts\"",
     "test:vscode": "tsc -p tsconfig.vscode.json && mocha --import=tsx --ui tdd \"vscode-integration/**/*.test.ts\"",
     "typecheck": "tsc --noEmit",

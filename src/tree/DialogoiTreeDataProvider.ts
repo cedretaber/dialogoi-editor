@@ -14,29 +14,21 @@ export class DialogoiTreeDataProvider implements vscode.TreeDataProvider<Dialogo
   private novelRoot: string | null = null;
 
   constructor() {
-    console.warn('DialogoiTreeDataProvider コンストラクタ開始');
     this.workspaceRoot = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath ?? '';
-    console.warn('Workspace root:', this.workspaceRoot);
     this.findNovelRoot();
-    console.warn('DialogoiTreeDataProvider コンストラクタ完了');
   }
 
   private findNovelRoot(): void {
-    console.warn('findNovelRoot 開始');
     const metaYamlService = ServiceContainer.getInstance().getMetaYamlService();
     this.novelRoot = metaYamlService.findNovelRoot(this.workspaceRoot);
-    console.warn('Novel root 検出結果:', this.novelRoot);
     if (this.novelRoot !== null) {
       // コンテキストにノベルプロジェクトが存在することを設定
-      console.warn('Novel project context設定');
       vscode.commands.executeCommand('setContext', 'dialogoi:hasNovelProject', true);
 
       // 参照関係を初期化
-      console.warn('ReferenceManager初期化開始');
       const referenceManager = ReferenceManager.getInstance();
       const fileRepository = ServiceContainer.getInstance().getFileRepository();
       referenceManager.initialize(this.novelRoot, fileRepository);
-      console.warn('ReferenceManager初期化完了');
     }
   }
 
@@ -132,37 +124,26 @@ export class DialogoiTreeDataProvider implements vscode.TreeDataProvider<Dialogo
   }
 
   getChildren(element?: DialogoiTreeItem): Promise<DialogoiTreeItem[]> {
-    console.warn('getChildren 呼び出し, element:', element?.name ?? 'ルート');
-    console.warn('novelRoot:', this.novelRoot);
-
     if (this.novelRoot === null) {
-      console.warn('novelRoot が null のため空配列を返す');
       return Promise.resolve([]);
     }
 
     if (element) {
       // サブディレクトリの場合、その中の.dialogoi-meta.yamlを読み込む
-      console.warn('サブディレクトリの.dialogoi-meta.yaml読み込み:', element.path);
       const result = this.loadMetaYaml(element.path);
-      console.warn('サブディレクトリ結果:', result);
       return Promise.resolve(result);
     } else {
       // ルートの場合、ノベルルートの.dialogoi-meta.yamlを読み込む
-      console.warn('ルートの.dialogoi-meta.yaml読み込み:', this.novelRoot);
       const result = this.loadMetaYaml(this.novelRoot);
-      console.warn('ルート結果:', result);
       return Promise.resolve(result);
     }
   }
 
   private loadMetaYaml(dirPath: string): DialogoiTreeItem[] {
-    console.warn('loadMetaYaml 呼び出し, dirPath:', dirPath);
     const metaYamlService = ServiceContainer.getInstance().getMetaYamlService();
     const meta = metaYamlService.loadMetaYaml(dirPath);
-    console.warn('loadMetaYaml 結果:', meta);
 
     if (meta === null) {
-      console.warn('meta が null のため空配列を返す');
       return [];
     }
 
@@ -171,7 +152,6 @@ export class DialogoiTreeDataProvider implements vscode.TreeDataProvider<Dialogo
       ...file,
       path: path.join(dirPath, file.name),
     }));
-    console.warn('最終的な結果:', result);
     return result;
   }
 

@@ -1,30 +1,32 @@
 import * as vscode from 'vscode';
 import { DialogoiTreeDataProvider } from './tree/DialogoiTreeDataProvider.js';
+import { DialogoiTreeItem } from './utils/MetaYamlUtils.js';
 import { registerReviewCommands } from './commands/reviewCommands.js';
 import { registerCharacterCommands } from './commands/characterCommands.js';
 import { registerForeshadowingCommands } from './commands/foreshadowingCommands.js';
 import { VSCodeServiceContainer } from './di/VSCodeServiceContainer.js';
+import { ServiceContainer } from './di/ServiceContainer.js';
 
 export async function activate(context: vscode.ExtensionContext): Promise<void> {
-  console.log('Dialogoi Editor が起動しました');
+  console.warn('Dialogoi Editor が起動しました');
 
   try {
     // VSCode環境でServiceContainerを初期化
-    console.log('ServiceContainer初期化を開始...');
+    console.warn('ServiceContainer初期化を開始...');
     await VSCodeServiceContainer.initialize(context);
-    console.log('ServiceContainer初期化完了');
+    console.warn('ServiceContainer初期化完了');
 
     // TreeDataProviderの作成と登録
-    console.log('TreeDataProvider作成を開始...');
+    console.warn('TreeDataProvider作成を開始...');
     const treeDataProvider = new DialogoiTreeDataProvider();
-    console.log('TreeDataProvider作成完了');
+    console.warn('TreeDataProvider作成完了');
 
-    console.log('TreeView作成を開始...');
+    console.warn('TreeView作成を開始...');
     const treeView = vscode.window.createTreeView('dialogoi-explorer', {
       treeDataProvider: treeDataProvider,
       showCollapseAll: true,
     });
-    console.log('TreeView作成完了');
+    console.warn('TreeView作成完了');
 
     // 更新コマンドの実装
     const refreshCommand = vscode.commands.registerCommand('dialogoi.refreshExplorer', () => {
@@ -38,13 +40,13 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
 
       // 現在選択されているアイテムを取得
       const selection = treeView.selection;
-      if (selection && selection.length > 0 && selection[0]) {
+      if (selection !== undefined && selection.length > 0 && selection[0] !== undefined) {
         const selectedItem = selection[0];
         targetDir = treeDataProvider.getDirectoryPath(selectedItem);
       } else {
         // 何も選択されていない場合はルートディレクトリ
         const currentDir = treeDataProvider.getCurrentDirectory();
-        if (!currentDir) {
+        if (currentDir === null || currentDir === '') {
           vscode.window.showErrorMessage('小説プロジェクトが見つかりません。');
           return;
         }
@@ -57,16 +59,16 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     // ファイル作成コマンド（選択したディレクトリ用）
     const createFileInDirectoryCommand = vscode.commands.registerCommand(
       'dialogoi.createFileInDirectory',
-      async (item: any) => {
+      async (item: DialogoiTreeItem) => {
         let targetDir: string;
 
-        if (item && item.path) {
+        if (item !== undefined && item.path !== undefined && item.path !== '') {
           // 選択したアイテムのディレクトリパスを取得
           targetDir = treeDataProvider.getDirectoryPath(item);
         } else {
           // 何も選択していない場合はルートディレクトリ
           const currentDir = treeDataProvider.getCurrentDirectory();
-          if (!currentDir) {
+          if (currentDir === null || currentDir === '') {
             vscode.window.showErrorMessage('小説プロジェクトが見つかりません。');
             return;
           }
@@ -99,7 +101,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
         placeHolder: fileType.value === 'subdirectory' ? 'フォルダ名' : 'ファイル名',
       });
 
-      if (!baseFileName) {
+      if (baseFileName === undefined || baseFileName === '') {
         return;
       }
 
@@ -124,8 +126,8 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     // ファイル削除コマンド
     const deleteFileCommand = vscode.commands.registerCommand(
       'dialogoi.deleteFile',
-      async (item: any) => {
-        if (!item || !item.name) {
+      async (item: DialogoiTreeItem) => {
+        if (item === undefined || item.name === undefined || item.name === '') {
           vscode.window.showErrorMessage('削除するファイルを選択してください。');
           return;
         }
@@ -146,8 +148,8 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     // ファイル名変更コマンド
     const renameFileCommand = vscode.commands.registerCommand(
       'dialogoi.renameFile',
-      async (item: any) => {
-        if (!item || !item.name) {
+      async (item: DialogoiTreeItem) => {
+        if (item === undefined || item.name === undefined || item.name === '') {
           vscode.window.showErrorMessage('リネームするファイルを選択してください。');
           return;
         }
@@ -157,7 +159,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
           value: item.name,
         });
 
-        if (!newName || newName === item.name) {
+        if (newName === undefined || newName === '' || newName === item.name) {
           return;
         }
 
@@ -167,45 +169,48 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     );
 
     // タグ追加コマンド
-    const addTagCommand = vscode.commands.registerCommand('dialogoi.addTag', async (item: any) => {
-      if (!item || !item.name) {
-        vscode.window.showErrorMessage('タグを追加するファイルを選択してください。');
-        return;
-      }
+    const addTagCommand = vscode.commands.registerCommand(
+      'dialogoi.addTag',
+      async (item: DialogoiTreeItem) => {
+        if (item === undefined || item.name === undefined || item.name === '') {
+          vscode.window.showErrorMessage('タグを追加するファイルを選択してください。');
+          return;
+        }
 
-      const newTag = await vscode.window.showInputBox({
-        prompt: `${item.name} に追加するタグを入力してください`,
-        placeHolder: 'タグ名',
-        validateInput: (value) => {
-          if (!value) {
-            return 'タグ名を入力してください。';
-          }
-          if (value.includes(' ')) {
-            return 'タグ名にスペースは使用できません。';
-          }
-          return null;
-        },
-      });
+        const newTag = await vscode.window.showInputBox({
+          prompt: `${item.name} に追加するタグを入力してください`,
+          placeHolder: 'タグ名',
+          validateInput: (value) => {
+            if (!value) {
+              return 'タグ名を入力してください。';
+            }
+            if (value.includes(' ')) {
+              return 'タグ名にスペースは使用できません。';
+            }
+            return null;
+          },
+        });
 
-      if (!newTag) {
-        return;
-      }
+        if (newTag === undefined || newTag === '') {
+          return;
+        }
 
-      const dirPath = treeDataProvider.getDirectoryPath(item);
-      const result = treeDataProvider.addTag(dirPath, item.name, newTag);
+        const dirPath = treeDataProvider.getDirectoryPath(item);
+        const result = treeDataProvider.addTag(dirPath, item.name, newTag);
 
-      if (result.success) {
-        vscode.window.showInformationMessage(result.message);
-      } else {
-        vscode.window.showErrorMessage(result.message);
-      }
-    });
+        if (result.success) {
+          vscode.window.showInformationMessage(result.message);
+        } else {
+          vscode.window.showErrorMessage(result.message);
+        }
+      },
+    );
 
     // タグ削除コマンド
     const removeTagCommand = vscode.commands.registerCommand(
       'dialogoi.removeTag',
-      async (item: any) => {
-        if (!item || !item.name) {
+      async (item: DialogoiTreeItem) => {
+        if (item === undefined || item.name === undefined || item.name === '') {
           vscode.window.showErrorMessage('タグを削除するファイルを選択してください。');
           return;
         }
@@ -223,7 +228,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
           },
         );
 
-        if (!tagToRemove) {
+        if (tagToRemove === undefined || tagToRemove === '') {
           return;
         }
 
@@ -244,8 +249,8 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     // タグ編集コマンド
     const editTagsCommand = vscode.commands.registerCommand(
       'dialogoi.editTags',
-      async (item: any) => {
-        if (!item || !item.name) {
+      async (item: DialogoiTreeItem) => {
+        if (item === undefined || item.name === undefined || item.name === '') {
           vscode.window.showErrorMessage('タグを編集するファイルを選択してください。');
           return;
         }
@@ -293,8 +298,8 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     // 参照追加コマンド
     const addReferenceCommand = vscode.commands.registerCommand(
       'dialogoi.addReference',
-      async (item: any) => {
-        if (!item || !item.name) {
+      async (item: DialogoiTreeItem) => {
+        if (item === undefined || item.name === undefined || item.name === '') {
           vscode.window.showErrorMessage('参照を追加するファイルを選択してください。');
           return;
         }
@@ -310,7 +315,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
           },
         });
 
-        if (!referencePath) {
+        if (referencePath === undefined || referencePath === '') {
           return;
         }
 
@@ -328,8 +333,8 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     // 参照削除コマンド
     const removeReferenceCommand = vscode.commands.registerCommand(
       'dialogoi.removeReference',
-      async (item: any) => {
-        if (!item || !item.name) {
+      async (item: DialogoiTreeItem) => {
+        if (item === undefined || item.name === undefined || item.name === '') {
           vscode.window.showErrorMessage('参照を削除するファイルを選択してください。');
           return;
         }
@@ -344,7 +349,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
           placeHolder: '削除する参照を選択してください',
         });
 
-        if (!referenceToRemove) {
+        if (referenceToRemove === undefined || referenceToRemove === '') {
           return;
         }
 
@@ -362,8 +367,8 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     // 参照編集コマンド
     const editReferencesCommand = vscode.commands.registerCommand(
       'dialogoi.editReferences',
-      async (item: any) => {
-        if (!item || !item.name) {
+      async (item: DialogoiTreeItem) => {
+        if (item === undefined || item.name === undefined || item.name === '') {
           vscode.window.showErrorMessage('参照を編集するファイルを選択してください。');
           return;
         }
@@ -436,7 +441,6 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
 
 export function deactivate(): void {
   // ServiceContainerのリセット
-  const { ServiceContainer } = require('./di/ServiceContainer.js');
   const serviceContainer = ServiceContainer.getInstance();
   serviceContainer.reset();
 }
