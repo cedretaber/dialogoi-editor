@@ -58,6 +58,19 @@ export const FileDetailsApp: React.FC = () => {
     });
   };
 
+  const handleReferenceRemove = (reference: string): void => {
+    vscode.postMessage({
+      type: 'removeReference',
+      payload: { reference },
+    });
+  };
+
+  const handleCharacterRemove = (): void => {
+    vscode.postMessage({
+      type: 'removeCharacter',
+    });
+  };
+
   if (!fileData) {
     return <div className="no-file-selected">ファイルまたはディレクトリを選択してください</div>;
   }
@@ -69,13 +82,18 @@ export const FileDetailsApp: React.FC = () => {
       <TagSection tags={fileData.tags} onTagAdd={handleTagAdd} onTagRemove={handleTagRemove} />
 
       {fileData.character && (
-        <CharacterSection character={fileData.character} fileName={fileData.name} />
+        <CharacterSection
+          character={fileData.character}
+          fileName={fileData.name}
+          onCharacterRemove={handleCharacterRemove}
+        />
       )}
 
       <ReferenceSection
         fileData={fileData}
         onReferenceAdd={handleReferenceAdd}
         onReferenceOpen={handleReferenceOpen}
+        onReferenceRemove={handleReferenceRemove}
       />
 
       {fileData.review_count && Object.keys(fileData.review_count).length > 0 && (

@@ -482,4 +482,50 @@ export class MetaYamlService {
       };
     }
   }
+
+  /**
+   * ファイルの参照関係を削除
+   */
+  removeFileReference(dirAbsolutePath: string, fileName: string, reference: string): boolean {
+    const meta = this.loadMetaYaml(dirAbsolutePath);
+    if (!meta) {
+      return false;
+    }
+
+    const fileItem = meta.files.find((item) => item.name === fileName);
+    if (!fileItem || !fileItem.references) {
+      return true; // 参照がない場合は成功とする
+    }
+
+    // 参照を削除
+    const newReferences = fileItem.references.filter((ref) => ref !== reference);
+
+    if (newReferences.length === 0) {
+      delete fileItem.references;
+    } else {
+      fileItem.references = newReferences;
+    }
+
+    return this.saveMetaYaml(dirAbsolutePath, meta);
+  }
+
+  /**
+   * ファイルのキャラクター情報を削除
+   */
+  removeFileCharacter(dirAbsolutePath: string, fileName: string): boolean {
+    const meta = this.loadMetaYaml(dirAbsolutePath);
+    if (!meta) {
+      return false;
+    }
+
+    const fileItem = meta.files.find((item) => item.name === fileName);
+    if (!fileItem) {
+      return false;
+    }
+
+    // キャラクター情報を削除
+    delete fileItem.character;
+
+    return this.saveMetaYaml(dirAbsolutePath, meta);
+  }
 }

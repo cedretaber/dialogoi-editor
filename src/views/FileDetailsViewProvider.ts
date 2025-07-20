@@ -16,6 +16,8 @@ interface WebViewMessage {
     | 'addTag'
     | 'removeTag'
     | 'addReference'
+    | 'removeReference'
+    | 'removeCharacter'
     | 'openReference'
     | 'ready'
     | 'selectTreeItem'
@@ -154,6 +156,18 @@ export class FileDetailsViewProvider implements vscode.WebviewViewProvider {
         ) {
           this.handleAddReference(msg.payload.reference);
         }
+        break;
+      case 'removeReference':
+        if (
+          msg.payload?.reference !== undefined &&
+          msg.payload.reference !== null &&
+          msg.payload.reference !== ''
+        ) {
+          this.handleRemoveReference(msg.payload.reference);
+        }
+        break;
+      case 'removeCharacter':
+        this.handleRemoveCharacter();
         break;
       case 'openReference':
         if (
@@ -377,6 +391,80 @@ export class FileDetailsViewProvider implements vscode.WebviewViewProvider {
       vscode.window.showInformationMessage(`選択: ${itemPath}`);
     } catch (error) {
       this.logger.error('ツリーアイテム選択エラー', error instanceof Error ? error : String(error));
+    }
+  }
+
+  /**
+   * 参照削除処理
+   */
+  private handleRemoveReference(reference: string): void {
+    if (!this.currentItem || !reference) {
+      return;
+    }
+
+    try {
+      const dirPath = path.dirname(this.currentItem.path || '');
+      const fileName = this.currentItem.name;
+
+      const success = this.metaYamlService?.removeFileReference(dirPath, fileName, reference);
+      if (success === true) {
+        this.logger.info(`参照削除: ${reference} → ${fileName}`);
+        vscode.window.showInformationMessage(`参照 "${reference}" を削除しました`);
+
+        // TreeViewとWebViewを更新
+        if (this.treeDataProvider !== null && this.currentItem !== null) {
+          this.treeDataProvider.refresh();
+          const updatedItem = this.treeDataProvider.refreshFileItem(this.currentItem);
+          if (updatedItem !== null) {
+            this.currentItem = updatedItem;
+            this.updateFileDetails(this.currentItem);
+          }
+        }
+      } else {
+        throw new Error('参照の削除に失敗しました');
+      }
+    } catch (error) {
+      this.logger.error('参照削除エラー', error instanceof Error ? error : String(error));
+      vscode.window.showErrorMessage(
+        `参照の削除に失敗しました: ${error instanceof Error ? error.message : String(error)}`,
+      );
+    }
+  }
+
+  /**
+   * キャラクター情報削除処理
+   */
+  private handleRemoveCharacter(): void {
+    if (!this.currentItem) {
+      return;
+    }
+
+    try {
+      const dirPath = path.dirname(this.currentItem.path || '');
+      const fileName = this.currentItem.name;
+
+      const success = this.metaYamlService?.removeFileCharacter(dirPath, fileName);
+      if (success === true) {
+        this.logger.info(`キャラクター情報削除: ${fileName}`);
+        vscode.window.showInformationMessage('キャラクター情報を削除しました');
+
+        // TreeViewとWebViewを更新
+        if (this.treeDataProvider !== null && this.currentItem !== null) {
+          this.treeDataProvider.refresh();
+          const updatedItem = this.treeDataProvider.refreshFileItem(this.currentItem);
+          if (updatedItem !== null) {
+            this.currentItem = updatedItem;
+            this.updateFileDetails(this.currentItem);
+          }
+        }
+      } else {
+        throw new Error('キャラクター情報の削除に失敗しました');
+      }
+    } catch (error) {
+      this.logger.error('キャラクター削除エラー', error instanceof Error ? error : String(error));
+      vscode.window.showErrorMessage(
+        `キャラクター情報の削除に失敗しました: ${error instanceof Error ? error.message : String(error)}`,
+      );
     }
   }
 

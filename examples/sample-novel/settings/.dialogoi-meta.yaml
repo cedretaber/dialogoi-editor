@@ -2,16 +2,24 @@ readme: README.md
 files:
   - name: world_setting.md
     type: setting
-    tags: ["世界観", "基本設定"]
-    references: ["contents/01_prologue.txt", "contents/02_entrance_ceremony.txt"]
+    tags:
+      - 世界観
+      - 基本設定
+    references:
+      - contents/01_prologue.txt
+      - contents/02_entrance_ceremony.txt
   - name: magic_system.md
     type: setting
-    tags: ["魔法", "システム"]
-    references: ["contents/03_first_magic_lesson.txt"]
+    tags:
+      - 魔法
+      - システム
+    references:
+      - contents/03_first_magic_lesson.txt
   - name: glossary.md
     type: setting
     glossary: true
-    tags: ["用語集"]
+    tags:
+      - 用語集
   - name: characters
     type: subdirectory
   - name: foreshadowings

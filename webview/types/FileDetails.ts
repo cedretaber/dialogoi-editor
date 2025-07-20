@@ -2,7 +2,14 @@
  * WebView ↔ Extension 間のメッセージ型定義
  */
 export interface WebViewMessage {
-  type: 'addTag' | 'removeTag' | 'addReference' | 'openReference' | 'ready';
+  type:
+    | 'addTag'
+    | 'removeTag'
+    | 'addReference'
+    | 'removeReference'
+    | 'removeCharacter'
+    | 'openReference'
+    | 'ready';
   payload?: {
     tag?: string;
     reference?: string;

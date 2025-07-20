@@ -5,29 +5,50 @@ interface ReferenceSectionProps {
   fileData: FileDetailsData;
   onReferenceAdd: () => void;
   onReferenceOpen: (reference: string) => void;
+  onReferenceRemove: (reference: string) => void;
 }
 
 interface ReferenceItemProps {
   refEntry: ReferenceEntry;
   onReferenceOpen: (reference: string) => void;
+  onReferenceRemove: (reference: string) => void;
 }
 
-const ReferenceItem: React.FC<ReferenceItemProps> = ({ refEntry, onReferenceOpen }) => {
+const ReferenceItem: React.FC<ReferenceItemProps> = ({
+  refEntry,
+  onReferenceOpen,
+  onReferenceRemove,
+}) => {
   const linkIcon = refEntry.source === 'hyperlink' ? '🔗' : '';
   const linkClass =
     refEntry.source === 'hyperlink' ? 'reference-item hyperlink-ref' : 'reference-item manual-ref';
 
+  // ハイパーリンク由来の参照は削除不可（本文編集が必要なため）
+  const canDelete = refEntry.source === 'manual';
+
   return (
-    <a
-      className={linkClass}
-      onClick={() => onReferenceOpen(refEntry.path)}
-      role="button"
-      tabIndex={0}
-      onKeyDown={(e) => e.key === 'Enter' && onReferenceOpen(refEntry.path)}
-    >
-      {linkIcon}
-      {refEntry.path}
-    </a>
+    <div className="reference-item-container">
+      <a
+        className={linkClass}
+        onClick={() => onReferenceOpen(refEntry.path)}
+        role="button"
+        tabIndex={0}
+        onKeyDown={(e) => e.key === 'Enter' && onReferenceOpen(refEntry.path)}
+      >
+        {linkIcon}
+        {refEntry.path}
+      </a>
+      {canDelete && (
+        <button
+          className="delete-button small"
+          onClick={() => onReferenceRemove(refEntry.path)}
+          title="手動参照を削除"
+          type="button"
+        >
+          ×
+        </button>
+      )}
+    </div>
   );
 };
 
@@ -35,6 +56,7 @@ export const ReferenceSection: React.FC<ReferenceSectionProps> = ({
   fileData,
   onReferenceAdd,
   onReferenceOpen,
+  onReferenceRemove,
 }) => {
   const [isExpanded, setIsExpanded] = useState(true);
   const { referenceData, type } = fileData;
@@ -76,6 +98,7 @@ export const ReferenceSection: React.FC<ReferenceSectionProps> = ({
                   key={`char-${index}`}
                   refEntry={refEntry}
                   onReferenceOpen={onReferenceOpen}
+                  onReferenceRemove={onReferenceRemove}
                 />
               ))}
             </div>
@@ -98,6 +121,7 @@ export const ReferenceSection: React.FC<ReferenceSectionProps> = ({
                   key={`setting-${index}`}
                   refEntry={refEntry}
                   onReferenceOpen={onReferenceOpen}
+                  onReferenceRemove={onReferenceRemove}
                 />
               ))}
             </div>
@@ -131,6 +155,7 @@ export const ReferenceSection: React.FC<ReferenceSectionProps> = ({
                 key={`ref-${index}`}
                 refEntry={refEntry}
                 onReferenceOpen={onReferenceOpen}
+                onReferenceRemove={onReferenceRemove}
               />
             ))}
 
@@ -144,6 +169,7 @@ export const ReferenceSection: React.FC<ReferenceSectionProps> = ({
                     key={`refby-${index}`}
                     refEntry={refEntry}
                     onReferenceOpen={onReferenceOpen}
+                    onReferenceRemove={onReferenceRemove}
                   />
                 ))}
               </>
