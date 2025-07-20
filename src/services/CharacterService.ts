@@ -1,8 +1,13 @@
 import * as path from 'path';
 import { FileRepository } from '../repositories/FileRepository.js';
+import { MetaYamlService } from './MetaYamlService.js';
+import { DialogoiTreeItem } from '../utils/MetaYamlUtils.js';
 
 export class CharacterService {
-  constructor(private fileRepository: FileRepository) {}
+  constructor(
+    private fileRepository: FileRepository,
+    private metaYamlService: MetaYamlService,
+  ) {}
 
   /**
    * マークダウンファイルから表示名を取得
@@ -45,5 +50,51 @@ export class CharacterService {
     const fileName = path.basename(fileAbsolutePath);
     const dotIndex = fileName.lastIndexOf('.');
     return dotIndex > 0 ? fileName.substring(0, dotIndex) : fileName;
+  }
+
+  /**
+   * ファイルがキャラクターファイルかどうかを判定
+   * @param fileAbsolutePath ファイルの絶対パス
+   * @returns キャラクターファイルの場合true
+   */
+  isCharacterFile(fileAbsolutePath: string): boolean {
+    try {
+      const dirPath = path.dirname(fileAbsolutePath);
+      const fileName = path.basename(fileAbsolutePath);
+      const meta = this.metaYamlService.loadMetaYaml(dirPath);
+
+      if (!meta) {
+        return false;
+      }
+
+      const fileItem = meta.files.find((item) => item.name === fileName);
+      return fileItem !== undefined && fileItem.character !== undefined;
+    } catch {
+      return false;
+    }
+  }
+
+  /**
+   * プロジェクトルート相対パスからファイル情報を取得
+   * @param projectRelativePath プロジェクトルートからの相対パス
+   * @param novelRootAbsolutePath プロジェクトルートの絶対パス
+   * @returns ファイル情報またはnull
+   */
+  getFileInfo(projectRelativePath: string, novelRootAbsolutePath: string): DialogoiTreeItem | null {
+    try {
+      const absolutePath = path.join(novelRootAbsolutePath, projectRelativePath);
+      const dirPath = path.dirname(absolutePath);
+      const fileName = path.basename(absolutePath);
+      const meta = this.metaYamlService.loadMetaYaml(dirPath);
+
+      if (!meta) {
+        return null;
+      }
+
+      const fileItem = meta.files.find((item) => item.name === fileName);
+      return fileItem || null;
+    } catch {
+      return null;
+    }
   }
 }

@@ -109,26 +109,28 @@ files:
 
     // chapter1.txtの参照関係をチェック
     const chapter1Refs = refManager.getReferences(path.join(testDir, 'contents', 'chapter1.txt'));
-    assert.deepStrictEqual(chapter1Refs.references, [
-      'settings/world.md',
-      'settings/characters/hero.md',
-    ]);
+    const chapter1RefPaths = chapter1Refs.references.map((ref) => ref.path);
+    assert.deepStrictEqual(chapter1RefPaths, ['settings/world.md', 'settings/characters/hero.md']);
 
     // chapter2.txtの参照関係をチェック
     const chapter2Refs = refManager.getReferences(path.join(testDir, 'contents', 'chapter2.txt'));
-    assert.deepStrictEqual(chapter2Refs.references, ['settings/magic.md']);
+    const chapter2RefPaths = chapter2Refs.references.map((ref) => ref.path);
+    assert.deepStrictEqual(chapter2RefPaths, ['settings/magic.md']);
 
     // 逆参照もチェック
     const worldRefs = refManager.getReferences(path.join(testDir, 'settings', 'world.md'));
-    assert.deepStrictEqual(worldRefs.referencedBy, ['contents/chapter1.txt']);
+    const worldRefByPaths = worldRefs.referencedBy.map((ref) => ref.path);
+    assert.deepStrictEqual(worldRefByPaths, ['contents/chapter1.txt']);
 
     const heroRefs = refManager.getReferences(
       path.join(testDir, 'settings', 'characters', 'hero.md'),
     );
-    assert.deepStrictEqual(heroRefs.referencedBy, ['contents/chapter1.txt']);
+    const heroRefByPaths = heroRefs.referencedBy.map((ref) => ref.path);
+    assert.deepStrictEqual(heroRefByPaths, ['contents/chapter1.txt']);
 
     const magicRefs = refManager.getReferences(path.join(testDir, 'settings', 'magic.md'));
-    assert.deepStrictEqual(magicRefs.referencedBy, ['contents/chapter2.txt']);
+    const magicRefByPaths = magicRefs.referencedBy.map((ref) => ref.path);
+    assert.deepStrictEqual(magicRefByPaths, ['contents/chapter2.txt']);
   });
 
   test('単一ファイルの参照関係を更新できる', () => {
@@ -141,7 +143,8 @@ files:
 
     // 更新後の参照関係をチェック
     const chapter1Refs = refManager.getReferences(filePath);
-    assert.deepStrictEqual(chapter1Refs.references, newReferences);
+    const chapter1RefPaths = chapter1Refs.references.map((ref) => ref.path);
+    assert.deepStrictEqual(chapter1RefPaths, newReferences);
 
     // 逆参照もチェック
     const heroRefs = refManager.getReferences(
@@ -150,8 +153,9 @@ files:
     assert.strictEqual(heroRefs.referencedBy.length, 0); // chapter1.txtからの参照が削除されている
 
     const magicRefs = refManager.getReferences(path.join(testDir, 'settings', 'magic.md'));
+    const magicRefByPaths = magicRefs.referencedBy.map((ref) => ref.path).sort();
     assert.deepStrictEqual(
-      magicRefs.referencedBy.sort(),
+      magicRefByPaths,
       ['contents/chapter1.txt', 'contents/chapter2.txt'].sort(),
     );
   });
@@ -233,7 +237,10 @@ files:
 
     // 逆参照も削除される
     const worldRefs = refManager.getReferences(path.join(testDir, 'settings', 'world.md'));
-    assert.strictEqual(worldRefs.referencedBy.includes('contents/chapter1.txt'), false);
+    assert.strictEqual(
+      worldRefs.referencedBy.some((ref) => ref.path === 'contents/chapter1.txt'),
+      false,
+    );
   });
 
   test('同じファイルを複数回参照しても重複しない', () => {
@@ -249,12 +256,13 @@ files:
     refManager.updateFileReferences(filePath, duplicateReferences);
 
     const refs = refManager.getReferences(filePath);
-    assert.deepStrictEqual(refs.references, ['settings/world.md', 'settings/magic.md']);
+    const refPaths = refs.references.map((ref) => ref.path);
+    assert.deepStrictEqual(refPaths, ['settings/world.md', 'settings/magic.md']);
 
     // 逆参照も重複しない
     const worldRefs = refManager.getReferences(path.join(testDir, 'settings', 'world.md'));
     const chapter1Count = worldRefs.referencedBy.filter(
-      (ref) => ref === 'contents/chapter1.txt',
+      (ref) => ref.path === 'contents/chapter1.txt',
     ).length;
     assert.strictEqual(chapter1Count, 1);
   });

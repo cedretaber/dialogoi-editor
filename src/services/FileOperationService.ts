@@ -3,6 +3,9 @@ import { FileRepository } from '../repositories/FileRepository.js';
 import { MetaYamlService } from './MetaYamlService.js';
 import { MetaYamlUtils, DialogoiTreeItem, MetaYaml } from '../utils/MetaYamlUtils.js';
 import { ForeshadowingData } from './ForeshadowingService.js';
+import { ProjectLinkUpdateService } from './ProjectLinkUpdateService.js';
+import { ProjectPathNormalizationService } from './ProjectPathNormalizationService.js';
+import { ReferenceManager } from './ReferenceManager.js';
 
 /**
  * ファイル操作の結果を表すインターフェイス
@@ -17,10 +20,37 @@ export interface FileOperationResult {
  * ファイル操作とメタデータ管理を組み合わせた高レベルな操作を提供するサービス
  */
 export class FileOperationService {
+  private linkUpdateService?: ProjectLinkUpdateService;
+  private pathNormalizationService?: ProjectPathNormalizationService;
+  private novelRootPath?: string;
+
   constructor(
     private fileRepository: FileRepository,
     private metaYamlService: MetaYamlService,
-  ) {}
+    novelRootAbsolutePath?: string,
+  ) {
+    this.novelRootPath = novelRootAbsolutePath;
+    if (
+      novelRootAbsolutePath !== undefined &&
+      novelRootAbsolutePath !== null &&
+      novelRootAbsolutePath !== ''
+    ) {
+      this.pathNormalizationService = new ProjectPathNormalizationService(novelRootAbsolutePath);
+      this.linkUpdateService = new ProjectLinkUpdateService(
+        fileRepository,
+        metaYamlService,
+        novelRootAbsolutePath,
+      );
+    }
+  }
+
+  /**
+   * ノベルルートパスを取得
+   * @returns ノベルルートの絶対パス（設定されていない場合はundefined）
+   */
+  getNovelRootPath(): string | undefined {
+    return this.novelRootPath;
+  }
 
   /**
    * 新しいファイルを作成し、.dialogoi-meta.yamlに追加する
@@ -116,6 +146,9 @@ export class FileOperationService {
         }
         return result;
       }
+
+      // ファイル作成後にハイパーリンク参照を更新
+      this.updateHyperlinkReferences(filePath);
 
       return {
         success: true,
@@ -265,6 +298,29 @@ export class FileOperationService {
 
       // ファイルをリネーム
       this.fileRepository.renameSync(oldUri, newUri);
+
+      // プロジェクトルート相対パスでのリンク更新
+      if (this.linkUpdateService && this.pathNormalizationService) {
+        const oldProjectPath = this.pathNormalizationService.getProjectRelativePath(oldPath);
+        const newProjectPath = this.pathNormalizationService.getProjectRelativePath(newPath);
+
+        if (
+          oldProjectPath !== null &&
+          oldProjectPath !== '' &&
+          newProjectPath !== null &&
+          newProjectPath !== ''
+        ) {
+          const linkUpdateResult = this.linkUpdateService.updateLinksAfterFileOperation(
+            oldProjectPath,
+            newProjectPath,
+          );
+
+          // リンク更新の結果をログに記録（失敗してもファイルリネーム自体は成功とする）
+          if (!linkUpdateResult.success) {
+            console.warn(`リンク更新に失敗しました: ${linkUpdateResult.message}`);
+          }
+        }
+      }
 
       return {
         success: true,
@@ -835,6 +891,11 @@ export class FileOperationService {
         // 物理ディレクトリの移動
         this.fileRepository.renameSync(sourceDirUri, targetDirUri);
 
+        // ディレクトリ内の全ファイルのリンク更新（プロジェクトルート相対パス）
+        if (this.linkUpdateService && this.pathNormalizationService) {
+          this.updateLinksForDirectoryMove(sourceDirPath, targetDirPath);
+        }
+
         return {
           success: true,
           message: `ディレクトリ ${dirName} を ${sourceParentDir} から ${targetParentDir} に移動しました。`,
@@ -937,6 +998,31 @@ export class FileOperationService {
         // 物理ファイルの移動
         this.fileRepository.renameSync(sourceUri, targetUri);
 
+        // プロジェクトルート相対パスでのリンク更新
+        if (this.linkUpdateService && this.pathNormalizationService) {
+          const oldProjectPath =
+            this.pathNormalizationService.getProjectRelativePath(sourceFilePath);
+          const newProjectPath =
+            this.pathNormalizationService.getProjectRelativePath(targetFilePath);
+
+          if (
+            oldProjectPath !== null &&
+            oldProjectPath !== '' &&
+            newProjectPath !== null &&
+            newProjectPath !== ''
+          ) {
+            const linkUpdateResult = this.linkUpdateService.updateLinksAfterFileOperation(
+              oldProjectPath,
+              newProjectPath,
+            );
+
+            // リンク更新の結果をログに記録（失敗してもファイル移動自体は成功とする）
+            if (!linkUpdateResult.success) {
+              console.warn(`リンク更新に失敗しました: ${linkUpdateResult.message}`);
+            }
+          }
+        }
+
         return {
           success: true,
           message: `${fileName} を ${sourceDir} から ${targetDir} に移動しました。`,
@@ -956,6 +1042,94 @@ export class FileOperationService {
         success: false,
         message: `ファイル移動エラー: ${error instanceof Error ? error.message : String(error)}`,
       };
+    }
+  }
+
+  /**
+   * ディレクトリ移動時の内部ファイルのリンク更新
+   */
+  private updateLinksForDirectoryMove(oldDirPath: string, newDirPath: string): void {
+    if (!this.linkUpdateService || !this.pathNormalizationService) {
+      return;
+    }
+
+    try {
+      // ディレクトリ内の全ファイルを再帰的に走査してリンク更新
+      this.walkDirectoryForLinkUpdate(oldDirPath, newDirPath, oldDirPath, newDirPath);
+    } catch (error) {
+      console.warn(
+        `ディレクトリ移動時のリンク更新に失敗: ${error instanceof Error ? error.message : String(error)}`,
+      );
+    }
+  }
+
+  /**
+   * ディレクトリを再帰的に走査してファイルのリンクを更新
+   */
+  private walkDirectoryForLinkUpdate(
+    currentOldDirPath: string,
+    currentNewDirPath: string,
+    rootOldDirPath: string,
+    rootNewDirPath: string,
+  ): void {
+    if (!this.linkUpdateService || !this.pathNormalizationService) {
+      return;
+    }
+
+    const dirUri = this.fileRepository.createFileUri(currentNewDirPath);
+    try {
+      const entries = this.fileRepository.readdirSync(dirUri);
+
+      for (const entry of entries) {
+        const entryName = typeof entry === 'string' ? entry : entry.name;
+        const oldEntryPath = path.join(currentOldDirPath, entryName);
+        const newEntryPath = path.join(currentNewDirPath, entryName);
+        const entryUri = this.fileRepository.createFileUri(newEntryPath);
+
+        try {
+          const stat = this.fileRepository.lstatSync(entryUri);
+
+          if (stat.isDirectory()) {
+            // ディレクトリの場合は再帰的に処理
+            this.walkDirectoryForLinkUpdate(
+              oldEntryPath,
+              newEntryPath,
+              rootOldDirPath,
+              rootNewDirPath,
+            );
+          } else {
+            // ファイルの場合はリンク更新
+            const oldProjectPath =
+              this.pathNormalizationService.getProjectRelativePath(oldEntryPath);
+            const newProjectPath =
+              this.pathNormalizationService.getProjectRelativePath(newEntryPath);
+
+            if (
+              oldProjectPath !== null &&
+              oldProjectPath !== '' &&
+              newProjectPath !== null &&
+              newProjectPath !== '' &&
+              oldProjectPath !== newProjectPath
+            ) {
+              const linkUpdateResult = this.linkUpdateService.updateLinksAfterFileOperation(
+                oldProjectPath,
+                newProjectPath,
+              );
+
+              if (!linkUpdateResult.success) {
+                console.warn(
+                  `ファイル ${entryName} のリンク更新に失敗: ${linkUpdateResult.message}`,
+                );
+              }
+            }
+          }
+        } catch {
+          // ファイルstat取得エラーは無視
+          continue;
+        }
+      }
+    } catch {
+      // ディレクトリ読み込みエラーは無視
     }
   }
 
@@ -1004,6 +1178,59 @@ export class FileOperationService {
         success: false,
         message: `.dialogoi-meta.yaml更新エラー: ${error instanceof Error ? error.message : String(error)}`,
       };
+    }
+  }
+
+  /**
+   * ファイルのハイパーリンク参照を更新
+   * @param fileAbsolutePath 更新対象ファイルの絶対パス
+   */
+  private updateHyperlinkReferences(fileAbsolutePath: string): void {
+    if (
+      this.novelRootPath === undefined ||
+      this.novelRootPath === null ||
+      this.novelRootPath === ''
+    ) {
+      return;
+    }
+
+    try {
+      const referenceManager = ReferenceManager.getInstance();
+
+      // .mdファイルの場合のみハイパーリンク参照を更新
+      if (fileAbsolutePath.endsWith('.md')) {
+        referenceManager.updateFileHyperlinkReferences(fileAbsolutePath);
+      }
+    } catch (error) {
+      // ハイパーリンク更新の失敗は主操作を妨げない
+      console.warn(
+        `ハイパーリンク参照更新に失敗しました: ${error instanceof Error ? error.message : String(error)}`,
+      );
+    }
+  }
+
+  /**
+   * ファイル作成・更新後の参照関係を更新
+   * @param fileAbsolutePath 更新対象ファイルの絶対パス
+   * @param manualReferences 手動で設定された参照関係
+   */
+  updateAllReferences(fileAbsolutePath: string, manualReferences: string[] = []): void {
+    if (
+      this.novelRootPath === undefined ||
+      this.novelRootPath === null ||
+      this.novelRootPath === ''
+    ) {
+      return;
+    }
+
+    try {
+      const referenceManager = ReferenceManager.getInstance();
+      referenceManager.updateFileAllReferences(fileAbsolutePath, manualReferences);
+    } catch (error) {
+      // 参照関係更新の失敗は主操作を妨げない
+      console.warn(
+        `参照関係更新に失敗しました: ${error instanceof Error ? error.message : String(error)}`,
+      );
     }
   }
 }

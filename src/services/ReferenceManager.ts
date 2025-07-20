@@ -1,10 +1,17 @@
 import * as path from 'path';
 import { FileRepository } from '../repositories/FileRepository.js';
 import { ServiceContainer } from '../di/ServiceContainer.js';
+import { HyperlinkExtractorService } from './HyperlinkExtractorService.js';
+import { FilePathMapService } from './FilePathMapService.js';
+
+export interface ReferenceEntry {
+  path: string;
+  source: 'manual' | 'hyperlink'; // 手動追加かハイパーリンク由来か
+}
 
 export interface ReferenceInfo {
-  references: string[]; // このファイルが参照しているファイル
-  referencedBy: string[]; // このファイルを参照しているファイル
+  references: ReferenceEntry[]; // このファイルが参照しているファイル
+  referencedBy: ReferenceEntry[]; // このファイルを参照しているファイル
 }
 
 export class ReferenceManager {
@@ -12,6 +19,8 @@ export class ReferenceManager {
   private referencesMap: Map<string, ReferenceInfo> = new Map();
   private novelRoot: string | null = null;
   private fileRepository: FileRepository | null = null;
+  private hyperlinkExtractorService: HyperlinkExtractorService | null = null;
+  private filePathMapService: FilePathMapService | null = null;
 
   private constructor() {}
 
@@ -29,6 +38,15 @@ export class ReferenceManager {
     this.novelRoot = novelRoot;
     this.fileRepository = fileRepository;
     this.referencesMap.clear();
+
+    // ServiceContainerから新しいサービスを取得
+    const serviceContainer = ServiceContainer.getInstance();
+    this.filePathMapService = serviceContainer.getFilePathMapService();
+    this.hyperlinkExtractorService = serviceContainer.getHyperlinkExtractorService();
+
+    // ファイルマップを構築
+    this.filePathMapService.buildFileMap(novelRoot);
+
     this.scanAllReferences(novelRoot);
   }
 
@@ -40,13 +58,39 @@ export class ReferenceManager {
       return;
     }
 
-    const relativePath = path.relative(this.novelRoot, filePath);
+    const relativePath = path.relative(this.novelRoot, filePath).replace(/\\/g, '/');
 
-    // 既存の参照を削除
-    this.removeFileReferences(relativePath);
+    // 既存の手動参照を削除
+    this.removeFileReferences(relativePath, 'manual');
 
-    // 新しい参照を追加
-    this.addFileReferences(relativePath, newReferences);
+    // 新しい手動参照を追加
+    this.addFileReferences(relativePath, newReferences, 'manual');
+  }
+
+  /**
+   * ファイルのハイパーリンク参照を更新
+   */
+  updateFileHyperlinkReferences(filePath: string): void {
+    if (this.novelRoot === null || this.hyperlinkExtractorService === null) {
+      return;
+    }
+
+    const relativePath = path.relative(this.novelRoot, filePath).replace(/\\/g, '/');
+
+    // 既存のハイパーリンク参照を削除
+    this.removeFileReferences(relativePath, 'hyperlink');
+
+    // 新しいハイパーリンク参照を抽出・追加
+    const hyperlinkReferences = this.hyperlinkExtractorService.extractProjectLinks(filePath);
+    this.addFileReferences(relativePath, hyperlinkReferences, 'hyperlink');
+  }
+
+  /**
+   * ファイルの全参照関係を更新（手動+ハイパーリンク）
+   */
+  updateFileAllReferences(filePath: string, manualReferences: string[]): void {
+    this.updateFileReferences(filePath, manualReferences);
+    this.updateFileHyperlinkReferences(filePath);
   }
 
   /**
@@ -54,8 +98,34 @@ export class ReferenceManager {
    */
   getReferences(filePath: string): ReferenceInfo {
     const relativePath =
-      this.novelRoot !== null ? path.relative(this.novelRoot, filePath) : filePath;
+      this.novelRoot !== null
+        ? path.relative(this.novelRoot, filePath).replace(/\\/g, '/')
+        : filePath;
     return this.referencesMap.get(relativePath) || { references: [], referencedBy: [] };
+  }
+
+  /**
+   * 指定ファイルの手動参照のみ取得
+   */
+  getManualReferences(filePath: string): string[] {
+    const info = this.getReferences(filePath);
+    return info.references.filter((ref) => ref.source === 'manual').map((ref) => ref.path);
+  }
+
+  /**
+   * 指定ファイルのハイパーリンク参照のみ取得
+   */
+  getHyperlinkReferences(filePath: string): string[] {
+    const info = this.getReferences(filePath);
+    return info.references.filter((ref) => ref.source === 'hyperlink').map((ref) => ref.path);
+  }
+
+  /**
+   * 全参照パス配列を取得（後方互換性のため）
+   */
+  getAllReferencePaths(filePath: string): string[] {
+    const info = this.getReferences(filePath);
+    return info.references.map((ref) => ref.path);
   }
 
   /**
@@ -64,6 +134,9 @@ export class ReferenceManager {
   clear(): void {
     this.referencesMap.clear();
     this.novelRoot = null;
+    this.fileRepository = null;
+    this.hyperlinkExtractorService = null;
+    this.filePathMapService = null;
   }
 
   /**
@@ -94,9 +167,27 @@ export class ReferenceManager {
         // サブディレクトリを再帰的に処理
         const subDirPath = path.join(dirPath, file.name);
         this.scanDirectoryReferences(subDirPath, fileRelativePath);
-      } else if (file.references && file.references.length > 0) {
-        // ファイルの参照関係を追加
-        this.addFileReferences(fileRelativePath, file.references);
+      } else {
+        // ファイルの手動参照関係を追加
+        if (file.references && file.references.length > 0) {
+          this.addFileReferences(fileRelativePath, file.references, 'manual');
+        }
+
+        // ハイパーリンク参照を抽出・追加（.mdファイルのみ）
+        if (
+          file.name.endsWith('.md') &&
+          this.novelRoot !== null &&
+          this.novelRoot !== undefined &&
+          this.novelRoot !== '' &&
+          this.hyperlinkExtractorService
+        ) {
+          const absoluteFilePath = path.join(dirPath, file.name);
+          const hyperlinkReferences =
+            this.hyperlinkExtractorService.extractProjectLinks(absoluteFilePath);
+          if (hyperlinkReferences.length > 0) {
+            this.addFileReferences(fileRelativePath, hyperlinkReferences, 'hyperlink');
+          }
+        }
       }
     }
   }
@@ -104,9 +195,13 @@ export class ReferenceManager {
   /**
    * ファイルの参照関係を追加
    */
-  private addFileReferences(sourceFile: string, referencedFiles: string[]): void {
+  private addFileReferences(
+    sourceFile: string,
+    referencedFiles: string[],
+    source: 'manual' | 'hyperlink',
+  ): void {
     // 正規化されたパスを使用
-    const normalizedSourceFile = path.normalize(sourceFile);
+    const normalizedSourceFile = sourceFile.replace(/\\/g, '/');
 
     // 参照元ファイルのエントリを取得または作成
     let sourceInfo = this.referencesMap.get(normalizedSourceFile);
@@ -117,11 +212,18 @@ export class ReferenceManager {
 
     // 参照先ファイルを追加
     for (const referencedFile of referencedFiles) {
-      const normalizedReferencedFile = path.normalize(referencedFile);
+      const normalizedReferencedFile = referencedFile.replace(/\\/g, '/');
 
-      // 重複チェック
-      if (!sourceInfo.references.includes(normalizedReferencedFile)) {
-        sourceInfo.references.push(normalizedReferencedFile);
+      // 重複チェック（同じパス・同じソースの組み合わせ）
+      const existingRef = sourceInfo.references.find(
+        (ref) => ref.path === normalizedReferencedFile && ref.source === source,
+      );
+
+      if (!existingRef) {
+        sourceInfo.references.push({
+          path: normalizedReferencedFile,
+          source: source,
+        });
       }
 
       // 逆参照を追加
@@ -131,8 +233,15 @@ export class ReferenceManager {
         this.referencesMap.set(normalizedReferencedFile, targetInfo);
       }
 
-      if (!targetInfo.referencedBy.includes(normalizedSourceFile)) {
-        targetInfo.referencedBy.push(normalizedSourceFile);
+      const existingBackRef = targetInfo.referencedBy.find(
+        (ref) => ref.path === normalizedSourceFile && ref.source === source,
+      );
+
+      if (!existingBackRef) {
+        targetInfo.referencedBy.push({
+          path: normalizedSourceFile,
+          source: source,
+        });
       }
     }
   }
@@ -140,23 +249,36 @@ export class ReferenceManager {
   /**
    * ファイルの参照関係を削除
    */
-  private removeFileReferences(sourceFile: string): void {
-    const normalizedSourceFile = path.normalize(sourceFile);
+  private removeFileReferences(sourceFile: string, sourceType?: 'manual' | 'hyperlink'): void {
+    const normalizedSourceFile = sourceFile.replace(/\\/g, '/');
     const sourceInfo = this.referencesMap.get(normalizedSourceFile);
 
     if (sourceInfo) {
+      // 削除対象の参照を特定
+      const referencesToRemove = sourceType
+        ? sourceInfo.references.filter((ref) => ref.source === sourceType)
+        : sourceInfo.references;
+
       // 逆参照を削除
-      for (const referencedFile of sourceInfo.references) {
-        const targetInfo = this.referencesMap.get(referencedFile);
+      for (const refEntry of referencesToRemove) {
+        const targetInfo = this.referencesMap.get(refEntry.path);
         if (targetInfo) {
           targetInfo.referencedBy = targetInfo.referencedBy.filter(
-            (file) => file !== normalizedSourceFile,
+            (backRef) =>
+              !(
+                backRef.path === normalizedSourceFile &&
+                (!sourceType || backRef.source === sourceType)
+              ),
           );
         }
       }
 
-      // 参照元の参照リストをクリア
-      sourceInfo.references = [];
+      // 参照元の参照リストから削除
+      if (sourceType) {
+        sourceInfo.references = sourceInfo.references.filter((ref) => ref.source !== sourceType);
+      } else {
+        sourceInfo.references = [];
+      }
     }
   }
 
@@ -178,6 +300,8 @@ export class ReferenceManager {
    */
   getInvalidReferences(filePath: string): string[] {
     const references = this.getReferences(filePath);
-    return references.references.filter((ref) => !this.checkFileExists(ref));
+    return references.references
+      .map((ref) => ref.path)
+      .filter((refPath) => !this.checkFileExists(refPath));
   }
 }

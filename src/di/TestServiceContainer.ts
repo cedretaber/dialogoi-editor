@@ -10,6 +10,8 @@ import { DialogoiTemplateService } from '../services/DialogoiTemplateService.js'
 import { ProjectCreationService } from '../services/ProjectCreationService.js';
 import { MetaYamlService } from '../services/MetaYamlService.js';
 import { FileOperationService } from '../services/FileOperationService.js';
+import { FilePathMapService } from '../services/FilePathMapService.js';
+import { HyperlinkExtractorService } from '../services/HyperlinkExtractorService.js';
 import { Uri } from '../interfaces/Uri.js';
 import { IServiceContainer } from './ServiceContainer.js';
 
@@ -30,6 +32,8 @@ export class TestServiceContainer implements IServiceContainer {
   private projectCreationService: ProjectCreationService | null = null;
   private metaYamlService: MetaYamlService | null = null;
   private fileOperationService: FileOperationService | null = null;
+  private filePathMapService: FilePathMapService | null = null;
+  private hyperlinkExtractorService: HyperlinkExtractorService | null = null;
 
   private constructor() {
     // テスト環境では常にMockFileRepositoryを使用
@@ -55,7 +59,7 @@ export class TestServiceContainer implements IServiceContainer {
    */
   getCharacterService(): CharacterService {
     if (!this.characterService) {
-      this.characterService = new CharacterService(this.fileRepository);
+      this.characterService = new CharacterService(this.fileRepository, this.getMetaYamlService());
     }
     return this.characterService;
   }
@@ -151,14 +155,41 @@ export class TestServiceContainer implements IServiceContainer {
   /**
    * FileOperationServiceを取得
    */
-  getFileOperationService(): FileOperationService {
+  getFileOperationService(novelRootAbsolutePath?: string): FileOperationService {
     if (!this.fileOperationService) {
       this.fileOperationService = new FileOperationService(
         this.fileRepository,
         this.getMetaYamlService(),
+        novelRootAbsolutePath,
       );
     }
     return this.fileOperationService;
+  }
+
+  /**
+   * FilePathMapServiceを取得
+   */
+  getFilePathMapService(): FilePathMapService {
+    if (!this.filePathMapService) {
+      this.filePathMapService = new FilePathMapService(
+        this.getMetaYamlService(),
+        this.getFileOperationService(),
+      );
+    }
+    return this.filePathMapService;
+  }
+
+  /**
+   * HyperlinkExtractorServiceを取得
+   */
+  getHyperlinkExtractorService(): HyperlinkExtractorService {
+    if (!this.hyperlinkExtractorService) {
+      this.hyperlinkExtractorService = new HyperlinkExtractorService(
+        this.fileRepository,
+        this.getFilePathMapService(),
+      );
+    }
+    return this.hyperlinkExtractorService;
   }
 
   /**
@@ -176,6 +207,8 @@ export class TestServiceContainer implements IServiceContainer {
     this.projectCreationService = null;
     this.metaYamlService = null;
     this.fileOperationService = null;
+    this.filePathMapService = null;
+    this.hyperlinkExtractorService = null;
   }
 
   /**

@@ -4,6 +4,7 @@ import { DialogoiTreeItem } from '../utils/MetaYamlUtils.js';
 import { Logger } from '../utils/Logger.js';
 import { DialogoiTreeDataProvider } from '../tree/DialogoiTreeDataProvider.js';
 import { MetaYamlService } from '../services/MetaYamlService.js';
+import { ReferenceManager } from '../services/ReferenceManager.js';
 
 /**
  * WebViewからのメッセージの型定義
@@ -80,9 +81,23 @@ export class FileDetailsViewProvider implements vscode.WebviewViewProvider {
   public updateFileDetails(item: DialogoiTreeItem | null): void {
     this.currentItem = item;
     if (this._view) {
+      // ReferenceManagerから参照情報を取得
+      let referenceData = null;
+      if (item?.path !== undefined && item.path !== null && item.path !== '') {
+        const referenceManager = ReferenceManager.getInstance();
+        const allReferences = referenceManager.getAllReferencePaths(item.path);
+        const referenceInfo = referenceManager.getReferences(item.path);
+        referenceData = {
+          allReferences,
+          references: referenceInfo.references,
+          referencedBy: referenceInfo.referencedBy,
+        };
+      }
+
       this._view.webview.postMessage({
         type: 'updateFile',
         data: item,
+        referenceData: referenceData,
       });
       this.logger.debug('ファイル詳細情報を更新', item?.name ?? 'null');
     }
@@ -235,15 +250,36 @@ export class FileDetailsViewProvider implements vscode.WebviewViewProvider {
    * 参照追加処理
    */
   private handleAddReference(reference: string): void {
-    if (!this.currentItem || !reference) {
+    if (!this.currentItem || !reference || !this.treeDataProvider) {
       return;
     }
 
     try {
-      // TODO: 実際の参照追加処理を実装
-      this.logger.info(`参照追加: ${reference} → ${this.currentItem.name}`);
-      vscode.window.showInformationMessage(`参照 "${reference}" を追加しました`);
-      this.updateFileDetails(this.currentItem);
+      // DialogoiTreeDataProviderのaddReferenceメソッドを使用
+      const dirAbsolutePath = path.dirname(this.currentItem.path);
+      const result = this.treeDataProvider.addReference(
+        dirAbsolutePath,
+        this.currentItem.name,
+        reference,
+      );
+
+      if (result.success) {
+        this.logger.info(`参照追加成功: ${reference} → ${this.currentItem.name}`);
+        vscode.window.showInformationMessage(result.message);
+
+        // 更新されたアイテム情報を取得して表示を更新
+        if (result.updatedItems) {
+          const updatedItem = result.updatedItems.find(
+            (item) => item.name === this.currentItem?.name,
+          );
+          if (updatedItem) {
+            this.currentItem = updatedItem;
+            this.updateFileDetails(this.currentItem);
+          }
+        }
+      } else {
+        vscode.window.showErrorMessage(result.message);
+      }
     } catch (error) {
       this.logger.error('参照追加エラー', error instanceof Error ? error : String(error));
       vscode.window.showErrorMessage(
@@ -256,16 +292,31 @@ export class FileDetailsViewProvider implements vscode.WebviewViewProvider {
    * 参照ファイルを開く
    */
   private handleOpenReference(reference: string): void {
-    if (!reference) {
+    if (!reference || !this.currentItem) {
       return;
     }
 
     try {
-      // TODO: 参照ファイルを開く処理を実装
-      this.logger.info(`参照ファイルを開く: ${reference}`);
+      // 現在のファイルのディレクトリを基準に相対パスを絶対パスに変換
+      const currentFileAbsolutePath = this.currentItem.path;
+      const currentDirAbsolutePath = path.dirname(currentFileAbsolutePath);
+      const referenceAbsolutePath = path.resolve(currentDirAbsolutePath, reference);
 
-      // 現在は情報メッセージのみ
-      vscode.window.showInformationMessage(`参照ファイル: ${reference}`);
+      this.logger.info(`参照ファイルを開く: ${reference} → ${referenceAbsolutePath}`);
+
+      // ファイルの存在確認
+      const fileUri = vscode.Uri.file(referenceAbsolutePath);
+      vscode.workspace.fs.stat(fileUri).then(
+        () => {
+          // ファイルが存在する場合、エディタで開く
+          vscode.window.showTextDocument(fileUri);
+        },
+        () => {
+          // ファイルが存在しない場合のエラーハンドリング
+          this.logger.error(`参照ファイルが存在しません: ${referenceAbsolutePath}`);
+          vscode.window.showErrorMessage(`参照ファイルが見つかりません: ${reference}`);
+        },
+      );
     } catch (error) {
       this.logger.error('参照ファイルを開くエラー', error instanceof Error ? error : String(error));
       vscode.window.showErrorMessage(
@@ -602,6 +653,18 @@ export class FileDetailsViewProvider implements vscode.WebviewViewProvider {
           text-decoration: underline;
         }
         
+        .hyperlink-ref {
+          background-color: var(--vscode-textBlockQuote-background);
+          border-left: 3px solid var(--vscode-textLink-foreground);
+          padding-left: 8px;
+          font-style: italic;
+        }
+        
+        .manual-ref {
+          border-left: 3px solid var(--vscode-editorInfo-foreground);
+          padding-left: 8px;
+        }
+        
         .no-data {
           color: var(--vscode-descriptionForeground);
           font-style: italic;
@@ -768,32 +831,108 @@ export class FileDetailsViewProvider implements vscode.WebviewViewProvider {
             html += '</div></div>';
           }
           
-          // 参照関係セクション
-          html += '<div class="section">';
-          html += '<button class="section-header" data-target="references">';
-          html += '<span class="section-chevron">▶</span>';
-          html += '<span>参照関係</span>';
-          html += '</button>';
-          html += '<div class="section-content" id="references">';
+          // 本文ファイルの場合は「登場人物」と「関連設定」に分けて表示
+          const referenceManager = ReferenceManager.getInstance();
+          const allReferences = referenceManager.getAllReferencePaths(file.path);
+          const referenceInfo = referenceManager.getReferences(file.path);
           
-          let hasReferences = false;
-          
-          if (file.references && file.references.length > 0) {
-            html += '<div style="margin-bottom: 8px;"><strong>このファイルが参照:</strong></div>';
-            file.references.forEach(ref => {
-              html += '<a class="reference-item" onclick="openReference(\\''+escapeHtml(ref)+'\\')">'+escapeHtml(ref)+'</a>';
-            });
-            hasReferences = true;
+          if (file.type === 'content' && allReferences.length > 0) {
+            // キャラクターと設定を分類
+            const characterRefs = [];
+            const settingRefs = [];
+            
+            // 参照先をキャラクターと設定に分類
+            for (const refEntry of referenceInfo.references) {
+              const refData = {
+                path: refEntry.path,
+                source: refEntry.source,
+                isHyperlink: refEntry.source === 'hyperlink'
+              };
+              
+              // TODO: キャラクター判定の実装
+              // 現在はプロジェクトルートとCharacterServiceが必要
+              if (refEntry.path.includes('character')) {
+                characterRefs.push(refData);
+              } else {
+                settingRefs.push(refData);
+              }
+            }
+            
+            // 登場人物セクション
+            if (characterRefs.length > 0) {
+              html += '<div class="section">';
+              html += '<button class="section-header" data-target="characters">';
+              html += '<span class="section-chevron">▶</span>';
+              html += '<span>登場人物 (' + characterRefs.length + ')</span>';
+              html += '</button>';
+              html += '<div class="section-content" id="characters">';
+              characterRefs.forEach(refData => {
+                const linkIcon = refData.isHyperlink ? '🔗' : '';
+                const linkClass = refData.isHyperlink ? 'reference-item hyperlink-ref' : 'reference-item manual-ref';
+                html += '<a class="'+linkClass+'" onclick="openReference(\\''+escapeHtml(refData.path)+'\\')">'+linkIcon+escapeHtml(refData.path)+'</a>';
+              });
+              html += '</div></div>';
+            }
+            
+            // 関連設定セクション
+            if (settingRefs.length > 0) {
+              html += '<div class="section">';
+              html += '<button class="section-header" data-target="settings">';
+              html += '<span class="section-chevron">▶</span>';
+              html += '<span>関連設定 (' + settingRefs.length + ')</span>';
+              html += '</button>';
+              html += '<div class="section-content" id="settings">';
+              settingRefs.forEach(refData => {
+                const linkIcon = refData.isHyperlink ? '🔗' : '';
+                const linkClass = refData.isHyperlink ? 'reference-item hyperlink-ref' : 'reference-item manual-ref';
+                html += '<a class="'+linkClass+'" onclick="openReference(\\''+escapeHtml(refData.path)+'\\')">'+linkIcon+escapeHtml(refData.path)+'</a>';
+              });
+              html += '</div></div>';
+            }
+            
+            // 参照追加ボタン
+            html += '<div class="section">';
+            html += '<button class="button" onclick="addReference()">参照追加</button>';
+            html += '</div>';
+          } else {
+            // それ以外のファイルは従来の参照関係表示
+            html += '<div class="section">';
+            html += '<button class="section-header" data-target="references">';
+            html += '<span class="section-chevron">▶</span>';
+            html += '<span>参照関係</span>';
+            html += '</button>';
+            html += '<div class="section-content" id="references">';
+            
+            let hasReferences = false;
+            
+            if (allReferences.length > 0) {
+              html += '<div style="margin-bottom: 8px;"><strong>このファイルが参照:</strong></div>';
+              referenceInfo.references.forEach(refEntry => {
+                const linkIcon = refEntry.source === 'hyperlink' ? '🔗' : '';
+                const linkClass = refEntry.source === 'hyperlink' ? 'reference-item hyperlink-ref' : 'reference-item manual-ref';
+                html += '<a class="'+linkClass+'" onclick="openReference(\\''+escapeHtml(refEntry.path)+'\\')">'+linkIcon+escapeHtml(refEntry.path)+'</a>';
+              });
+              hasReferences = true;
+            }
+            
+            // 被参照情報も表示
+            if (referenceInfo.referencedBy.length > 0) {
+              html += '<div style="margin-bottom: 8px; margin-top: 12px;"><strong>このファイルを参照:</strong></div>';
+              referenceInfo.referencedBy.forEach(refEntry => {
+                const linkIcon = refEntry.source === 'hyperlink' ? '🔗' : '';
+                const linkClass = refEntry.source === 'hyperlink' ? 'reference-item hyperlink-ref' : 'reference-item manual-ref';
+                html += '<a class="'+linkClass+'" onclick="openReference(\\''+escapeHtml(refEntry.path)+'\\')">'+linkIcon+escapeHtml(refEntry.path)+'</a>';
+              });
+              hasReferences = true;
+            }
+            
+            if (!hasReferences) {
+              html += '<div class="no-data">参照関係がありません</div>';
+            }
+            
+            html += '<br><button class="button" onclick="addReference()">参照追加</button>';
+            html += '</div></div>';
           }
-          
-          // TODO: 被参照情報も表示（ReferenceManagerから取得）
-          
-          if (!hasReferences) {
-            html += '<div class="no-data">参照関係がありません</div>';
-          }
-          
-          html += '<br><button class="button" onclick="addReference()">参照追加</button>';
-          html += '</div></div>';
           
           // レビューセクション
           if (file.review_count && Object.keys(file.review_count).length > 0) {

@@ -1,5 +1,6 @@
 import { DialogoiTreeItem } from '../utils/MetaYamlUtils.js';
 import { Logger } from '../utils/Logger.js';
+import { ReferenceManager } from './ReferenceManager.js';
 
 /**
  * フィルタリング状態の定義
@@ -130,11 +131,16 @@ export class TreeViewFilterService {
    * 参照関係でフィルタリング
    */
   private filterByReference(items: DialogoiTreeItem[], referenceValue: string): DialogoiTreeItem[] {
+    const referenceManager = ReferenceManager.getInstance();
+
     return items.filter((item) => {
-      if (!item.references || item.references.length === 0) {
+      // ReferenceManagerから実際の参照関係を取得
+      const allReferencePaths = referenceManager.getAllReferencePaths(item.path);
+
+      if (allReferencePaths.length === 0) {
         return false;
       }
-      return item.references.some((ref) => ref.toLowerCase().includes(referenceValue));
+      return allReferencePaths.some((ref) => ref.toLowerCase().includes(referenceValue));
     });
   }
 

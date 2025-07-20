@@ -9,6 +9,8 @@ import { DialogoiYamlService } from '../services/DialogoiYamlService.js';
 import { DialogoiTemplateService } from '../services/DialogoiTemplateService.js';
 import { MetaYamlService } from '../services/MetaYamlService.js';
 import { FileOperationService } from '../services/FileOperationService.js';
+import { FilePathMapService } from '../services/FilePathMapService.js';
+import { HyperlinkExtractorService } from '../services/HyperlinkExtractorService.js';
 import { Uri } from '../interfaces/Uri.js';
 
 /**
@@ -24,7 +26,9 @@ export interface IServiceContainer {
   getDialogoiYamlService(): DialogoiYamlService;
   getDialogoiTemplateService(): DialogoiTemplateService;
   getMetaYamlService(): MetaYamlService;
-  getFileOperationService(): FileOperationService;
+  getFileOperationService(novelRootAbsolutePath?: string): FileOperationService;
+  getFilePathMapService(): FilePathMapService;
+  getHyperlinkExtractorService(): HyperlinkExtractorService;
   reset(): void;
 }
 
@@ -45,6 +49,8 @@ export class ServiceContainer implements IServiceContainer {
   private dialogoiTemplateService: DialogoiTemplateService | null = null;
   private metaYamlService: MetaYamlService | null = null;
   private fileOperationService: FileOperationService | null = null;
+  private filePathMapService: FilePathMapService | null = null;
+  private hyperlinkExtractorService: HyperlinkExtractorService | null = null;
 
   protected constructor() {}
 
@@ -94,7 +100,10 @@ export class ServiceContainer implements IServiceContainer {
    */
   getCharacterService(): CharacterService {
     if (!this.characterService) {
-      this.characterService = new CharacterService(this.getFileRepository());
+      this.characterService = new CharacterService(
+        this.getFileRepository(),
+        this.getMetaYamlService(),
+      );
     }
     return this.characterService;
   }
@@ -176,14 +185,41 @@ export class ServiceContainer implements IServiceContainer {
   /**
    * FileOperationServiceを取得
    */
-  getFileOperationService(): FileOperationService {
+  getFileOperationService(novelRootAbsolutePath?: string): FileOperationService {
     if (!this.fileOperationService) {
       this.fileOperationService = new FileOperationService(
         this.getFileRepository(),
         this.getMetaYamlService(),
+        novelRootAbsolutePath,
       );
     }
     return this.fileOperationService;
+  }
+
+  /**
+   * FilePathMapServiceを取得
+   */
+  getFilePathMapService(): FilePathMapService {
+    if (!this.filePathMapService) {
+      this.filePathMapService = new FilePathMapService(
+        this.getMetaYamlService(),
+        this.getFileOperationService(),
+      );
+    }
+    return this.filePathMapService;
+  }
+
+  /**
+   * HyperlinkExtractorServiceを取得
+   */
+  getHyperlinkExtractorService(): HyperlinkExtractorService {
+    if (!this.hyperlinkExtractorService) {
+      this.hyperlinkExtractorService = new HyperlinkExtractorService(
+        this.getFileRepository(),
+        this.getFilePathMapService(),
+      );
+    }
+    return this.hyperlinkExtractorService;
   }
 
   /**
@@ -208,6 +244,8 @@ export class ServiceContainer implements IServiceContainer {
     this.dialogoiTemplateService = null;
     this.metaYamlService = null;
     this.fileOperationService = null;
+    this.filePathMapService = null;
+    this.hyperlinkExtractorService = null;
   }
 
   /**

@@ -1,13 +1,38 @@
-import { suite, test, setup } from 'mocha';
+import { suite, test, setup, teardown } from 'mocha';
 import * as assert from 'assert';
 import { TreeViewFilterService } from './TreeViewFilterService.js';
 import { DialogoiTreeItem } from '../utils/MetaYamlUtils.js';
+import { ReferenceManager } from './ReferenceManager.js';
+import { TestServiceContainer } from '../di/TestServiceContainer.js';
+import { ServiceContainer } from '../di/ServiceContainer.js';
+import { MockFileRepository } from '../repositories/MockFileRepository.js';
 
 suite('TreeViewFilterService テストスイート', () => {
   let filterService: TreeViewFilterService;
+  let referenceManager: ReferenceManager;
+  let testContainer: TestServiceContainer;
+  let mockFileRepository: MockFileRepository;
 
   setup(() => {
+    // TestServiceContainerを初期化
+    testContainer = TestServiceContainer.create();
+    ServiceContainer.setTestInstance(testContainer);
+    mockFileRepository = testContainer.getFileRepository() as MockFileRepository;
+
+    // ReferenceManagerを初期化
+    referenceManager = ReferenceManager.getInstance();
+    referenceManager.clear();
+    // プロジェクトルートを初期化（テスト用）
+    referenceManager.initialize('/test', mockFileRepository);
+
     filterService = new TreeViewFilterService();
+  });
+
+  teardown(() => {
+    referenceManager.clear();
+    mockFileRepository.reset();
+    testContainer.cleanup();
+    ServiceContainer.clearTestInstance();
   });
 
   suite('フィルター状態管理', () => {
@@ -223,6 +248,10 @@ suite('TreeViewFilterService テストスイート', () => {
     ];
 
     test('参照関係でフィルタリング', () => {
+      // ReferenceManagerに参照データを設定
+      referenceManager.updateFileReferences('/test/chapter1.md', ['character1.md', 'settings.md']);
+      referenceManager.updateFileReferences('/test/chapter2.md', ['character2.md', 'magic.md']);
+
       filterService.setReferenceFilter('character1.md');
       const result = filterService.applyFilter(testItems);
 
@@ -231,6 +260,10 @@ suite('TreeViewFilterService テストスイート', () => {
     });
 
     test('参照関係の部分一致フィルタリング', () => {
+      // ReferenceManagerに参照データを設定
+      referenceManager.updateFileReferences('/test/chapter1.md', ['character1.md', 'settings.md']);
+      referenceManager.updateFileReferences('/test/chapter2.md', ['character2.md', 'magic.md']);
+
       filterService.setReferenceFilter('character');
       const result = filterService.applyFilter(testItems);
 
@@ -325,6 +358,7 @@ suite('TreeViewFilterService テストスイート', () => {
       assert.strictEqual(result.length, 1);
 
       // 参照関係フィルターに変更
+      referenceManager.updateFileReferences('/test.md', ['char.md']);
       filterService.setReferenceFilter('char.md');
       result = filterService.applyFilter(testItems);
       assert.strictEqual(result.length, 1);

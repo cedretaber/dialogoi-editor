@@ -5,6 +5,7 @@ import { ServiceContainer } from '../di/ServiceContainer.js';
 import { ReferenceManager } from '../services/ReferenceManager.js';
 import { TreeViewFilterService, FilterState } from '../services/TreeViewFilterService.js';
 import { Logger } from '../utils/Logger.js';
+import { FileOperationResult } from '../services/FileOperationService.js';
 
 /**
  * TreeViewのデータプロバイダー
@@ -83,6 +84,13 @@ export class DialogoiTreeDataProvider
    */
   getFilterState(): FilterState {
     return this.filterService.getFilterState();
+  }
+
+  /**
+   * ノベルルートパスを取得
+   */
+  getNovelRoot(): string | null {
+    return this.novelRoot;
   }
 
   /**
@@ -326,7 +334,9 @@ export class DialogoiTreeDataProvider
     tags: string[] = [],
     subtype?: 'character' | 'foreshadowing' | 'glossary',
   ): void {
-    const fileOperationService = ServiceContainer.getInstance().getFileOperationService();
+    const fileOperationService = ServiceContainer.getInstance().getFileOperationService(
+      this.novelRoot ?? undefined,
+    );
     const result = fileOperationService.createFile(
       dirPath,
       fileName,
@@ -345,7 +355,9 @@ export class DialogoiTreeDataProvider
   }
 
   deleteFile(dirPath: string, fileName: string): void {
-    const fileOperationService = ServiceContainer.getInstance().getFileOperationService();
+    const fileOperationService = ServiceContainer.getInstance().getFileOperationService(
+      this.novelRoot ?? undefined,
+    );
     const result = fileOperationService.deleteFile(dirPath, fileName);
 
     if (result.success) {
@@ -371,7 +383,9 @@ export class DialogoiTreeDataProvider
       return; // ユーザーがキャンセル
     }
 
-    const fileOperationService = ServiceContainer.getInstance().getFileOperationService();
+    const fileOperationService = ServiceContainer.getInstance().getFileOperationService(
+      this.novelRoot ?? undefined,
+    );
     const result = fileOperationService.deleteDirectory(parentDir, dirName);
 
     if (result.success) {
@@ -383,7 +397,9 @@ export class DialogoiTreeDataProvider
   }
 
   reorderFiles(dirPath: string, fromIndex: number, toIndex: number): void {
-    const fileOperationService = ServiceContainer.getInstance().getFileOperationService();
+    const fileOperationService = ServiceContainer.getInstance().getFileOperationService(
+      this.novelRoot ?? undefined,
+    );
     const result = fileOperationService.reorderFiles(dirPath, fromIndex, toIndex);
 
     if (result.success) {
@@ -395,7 +411,9 @@ export class DialogoiTreeDataProvider
   }
 
   renameFile(dirPath: string, oldName: string, newName: string): void {
-    const fileOperationService = ServiceContainer.getInstance().getFileOperationService();
+    const fileOperationService = ServiceContainer.getInstance().getFileOperationService(
+      this.novelRoot ?? undefined,
+    );
     const result = fileOperationService.renameFile(dirPath, oldName, newName);
 
     if (result.success) {
@@ -407,10 +425,6 @@ export class DialogoiTreeDataProvider
   }
 
   getCurrentDirectory(): string | null {
-    return this.novelRoot;
-  }
-
-  getNovelRoot(): string | null {
     return this.novelRoot;
   }
 
@@ -451,8 +465,8 @@ export class DialogoiTreeDataProvider
 
       // 双方向の参照を「登場話」として統合
       const allAppearances = new Set<string>();
-      references.references.forEach((ref) => allAppearances.add(ref));
-      references.referencedBy.forEach((ref) => allAppearances.add(ref));
+      referenceManager.getAllReferencePaths(element.path).forEach((ref) => allAppearances.add(ref));
+      references.referencedBy.forEach((refEntry) => allAppearances.add(refEntry.path));
 
       if (allAppearances.size > 0) {
         const validAppearances: string[] = [];
@@ -469,6 +483,16 @@ export class DialogoiTreeDataProvider
         if (element.character && validAppearances.length > 0) {
           tooltipParts.push('');
           tooltipParts.push(`登場話: ${validAppearances.length}話`);
+          validAppearances.forEach((ref) => {
+            tooltipParts.push(`• ${ref}`);
+          });
+        } else if (
+          element.type === 'setting' &&
+          !element.character &&
+          validAppearances.length > 0
+        ) {
+          tooltipParts.push('');
+          tooltipParts.push(`関連設定: ${validAppearances.length}個`);
           validAppearances.forEach((ref) => {
             tooltipParts.push(`• ${ref}`);
           });
@@ -542,8 +566,10 @@ export class DialogoiTreeDataProvider
   }
 
   // タグ操作メソッド
-  addTag(dirPath: string, fileName: string, tag: string): { success: boolean; message: string } {
-    const fileOperationService = ServiceContainer.getInstance().getFileOperationService();
+  addTag(dirPath: string, fileName: string, tag: string): FileOperationResult {
+    const fileOperationService = ServiceContainer.getInstance().getFileOperationService(
+      this.novelRoot ?? undefined,
+    );
     const result = fileOperationService.addTag(dirPath, fileName, tag);
 
     if (result.success) {
@@ -553,8 +579,10 @@ export class DialogoiTreeDataProvider
     return result;
   }
 
-  removeTag(dirPath: string, fileName: string, tag: string): { success: boolean; message: string } {
-    const fileOperationService = ServiceContainer.getInstance().getFileOperationService();
+  removeTag(dirPath: string, fileName: string, tag: string): FileOperationResult {
+    const fileOperationService = ServiceContainer.getInstance().getFileOperationService(
+      this.novelRoot ?? undefined,
+    );
     const result = fileOperationService.removeTag(dirPath, fileName, tag);
 
     if (result.success) {
@@ -564,12 +592,10 @@ export class DialogoiTreeDataProvider
     return result;
   }
 
-  setTags(
-    dirPath: string,
-    fileName: string,
-    tags: string[],
-  ): { success: boolean; message: string } {
-    const fileOperationService = ServiceContainer.getInstance().getFileOperationService();
+  setTags(dirPath: string, fileName: string, tags: string[]): FileOperationResult {
+    const fileOperationService = ServiceContainer.getInstance().getFileOperationService(
+      this.novelRoot ?? undefined,
+    );
     const result = fileOperationService.setTags(dirPath, fileName, tags);
 
     if (result.success) {
@@ -580,12 +606,10 @@ export class DialogoiTreeDataProvider
   }
 
   // 参照関係操作メソッド
-  addReference(
-    dirPath: string,
-    fileName: string,
-    referencePath: string,
-  ): { success: boolean; message: string } {
-    const fileOperationService = ServiceContainer.getInstance().getFileOperationService();
+  addReference(dirPath: string, fileName: string, referencePath: string): FileOperationResult {
+    const fileOperationService = ServiceContainer.getInstance().getFileOperationService(
+      this.novelRoot ?? undefined,
+    );
     const result = fileOperationService.addReference(dirPath, fileName, referencePath);
 
     if (result.success) {
@@ -602,12 +626,10 @@ export class DialogoiTreeDataProvider
     return result;
   }
 
-  removeReference(
-    dirPath: string,
-    fileName: string,
-    referencePath: string,
-  ): { success: boolean; message: string } {
-    const fileOperationService = ServiceContainer.getInstance().getFileOperationService();
+  removeReference(dirPath: string, fileName: string, referencePath: string): FileOperationResult {
+    const fileOperationService = ServiceContainer.getInstance().getFileOperationService(
+      this.novelRoot ?? undefined,
+    );
     const result = fileOperationService.removeReference(dirPath, fileName, referencePath);
 
     if (result.success) {
@@ -624,12 +646,10 @@ export class DialogoiTreeDataProvider
     return result;
   }
 
-  setReferences(
-    dirPath: string,
-    fileName: string,
-    references: string[],
-  ): { success: boolean; message: string } {
-    const fileOperationService = ServiceContainer.getInstance().getFileOperationService();
+  setReferences(dirPath: string, fileName: string, references: string[]): FileOperationResult {
+    const fileOperationService = ServiceContainer.getInstance().getFileOperationService(
+      this.novelRoot ?? undefined,
+    );
     const result = fileOperationService.setReferences(dirPath, fileName, references);
 
     if (result.success) {
@@ -806,7 +826,9 @@ export class DialogoiTreeDataProvider
         }
         // target が subdirectory または undefined の場合は newIndex は undefined のまま（末尾に追加）
 
-        const fileOperationService = ServiceContainer.getInstance().getFileOperationService();
+        const fileOperationService = ServiceContainer.getInstance().getFileOperationService(
+          this.novelRoot ?? undefined,
+        );
         const result = fileOperationService.moveFile(
           sourceDir,
           draggedItem.name,
@@ -839,7 +861,9 @@ export class DialogoiTreeDataProvider
         }
         // target が subdirectory または undefined の場合は newIndex は undefined のまま（末尾に追加）
 
-        const fileOperationService = ServiceContainer.getInstance().getFileOperationService();
+        const fileOperationService = ServiceContainer.getInstance().getFileOperationService(
+          this.novelRoot ?? undefined,
+        );
         const result = fileOperationService.moveDirectory(
           sourceDir,
           draggedItem.name,
