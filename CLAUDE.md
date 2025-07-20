@@ -148,6 +148,19 @@ npm run check-all
 
 **重要**: このプロジェクトではVSCode依存の局所化とテスト可能性の向上のため、依存関係注入パターンを採用しています。
 
+#### レイヤー設計の基本原則
+
+**サービス層（/src/services/）の責務:**
+- 純粋なビジネスロジックの実装
+- VSCode APIへの直接アクセス禁止
+- 単体テスト可能な設計
+- 依存関係注入パターンの使用
+
+**コマンド層（/src/commands/）の責務:**
+- VSCodeとの連携・UI操作
+- ユーザーインターフェース制御
+- サービス層のビジネスロジックを利用
+
 **サービスクラスの作成指針:**
 - 全てのサービスクラスはコンストラクタでFileOperationServiceを受け取る
 - 直接的なファイル操作（Node.js `fs`モジュール）は行わない
@@ -155,6 +168,15 @@ npm run check-all
 
 **例：**
 ```typescript
+// ❌ 悪い例：services/でVSCode APIを使用
+export class BadService {
+  someMethod(): void {
+    const editor = vscode.window.activeTextEditor; // VSCode依存
+    // ...
+  }
+}
+
+// ✅ 良い例：services/はビジネスロジックのみ
 export class NewService {
   constructor(private fileOperationService: FileOperationService) {}
   
@@ -166,6 +188,19 @@ export class NewService {
     const uri = this.fileOperationService.createFileUri(path);
     const content = this.fileOperationService.readFileSync(uri);
   }
+}
+
+// ✅ 良い例：commands/でVSCodeとサービスを連携
+export function registerSomeCommands(context: vscode.ExtensionContext) {
+  const service = ServiceContainer.getInstance().getNewService();
+  
+  const command = vscode.commands.registerCommand('some.command', () => {
+    const editor = vscode.window.activeTextEditor; // VSCode依存はここで
+    const result = service.someMethod(); // ビジネスロジックは分離
+    // 結果をVSCode UIに反映
+  });
+  
+  context.subscriptions.push(command);
 }
 ```
 

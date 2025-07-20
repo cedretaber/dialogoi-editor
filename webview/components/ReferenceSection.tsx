@@ -3,9 +3,9 @@ import type { FileDetailsData, ReferenceEntry } from '../types/FileDetails';
 
 interface ReferenceSectionProps {
   fileData: FileDetailsData;
-  onReferenceAdd: () => void;
   onReferenceOpen: (reference: string) => void;
   onReferenceRemove: (reference: string) => void;
+  onReverseReferenceRemove: (reference: string) => void;
 }
 
 interface ReferenceItemProps {
@@ -26,6 +26,9 @@ const ReferenceItem: React.FC<ReferenceItemProps> = ({
   // ハイパーリンク由来の参照は削除不可（本文編集が必要なため）
   const canDelete = refEntry.source === 'manual';
 
+  // ファイル名のみを表示（パスから抽出）
+  const fileName = refEntry.path.split('/').pop() || refEntry.path;
+
   return (
     <div className="reference-item-container">
       <a
@@ -34,9 +37,10 @@ const ReferenceItem: React.FC<ReferenceItemProps> = ({
         role="button"
         tabIndex={0}
         onKeyDown={(e) => e.key === 'Enter' && onReferenceOpen(refEntry.path)}
+        title={refEntry.path} // ホバー時にフルパスを表示
       >
         {linkIcon}
-        {refEntry.path}
+        {fileName}
       </a>
       {canDelete && (
         <button
@@ -54,9 +58,9 @@ const ReferenceItem: React.FC<ReferenceItemProps> = ({
 
 export const ReferenceSection: React.FC<ReferenceSectionProps> = ({
   fileData,
-  onReferenceAdd,
   onReferenceOpen,
   onReferenceRemove,
+  onReverseReferenceRemove,
 }) => {
   const [isExpanded, setIsExpanded] = useState(true);
   const { referenceData, type } = fileData;
@@ -127,12 +131,6 @@ export const ReferenceSection: React.FC<ReferenceSectionProps> = ({
             </div>
           </div>
         )}
-
-        <div className="section">
-          <button className="button" onClick={onReferenceAdd} type="button">
-            参照追加
-          </button>
-        </div>
       </>
     );
   }
@@ -145,19 +143,23 @@ export const ReferenceSection: React.FC<ReferenceSectionProps> = ({
         <span>参照関係</span>
       </button>
       <div className={`section-content ${isExpanded ? '' : 'collapsed'}`}>
-        {referenceData.allReferences.length > 0 ? (
+        {referenceData.allReferences.length > 0 || referenceData.referencedBy.length > 0 ? (
           <>
-            <div style={{ marginBottom: '8px' }}>
-              <strong>このファイルが参照:</strong>
-            </div>
-            {referenceData.references.map((refEntry, index) => (
-              <ReferenceItem
-                key={`ref-${index}`}
-                refEntry={refEntry}
-                onReferenceOpen={onReferenceOpen}
-                onReferenceRemove={onReferenceRemove}
-              />
-            ))}
+            {referenceData.references.length > 0 && (
+              <>
+                <div style={{ marginBottom: '8px' }}>
+                  <strong>このファイルが参照:</strong>
+                </div>
+                {referenceData.references.map((refEntry, index) => (
+                  <ReferenceItem
+                    key={`ref-${index}`}
+                    refEntry={refEntry}
+                    onReferenceOpen={onReferenceOpen}
+                    onReferenceRemove={onReferenceRemove}
+                  />
+                ))}
+              </>
+            )}
 
             {referenceData.referencedBy.length > 0 && (
               <>
@@ -169,7 +171,7 @@ export const ReferenceSection: React.FC<ReferenceSectionProps> = ({
                     key={`refby-${index}`}
                     refEntry={refEntry}
                     onReferenceOpen={onReferenceOpen}
-                    onReferenceRemove={onReferenceRemove}
+                    onReferenceRemove={onReverseReferenceRemove}
                   />
                 ))}
               </>
@@ -178,11 +180,6 @@ export const ReferenceSection: React.FC<ReferenceSectionProps> = ({
         ) : (
           <div className="no-data">参照関係がありません</div>
         )}
-
-        <br />
-        <button className="button" onClick={onReferenceAdd} type="button">
-          参照追加
-        </button>
       </div>
     </div>
   );

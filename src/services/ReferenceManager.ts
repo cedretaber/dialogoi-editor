@@ -32,6 +32,13 @@ export class ReferenceManager {
   }
 
   /**
+   * 初期化済みかどうかを確認
+   */
+  isInitialized(): boolean {
+    return this.novelRoot !== null && this.fileRepository !== null;
+  }
+
+  /**
    * 参照関係を初期化（全.dialogoi-meta.yamlを走査）
    */
   initialize(novelRoot: string, fileRepository: FileRepository): void {

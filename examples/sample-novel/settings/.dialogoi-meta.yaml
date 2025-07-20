@@ -6,7 +6,6 @@ files:
       - 世界観
       - 基本設定
     references:
-      - contents/01_prologue.txt
       - contents/02_entrance_ceremony.txt
   - name: magic_system.md
     type: setting

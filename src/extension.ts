@@ -8,11 +8,17 @@ import { registerTagCommands } from './commands/tagCommands.js';
 import { registerReferenceCommands } from './commands/referenceCommands.js';
 import { registerFilterCommands } from './commands/filterCommands.js';
 import { registerProjectCommands } from './commands/projectCommands.js';
+import { registerDropCommands } from './commands/dropCommands.js';
 import { FileDetailsViewProvider } from './views/FileDetailsViewProvider.js';
 import { VSCodeSettingsService } from './services/VSCodeSettingsService.js';
 import { VSCodeServiceContainer } from './di/VSCodeServiceContainer.js';
 import { ServiceContainer } from './di/ServiceContainer.js';
 import { Logger } from './utils/Logger.js';
+import {
+  FileChangeNotificationService,
+  FileChangeEvent,
+} from './services/FileChangeNotificationService.js';
+import { VSCodeEventEmitterRepository } from './repositories/VSCodeEventEmitterRepository.js';
 
 export async function activate(context: vscode.ExtensionContext): Promise<void> {
   const logger = Logger.getInstance();
@@ -22,6 +28,12 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     logger.debug('ServiceContainer初期化を開始...');
     await VSCodeServiceContainer.initialize(context);
     logger.debug('ServiceContainer初期化完了');
+
+    // FileChangeNotificationServiceを初期化
+    logger.debug('FileChangeNotificationService初期化を開始...');
+    const eventEmitterRepository = new VSCodeEventEmitterRepository<FileChangeEvent>();
+    FileChangeNotificationService.setInstance(eventEmitterRepository);
+    logger.debug('FileChangeNotificationService初期化完了');
 
     // VSCode設定の初期化
     logger.debug('VSCode設定の初期化を開始...');
@@ -126,6 +138,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
 
     registerCharacterCommands(context, treeDataProvider);
     registerForeshadowingCommands(context, treeDataProvider);
+    registerDropCommands(context);
 
     context.subscriptions.push(treeView, refreshCommand);
   } catch (error) {

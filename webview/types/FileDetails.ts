@@ -7,6 +7,7 @@ export interface WebViewMessage {
     | 'removeTag'
     | 'addReference'
     | 'removeReference'
+    | 'removeReverseReference'
     | 'removeCharacter'
     | 'openReference'
     | 'ready';
@@ -83,5 +84,5 @@ export interface VSCodeApi {
 }
 
 declare global {
-  function acquireVsCodeApi(): VSCodeApi;
+  const acquireVsCodeApi: (() => VSCodeApi) | undefined;
 }

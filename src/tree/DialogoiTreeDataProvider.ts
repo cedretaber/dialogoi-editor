@@ -6,6 +6,7 @@ import { ReferenceManager } from '../services/ReferenceManager.js';
 import { TreeViewFilterService, FilterState } from '../services/TreeViewFilterService.js';
 import { Logger } from '../utils/Logger.js';
 import { FileOperationResult } from '../services/FileOperationService.js';
+import { FileChangeNotificationService } from '../services/FileChangeNotificationService.js';
 
 /**
  * TreeViewのデータプロバイダー
@@ -31,6 +32,7 @@ export class DialogoiTreeDataProvider
   private novelRoot: string | null = null;
   private filterService: TreeViewFilterService = new TreeViewFilterService();
   private logger = Logger.getInstance();
+  private fileChangeNotificationService: FileChangeNotificationService;
 
   // ドラッグ&ドロップ用のMIMEタイプ定義
   readonly dropMimeTypes = ['application/vnd.code.tree.dialogoi-explorer'];
@@ -38,6 +40,7 @@ export class DialogoiTreeDataProvider
 
   constructor() {
     this.workspaceRoot = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath ?? '';
+    this.fileChangeNotificationService = FileChangeNotificationService.getInstance();
     this.findNovelRoot();
   }
 
@@ -48,10 +51,12 @@ export class DialogoiTreeDataProvider
       // コンテキストにノベルプロジェクトが存在することを設定
       vscode.commands.executeCommand('setContext', 'dialogoi:hasNovelProject', true);
 
-      // 参照関係を初期化
+      // 参照関係を初期化（まだ初期化されていない場合のみ）
       const referenceManager = ReferenceManager.getInstance();
-      const fileRepository = ServiceContainer.getInstance().getFileRepository();
-      referenceManager.initialize(this.novelRoot, fileRepository);
+      if (!referenceManager.isInitialized()) {
+        const fileRepository = ServiceContainer.getInstance().getFileRepository();
+        referenceManager.initialize(this.novelRoot, fileRepository);
+      }
     } else {
       // プロジェクトが見つからない場合は明示的にfalseに設定
       vscode.commands.executeCommand('setContext', 'dialogoi:hasNovelProject', false);
@@ -98,23 +103,6 @@ export class DialogoiTreeDataProvider
    */
   isFilterActive(): boolean {
     return this.filterService.isFilterActive();
-  }
-
-  /**
-   * 特定のファイルアイテムを再読み込みして返す
-   */
-  refreshFileItem(originalItem: DialogoiTreeItem): DialogoiTreeItem | null {
-    if (!originalItem.path) {
-      return null;
-    }
-
-    const dirPath = path.dirname(originalItem.path);
-    const fileName = originalItem.name;
-
-    const items = this.loadMetaYaml(dirPath);
-    const updatedItem = items.find((item) => item.name === fileName);
-
-    return updatedItem || null;
   }
 
   getTreeItem(element: DialogoiTreeItem): vscode.TreeItem {
@@ -621,6 +609,13 @@ export class DialogoiTreeDataProvider
       referenceManager.updateFileReferences(filePath, currentReferences);
 
       this.refresh();
+
+      // 参照更新イベントを通知
+      this.fileChangeNotificationService.notifyReferenceUpdated(filePath, {
+        operation: 'add',
+        referencePath,
+        fileName,
+      });
     }
 
     return result;
@@ -641,6 +636,13 @@ export class DialogoiTreeDataProvider
       referenceManager.updateFileReferences(filePath, currentReferences);
 
       this.refresh();
+
+      // 参照更新イベントを通知
+      this.fileChangeNotificationService.notifyReferenceUpdated(filePath, {
+        operation: 'remove',
+        referencePath,
+        fileName,
+      });
     }
 
     return result;
@@ -745,10 +747,31 @@ export class DialogoiTreeDataProvider
       return;
     }
 
-    // ドラッグするアイテムをデータ転送オブジェクトに設定
+    const draggedItem = source[0]; // 現在は単一選択のみサポート
+    if (!draggedItem) {
+      return;
+    }
+
+    // エディタ用のドロップデータ形式に変換
+    // プロジェクトルートからの相対パスを計算
+    const projectRoot = this.novelRoot;
+    const projectRelativePath =
+      projectRoot !== null && projectRoot !== undefined
+        ? path.relative(projectRoot, draggedItem.path).replace(/\\/g, '/')
+        : draggedItem.path;
+
+    const dropData = {
+      type: 'dialogoi-file',
+      path: projectRelativePath,
+      name: draggedItem.name,
+      fileType: draggedItem.type,
+      absolutePath: draggedItem.path,
+    };
+
+    // TreeView内での並び替え用（既存のデータ形式）
     dataTransfer.set(
       'application/vnd.code.tree.dialogoi-explorer',
-      new vscode.DataTransferItem(source),
+      new vscode.DataTransferItem(JSON.stringify(dropData)),
     );
   }
 
@@ -762,14 +785,52 @@ export class DialogoiTreeDataProvider
       return;
     }
 
-    const draggedItems = transferItem.value as DialogoiTreeItem[];
-    if (draggedItems.length === 0) {
-      return;
-    }
-
-    const draggedItem = draggedItems[0]; // 現在は単一選択のみサポート
-    if (!draggedItem) {
-      return;
+    // 新しいドロップデータ形式の場合
+    let draggedItem: DialogoiTreeItem;
+    try {
+      const dropData: unknown = JSON.parse(transferItem.value as string);
+      if (
+        typeof dropData === 'object' &&
+        dropData !== null &&
+        'type' in dropData &&
+        (dropData as { type: unknown }).type === 'dialogoi-file'
+      ) {
+        // 新しい形式をDialogoiTreeItemに変換
+        const typedDropData = dropData as unknown as {
+          path: string;
+          name: string;
+          fileType: string;
+          absolutePath: string;
+        };
+        draggedItem = {
+          path: typedDropData.path,
+          name: typedDropData.name,
+          type: typedDropData.fileType,
+          absolutePath: typedDropData.absolutePath,
+        } as DialogoiTreeItem;
+      } else {
+        // 古い形式（直接DialogoiTreeItem配列）
+        const draggedItems = transferItem.value as DialogoiTreeItem[];
+        if (draggedItems.length === 0) {
+          return;
+        }
+        const firstItem = draggedItems[0];
+        if (!firstItem) {
+          return;
+        }
+        draggedItem = firstItem;
+      }
+    } catch {
+      // パースに失敗した場合は古い形式として扱う
+      const draggedItems = transferItem.value as DialogoiTreeItem[];
+      if (draggedItems.length === 0) {
+        return;
+      }
+      const firstItem = draggedItems[0];
+      if (!firstItem) {
+        return;
+      }
+      draggedItem = firstItem;
     }
 
     // ターゲットディレクトリを特定
@@ -838,6 +899,12 @@ export class DialogoiTreeDataProvider
 
         if (result.success) {
           this.refresh();
+          // ファイル移動イベントを通知
+          this.fileChangeNotificationService.notifyFileMoved(
+            path.join(sourceDir, draggedItem.name),
+            path.join(targetDir, draggedItem.name),
+            { operation: 'move', fromIndex: undefined, toIndex: newIndex },
+          );
           vscode.window.showInformationMessage(result.message);
         } else {
           vscode.window.showErrorMessage(result.message);
@@ -924,6 +991,14 @@ export class DialogoiTreeDataProvider
 
       // 並び替え実行
       this.reorderFiles(targetDir, fromIndex, toIndex);
+
+      // ファイル並び替えイベントを通知
+      this.fileChangeNotificationService.notifyFileReordered(targetDir, {
+        operation: 'reorder',
+        fromIndex,
+        toIndex,
+        draggedItem: draggedItem.name,
+      });
     } catch (error) {
       this.logger.error('ドラッグ&ドロップエラー', error instanceof Error ? error : String(error));
       vscode.window.showErrorMessage('ファイルの並び替えに失敗しました。');

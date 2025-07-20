@@ -391,5 +391,115 @@ files:
         assert.strictEqual(file2Links[0], 'target.md');
       }
     });
+
+    test('ユーザケース：設定ファイルから本文ファイルへのリンクを抽出（デバッグ版）', () => {
+      // テストプロジェクト構造を作成
+      const novelRoot = '/test/novel';
+
+      // サービスを作成
+      const metaYamlService = container.getMetaYamlService();
+      const fileOpService = container.getFileOperationService(novelRoot);
+      const filePathMapService = new FilePathMapService(metaYamlService, fileOpService);
+      service = new HyperlinkExtractorService(mockFileRepo, filePathMapService);
+
+      // プロジェクトルート
+      mockFileRepo.createFileForTest(
+        `${novelRoot}/.dialogoi-meta.yaml`,
+        `
+project_name: "テストプロジェクト"
+files:
+  - name: "settings"
+    type: "subdirectory"
+  - name: "contents"
+    type: "subdirectory"
+`,
+      );
+
+      // 本文ディレクトリ
+      mockFileRepo.createFileForTest(
+        `${novelRoot}/contents/.dialogoi-meta.yaml`,
+        `
+files:
+  - name: "01_prologue.txt"
+    type: "content"
+    order: 1
+`,
+      );
+
+      mockFileRepo.createFileForTest(`${novelRoot}/contents/01_prologue.txt`, 'プロローグの内容');
+
+      // 設定ディレクトリ
+      mockFileRepo.createFileForTest(
+        `${novelRoot}/settings/.dialogoi-meta.yaml`,
+        `
+files:
+  - name: "character.md"
+    type: "setting"
+    order: 1
+`,
+      );
+
+      // ユーザが追加したリンクを含む設定ファイル
+      mockFileRepo.createFileForTest(
+        `${novelRoot}/settings/character.md`,
+        `# キャラクター設定
+
+メインキャラクターが登場する箇所：
+[01_prologue.txt](contents/01_prologue.txt)
+
+その他の情報...`,
+      );
+
+      filePathMapService.buildFileMap(novelRoot);
+
+      // デバッグ：ファイルマップの状態を確認
+      // テスト対象のファイルが正しく認識されているかチェック
+      const isProjectFile = filePathMapService.isProjectFile(
+        'contents/01_prologue.txt',
+        `${novelRoot}/settings/character.md`,
+      );
+      assert.strictEqual(
+        isProjectFile,
+        true,
+        'contents/01_prologue.txt がプロジェクトファイルとして認識されていない',
+      );
+
+      // パス解決もテスト
+      const resolvedPath = filePathMapService.resolveFileAbsolutePath(
+        'contents/01_prologue.txt',
+        `${novelRoot}/settings/character.md`,
+      );
+      assert.strictEqual(
+        resolvedPath,
+        `${novelRoot}/contents/01_prologue.txt`,
+        'パス解決が正しく動作していない',
+      );
+
+      // デバッグ：パースされるリンクを確認
+      const content = mockFileRepo.readFileSync(
+        mockFileRepo.createFileUri(`${novelRoot}/settings/character.md`),
+        'utf-8',
+      );
+
+      const allLinks = service.parseMarkdownLinks(content);
+      assert.strictEqual(allLinks.length, 1, 'マークダウンリンクのパースが失敗');
+      assert.strictEqual(allLinks[0]?.text, '01_prologue.txt', 'リンクテキストが正しくない');
+      assert.strictEqual(allLinks[0]?.url, 'contents/01_prologue.txt', 'リンクURLが正しくない');
+
+      // プロジェクト内リンクを抽出
+      const projectLinks = service.extractProjectLinks(`${novelRoot}/settings/character.md`);
+
+      // 検証
+      assert.strictEqual(
+        projectLinks.length,
+        1,
+        `期待: 1個のリンク, 実際: ${projectLinks.length}個`,
+      );
+      assert.strictEqual(
+        projectLinks[0],
+        'contents/01_prologue.txt',
+        `期待: contents/01_prologue.txt, 実際: ${projectLinks[0]}`,
+      );
+    });
   });
 });

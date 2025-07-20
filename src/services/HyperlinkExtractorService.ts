@@ -1,4 +1,3 @@
-import * as path from 'path';
 import { FileRepository } from '../repositories/FileRepository.js';
 import { FilePathMapService } from './FilePathMapService.js';
 
@@ -38,8 +37,9 @@ export class HyperlinkExtractorService {
 
       const content = this.fileRepository.readFileSync(fileUri, 'utf-8');
       const allLinks = this.parseMarkdownLinks(content);
+      const projectLinks = this.filterProjectLinks(allLinks, fileAbsolutePath);
 
-      return this.filterProjectLinks(allLinks, fileAbsolutePath);
+      return projectLinks;
     } catch {
       return [];
     }
@@ -87,12 +87,18 @@ export class HyperlinkExtractorService {
       }
 
       // プロジェクト内ファイルかチェック
-      if (this.filePathMapService.isProjectFile(link.url, currentFileAbsolutePath)) {
+      const isProjectFile = this.filePathMapService.isProjectFile(
+        link.url,
+        currentFileAbsolutePath,
+      );
+
+      if (isProjectFile) {
         // プロジェクトルートからの相対パスに正規化
         const normalizedPath = this.normalizeToProjectRelativePath(
           link.url,
           currentFileAbsolutePath,
         );
+
         if (
           normalizedPath !== null &&
           normalizedPath !== undefined &&
@@ -133,60 +139,15 @@ export class HyperlinkExtractorService {
     currentFileAbsolutePath: string,
   ): string | null {
     try {
-      // FilePathMapService で解決した絶対パスから相対パスを取得する方法を使用
-      const resolvedAbsolutePath = this.filePathMapService.resolveFileAbsolutePath(
+      // FilePathMapServiceで既にプロジェクト相対パスが計算済みなので、それを直接取得
+      const resolvedRelativePath = this.filePathMapService.isProjectFile(
         linkUrl,
         currentFileAbsolutePath,
-      );
-      if (
-        resolvedAbsolutePath === null ||
-        resolvedAbsolutePath === undefined ||
-        resolvedAbsolutePath === ''
-      ) {
-        return null;
-      }
+      )
+        ? this.filePathMapService.resolveRelativePathFromRoot(linkUrl, currentFileAbsolutePath)
+        : null;
 
-      // resolveFileAbsolutePath で既に正しい絶対パスが取得できているので、
-      // そこから相対パスを計算する
-      return this.extractRelativePathFromAbsolute(resolvedAbsolutePath, currentFileAbsolutePath);
-    } catch {
-      return null;
-    }
-  }
-
-  /**
-   * 絶対パスからプロジェクト相対パスを抽出
-   * @param absolutePath 絶対パス
-   * @param currentFileAbsolutePath 現在のファイルの絶対パス
-   * @returns プロジェクト相対パス
-   */
-  private extractRelativePathFromAbsolute(
-    absolutePath: string,
-    currentFileAbsolutePath: string,
-  ): string | null {
-    try {
-      // currentFileの親ディレクトリから相対的にリンクパスがどこを指しているかを計算
-      const currentDir = path.dirname(currentFileAbsolutePath);
-      let testPath = currentDir;
-
-      // プロジェクトルートを見つけるまで上に辿る
-      while (testPath !== path.dirname(testPath)) {
-        const metaYamlPath = path.join(testPath, '.dialogoi-meta.yaml');
-        const fileUri = this.fileRepository.createFileUri(metaYamlPath);
-
-        if (this.fileRepository.existsSync(fileUri)) {
-          // .dialogoi-meta.yaml が見つかった = プロジェクトルート候補
-          const content = this.fileRepository.readFileSync(fileUri, 'utf-8');
-          if (content.includes('project_name:')) {
-            // プロジェクトルートが見つかった
-            const relativePath = path.relative(testPath, absolutePath);
-            return relativePath.replace(/\\/g, '/');
-          }
-        }
-        testPath = path.dirname(testPath);
-      }
-
-      return null;
+      return resolvedRelativePath;
     } catch {
       return null;
     }

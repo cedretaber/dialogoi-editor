@@ -28,6 +28,7 @@ export interface FileMapEntry {
  */
 export class FilePathMapService {
   private fileMap: Map<string, FileMapEntry> = new Map();
+  private currentNovelRootPath?: string;
 
   constructor(
     private metaYamlService: MetaYamlService,
@@ -39,6 +40,7 @@ export class FilePathMapService {
    * @param novelRootAbsolutePath プロジェクトルートの絶対パス
    */
   buildFileMap(novelRootAbsolutePath: string): void {
+    this.currentNovelRootPath = novelRootAbsolutePath;
     this.fileMap.clear();
     this.scanDirectory(novelRootAbsolutePath, novelRootAbsolutePath);
   }
@@ -86,11 +88,26 @@ export class FilePathMapService {
    * @returns プロジェクト内ファイルの場合true
    */
   isProjectFile(linkRelativePath: string, currentFileAbsolutePath: string): boolean {
-    const resolvedPath = this.resolveRelativePathFromRoot(
+    const resolvedPath = this.resolveRelativePathFromRootPrivate(
       linkRelativePath,
       currentFileAbsolutePath,
     );
-    return resolvedPath !== null && this.fileMap.has(resolvedPath);
+    const hasInMap = resolvedPath !== null && this.fileMap.has(resolvedPath);
+
+    return hasInMap;
+  }
+
+  /**
+   * リンクの相対パスをプロジェクトルートからの相対パスに解決（公開版）
+   * @param linkRelativePath リンクの相対パス
+   * @param currentFileAbsolutePath 現在のファイルの絶対パス
+   * @returns プロジェクトルートからの相対パス
+   */
+  resolveRelativePathFromRoot(
+    linkRelativePath: string,
+    currentFileAbsolutePath: string,
+  ): string | null {
+    return this.resolveRelativePathFromRootPrivate(linkRelativePath, currentFileAbsolutePath);
   }
 
   /**
@@ -103,15 +120,23 @@ export class FilePathMapService {
     linkRelativePath: string,
     currentFileAbsolutePath: string,
   ): string | null {
-    const novelRootPath = this.fileOperationService.getNovelRootPath();
+    let novelRootPath = this.fileOperationService.getNovelRootPath();
+
+    // FileOperationServiceからノベルルートが取得できない場合は、
+    // 保存されたcurrentNovelRootPathを使用
+    if (novelRootPath === undefined || novelRootPath === null || novelRootPath === '') {
+      novelRootPath = this.currentNovelRootPath;
+    }
+
     if (novelRootPath === undefined || novelRootPath === null || novelRootPath === '') {
       return null;
     }
 
-    const resolvedRelativePath = this.resolveRelativePathFromRoot(
+    const resolvedRelativePath = this.resolveRelativePathFromRootPrivate(
       linkRelativePath,
       currentFileAbsolutePath,
     );
+
     if (
       resolvedRelativePath === null ||
       resolvedRelativePath === undefined ||
@@ -134,11 +159,18 @@ export class FilePathMapService {
    * @param currentFileAbsolutePath 現在のファイルの絶対パス
    * @returns プロジェクトルートからの相対パス
    */
-  private resolveRelativePathFromRoot(
+  private resolveRelativePathFromRootPrivate(
     linkRelativePath: string,
     currentFileAbsolutePath: string,
   ): string | null {
-    const novelRootPath = this.fileOperationService.getNovelRootPath();
+    let novelRootPath = this.fileOperationService.getNovelRootPath();
+
+    // FileOperationServiceからノベルルートが取得できない場合は、
+    // 保存されたcurrentNovelRootPathを使用
+    if (novelRootPath === undefined || novelRootPath === null || novelRootPath === '') {
+      novelRootPath = this.currentNovelRootPath;
+    }
+
     if (novelRootPath === undefined || novelRootPath === null || novelRootPath === '') {
       return null;
     }

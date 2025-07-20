@@ -80,6 +80,102 @@
 
 このプロジェクトでは **VSCode依存の局所化** と **テスト可能性の向上** を目的として、依存関係注入（Dependency Injection）パターンを採用しています。
 
+### レイヤー設計の基本原則
+
+#### サービス層（/src/services/）の責務
+- **純粋なビジネスロジックの実装**
+- **VSCode APIへの直接アクセス禁止**
+- **単体テスト可能な設計**
+- **依存関係注入パターンの使用**
+
+#### コマンド層（/src/commands/）の責務
+- **VSCodeとの連携・UI操作**
+- **ユーザーインターフェース制御**
+- **サービス層のビジネスロジックを利用**
+
+#### プロバイダー層（/src/providers/ または /src/tree/）の責務
+- **VSCode Extension API の具象実装**
+- **TreeDataProvider、WebViewProvider等の実装**
+- **UI表示ロジックとイベント処理**
+
+### 実装例とパターン
+
+#### ❌ 悪い例：services/でVSCode APIを使用
+```typescript
+// services/BadDropService.ts
+import * as vscode from 'vscode';
+
+export class BadDropService {
+  handleDrop(): void {
+    const editor = vscode.window.activeTextEditor; // VSCode依存
+    const edit = new vscode.WorkspaceEdit(); // VSCode依存
+    // ...
+  }
+}
+```
+
+#### ✅ 良い例：services/はビジネスロジックのみ
+```typescript
+// services/DropHandlerService.ts
+export class DropHandlerService {
+  constructor(
+    private metaYamlService: MetaYamlService,
+    private pathNormalizationService: ProjectPathNormalizationService
+  ) {}
+  
+  handleDrop(targetPath: string, droppedData: DroppedFileInfo): DropResult {
+    // 純粋なビジネスロジック
+    // VSCode依存なし
+    return { success: true, insertText: '[link](path)' };
+  }
+}
+```
+
+#### ✅ 良い例：commands/でVSCodeとサービスを連携
+```typescript
+// commands/dropCommands.ts
+import * as vscode from 'vscode';
+
+export function registerDropCommands(context: vscode.ExtensionContext) {
+  const dropHandlerService = ServiceContainer.getInstance().getDropHandlerService();
+  
+  // DocumentDropEditProvider実装
+  const dropProvider = new DocumentDropProvider(dropHandlerService);
+  
+  context.subscriptions.push(
+    vscode.languages.registerDocumentDropEditProvider(
+      { scheme: 'file' },
+      dropProvider
+    )
+  );
+}
+
+class DocumentDropProvider implements vscode.DocumentDropEditProvider {
+  constructor(private dropHandlerService: DropHandlerService) {}
+  
+  async provideDocumentDropEdits(
+    document: vscode.TextDocument,
+    position: vscode.Position,
+    dataTransfer: vscode.DataTransfer
+  ): Promise<vscode.DocumentDropEdit | undefined> {
+    // VSCode API使用はここで
+    const targetPath = document.uri.fsPath;
+    
+    // ビジネスロジックはサービス層に委譲
+    const result = await this.dropHandlerService.handleDrop(targetPath, droppedData);
+    
+    // 結果をVSCode APIで反映
+    if (result.success && result.insertText) {
+      const edit = new vscode.WorkspaceEdit();
+      edit.replace(document.uri, new vscode.Range(position, position), result.insertText);
+      return new vscode.DocumentDropEdit(edit);
+    }
+    
+    return undefined;
+  }
+}
+```
+
 ### 主要な抽象化レイヤー
 
 #### 1. FileRepository (抽象基底クラス)

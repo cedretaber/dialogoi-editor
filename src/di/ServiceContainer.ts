@@ -11,6 +11,8 @@ import { MetaYamlService } from '../services/MetaYamlService.js';
 import { FileOperationService } from '../services/FileOperationService.js';
 import { FilePathMapService } from '../services/FilePathMapService.js';
 import { HyperlinkExtractorService } from '../services/HyperlinkExtractorService.js';
+import { ProjectPathNormalizationService } from '../services/ProjectPathNormalizationService.js';
+import { DropHandlerService } from '../services/DropHandlerService.js';
 import { Uri } from '../interfaces/Uri.js';
 
 /**
@@ -29,6 +31,8 @@ export interface IServiceContainer {
   getFileOperationService(novelRootAbsolutePath?: string): FileOperationService;
   getFilePathMapService(): FilePathMapService;
   getHyperlinkExtractorService(): HyperlinkExtractorService;
+  getProjectPathNormalizationService(): ProjectPathNormalizationService;
+  getDropHandlerService(): DropHandlerService;
   reset(): void;
 }
 
@@ -51,6 +55,8 @@ export class ServiceContainer implements IServiceContainer {
   private fileOperationService: FileOperationService | null = null;
   private filePathMapService: FilePathMapService | null = null;
   private hyperlinkExtractorService: HyperlinkExtractorService | null = null;
+  private projectPathNormalizationService: ProjectPathNormalizationService | null = null;
+  private dropHandlerService: DropHandlerService | null = null;
 
   protected constructor() {}
 
@@ -81,6 +87,10 @@ export class ServiceContainer implements IServiceContainer {
     this.dialogoiTemplateService = null;
     this.metaYamlService = null;
     this.fileOperationService = null;
+    this.filePathMapService = null;
+    this.hyperlinkExtractorService = null;
+    this.projectPathNormalizationService = null;
+    this.dropHandlerService = null;
   }
 
   /**
@@ -223,6 +233,31 @@ export class ServiceContainer implements IServiceContainer {
   }
 
   /**
+   * ProjectPathNormalizationServiceを取得
+   */
+  getProjectPathNormalizationService(): ProjectPathNormalizationService {
+    if (!this.projectPathNormalizationService) {
+      // プロジェクトルートを取得（ここでは仮のパスを使用、実際の使用時に適切なパスが設定される）
+      this.projectPathNormalizationService = new ProjectPathNormalizationService('');
+    }
+    return this.projectPathNormalizationService;
+  }
+
+  /**
+   * DropHandlerServiceを取得
+   */
+  getDropHandlerService(): DropHandlerService {
+    if (!this.dropHandlerService) {
+      this.dropHandlerService = new DropHandlerService(
+        this.getCharacterService(),
+        this.getMetaYamlService(),
+        this.getDialogoiYamlService(),
+      );
+    }
+    return this.dropHandlerService;
+  }
+
+  /**
    * テスト用のモックサービスでコンテナを初期化
    * @deprecated テスト環境ではTestServiceContainerを使用してください
    */
@@ -246,6 +281,8 @@ export class ServiceContainer implements IServiceContainer {
     this.fileOperationService = null;
     this.filePathMapService = null;
     this.hyperlinkExtractorService = null;
+    this.projectPathNormalizationService = null;
+    this.dropHandlerService = null;
   }
 
   /**
