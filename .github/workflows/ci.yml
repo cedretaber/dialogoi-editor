@@ -29,21 +29,25 @@ jobs:
     - name: Install dependencies
       run: npm ci
     
-    # TypeScript 型チェック
+    # TypeScript 型チェック（src + webview）
     - name: Type check
       run: npm run typecheck
     
-    # Prettier フォーマットチェック
+    # Prettier フォーマットチェック（src + webview）
     - name: Format check
       run: npm run format:check
     
-    # ESLint チェック
+    # ESLint チェック（src + webview）
     - name: Lint
       run: npm run lint
     
     # テスト実行
     - name: Run tests
       run: npm test
+    
+    # WebView ビルド（コンパイル確認）
+    - name: WebView build
+      run: npm run webview:build
     
     # VSCode Extension のパッケージング（ビルド確認）
     - name: Package extension

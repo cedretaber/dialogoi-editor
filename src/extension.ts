@@ -56,6 +56,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     const fileDetailsProvider = new FileDetailsViewProvider(context.extensionUri);
     fileDetailsProvider.setTreeDataProvider(treeDataProvider);
     fileDetailsProvider.setMetaYamlService(serviceContainer.getMetaYamlService());
+    fileDetailsProvider.setDialogoiYamlService(serviceContainer.getDialogoiYamlService());
     context.subscriptions.push(
       vscode.window.registerWebviewViewProvider(
         FileDetailsViewProvider.viewType,
