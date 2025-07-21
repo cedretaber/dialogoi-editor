@@ -242,6 +242,70 @@ export class ProjectSettingsService {
   }
 
   /**
+   * 新規プロジェクトを作成
+   * @param projectRootAbsolutePath プロジェクトルートの絶対パス
+   * @param settingsData プロジェクト設定データ
+   * @returns 作成が成功した場合true
+   */
+  createNewProject(
+    projectRootAbsolutePath: string,
+    settingsData: ProjectSettingsUpdateData,
+  ): boolean {
+    try {
+      // バリデーション
+      const validation = this.validateUpdateData(settingsData);
+      if (!validation.isValid) {
+        this.logger.warn('Project settings validation failed', validation.errors);
+        return false;
+      }
+
+      // 新しいプロジェクト設定を作成
+      const newSettings: DialogoiYaml = {
+        title: settingsData.title.trim(),
+        author: settingsData.author.trim(),
+        version: settingsData.version.trim(),
+        tags:
+          settingsData.tags?.length !== undefined && settingsData.tags.length > 0
+            ? settingsData.tags
+            : undefined,
+        project_settings: this.mergeProjectSettings(undefined, settingsData.project_settings),
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      };
+
+      // プロジェクトを作成
+      const success = this.dialogoiYamlService.createDialogoiProject(
+        projectRootAbsolutePath,
+        newSettings.title,
+        newSettings.author,
+        newSettings.tags,
+      );
+
+      if (success) {
+        // プロジェクト設定を更新（versionとproject_settingsを追加）
+        const updates: Partial<DialogoiYaml> = {
+          version: newSettings.version,
+        };
+        if (newSettings.project_settings !== undefined) {
+          updates.project_settings = newSettings.project_settings;
+        }
+        this.dialogoiYamlService.updateDialogoiYaml(projectRootAbsolutePath, updates);
+        this.logger.info('New project created successfully');
+      } else {
+        this.logger.error('Failed to create new project');
+      }
+
+      return success;
+    } catch (error) {
+      this.logger.error(
+        'Error creating new project',
+        error instanceof Error ? error : String(error),
+      );
+      return false;
+    }
+  }
+
+  /**
    * プロジェクト設定をマージ
    * @param current 現在の設定
    * @param updates 更新データ

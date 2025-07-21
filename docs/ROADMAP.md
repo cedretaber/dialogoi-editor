@@ -99,8 +99,21 @@
 - [x] UI改善（🔗アイコンによる視覚的区別）
 - [x] WebViewアーキテクチャ問題の調査と改善案作成
 
-### 🎯 Phase 3.5: 残りのUI改善（未着手）
-- [ ] プロジェクト設定の視覚的編集画面（YAML直接編集の代替）
+### 🎯 Phase 3.5a: プロジェクト設定UI改善 ✅ **完了**
+- [x] Reactベースのプロジェクト設定視覚的編集画面（YAML直接編集の代替）
+- [x] WebViewPanelによるメインエディタでのフォーム式設定編集
+- [x] 自動保存機能とリアルタイムバリデーション
+- [x] ディレクトリ構造の整理（VSCode拡張機能の命名規則に準拠）
+  - FileDetailsViewProvider: views/ → providers/ (WebviewViewProvider)
+  - ProjectSettingsWebviewPanel: providers/ → views/ (WebviewPanel)
+- [x] UI/UXの大幅改善
+  - タグ追加：「追加」ボタン削除、Enterキーのみ対応
+  - 除外パターン：個別入力からtextarea一括入力に変更
+  - 自動保存時の状態上書き問題修正
+  - タグ削除後の復活バグ修正
+- [x] アクセシビリティ向上（コマンドパレット、設定メニューからアクセス可能）
+
+### 🎯 Phase 3.5b: 残りのUI改善（進行中）
 - [ ] 伏線設定の複数「張る」位置対応（スキーマ拡張）
 - [ ] ファイル新規作成・名前変更のインライン編集
 - [ ] レビュー用 UI の整備

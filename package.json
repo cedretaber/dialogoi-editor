@@ -47,13 +47,6 @@
           "name": "ファイル詳細",
           "when": "dialogoi:hasNovelProject",
           "icon": "$(info)"
-        },
-        {
-          "type": "webview",
-          "id": "dialogoi-project-settings",
-          "name": "プロジェクト設定",
-          "when": "dialogoi:hasNovelProject",
-          "icon": "$(settings-gear)"
         }
       ]
     },
@@ -202,8 +195,9 @@
       },
       {
         "command": "dialogoi.editProjectSettings",
-        "title": "プロジェクト設定を編集",
-        "icon": "$(gear)"
+        "title": "Dialogoi: 小説プロジェクトの設定",
+        "icon": "$(gear)",
+        "category": "Dialogoi"
       }
     ],
     "menus": {
@@ -325,7 +319,31 @@
           "when": "view == dialogoi-explorer && viewItem == dialogoi-directory",
           "group": "9_directory"
         }
+      ],
+      "commandPalette": [
+        {
+          "command": "dialogoi.editProjectSettings",
+          "when": "dialogoi:hasNovelProject"
+        }
+      ],
+      "workbench/action/openSettings": [
+        {
+          "command": "dialogoi.editProjectSettings",
+          "when": "dialogoi:hasNovelProject",
+          "group": "1_settings"
+        }
+      ],
+      "workbench/action/manage": [
+        {
+          "command": "dialogoi.editProjectSettings",
+          "when": "dialogoi:hasNovelProject",
+          "group": "1_settings"
+        }
       ]
+    },
+    "configuration": {
+      "title": "Dialogoi Editor",
+      "properties": {}
     }
   },
   "scripts": {

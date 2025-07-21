@@ -10,9 +10,11 @@
       "Bash(npm run dev:*)",
       "Bash(npm run compile:*)",
       "Bash(npm run check-all)",
+      "Bash(npm run webview:build:*)",
       "Bash(rg:*)",
       "Bash(grep:*)",
-      "Bash(find:*)"
+      "Bash(find:*)",
+      "Bash(ls:*)"
     ],
     "deny": []
   },

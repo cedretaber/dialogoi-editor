@@ -48,6 +48,7 @@ export interface UpdateProjectSettingsMessage {
   data: {
     settings: ProjectSettingsData | null;
     isDialogoiProject: boolean;
+    isNewProject?: boolean;
   };
 }
 

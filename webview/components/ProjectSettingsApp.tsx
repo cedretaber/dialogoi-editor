@@ -18,10 +18,11 @@ const isValidSemanticVersion = (version: string): boolean => {
 export const ProjectSettingsApp: React.FC = () => {
   const [settings, setSettings] = useState<ProjectSettingsData | null>(null);
   const [isDialogoiProject, setIsDialogoiProject] = useState(false);
+  const [isNewProject, setIsNewProject] = useState(false);
   const [formData, setFormData] = useState<ProjectSettingsUpdateData>({
     title: '',
     author: '',
-    version: '',
+    version: '1.0.0',
     tags: [],
     project_settings: {
       readme_filename: '',
@@ -33,7 +34,9 @@ export const ProjectSettingsApp: React.FC = () => {
     errors: {},
   });
   const [newTag, setNewTag] = useState('');
-  const [newPattern, setNewPattern] = useState('');
+  const [excludePatternsText, setExcludePatternsText] = useState('');
+  const [isSaving, setIsSaving] = useState(false);
+  const [isInitialLoad, setIsInitialLoad] = useState(true);
 
   const { postMessage, isVSCodeReady } = useVSCodeApi<ProjectSettingsMessage>({ command: 'ready' });
 
@@ -44,30 +47,56 @@ export const ProjectSettingsApp: React.FC = () => {
       if (message.type === 'updateSettings') {
         setSettings(message.data.settings);
         setIsDialogoiProject(message.data.isDialogoiProject);
+        setIsNewProject(message.data.isNewProject || false);
 
-        if (message.data.settings) {
-          setFormData({
-            title: message.data.settings.title,
-            author: message.data.settings.author,
-            version: message.data.settings.version,
-            tags: message.data.settings.tags || [],
-            project_settings: {
-              readme_filename: message.data.settings.project_settings?.readme_filename || '',
-              exclude_patterns: message.data.settings.project_settings?.exclude_patterns || [],
-            },
-          });
+        // 初期読み込み時または保存中でない場合のみフォームデータを更新
+        if (isInitialLoad && !isSaving) {
+          if (message.data.settings) {
+            const excludePatterns = message.data.settings.project_settings?.exclude_patterns || [];
+            setFormData({
+              title: message.data.settings.title,
+              author: message.data.settings.author,
+              version: message.data.settings.version,
+              tags: message.data.settings.tags || [],
+              project_settings: {
+                readme_filename: message.data.settings.project_settings?.readme_filename || '',
+                exclude_patterns: excludePatterns,
+              },
+            });
+            setExcludePatternsText(excludePatterns.join('\n'));
+          } else if (message.data.isNewProject) {
+            // 新規プロジェクトの場合はデフォルト値を設定
+            setFormData({
+              title: '',
+              author: '',
+              version: '1.0.0',
+              tags: [],
+              project_settings: {
+                readme_filename: '',
+                exclude_patterns: [],
+              },
+            });
+            setExcludePatternsText('');
+          }
+          setIsInitialLoad(false);
         }
       } else if (message.type === 'saveResult') {
-        // 保存結果は既にVSCodeでメッセージ表示されるため、ここでは何もしない
+        // 保存完了時にフラグをリセット
+        setIsSaving(false);
+
+        // 新規プロジェクト作成成功時は、次回設定を読み込めるように初期読み込みフラグをリセット
+        if (message.data.success && isNewProject) {
+          setIsInitialLoad(true);
+        }
       }
     };
 
     window.addEventListener('message', handleMessage);
     return (): void => window.removeEventListener('message', handleMessage);
-  }, []);
+  }, [isInitialLoad, isSaving, isNewProject]);
 
   // バリデーション
-  const validateForm = (): ProjectSettingsValidationResult => {
+  const validateForm = (tagsOverride?: string[]): ProjectSettingsValidationResult => {
     const errors: Record<string, string> = {};
 
     if (!formData.title.trim()) {
@@ -84,14 +113,19 @@ export const ProjectSettingsApp: React.FC = () => {
       errors.version = 'セマンティックバージョニング形式で入力してください（例: 1.0.0）';
     }
 
-    // 重複チェック
-    const tags = formData.tags || [];
+    // 重複チェック（パラメータで上書きされた場合はそれを使用）
+    const tags = tagsOverride !== undefined ? tagsOverride : formData.tags || [];
     const duplicateTags = tags.filter((tag, index) => tags.indexOf(tag) !== index);
     if (duplicateTags.length > 0) {
       errors.tags = `重複するタグがあります: ${duplicateTags.join(', ')}`;
     }
 
-    const patterns = formData.project_settings?.exclude_patterns || [];
+    // テキストエリアから解析されたパターンの重複チェック
+    const patterns = excludePatternsText
+      .split('\n')
+      .map((line) => line.trim())
+      .filter((line) => line.length > 0);
+
     const duplicatePatterns = patterns.filter(
       (pattern, index) => patterns.indexOf(pattern) !== index,
     );
@@ -105,23 +139,28 @@ export const ProjectSettingsApp: React.FC = () => {
     };
   };
 
-  // フォーム送信
-  const handleSave = (): void => {
+  // 自動保存
+  const autoSave = (): void => {
     const validationResult = validateForm();
     setValidation(validationResult);
 
     if (validationResult.isValid) {
+      // 保存開始フラグを設定
+      setIsSaving(true);
+
+      // テキストエリアから除外パターン配列を生成
+      const excludePatterns = excludePatternsText
+        .split('\n')
+        .map((line) => line.trim())
+        .filter((line) => line.length > 0);
+
       // 空の配列や文字列はundefinedに変換
       const dataToSave: ProjectSettingsUpdateData = {
         ...formData,
         tags: formData.tags && formData.tags.length > 0 ? formData.tags : undefined,
         project_settings: {
           readme_filename: formData.project_settings?.readme_filename?.trim() || undefined,
-          exclude_patterns:
-            formData.project_settings?.exclude_patterns &&
-            formData.project_settings.exclude_patterns.length > 0
-              ? formData.project_settings.exclude_patterns
-              : undefined,
+          exclude_patterns: excludePatterns.length > 0 ? excludePatterns : undefined,
         },
       };
 
@@ -141,73 +180,139 @@ export const ProjectSettingsApp: React.FC = () => {
     }
   };
 
-  // キャンセル
-  const handleCancel = (): void => {
-    if (settings) {
-      setFormData({
-        title: settings.title,
-        author: settings.author,
-        version: settings.version,
-        tags: settings.tags || [],
-        project_settings: {
-          readme_filename: settings.project_settings?.readme_filename || '',
-          exclude_patterns: settings.project_settings?.exclude_patterns || [],
-        },
-      });
-    }
-    setValidation({ isValid: true, errors: {} });
-  };
-
   // YAML直接編集
   const handleOpenYamlEditor = (): void => {
     postMessage({ command: 'openYamlEditor' });
+  };
+
+  // 各フィールドのフォーカスアウト時に自動保存
+  const handleFieldBlur = (): void => {
+    // バリデーション実行
+    const validationResult = validateForm();
+    setValidation(validationResult);
+
+    // エラーがない場合のみ自動保存
+    if (validationResult.isValid) {
+      autoSave();
+    }
   };
 
   // タグ追加
   const handleAddTag = (): void => {
     const tag = newTag.trim();
     if (tag && !formData.tags?.includes(tag)) {
-      setFormData((prev) => ({
-        ...prev,
-        tags: [...(prev.tags || []), tag],
-      }));
+      const updatedTags = [...(formData.tags || []), tag];
+      const updatedFormData = {
+        ...formData,
+        tags: updatedTags,
+      };
+      setFormData(updatedFormData);
       setNewTag('');
+
+      // タグ追加後、即座に自動保存（更新されたデータを使用）
+      setTimeout(() => {
+        // 更新されたタグ配列を使ってバリデーションと保存を実行
+        const validationResult = validateForm(updatedTags);
+        setValidation(validationResult);
+
+        if (validationResult.isValid) {
+          setIsSaving(true);
+
+          const excludePatterns = excludePatternsText
+            .split('\n')
+            .map((line) => line.trim())
+            .filter((line) => line.length > 0);
+
+          const dataToSave: ProjectSettingsUpdateData = {
+            ...updatedFormData,
+            tags: updatedTags.length > 0 ? updatedTags : undefined,
+            project_settings: {
+              readme_filename:
+                updatedFormData.project_settings?.readme_filename?.trim() || undefined,
+              exclude_patterns: excludePatterns.length > 0 ? excludePatterns : undefined,
+            },
+          };
+
+          if (
+            !dataToSave.project_settings?.readme_filename &&
+            (!dataToSave.project_settings?.exclude_patterns ||
+              dataToSave.project_settings.exclude_patterns.length === 0)
+          ) {
+            dataToSave.project_settings = undefined;
+          }
+
+          postMessage({
+            command: 'saveSettings',
+            data: dataToSave,
+          });
+        }
+      }, 50);
     }
   };
 
   // タグ削除
   const handleRemoveTag = (tagToRemove: string): void => {
-    setFormData((prev) => ({
-      ...prev,
-      tags: prev.tags?.filter((tag) => tag !== tagToRemove) || [],
-    }));
+    const updatedTags = formData.tags?.filter((tag) => tag !== tagToRemove) || [];
+    const updatedFormData = {
+      ...formData,
+      tags: updatedTags,
+    };
+    setFormData(updatedFormData);
+
+    // タグ削除後、即座に自動保存（更新されたデータを使用）
+    setTimeout(() => {
+      // 更新されたタグ配列を使ってバリデーションと保存を実行
+      const validationResult = validateForm(updatedTags);
+      setValidation(validationResult);
+
+      if (validationResult.isValid) {
+        setIsSaving(true);
+
+        const excludePatterns = excludePatternsText
+          .split('\n')
+          .map((line) => line.trim())
+          .filter((line) => line.length > 0);
+
+        const dataToSave: ProjectSettingsUpdateData = {
+          ...updatedFormData,
+          tags: updatedTags.length > 0 ? updatedTags : undefined,
+          project_settings: {
+            readme_filename: updatedFormData.project_settings?.readme_filename?.trim() || undefined,
+            exclude_patterns: excludePatterns.length > 0 ? excludePatterns : undefined,
+          },
+        };
+
+        if (
+          !dataToSave.project_settings?.readme_filename &&
+          (!dataToSave.project_settings?.exclude_patterns ||
+            dataToSave.project_settings.exclude_patterns.length === 0)
+        ) {
+          dataToSave.project_settings = undefined;
+        }
+
+        postMessage({
+          command: 'saveSettings',
+          data: dataToSave,
+        });
+      }
+    }, 50);
   };
 
-  // 除外パターン追加
-  const handleAddPattern = (): void => {
-    const pattern = newPattern.trim();
-    if (pattern && !formData.project_settings?.exclude_patterns?.includes(pattern)) {
-      setFormData((prev) => ({
-        ...prev,
-        project_settings: {
-          ...prev.project_settings,
-          exclude_patterns: [...(prev.project_settings?.exclude_patterns || []), pattern],
-        },
-      }));
-      setNewPattern('');
-    }
-  };
+  // 除外パターンのテキストエリア変更処理
+  const handleExcludePatternsChange = (value: string): void => {
+    setExcludePatternsText(value);
 
-  // 除外パターン削除
-  const handleRemovePattern = (patternToRemove: string): void => {
+    // 改行で分割し、空行と前後の空白を除去
+    const patterns = value
+      .split('\n')
+      .map((line) => line.trim())
+      .filter((line) => line.length > 0);
+
     setFormData((prev) => ({
       ...prev,
       project_settings: {
         ...prev.project_settings,
-        exclude_patterns:
-          prev.project_settings?.exclude_patterns?.filter(
-            (pattern) => pattern !== patternToRemove,
-          ) || [],
+        exclude_patterns: patterns,
       },
     }));
   };
@@ -219,14 +324,7 @@ export const ProjectSettingsApp: React.FC = () => {
     }
   };
 
-  // エンターキーでパターン追加
-  const handlePatternKeyPress = (e: React.KeyboardEvent): void => {
-    if (e.key === 'Enter') {
-      handleAddPattern();
-    }
-  };
-
-  if (!isDialogoiProject) {
+  if (!isDialogoiProject && !isNewProject) {
     return (
       <div className="no-project">
         <h3>📋 プロジェクト設定</h3>
@@ -236,7 +334,7 @@ export const ProjectSettingsApp: React.FC = () => {
     );
   }
 
-  if (!settings) {
+  if (!settings && !isNewProject) {
     return (
       <div className="error">
         <h3>❌ エラー</h3>
@@ -250,7 +348,7 @@ export const ProjectSettingsApp: React.FC = () => {
 
   return (
     <div className="container">
-      <h3>📋 プロジェクト設定</h3>
+      <h3>{isNewProject ? '🆕 新しい小説プロジェクトの作成' : '📋 プロジェクト設定'}</h3>
 
       {!isVSCodeReady && <div className="warning">VSCode API初期化中...</div>}
 
@@ -264,6 +362,7 @@ export const ProjectSettingsApp: React.FC = () => {
             id="title"
             value={formData.title}
             onChange={(e) => setFormData((prev) => ({ ...prev, title: e.target.value }))}
+            onBlur={handleFieldBlur}
             required
           />
           {validation.errors.title && (
@@ -278,6 +377,7 @@ export const ProjectSettingsApp: React.FC = () => {
             id="author"
             value={formData.author}
             onChange={(e) => setFormData((prev) => ({ ...prev, author: e.target.value }))}
+            onBlur={handleFieldBlur}
             required
           />
           {validation.errors.author && (
@@ -292,6 +392,7 @@ export const ProjectSettingsApp: React.FC = () => {
             id="version"
             value={formData.version}
             onChange={(e) => setFormData((prev) => ({ ...prev, version: e.target.value }))}
+            onBlur={handleFieldBlur}
             placeholder="1.0.0"
           />
           {validation.errors.version && (
@@ -319,10 +420,10 @@ export const ProjectSettingsApp: React.FC = () => {
             type="text"
             value={newTag}
             onChange={(e) => setNewTag(e.target.value)}
-            placeholder="新しいタグを入力"
+            onBlur={handleFieldBlur}
+            placeholder="新しいタグを入力してEnterキーを押してください"
             onKeyDown={handleTagKeyPress}
           />
-          <button onClick={handleAddTag}>追加</button>
         </div>
         {validation.errors.tags && <span className="error-message">{validation.errors.tags}</span>}
       </div>
@@ -345,63 +446,61 @@ export const ProjectSettingsApp: React.FC = () => {
                 },
               }))
             }
+            onBlur={handleFieldBlur}
             placeholder="README.md"
           />
           <span className="help-text">ディレクトリクリック時に開くファイル名</span>
         </div>
 
         <div className="form-group">
-          <label>除外パターン</label>
-          <div className="exclude-patterns">
-            {formData.project_settings?.exclude_patterns?.map((pattern) => (
-              <span key={pattern} className="exclude-pattern">
-                {pattern}
-                <button className="pattern-remove" onClick={() => handleRemovePattern(pattern)}>
-                  ×
-                </button>
-              </span>
-            ))}
-          </div>
-          <div className="add-pattern-form">
-            <input
-              type="text"
-              value={newPattern}
-              onChange={(e) => setNewPattern(e.target.value)}
-              placeholder="例: *.tmp"
-              onKeyDown={handlePatternKeyPress}
-            />
-            <button onClick={handleAddPattern}>追加</button>
-          </div>
-          <span className="help-text">ファイルスキャン時に除外するパターン（glob形式）</span>
+          <label htmlFor="exclude-patterns">除外パターン</label>
+          <textarea
+            id="exclude-patterns"
+            value={excludePatternsText}
+            onChange={(e) => handleExcludePatternsChange(e.target.value)}
+            onBlur={handleFieldBlur}
+            placeholder="除外するパターンを1行ずつ入力してください&#10;例:&#10;*.tmp&#10;node_modules/&#10;.git/"
+            rows={5}
+          />
+          <span className="help-text">
+            ファイルスキャン時に除外するパターン（glob形式、1行につき1パターン）
+          </span>
           {validation.errors.exclude_patterns && (
             <span className="error-message">{validation.errors.exclude_patterns}</span>
           )}
         </div>
       </div>
 
-      {/* メタデータ情報 */}
-      <div className="section">
-        <span className="section-title">ℹ️ メタデータ</span>
-        <div className="metadata-info">
-          <div>作成日: {new Date(settings.created_at).toLocaleString()}</div>
-          {settings.updated_at && (
-            <div>更新日: {new Date(settings.updated_at).toLocaleString()}</div>
-          )}
+      {/* メタデータ情報（既存プロジェクトのみ） */}
+      {!isNewProject && settings && (
+        <div className="section">
+          <span className="section-title">ℹ️ メタデータ</span>
+          <div className="metadata-info">
+            <div>作成日: {new Date(settings.created_at).toLocaleString()}</div>
+            {settings.updated_at && (
+              <div>更新日: {new Date(settings.updated_at).toLocaleString()}</div>
+            )}
+          </div>
         </div>
-      </div>
+      )}
 
-      {/* 操作ボタン */}
-      <div className="actions">
-        <button className="primary" onClick={handleSave}>
-          💾 保存
-        </button>
-        <button className="secondary" onClick={handleCancel}>
-          ❌ キャンセル
-        </button>
-        <button className="tertiary" onClick={handleOpenYamlEditor}>
-          📝 YAML直接編集
-        </button>
-      </div>
+      {/* 新規プロジェクト作成時のみ操作ボタン表示 */}
+      {isNewProject && (
+        <div className="actions">
+          <button className="primary" onClick={autoSave}>
+            ✨ プロジェクトを作成
+          </button>
+        </div>
+      )}
+
+      {/* 既存プロジェクトではYAML直接編集ボタンのみ */}
+      {!isNewProject && (
+        <div className="actions">
+          <button className="tertiary" onClick={handleOpenYamlEditor}>
+            📝 YAML直接編集
+          </button>
+        </div>
+      )}
     </div>
   );
 };

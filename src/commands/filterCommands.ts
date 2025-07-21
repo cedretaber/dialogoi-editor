@@ -1,7 +1,6 @@
 import * as vscode from 'vscode';
 import { DialogoiTreeDataProvider } from '../tree/DialogoiTreeDataProvider.js';
 import { Logger } from '../utils/Logger.js';
-import { ServiceContainer } from '../di/ServiceContainer.js';
 
 /**
  * フィルター関連のコマンドを登録
@@ -148,86 +147,6 @@ export function registerFilterCommands(
     },
   );
 
-  // 除外設定管理コマンド
-  const manageExcludeSettingsCommand = vscode.commands.registerCommand(
-    'dialogoi.manageExcludeSettings',
-    async () => {
-      try {
-        const container = ServiceContainer.getInstance();
-        const settingsService = container.getDialogoiSettingsService();
-        const hasPatterns = settingsService.hasDialogoiExcludePatterns();
-
-        const action = await vscode.window.showQuickPick(
-          [
-            {
-              label: hasPatterns ? '$(check) 除外設定を削除' : '$(add) 除外設定を追加',
-              description: hasPatterns
-                ? 'DialogoiファイルをVSCode検索に表示する'
-                : 'DialogoiファイルをVSCode検索から除外する',
-              action: hasPatterns ? 'remove' : 'add',
-            },
-            {
-              label: '$(gear) 除外設定を確認',
-              description: '現在の除外設定を表示',
-              action: 'show',
-            },
-          ],
-          {
-            placeHolder: 'VSCode検索の除外設定を管理',
-          },
-        );
-
-        if (!action) {
-          return;
-        }
-
-        switch (action.action) {
-          case 'add': {
-            const addSuccess = await settingsService.addDialogoiExcludePatterns();
-            if (addSuccess) {
-              vscode.window.showInformationMessage(
-                'Dialogoi関連ファイルをVSCode検索から除外しました',
-              );
-            } else {
-              vscode.window.showErrorMessage('除外設定の追加に失敗しました');
-            }
-            break;
-          }
-
-          case 'remove': {
-            const removeSuccess = await settingsService.removeDialogoiExcludePatterns();
-            if (removeSuccess) {
-              vscode.window.showInformationMessage(
-                'Dialogoi関連ファイルをVSCode検索に表示するようにしました',
-              );
-            } else {
-              vscode.window.showErrorMessage('除外設定の削除に失敗しました');
-            }
-            break;
-          }
-
-          case 'show': {
-            const patterns = settingsService.getCurrentExcludePatterns();
-            const dialogoiPatterns = Object.keys(patterns).filter(
-              (key) => key.includes('dialogoi') && patterns[key] === true,
-            );
-            const message =
-              dialogoiPatterns.length > 0
-                ? `除外中: ${dialogoiPatterns.join(', ')}`
-                : 'Dialogoi関連ファイルは除外されていません';
-            vscode.window.showInformationMessage(message);
-            break;
-          }
-        }
-      } catch (error) {
-        logger.error('除外設定管理コマンドエラー', error instanceof Error ? error : String(error));
-        vscode.window.showErrorMessage(
-          `除外設定の管理に失敗しました: ${error instanceof Error ? error.message : String(error)}`,
-        );
-      }
-    },
-  );
-
   // コマンドを登録
   context.subscriptions.push(
     filterByTagCommand,
@@ -235,7 +154,6 @@ export function registerFilterCommands(
     filterByReferenceCommand,
     filterByFileTypeCommand,
     showFilterStatusCommand,
-    manageExcludeSettingsCommand,
   );
 
   logger.debug('フィルターコマンドを登録完了');

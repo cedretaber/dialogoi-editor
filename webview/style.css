@@ -67,6 +67,25 @@ body {
   border-color: var(--vscode-focusBorder);
 }
 
+.form-group textarea {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 6px 8px;
+  background-color: var(--vscode-input-background);
+  color: var(--vscode-input-foreground);
+  border: 1px solid var(--vscode-input-border);
+  border-radius: 2px;
+  font-size: 13px;
+  font-family: var(--vscode-editor-font-family);
+  resize: vertical;
+  min-height: 80px;
+}
+
+.form-group textarea:focus {
+  outline: 1px solid var(--vscode-focusBorder);
+  border-color: var(--vscode-focusBorder);
+}
+
 .help-text {
   display: block;
   font-size: 11px;
@@ -135,6 +154,17 @@ body {
 
 .add-tag-form input, .add-pattern-form input {
   flex: 1;
+  padding: 6px 8px;
+  background-color: var(--vscode-input-background);
+  color: var(--vscode-input-foreground);
+  border: 1px solid var(--vscode-input-border);
+  border-radius: 2px;
+  font-size: 13px;
+}
+
+.add-tag-form input:focus, .add-pattern-form input:focus {
+  outline: 1px solid var(--vscode-focusBorder);
+  border-color: var(--vscode-focusBorder);
 }
 
 .exclude-patterns {

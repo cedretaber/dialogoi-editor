@@ -1,5 +1,14 @@
-title: "魔法学院の日常"
-author: "山田太郎"
-version: "1.0.0"
-created_at: "2024-01-01T00:00:00Z"
-tags: ["ファンタジー", "青春", "学園"]
+title: 魔法学院の日常
+author: 山田太郎
+version: 1.0.0
+created_at: '2024-01-01T00:00:00Z'
+tags:
+  - ファンタジー
+  - 青春
+  - 学園
+updated_at: '2025-07-21T10:02:27.278Z'
+project_settings:
+  exclude_patterns:
+    - '*.tmp'
+    - '*.temp'
+    - node_modules/

@@ -1,178 +1,130 @@
 import * as vscode from 'vscode';
 import { DialogoiTreeDataProvider } from '../tree/DialogoiTreeDataProvider.js';
-import {
-  ProjectCreationService,
-  ProjectCreationOptions,
-} from '../services/ProjectCreationService.js';
 import { ServiceContainer } from '../di/ServiceContainer.js';
 import { Logger } from '../utils/Logger.js';
+import { ProjectSettingsWebviewPanel } from '../views/ProjectSettingsWebviewPanel.js';
 
 /**
  * プロジェクト関連のコマンドを登録
  */
 export function registerProjectCommands(
   context: vscode.ExtensionContext,
-  treeDataProvider: DialogoiTreeDataProvider,
+  _treeDataProvider: DialogoiTreeDataProvider,
 ): void {
   const logger = Logger.getInstance();
+  const container = ServiceContainer.getInstance();
+  const dialogoiSettingsService = container.getDialogoiSettingsService();
+  const projectSettingsService = container.getProjectSettingsService();
 
-  // 新しい小説プロジェクトを開始するコマンド
-  const startNewNovelCommand = vscode.commands.registerCommand(
-    'dialogoi.startNewNovel',
+  // 検索除外設定を管理
+  const manageExcludeSettingsCommand = vscode.commands.registerCommand(
+    'dialogoi.manageExcludeSettings',
     async () => {
-      try {
-        logger.info('新しい小説プロジェクト作成を開始');
+      const hasDialogoiPatterns = dialogoiSettingsService.hasDialogoiExcludePatterns();
 
-        // 現在のワークスペースフォルダを取得
-        const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
-        if (!workspaceFolder) {
-          vscode.window.showErrorMessage('ワークスペースフォルダが開かれていません。');
-          return;
-        }
-
-        const projectRoot = workspaceFolder.uri.fsPath;
-
-        // 小説のタイトルを入力
-        const title = await vscode.window.showInputBox({
-          prompt: '小説のタイトルを入力してください',
-          placeHolder: '例: 魔法学院の日常',
-          validateInput: (value) => {
-            if (!value || value.trim() === '') {
-              return 'タイトルを入力してください。';
-            }
-            return null;
+      const action = await vscode.window.showQuickPick(
+        [
+          {
+            label: hasDialogoiPatterns
+              ? '$(eye) Dialogoi 関連ファイルを表示'
+              : '$(eye-closed) Dialogoi 関連ファイルを非表示',
+            description: hasDialogoiPatterns
+              ? '検索結果にDialogoi関連ファイルを含める'
+              : '検索結果からDialogoi関連ファイルを除外',
+            value: hasDialogoiPatterns ? 'remove' : 'add',
           },
-        });
-
-        if (title === undefined || title.trim() === '') {
-          return; // ユーザーがキャンセルした場合
-        }
-
-        // 著者名を入力
-        const author = await vscode.window.showInputBox({
-          prompt: '著者名を入力してください',
-          placeHolder: '例: 山田太郎',
-          validateInput: (value) => {
-            if (!value || value.trim() === '') {
-              return '著者名を入力してください。';
-            }
-            return null;
+          {
+            label: '$(gear) 除外設定を直接編集',
+            description: 'VSCodeの設定ファイルを開く',
+            value: 'edit',
           },
-        });
+        ],
+        {
+          placeHolder: '検索除外設定の管理',
+        },
+      );
 
-        if (author === undefined || author.trim() === '') {
-          return; // ユーザーがキャンセルした場合
-        }
+      if (!action) {
+        return;
+      }
 
-        // オプションでタグを入力
-        const tagsInput = await vscode.window.showInputBox({
-          prompt: 'タグを入力してください（カンマ区切り、省略可）',
-          placeHolder: '例: ファンタジー, 学園, 冒険',
-        });
-
-        const tags =
-          tagsInput !== undefined && tagsInput.trim() !== ''
-            ? tagsInput
-                .split(',')
-                .map((tag) => tag.trim())
-                .filter((tag) => tag.length > 0)
-            : [];
-
-        // プロジェクト作成サービスを取得
-        const fileRepository = ServiceContainer.getInstance().getFileRepository();
-        const dialogoiYamlService = ServiceContainer.getInstance().getDialogoiYamlService();
-        const templateService = ServiceContainer.getInstance().getDialogoiTemplateService();
-        const projectCreationService = new ProjectCreationService(
-          fileRepository,
-          dialogoiYamlService,
-          templateService,
-        );
-
-        // プロジェクト作成オプションを設定
-        const options: ProjectCreationOptions = {
-          title: title.trim(),
-          author: author.trim(),
-          tags: tags.length > 0 ? tags : undefined,
-          overwriteDialogoiYaml: false,
-          overwriteMetaYaml: false,
-        };
-
-        // プロジェクトを作成
-        logger.info(`プロジェクト作成開始: ${projectRoot}`);
-        const result = await projectCreationService.createProject(projectRoot, options);
-
-        if (result.success) {
-          logger.info('プロジェクト作成成功');
-          vscode.window.showInformationMessage(`小説プロジェクト「${title}」を作成しました！`);
-
-          // TreeViewを更新
-          treeDataProvider.refresh();
-
-          // 作成されたファイルがあれば通知
-          if (result.createdFiles && result.createdFiles.length > 0) {
-            logger.debug(`作成されたファイル: ${result.createdFiles.join(', ')}`);
-          }
-        } else {
-          logger.error('プロジェクト作成失敗', result.message);
-          vscode.window.showErrorMessage(`プロジェクトの作成に失敗しました: ${result.message}`);
-
-          // エラー詳細をログ出力
-          if (result.errors && result.errors.length > 0) {
-            result.errors.forEach((error) => logger.error('プロジェクト作成エラー詳細', error));
-          }
-        }
-      } catch (error) {
-        logger.error(
-          '新規プロジェクト作成コマンドエラー',
-          error instanceof Error ? error : String(error),
-        );
-        vscode.window.showErrorMessage(
-          `プロジェクトの作成中にエラーが発生しました: ${error instanceof Error ? error.message : String(error)}`,
-        );
+      switch (action.value) {
+        case 'add':
+          await dialogoiSettingsService.addDialogoiExcludePatterns();
+          void vscode.window.showInformationMessage(
+            'Dialogoi関連ファイルを検索対象から除外しました',
+          );
+          break;
+        case 'remove':
+          await dialogoiSettingsService.removeDialogoiExcludePatterns();
+          void vscode.window.showInformationMessage('Dialogoi関連ファイルを検索対象に含めました');
+          break;
+        case 'edit':
+          await vscode.commands.executeCommand('workbench.action.openSettings', 'files.exclude');
+          break;
       }
     },
   );
 
-  // プロジェクト設定変更コマンド（視覚的編集画面を表示）
+  // 新しい小説プロジェクトを開始
+  const startNewNovelCommand = vscode.commands.registerCommand('dialogoi.startNewNovel', () => {
+    logger.debug('Starting new novel project');
+
+    // プロジェクト設定パネルを新規プロジェクトモードで表示
+    ProjectSettingsWebviewPanel.createOrShow(
+      context.extensionUri,
+      projectSettingsService,
+      logger,
+      true, // isNewProject
+    );
+  });
+
+  // プロジェクト設定を編集
   const editProjectSettingsCommand = vscode.commands.registerCommand(
     'dialogoi.editProjectSettings',
     async () => {
-      try {
-        const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
-        if (!workspaceFolder) {
-          vscode.window.showErrorMessage('ワークスペースフォルダが開かれていません。');
-          return;
-        }
+      logger.debug('Opening project settings editor');
 
-        const projectRoot = workspaceFolder.uri.fsPath;
-        const dialogoiYamlService = ServiceContainer.getInstance().getDialogoiYamlService();
-
-        // dialogoi.yamlが存在するかチェック
-        if (!dialogoiYamlService.isDialogoiProjectRoot(projectRoot)) {
-          vscode.window.showErrorMessage('Dialogoiプロジェクトが見つかりません。');
-          return;
-        }
-
-        // プロジェクト設定ビューを開く
-        await vscode.commands.executeCommand('dialogoi-project-settings.focus');
-
-        vscode.window.showInformationMessage(
-          'プロジェクト設定パネルを開きました。フォーム形式で設定を編集できます。',
-        );
-      } catch (error) {
-        logger.error(
-          'プロジェクト設定編集コマンドエラー',
-          error instanceof Error ? error : String(error),
-        );
-        vscode.window.showErrorMessage(
-          `プロジェクト設定の編集中にエラーが発生しました: ${error instanceof Error ? error.message : String(error)}`,
-        );
+      // 現在のワークスペースにDialogoiプロジェクトが存在するか確認
+      const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
+      if (!workspaceFolder) {
+        void vscode.window.showErrorMessage('ワークスペースフォルダーが開かれていません。');
+        return;
       }
+
+      const projectRoot = workspaceFolder.uri.fsPath;
+      if (!projectSettingsService.isDialogoiProject(projectRoot)) {
+        const action = await vscode.window.showWarningMessage(
+          'Dialogoiプロジェクトが見つかりません。新しいプロジェクトを作成しますか？',
+          'はい',
+          'いいえ',
+        );
+
+        if (action === 'はい') {
+          // 新規プロジェクトモードで表示
+          ProjectSettingsWebviewPanel.createOrShow(
+            context.extensionUri,
+            projectSettingsService,
+            logger,
+            true, // isNewProject
+          );
+        }
+        return;
+      }
+
+      // 既存プロジェクトの設定編集モードで表示
+      ProjectSettingsWebviewPanel.createOrShow(
+        context.extensionUri,
+        projectSettingsService,
+        logger,
+        false, // isNewProject
+      );
     },
   );
 
-  // コマンドを登録
-  context.subscriptions.push(startNewNovelCommand, editProjectSettingsCommand);
-
-  logger.debug('プロジェクトコマンドを登録完了');
+  context.subscriptions.push(
+    manageExcludeSettingsCommand,
+    startNewNovelCommand,
+    editProjectSettingsCommand,
+  );
 }
