@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import type {
   ProjectSettingsData,
   ProjectSettingsUpdateData,
@@ -6,65 +6,7 @@ import type {
   ProjectSettingsWebViewMessage,
   ProjectSettingsValidationResult,
 } from '../types/ProjectSettings';
-import type { VSCodeApi } from '../types/FileDetails';
-
-// VSCode API の遅延初期化用フック
-const useVSCodeApi = (): {
-  postMessage: (message: ProjectSettingsMessage) => boolean;
-  isVSCodeReady: boolean;
-  getVSCodeApi: () => VSCodeApi | null;
-} => {
-  const vsCodeRef = useRef<VSCodeApi | null>(null);
-  const [isVSCodeReady, setIsVSCodeReady] = useState(false);
-
-  const getVSCodeApi = useCallback((): VSCodeApi | null => {
-    if (!vsCodeRef.current) {
-      try {
-        if (typeof acquireVsCodeApi !== 'undefined') {
-          vsCodeRef.current = acquireVsCodeApi();
-        } else {
-          return null;
-        }
-      } catch {
-        return null;
-      }
-    }
-    return vsCodeRef.current;
-  }, []);
-
-  const postMessage = useCallback(
-    (message: ProjectSettingsMessage): boolean => {
-      const api = getVSCodeApi();
-      if (api) {
-        try {
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-call
-          (api.postMessage as any)(message);
-          return true;
-        } catch {
-          return false;
-        }
-      }
-      return false;
-    },
-    [getVSCodeApi],
-  );
-
-  useEffect((): (() => void) => {
-    // WebViewが初期化された後にVSCode APIを取得
-    const timer = setTimeout(() => {
-      const api = getVSCodeApi();
-      if (api) {
-        setIsVSCodeReady(true);
-        // 準備完了を通知
-        postMessage({ command: 'ready' });
-      }
-    }, 100); // 短い遅延でWebViewの初期化を待つ
-
-    return (): void => clearTimeout(timer);
-  }, [getVSCodeApi, postMessage]);
-
-  return { postMessage, isVSCodeReady, getVSCodeApi };
-};
+import { useVSCodeApi } from '../hooks/useVSCodeApi';
 
 // セマンティックバージョンの検証
 const isValidSemanticVersion = (version: string): boolean => {
@@ -92,7 +34,7 @@ export const ProjectSettingsApp: React.FC = () => {
   const [newTag, setNewTag] = useState('');
   const [newPattern, setNewPattern] = useState('');
 
-  const { postMessage, isVSCodeReady } = useVSCodeApi();
+  const { postMessage, isVSCodeReady } = useVSCodeApi<ProjectSettingsMessage>({ command: 'ready' });
 
   // Extensionからのメッセージリスナー
   useEffect((): (() => void) => {

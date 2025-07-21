@@ -1,73 +1,17 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
-import type { FileDetailsData, VSCodeApi, UpdateFileMessage } from '../types/FileDetails';
+import React, { useState, useEffect } from 'react';
+import type { FileDetailsData, UpdateFileMessage } from '../types/FileDetails';
 import { TagSection } from './TagSection';
 import { CharacterSection } from './CharacterSection';
 import { ReferenceSection } from './ReferenceSection';
 import { ReviewSection } from './ReviewSection';
 import { BasicInfoSection } from './BasicInfoSection';
+import { useVSCodeApi } from '../hooks/useVSCodeApi';
 
 import type { WebViewMessage } from '../types/FileDetails';
 
-// VSCode API の遅延初期化用フック
-const useVSCodeApi = (): {
-  postMessage: (message: WebViewMessage) => boolean;
-  isVSCodeReady: boolean;
-  getVSCodeApi: () => VSCodeApi | null;
-} => {
-  const vsCodeRef = useRef<VSCodeApi | null>(null);
-  const [isVSCodeReady, setIsVSCodeReady] = useState(false);
-
-  const getVSCodeApi = useCallback((): VSCodeApi | null => {
-    if (!vsCodeRef.current) {
-      try {
-        if (typeof acquireVsCodeApi !== 'undefined') {
-          vsCodeRef.current = acquireVsCodeApi();
-        } else {
-          return null;
-        }
-      } catch {
-        return null;
-      }
-    }
-    return vsCodeRef.current;
-  }, []);
-
-  const postMessage = useCallback(
-    (message: WebViewMessage): boolean => {
-      const api = getVSCodeApi();
-      if (api) {
-        try {
-          api.postMessage(message);
-          return true;
-        } catch {
-          return false;
-        }
-      }
-      return false;
-    },
-    [getVSCodeApi],
-  );
-
-  useEffect((): (() => void) => {
-    // WebViewが初期化された後にVSCode APIを取得
-    const timer = setTimeout(() => {
-      const api = getVSCodeApi();
-      if (api) {
-        setIsVSCodeReady(true);
-        // 準備完了を通知
-        postMessage({ type: 'ready' });
-      }
-    }, 100); // 短い遅延でWebViewの初期化を待つ
-
-    return (): void => clearTimeout(timer);
-  }, [getVSCodeApi, postMessage]);
-
-  return { postMessage, isVSCodeReady, getVSCodeApi };
-};
-
 export const FileDetailsApp: React.FC = () => {
   const [fileData, setFileData] = useState<FileDetailsData | null>(null);
-  const { postMessage, isVSCodeReady } = useVSCodeApi();
+  const { postMessage, isVSCodeReady } = useVSCodeApi<WebViewMessage>({ type: 'ready' });
 
   useEffect((): (() => void) => {
     // Extension からのメッセージリスナー
