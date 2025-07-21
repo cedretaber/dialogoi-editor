@@ -5,6 +5,15 @@ import { MockFileRepository } from '../repositories/MockFileRepository.js';
 import { MetaYamlService } from './MetaYamlService.js';
 import { MetaYamlUtils } from '../utils/MetaYamlUtils.js';
 
+// 型アサーション関数
+function assertNotNull<T>(value: T | null): asserts value is T {
+  assert.notStrictEqual(value, null);
+}
+
+function assertNotUndefined<T>(value: T | undefined): asserts value is T {
+  assert.notStrictEqual(value, undefined);
+}
+
 suite('FileOperationService テストスイート', () => {
   let service: FileOperationService;
   let mockFileRepository: MockFileRepository;
@@ -47,10 +56,12 @@ suite('FileOperationService テストスイート', () => {
 
       // meta.yamlが更新されている
       const meta = metaYamlService.loadMetaYaml(testDir);
-      assert.strictEqual(meta !== null, true);
-      const fileItem = meta!.files.find(f => f.name === 'test.txt');
-      assert.strictEqual(fileItem !== undefined, true);
-      assert.strictEqual(fileItem!.type, 'content');
+
+      assertNotNull(meta);
+      const fileItem = meta.files.find((f) => f.name === 'test.txt');
+
+      assertNotUndefined(fileItem);
+      assert.strictEqual(fileItem.type, 'content');
     });
 
     test('タグ付きファイルを作成する', () => {
@@ -61,8 +72,10 @@ suite('FileOperationService テストスイート', () => {
       assert.strictEqual(result.success, true);
 
       const meta = metaYamlService.loadMetaYaml(testDir);
-      const fileItem = meta!.files.find(f => f.name === 'tagged.md');
-      assert.deepStrictEqual(fileItem!.tags, ['タグ1', 'タグ2']);
+      assertNotNull(meta);
+      const fileItem = meta.files.find((f) => f.name === 'tagged.md');
+      assertNotUndefined(fileItem);
+      assert.deepStrictEqual(fileItem.tags, ['タグ1', 'タグ2']);
     });
 
     test('キャラクターサブタイプでファイルを作成する', () => {
@@ -73,24 +86,37 @@ suite('FileOperationService テストスイート', () => {
       assert.strictEqual(result.success, true);
 
       const meta = metaYamlService.loadMetaYaml(testDir);
-      const fileItem = meta!.files.find(f => f.name === 'character.md');
-      assert.strictEqual(fileItem!.character !== undefined, true);
-      assert.strictEqual(fileItem!.character!.importance, 'main');
-      assert.strictEqual(fileItem!.character!.multiple_characters, false);
+      assertNotNull(meta);
+      const fileItem = meta.files.find((f) => f.name === 'character.md');
+      assertNotUndefined(fileItem);
+      assert.strictEqual(fileItem.character !== undefined, true);
+      assertNotUndefined(fileItem.character);
+      assert.strictEqual(fileItem.character.importance, 'main');
+      assert.strictEqual(fileItem.character.multiple_characters, false);
     });
 
     test('伏線サブタイプでファイルを作成する', () => {
       // 実行
-      const result = service.createFile(testDir, 'foreshadowing.md', 'setting', '', [], 'foreshadowing');
+      const result = service.createFile(
+        testDir,
+        'foreshadowing.md',
+        'setting',
+        '',
+        [],
+        'foreshadowing',
+      );
 
       // 検証
       assert.strictEqual(result.success, true);
 
       const meta = metaYamlService.loadMetaYaml(testDir);
-      const fileItem = meta!.files.find(f => f.name === 'foreshadowing.md');
-      assert.strictEqual(fileItem!.foreshadowing !== undefined, true);
-      assert.strictEqual(fileItem!.foreshadowing!.start, '');
-      assert.strictEqual(fileItem!.foreshadowing!.goal, '');
+      assertNotNull(meta);
+      const fileItem = meta.files.find((f) => f.name === 'foreshadowing.md');
+      assertNotUndefined(fileItem);
+      assert.strictEqual(fileItem.foreshadowing !== undefined, true);
+      assertNotUndefined(fileItem.foreshadowing);
+      assert.strictEqual(fileItem.foreshadowing.start, '');
+      assert.strictEqual(fileItem.foreshadowing.goal, '');
     });
 
     test('用語集サブタイプでファイルを作成する', () => {
@@ -101,8 +127,10 @@ suite('FileOperationService テストスイート', () => {
       assert.strictEqual(result.success, true);
 
       const meta = metaYamlService.loadMetaYaml(testDir);
-      const fileItem = meta!.files.find(f => f.name === 'glossary.md');
-      assert.strictEqual(fileItem!.glossary, true);
+      assertNotNull(meta);
+      const fileItem = meta.files.find((f) => f.name === 'glossary.md');
+      assertNotUndefined(fileItem);
+      assert.strictEqual(fileItem.glossary, true);
     });
 
     test('サブディレクトリを作成する', () => {
@@ -168,7 +196,8 @@ suite('FileOperationService テストスイート', () => {
 
       // meta.yamlからも削除されている
       const meta = metaYamlService.loadMetaYaml(testDir);
-      const fileItem = meta!.files.find(f => f.name === 'to_delete.txt');
+      assertNotNull(meta);
+      const fileItem = meta.files.find((f) => f.name === 'to_delete.txt');
       assert.strictEqual(fileItem, undefined);
     });
 
@@ -205,8 +234,9 @@ suite('FileOperationService テストスイート', () => {
 
       // meta.yamlが更新されている
       const meta = metaYamlService.loadMetaYaml(testDir);
-      const oldItem = meta!.files.find(f => f.name === 'old_name.txt');
-      const newItem = meta!.files.find(f => f.name === 'new_name.txt');
+      assertNotNull(meta);
+      const oldItem = meta.files.find((f) => f.name === 'old_name.txt');
+      const newItem = meta.files.find((f) => f.name === 'new_name.txt');
       assert.strictEqual(oldItem, undefined);
       assert.strictEqual(newItem !== undefined, true);
     });
@@ -243,8 +273,9 @@ suite('FileOperationService テストスイート', () => {
 
       // 初期状態を確認
       const metaBefore = metaYamlService.loadMetaYaml(testDir);
-      const fileNamesBefore = metaBefore!.files.map(f => f.name);
-      console.log('FileNames before reorder:', fileNamesBefore);
+      assertNotNull(metaBefore);
+      const fileNamesBefore = metaBefore.files.map((f) => f.name);
+      // console.log('FileNames before reorder:', fileNamesBefore);
 
       // 実行：インデックス0のファイルをインデックス2に移動
       const result = service.reorderFiles(testDir, 0, 2);
@@ -254,9 +285,10 @@ suite('FileOperationService テストスイート', () => {
       assert.strictEqual(result.message, 'ファイルの順序を変更しました。');
 
       const meta = metaYamlService.loadMetaYaml(testDir);
-      const fileNames = meta!.files.map(f => f.name);
-      console.log('FileNames after reorder:', fileNames);
-      
+      assertNotNull(meta);
+      const fileNames = meta.files.map((f) => f.name);
+      // console.log('FileNames after reorder:', fileNames);
+
       // 並び替えが正しく実行されたことを確認
       assert.strictEqual(fileNames.length, fileNamesBefore.length);
       // 最初のファイルがインデックス2に移動したことを確認
@@ -285,8 +317,10 @@ suite('FileOperationService テストスイート', () => {
       assert.strictEqual(result.success, true);
 
       const meta = metaYamlService.loadMetaYaml(testDir);
-      const fileItem = meta!.files.find(f => f.name === 'test.txt');
-      assert.deepStrictEqual(fileItem!.tags, ['テストタグ']);
+      assertNotNull(meta);
+      const fileItem = meta.files.find((f) => f.name === 'test.txt');
+      assertNotUndefined(fileItem);
+      assert.deepStrictEqual(fileItem.tags, ['テストタグ']);
     });
 
     test('重複タグの追加は失敗する', () => {
@@ -312,8 +346,10 @@ suite('FileOperationService テストスイート', () => {
       assert.strictEqual(result.success, true);
 
       const meta = metaYamlService.loadMetaYaml(testDir);
-      const fileItem = meta!.files.find(f => f.name === 'test.txt');
-      assert.deepStrictEqual(fileItem!.tags, ['保持タグ']);
+      assertNotNull(meta);
+      const fileItem = meta.files.find((f) => f.name === 'test.txt');
+      assertNotUndefined(fileItem);
+      assert.deepStrictEqual(fileItem.tags, ['保持タグ']);
     });
 
     test('ファイルのタグを一括設定する', () => {
@@ -327,8 +363,10 @@ suite('FileOperationService テストスイート', () => {
       assert.strictEqual(result.success, true);
 
       const meta = metaYamlService.loadMetaYaml(testDir);
-      const fileItem = meta!.files.find(f => f.name === 'test.txt');
-      assert.deepStrictEqual(fileItem!.tags, ['タグ1', 'タグ2']); // 重複が除去され、ソートされている
+      assertNotNull(meta);
+      const fileItem = meta.files.find((f) => f.name === 'test.txt');
+      assertNotUndefined(fileItem);
+      assert.deepStrictEqual(fileItem.tags, ['タグ1', 'タグ2']); // 重複が除去され、ソートされている
     });
   });
 
@@ -344,8 +382,10 @@ suite('FileOperationService テストスイート', () => {
       assert.strictEqual(result.success, true);
 
       const meta = metaYamlService.loadMetaYaml(testDir);
-      const fileItem = meta!.files.find(f => f.name === 'test.txt');
-      assert.deepStrictEqual(fileItem!.references, ['settings/character.md']);
+      assertNotNull(meta);
+      const fileItem = meta.files.find((f) => f.name === 'test.txt');
+      assertNotUndefined(fileItem);
+      assert.deepStrictEqual(fileItem.references, ['settings/character.md']);
     });
 
     test('ファイルから参照を削除する', () => {
@@ -361,8 +401,10 @@ suite('FileOperationService テストスイート', () => {
       assert.strictEqual(result.success, true);
 
       const meta = metaYamlService.loadMetaYaml(testDir);
-      const fileItem = meta!.files.find(f => f.name === 'test.txt');
-      assert.deepStrictEqual(fileItem!.references, ['ref2.md']);
+      assertNotNull(meta);
+      const fileItem = meta.files.find((f) => f.name === 'test.txt');
+      assertNotUndefined(fileItem);
+      assert.deepStrictEqual(fileItem.references, ['ref2.md']);
     });
   });
 
@@ -378,8 +420,11 @@ suite('FileOperationService テストスイート', () => {
       assert.strictEqual(result.success, true);
 
       const meta = metaYamlService.loadMetaYaml(testDir);
-      const fileItem = meta!.files.find(f => f.name === 'character.md');
-      assert.strictEqual(fileItem!.character!.importance, 'sub');
+      assertNotNull(meta);
+      const fileItem = meta.files.find((f) => f.name === 'character.md');
+      assertNotUndefined(fileItem);
+      assertNotUndefined(fileItem.character);
+      assert.strictEqual(fileItem.character.importance, 'sub');
     });
 
     test('複数キャラクターフラグを設定する', () => {
@@ -393,8 +438,11 @@ suite('FileOperationService テストスイート', () => {
       assert.strictEqual(result.success, true);
 
       const meta = metaYamlService.loadMetaYaml(testDir);
-      const fileItem = meta!.files.find(f => f.name === 'character.md');
-      assert.strictEqual(fileItem!.character!.multiple_characters, true);
+      assertNotNull(meta);
+      const fileItem = meta.files.find((f) => f.name === 'character.md');
+      assertNotUndefined(fileItem);
+      assertNotUndefined(fileItem.character);
+      assert.strictEqual(fileItem.character.multiple_characters, true);
     });
 
     test('キャラクター設定を削除する', () => {
@@ -408,8 +456,10 @@ suite('FileOperationService テストスイート', () => {
       assert.strictEqual(result.success, true);
 
       const meta = metaYamlService.loadMetaYaml(testDir);
-      const fileItem = meta!.files.find(f => f.name === 'character.md');
-      assert.strictEqual(fileItem!.character, undefined);
+      assertNotNull(meta);
+      const fileItem = meta.files.find((f) => f.name === 'character.md');
+      assertNotUndefined(fileItem);
+      assert.strictEqual(fileItem.character, undefined);
     });
   });
 

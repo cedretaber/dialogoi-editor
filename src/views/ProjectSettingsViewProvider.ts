@@ -1,7 +1,10 @@
 import * as vscode from 'vscode';
 import * as path from 'path';
 import * as fs from 'fs';
-import { ProjectSettingsService, ProjectSettingsUpdateData } from '../services/ProjectSettingsService.js';
+import {
+  ProjectSettingsService,
+  ProjectSettingsUpdateData,
+} from '../services/ProjectSettingsService.js';
 import { DialogoiYaml } from '../utils/DialogoiYamlUtils.js';
 import { Logger } from '../utils/Logger.js';
 
@@ -86,9 +89,16 @@ export class ProjectSettingsViewProvider implements vscode.WebviewViewProvider {
 
     // WebViewリソースのURIを生成
     const webviewDir = path.join(this.context.extensionUri.fsPath, 'webview');
-    const outDir = path.join(this.context.extensionUri.fsPath, 'out', 'webviews', 'projectSettings');
+    const outDir = path.join(
+      this.context.extensionUri.fsPath,
+      'out',
+      'webviews',
+      'projectSettings',
+    );
     const stylesheetUri = webview.asWebviewUri(vscode.Uri.file(path.join(webviewDir, 'style.css')));
-    const scriptUri = webview.asWebviewUri(vscode.Uri.file(path.join(outDir, 'projectSettings.js')));
+    const scriptUri = webview.asWebviewUri(
+      vscode.Uri.file(path.join(outDir, 'projectSettings.js')),
+    );
 
     // HTMLテンプレートファイルを読み込み
     const htmlPath = path.join(webviewDir, 'projectSettings.html');
@@ -114,7 +124,6 @@ export class ProjectSettingsViewProvider implements vscode.WebviewViewProvider {
     }
     return text;
   }
-
 
   /**
    * WebViewからのメッセージを処理
@@ -163,16 +172,18 @@ export class ProjectSettingsViewProvider implements vscode.WebviewViewProvider {
 
         // WebViewを更新して最新の設定を表示
         this.updateWebViewContent();
-        
+
         // 保存結果をWebViewに通知
         this.webviewView?.webview.postMessage({
           type: 'saveResult',
           data: { success: true, message: 'プロジェクト設定を保存しました。' },
         });
       } else {
-        void vscode.window.showErrorMessage('プロジェクト設定の保存に失敗しました。入力値を確認してください。');
+        void vscode.window.showErrorMessage(
+          'プロジェクト設定の保存に失敗しました。入力値を確認してください。',
+        );
         this.logger.error('Failed to save project settings');
-        
+
         // 保存結果をWebViewに通知
         this.webviewView?.webview.postMessage({
           type: 'saveResult',
@@ -180,7 +191,10 @@ export class ProjectSettingsViewProvider implements vscode.WebviewViewProvider {
         });
       }
     } catch (error) {
-      this.logger.error('Error saving project settings', error instanceof Error ? error : String(error));
+      this.logger.error(
+        'Error saving project settings',
+        error instanceof Error ? error : String(error),
+      );
       void vscode.window.showErrorMessage(
         `プロジェクト設定の保存中にエラーが発生しました: ${error instanceof Error ? error.message : String(error)}`,
       );
@@ -197,13 +211,18 @@ export class ProjectSettingsViewProvider implements vscode.WebviewViewProvider {
     }
 
     try {
-      const dialogoiYamlPath = this.projectSettingsService.getDialogoiYamlPath(this.currentProjectRoot);
+      const dialogoiYamlPath = this.projectSettingsService.getDialogoiYamlPath(
+        this.currentProjectRoot,
+      );
       const uri = vscode.Uri.file(dialogoiYamlPath);
       void vscode.window.showTextDocument(uri);
 
       this.logger.debug('Opened YAML editor for direct editing');
     } catch (error) {
-      this.logger.error('Error opening YAML editor', error instanceof Error ? error : String(error));
+      this.logger.error(
+        'Error opening YAML editor',
+        error instanceof Error ? error : String(error),
+      );
       void vscode.window.showErrorMessage(
         `YAML編集画面の起動中にエラーが発生しました: ${error instanceof Error ? error.message : String(error)}`,
       );
@@ -218,5 +237,4 @@ export class ProjectSettingsViewProvider implements vscode.WebviewViewProvider {
     this.updateWebViewContent();
     this.logger.debug(`Project root updated: ${newProjectRoot}`);
   }
-
 }

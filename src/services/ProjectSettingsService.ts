@@ -48,7 +48,10 @@ export class ProjectSettingsService {
 
       return settings;
     } catch (error) {
-      this.logger.error('Error loading project settings', error instanceof Error ? error : String(error));
+      this.logger.error(
+        'Error loading project settings',
+        error instanceof Error ? error : String(error),
+      );
       return null;
     }
   }
@@ -137,7 +140,10 @@ export class ProjectSettingsService {
         title: updateData.title.trim(),
         author: updateData.author.trim(),
         version: updateData.version.trim(),
-        tags: updateData.tags?.length !== undefined && updateData.tags.length > 0 ? updateData.tags : undefined,
+        tags:
+          updateData.tags?.length !== undefined && updateData.tags.length > 0
+            ? updateData.tags
+            : undefined,
         project_settings: this.mergeProjectSettings(
           currentSettings.project_settings,
           updateData.project_settings,
@@ -145,7 +151,10 @@ export class ProjectSettingsService {
       };
 
       // 設定を保存
-      const success = this.dialogoiYamlService.saveDialogoiYaml(projectRootAbsolutePath, updatedSettings);
+      const success = this.dialogoiYamlService.saveDialogoiYaml(
+        projectRootAbsolutePath,
+        updatedSettings,
+      );
 
       if (success) {
         this.logger.info('Project settings updated successfully');
@@ -155,7 +164,10 @@ export class ProjectSettingsService {
 
       return success;
     } catch (error) {
-      this.logger.error('Error updating project settings', error instanceof Error ? error : String(error));
+      this.logger.error(
+        'Error updating project settings',
+        error instanceof Error ? error : String(error),
+      );
       return false;
     }
   }
@@ -243,13 +255,15 @@ export class ProjectSettingsService {
       return current;
     }
 
-    const readme_filename = updates.readme_filename !== undefined && updates.readme_filename.trim() !== ''
-      ? updates.readme_filename.trim()
-      : undefined;
+    const readme_filename =
+      updates.readme_filename !== undefined && updates.readme_filename.trim() !== ''
+        ? updates.readme_filename.trim()
+        : undefined;
 
-    const exclude_patterns = updates.exclude_patterns !== undefined && updates.exclude_patterns.length > 0
-      ? updates.exclude_patterns
-      : undefined;
+    const exclude_patterns =
+      updates.exclude_patterns !== undefined && updates.exclude_patterns.length > 0
+        ? updates.exclude_patterns
+        : undefined;
 
     // 両方ともundefinedの場合はundefinedを返す
     if (readme_filename === undefined && exclude_patterns === undefined) {

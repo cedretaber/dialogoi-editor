@@ -410,7 +410,9 @@ export class FileDetailsViewProvider implements vscode.WebviewViewProvider {
     if (vscode.window.activeTextEditor) {
       const activeEditor = vscode.window.activeTextEditor;
       if (activeEditor.document?.fileName) {
-        this.logger.debug(`起動時のアクティブファイルをチェック: ${activeEditor.document.fileName}`);
+        this.logger.debug(
+          `起動時のアクティブファイルをチェック: ${activeEditor.document.fileName}`,
+        );
         this.updateFileDetailsByPath(activeEditor.document.fileName);
       }
     } else {

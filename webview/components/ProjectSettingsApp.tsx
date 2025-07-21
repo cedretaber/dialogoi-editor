@@ -10,7 +10,8 @@ import { useVSCodeApi } from '../hooks/useVSCodeApi';
 
 // セマンティックバージョンの検証
 const isValidSemanticVersion = (version: string): boolean => {
-  const semverRegex = /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$/;
+  const semverRegex =
+    /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$/;
   return semverRegex.test(version);
 };
 
@@ -43,7 +44,7 @@ export const ProjectSettingsApp: React.FC = () => {
       if (message.type === 'updateSettings') {
         setSettings(message.data.settings);
         setIsDialogoiProject(message.data.isDialogoiProject);
-        
+
         if (message.data.settings) {
           setFormData({
             title: message.data.settings.title,
@@ -91,7 +92,9 @@ export const ProjectSettingsApp: React.FC = () => {
     }
 
     const patterns = formData.project_settings?.exclude_patterns || [];
-    const duplicatePatterns = patterns.filter((pattern, index) => patterns.indexOf(pattern) !== index);
+    const duplicatePatterns = patterns.filter(
+      (pattern, index) => patterns.indexOf(pattern) !== index,
+    );
     if (duplicatePatterns.length > 0) {
       errors.exclude_patterns = `重複する除外パターンがあります: ${duplicatePatterns.join(', ')}`;
     }
@@ -115,7 +118,8 @@ export const ProjectSettingsApp: React.FC = () => {
         project_settings: {
           readme_filename: formData.project_settings?.readme_filename?.trim() || undefined,
           exclude_patterns:
-            formData.project_settings?.exclude_patterns && formData.project_settings.exclude_patterns.length > 0
+            formData.project_settings?.exclude_patterns &&
+            formData.project_settings.exclude_patterns.length > 0
               ? formData.project_settings.exclude_patterns
               : undefined,
         },
@@ -124,7 +128,8 @@ export const ProjectSettingsApp: React.FC = () => {
       // project_settingsが空の場合はundefinedに
       if (
         !dataToSave.project_settings?.readme_filename &&
-        (!dataToSave.project_settings?.exclude_patterns || dataToSave.project_settings.exclude_patterns.length === 0)
+        (!dataToSave.project_settings?.exclude_patterns ||
+          dataToSave.project_settings.exclude_patterns.length === 0)
       ) {
         dataToSave.project_settings = undefined;
       }
@@ -162,7 +167,7 @@ export const ProjectSettingsApp: React.FC = () => {
   const handleAddTag = (): void => {
     const tag = newTag.trim();
     if (tag && !formData.tags?.includes(tag)) {
-      setFormData(prev => ({
+      setFormData((prev) => ({
         ...prev,
         tags: [...(prev.tags || []), tag],
       }));
@@ -172,9 +177,9 @@ export const ProjectSettingsApp: React.FC = () => {
 
   // タグ削除
   const handleRemoveTag = (tagToRemove: string): void => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      tags: prev.tags?.filter(tag => tag !== tagToRemove) || [],
+      tags: prev.tags?.filter((tag) => tag !== tagToRemove) || [],
     }));
   };
 
@@ -182,7 +187,7 @@ export const ProjectSettingsApp: React.FC = () => {
   const handleAddPattern = (): void => {
     const pattern = newPattern.trim();
     if (pattern && !formData.project_settings?.exclude_patterns?.includes(pattern)) {
-      setFormData(prev => ({
+      setFormData((prev) => ({
         ...prev,
         project_settings: {
           ...prev.project_settings,
@@ -195,11 +200,14 @@ export const ProjectSettingsApp: React.FC = () => {
 
   // 除外パターン削除
   const handleRemovePattern = (patternToRemove: string): void => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
       project_settings: {
         ...prev.project_settings,
-        exclude_patterns: prev.project_settings?.exclude_patterns?.filter(pattern => pattern !== patternToRemove) || [],
+        exclude_patterns:
+          prev.project_settings?.exclude_patterns?.filter(
+            (pattern) => pattern !== patternToRemove,
+          ) || [],
       },
     }));
   };
@@ -243,12 +251,8 @@ export const ProjectSettingsApp: React.FC = () => {
   return (
     <div className="container">
       <h3>📋 プロジェクト設定</h3>
-      
-      {!isVSCodeReady && (
-        <div className="warning">
-          VSCode API初期化中...
-        </div>
-      )}
+
+      {!isVSCodeReady && <div className="warning">VSCode API初期化中...</div>}
 
       {/* 基本情報セクション */}
       <div className="section">
@@ -259,35 +263,35 @@ export const ProjectSettingsApp: React.FC = () => {
             type="text"
             id="title"
             value={formData.title}
-            onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
+            onChange={(e) => setFormData((prev) => ({ ...prev, title: e.target.value }))}
             required
           />
           {validation.errors.title && (
             <span className="error-message">{validation.errors.title}</span>
           )}
         </div>
-        
+
         <div className="form-group">
           <label htmlFor="author">著者 *</label>
           <input
             type="text"
             id="author"
             value={formData.author}
-            onChange={(e) => setFormData(prev => ({ ...prev, author: e.target.value }))}
+            onChange={(e) => setFormData((prev) => ({ ...prev, author: e.target.value }))}
             required
           />
           {validation.errors.author && (
             <span className="error-message">{validation.errors.author}</span>
           )}
         </div>
-        
+
         <div className="form-group">
           <label htmlFor="version">バージョン *</label>
           <input
             type="text"
             id="version"
             value={formData.version}
-            onChange={(e) => setFormData(prev => ({ ...prev, version: e.target.value }))}
+            onChange={(e) => setFormData((prev) => ({ ...prev, version: e.target.value }))}
             placeholder="1.0.0"
           />
           {validation.errors.version && (
@@ -304,7 +308,9 @@ export const ProjectSettingsApp: React.FC = () => {
           {formData.tags?.map((tag) => (
             <span key={tag} className="tag">
               {tag}
-              <button className="tag-remove" onClick={() => handleRemoveTag(tag)}>×</button>
+              <button className="tag-remove" onClick={() => handleRemoveTag(tag)}>
+                ×
+              </button>
             </span>
           ))}
         </div>
@@ -318,9 +324,7 @@ export const ProjectSettingsApp: React.FC = () => {
           />
           <button onClick={handleAddTag}>追加</button>
         </div>
-        {validation.errors.tags && (
-          <span className="error-message">{validation.errors.tags}</span>
-        )}
+        {validation.errors.tags && <span className="error-message">{validation.errors.tags}</span>}
       </div>
 
       {/* プロジェクト設定セクション */}
@@ -332,25 +336,29 @@ export const ProjectSettingsApp: React.FC = () => {
             type="text"
             id="readme-filename"
             value={formData.project_settings?.readme_filename || ''}
-            onChange={(e) => setFormData(prev => ({
-              ...prev,
-              project_settings: {
-                ...prev.project_settings,
-                readme_filename: e.target.value,
-              },
-            }))}
+            onChange={(e) =>
+              setFormData((prev) => ({
+                ...prev,
+                project_settings: {
+                  ...prev.project_settings,
+                  readme_filename: e.target.value,
+                },
+              }))
+            }
             placeholder="README.md"
           />
           <span className="help-text">ディレクトリクリック時に開くファイル名</span>
         </div>
-        
+
         <div className="form-group">
           <label>除外パターン</label>
           <div className="exclude-patterns">
             {formData.project_settings?.exclude_patterns?.map((pattern) => (
               <span key={pattern} className="exclude-pattern">
                 {pattern}
-                <button className="pattern-remove" onClick={() => handleRemovePattern(pattern)}>×</button>
+                <button className="pattern-remove" onClick={() => handleRemovePattern(pattern)}>
+                  ×
+                </button>
               </span>
             ))}
           </div>
@@ -384,9 +392,15 @@ export const ProjectSettingsApp: React.FC = () => {
 
       {/* 操作ボタン */}
       <div className="actions">
-        <button className="primary" onClick={handleSave}>💾 保存</button>
-        <button className="secondary" onClick={handleCancel}>❌ キャンセル</button>
-        <button className="tertiary" onClick={handleOpenYamlEditor}>📝 YAML直接編集</button>
+        <button className="primary" onClick={handleSave}>
+          💾 保存
+        </button>
+        <button className="secondary" onClick={handleCancel}>
+          ❌ キャンセル
+        </button>
+        <button className="tertiary" onClick={handleOpenYamlEditor}>
+          📝 YAML直接編集
+        </button>
       </div>
     </div>
   );

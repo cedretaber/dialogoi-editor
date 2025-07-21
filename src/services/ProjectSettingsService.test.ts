@@ -14,10 +14,7 @@ suite('ProjectSettingsService テストスイート', () => {
     const container = TestServiceContainer.create();
     mockFileRepository = container.getFileRepository() as MockFileRepository;
     logger = Logger.getInstance();
-    service = new ProjectSettingsService(
-      container.getDialogoiYamlService(),
-      logger,
-    );
+    service = new ProjectSettingsService(container.getDialogoiYamlService(), logger);
   });
 
   teardown(() => {
@@ -63,7 +60,10 @@ project_settings:
       assert.strictEqual(loadedSettings?.title, dialogoiYaml.title);
       assert.strictEqual(loadedSettings?.author, dialogoiYaml.author);
       assert.deepStrictEqual(loadedSettings?.tags, dialogoiYaml.tags);
-      assert.strictEqual(loadedSettings?.project_settings?.readme_filename, dialogoiYaml.project_settings?.readme_filename);
+      assert.strictEqual(
+        loadedSettings?.project_settings?.readme_filename,
+        dialogoiYaml.project_settings?.readme_filename,
+      );
     });
 
     test('Dialogoiプロジェクトが存在しない場合はnullを返す', () => {
@@ -129,13 +129,16 @@ project_settings:
 
       const validation = service.validateUpdateData(updateData);
       assert.strictEqual(validation.isValid, false);
-      assert.strictEqual(validation.errors['version'], 'セマンティックバージョニング形式で入力してください（例: 1.0.0）');
+      assert.strictEqual(
+        validation.errors['version'],
+        'セマンティックバージョニング形式で入力してください（例: 1.0.0）',
+      );
     });
 
     test('有効なセマンティックバージョンは通過する', () => {
       const validVersions = ['1.0.0', '0.1.0', '10.20.30', '1.1.2-alpha', '1.0.0+20130313144700'];
 
-      validVersions.forEach(version => {
+      validVersions.forEach((version) => {
         const updateData: ProjectSettingsUpdateData = {
           title: 'テスト小説',
           author: 'テスト著者',
@@ -173,7 +176,9 @@ project_settings:
 
       const validation = service.validateUpdateData(updateData);
       assert.strictEqual(validation.isValid, false);
-      assert.ok(validation.errors['exclude_patterns']?.includes('重複する除外パターンがあります') === true);
+      assert.ok(
+        validation.errors['exclude_patterns']?.includes('重複する除外パターンがあります') === true,
+      );
       assert.ok(validation.errors['exclude_patterns']?.includes('*.tmp') === true);
     });
   });
@@ -181,7 +186,7 @@ project_settings:
   suite('プロジェクト設定の更新', () => {
     test('有効な更新データで設定を正しく更新できる', () => {
       const projectRoot = '/test/project';
-      
+
       // 既存の設定を作成
       const existingSettings: DialogoiYaml = {
         title: '元のタイトル',
@@ -225,8 +230,14 @@ tags:
       assert.strictEqual(updatedSettings?.['author'], updateData['author']);
       assert.strictEqual(updatedSettings?.['version'], updateData['version']);
       assert.deepStrictEqual(updatedSettings?.tags, updateData['tags']);
-      assert.strictEqual(updatedSettings?.project_settings?.readme_filename, updateData.project_settings?.readme_filename);
-      assert.deepStrictEqual(updatedSettings?.project_settings?.exclude_patterns, updateData.project_settings?.exclude_patterns);
+      assert.strictEqual(
+        updatedSettings?.project_settings?.readme_filename,
+        updateData.project_settings?.readme_filename,
+      );
+      assert.deepStrictEqual(
+        updatedSettings?.project_settings?.exclude_patterns,
+        updateData.project_settings?.exclude_patterns,
+      );
 
       // 元の必須フィールドが保持されることを確認
       assert.strictEqual(updatedSettings?.created_at, existingSettings.created_at);
@@ -234,7 +245,7 @@ tags:
 
     test('バリデーションエラーがある場合は更新が失敗する', () => {
       const projectRoot = '/test/project';
-      
+
       // 既存の設定を作成
       const existingSettings: DialogoiYaml = {
         title: '元のタイトル',
@@ -286,7 +297,7 @@ created_at: "${existingSettings.created_at}"`,
 
     test('空のタグと除外パターンはundefinedとして保存される', () => {
       const projectRoot = '/test/project';
-      
+
       // 既存の設定を作成
       const existingSettings: DialogoiYaml = {
         title: '元のタイトル',

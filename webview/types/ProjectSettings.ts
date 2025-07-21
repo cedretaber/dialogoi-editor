@@ -59,9 +59,7 @@ export interface SaveResultMessage {
   };
 }
 
-export type ProjectSettingsWebViewMessage = 
-  | UpdateProjectSettingsMessage 
-  | SaveResultMessage;
+export type ProjectSettingsWebViewMessage = UpdateProjectSettingsMessage | SaveResultMessage;
 
 export interface VSCodeProjectSettingsApi {
   postMessage: (message: ProjectSettingsMessage) => void;

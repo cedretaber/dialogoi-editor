@@ -20,7 +20,7 @@ export class MockSettingsRepository implements SettingsRepository {
       return undefined;
     }
 
-    if (key) {
+    if (key !== undefined && key !== '') {
       return sectionSettings.get(key) as T | undefined;
     }
 
@@ -48,21 +48,21 @@ export class MockSettingsRepository implements SettingsRepository {
         this.settings.set(section, sectionSettings);
       }
 
-      if (key) {
+      if (key !== undefined && key !== '') {
         sectionSettings.set(key, value);
       } else {
         // keyが指定されていない場合は、セクション全体を更新
         sectionSettings.clear();
-        if (value && typeof value === 'object') {
+        if (value !== null && value !== undefined && typeof value === 'object') {
           Object.entries(value as Record<string, unknown>).forEach(([k, v]) => {
-            sectionSettings!.set(k, v);
+            sectionSettings.set(k, v);
           });
         }
       }
 
-      return true;
+      return Promise.resolve(true);
     } catch {
-      return false;
+      return Promise.resolve(false);
     }
   }
 

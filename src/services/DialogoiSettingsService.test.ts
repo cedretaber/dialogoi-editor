@@ -32,8 +32,8 @@ suite('DialogoiSettingsService テストスイート', () => {
     test('既存の除外設定を保持しながら追加する', async () => {
       // 準備：既存の除外設定
       const existingExclude = {
-        'node_modules': true,
-        'dist': true,
+        node_modules: true,
+        dist: true,
       };
       mockRepository.setSettings('files', 'exclude', existingExclude);
 
@@ -58,7 +58,7 @@ suite('DialogoiSettingsService テストスイート', () => {
     test('Dialogoi関連パターンを正常に削除する', async () => {
       // 準備：Dialogoi関連パターンを設定
       const existingExclude = {
-        'node_modules': true,
+        node_modules: true,
         '**/dialogoi.yaml': true,
         '**/.dialogoi-meta.yaml': true,
         '**/.dialogoi-reviews/**': true,
@@ -93,7 +93,7 @@ suite('DialogoiSettingsService テストスイート', () => {
     test('全てのパターンが設定されている場合はtrueを返す', () => {
       // 準備：全てのDialogoi関連パターンを設定
       const excludePatterns = {
-        'node_modules': true,
+        node_modules: true,
         '**/dialogoi.yaml': true,
         '**/.dialogoi-meta.yaml': true,
         '**/.dialogoi-reviews/**': true,
@@ -110,7 +110,7 @@ suite('DialogoiSettingsService テストスイート', () => {
     test('一部のパターンが欠けている場合はfalseを返す', () => {
       // 準備：一部のパターンのみ設定
       const excludePatterns = {
-        'node_modules': true,
+        node_modules: true,
         '**/dialogoi.yaml': true,
         // '**/.dialogoi-meta.yaml': true,  // 欠けている
         '**/.dialogoi-reviews/**': true,
@@ -153,9 +153,9 @@ suite('DialogoiSettingsService テストスイート', () => {
     test('現在の除外設定を正常に取得する', () => {
       // 準備
       const excludePatterns = {
-        'node_modules': true,
+        node_modules: true,
         '**/dialogoi.yaml': true,
-        'test': false,
+        test: false,
       };
       mockRepository.setSettings('files', 'exclude', excludePatterns);
 
@@ -190,8 +190,8 @@ suite('DialogoiSettingsService テストスイート', () => {
     test('既存のワークスペース設定を保持しながら追加する', async () => {
       // 準備：既存の除外設定
       const existingExclude = {
-        'build': true,
-        'temp': true,
+        build: true,
+        temp: true,
       };
       mockRepository.setSettings('files', 'exclude', existingExclude);
 
@@ -204,10 +204,10 @@ suite('DialogoiSettingsService テストスイート', () => {
   });
 
   suite('エラーハンドリング', () => {
-    test('設定更新エラー時にfalseを返す', async () => {
+    test('設定更新エラー時にfalseを返す', () => {
       // MockRepositoryを拡張してエラーを発生させるケースをテスト
       // 実際の実装では、Mockでエラーを発生させる方法が必要
-      
+
       // 現在のMockRepositoryはエラーを発生させない設計なので、
       // この特定のテストは概念的な確認として残す
       assert.strictEqual(true, true, 'エラーハンドリングの概念的確認');

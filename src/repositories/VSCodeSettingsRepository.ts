@@ -10,7 +10,7 @@ export class VSCodeSettingsRepository implements SettingsRepository {
    */
   get<T>(section: string, key?: string): T | undefined {
     const config = vscode.workspace.getConfiguration(section);
-    if (key) {
+    if (key !== undefined && key !== '') {
       return config.get<T>(key);
     }
     // keyが指定されていない場合は、セクション全体の設定を返す
@@ -33,13 +33,13 @@ export class VSCodeSettingsRepository implements SettingsRepository {
           ? vscode.ConfigurationTarget.Global
           : vscode.ConfigurationTarget.Workspace;
 
-      if (key) {
+      if (key !== undefined && key !== '') {
         await config.update(key, value, configTarget);
       } else {
         // keyが指定されていない場合は、セクション全体を更新
         // VSCode APIではセクション全体の更新はサポートされていないため、
         // 各キーを個別に更新する
-        if (value && typeof value === 'object') {
+        if (value !== null && value !== undefined && typeof value === 'object') {
           for (const [k, v] of Object.entries(value as Record<string, unknown>)) {
             await config.update(k, v, configTarget);
           }
