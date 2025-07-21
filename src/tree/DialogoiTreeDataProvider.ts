@@ -99,6 +99,52 @@ export class DialogoiTreeDataProvider
   }
 
   /**
+   * 絶対パスからDialogoiTreeItemを検索
+   * @param absolutePath 検索するファイルの絶対パス
+   * @returns 見つかったTreeItem、見つからない場合はnull
+   */
+  findItemByAbsolutePath(absolutePath: string): DialogoiTreeItem | null {
+    if (this.novelRoot === null) {
+      return null;
+    }
+
+    // プロジェクト内のファイルかチェック
+    if (!absolutePath.startsWith(this.novelRoot)) {
+      return null;
+    }
+
+    // ルートディレクトリから再帰的に検索
+    return this.searchItemInDirectory(this.novelRoot, absolutePath);
+  }
+
+  /**
+   * 指定されたディレクトリ内でTreeItemを再帰的に検索
+   * @param dirPath 検索するディレクトリパス
+   * @param targetPath 検索対象のファイルパス
+   * @returns 見つかったTreeItem、見つからない場合はnull
+   */
+  private searchItemInDirectory(dirPath: string, targetPath: string): DialogoiTreeItem | null {
+    const items = this.loadMetaYaml(dirPath);
+
+    for (const item of items) {
+      // アイテムのパス（item.path）と検索対象パスが一致するかチェック
+      if (item.path === targetPath) {
+        return item;
+      }
+
+      // サブディレクトリの場合は再帰的に検索
+      if (item.type === 'subdirectory') {
+        const subResult = this.searchItemInDirectory(item.path, targetPath);
+        if (subResult !== null) {
+          return subResult;
+        }
+      }
+    }
+
+    return null;
+  }
+
+  /**
    * フィルターが適用されているかチェック
    */
   isFilterActive(): boolean {

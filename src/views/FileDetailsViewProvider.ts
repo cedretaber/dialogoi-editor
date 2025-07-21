@@ -398,6 +398,49 @@ export class FileDetailsViewProvider implements vscode.WebviewViewProvider {
   }
 
   /**
+   * VSCode起動時のアクティブエディタをチェック
+   */
+  public checkInitialActiveEditor(): void {
+    // VSCode APIが利用可能かチェック
+    if (typeof vscode === 'undefined' || !vscode.window) {
+      this.logger.debug('VSCode APIが利用できません');
+      return;
+    }
+
+    if (vscode.window.activeTextEditor) {
+      const activeEditor = vscode.window.activeTextEditor;
+      if (activeEditor.document && activeEditor.document.fileName) {
+        this.logger.debug(`起動時のアクティブファイルをチェック: ${activeEditor.document.fileName}`);
+        this.updateFileDetailsByPath(activeEditor.document.fileName);
+      }
+    } else {
+      this.logger.debug('起動時にアクティブなエディタはありません');
+    }
+  }
+
+  /**
+   * アクティブエディタのファイルパスから詳細情報を更新
+   * @param filePath アクティブエディタで開いているファイルの絶対パス
+   */
+  public updateFileDetailsByPath(filePath: string): void {
+    if (!this.treeDataProvider) {
+      this.logger.debug('TreeDataProviderが設定されていません');
+      return;
+    }
+
+    // ファイルパスからDialogoiTreeItemを検索
+    const item = this.treeDataProvider.findItemByAbsolutePath(filePath);
+    if (item !== null) {
+      this.logger.debug(`アクティブエディタファイルの詳細を更新: ${item.name}`);
+      this.updateFileDetails(item);
+    } else {
+      // Dialogoi管理対象外のファイルの場合は詳細表示をクリア
+      this.logger.debug(`Dialogoi管理対象外ファイル: ${filePath}`);
+      this.updateFileDetails(null);
+    }
+  }
+
+  /**
    * ファイル詳細情報を更新
    */
   public updateFileDetails(item: DialogoiTreeItem | null): void {
@@ -507,6 +550,8 @@ export class FileDetailsViewProvider implements vscode.WebviewViewProvider {
         break;
       case 'ready':
         // WebViewの準備完了
+        this.logger.debug('WebView準備完了 - 起動時アクティブエディタをチェック');
+        this.checkInitialActiveEditor();
         this.updateFileDetails(this.currentItem);
         void this.updateTreeData();
         break;

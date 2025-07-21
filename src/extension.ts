@@ -111,6 +111,18 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
       }
     });
 
+    // アクティブエディタ変更の監視（タブでファイルを開いた時）
+    logger.debug('アクティブエディタ監視を開始...');
+    const activeEditorWatcher = vscode.window.onDidChangeActiveTextEditor((editor) => {
+      if (editor && editor.document && editor.document.fileName) {
+        logger.debug(`アクティブエディタ変更: ${editor.document.fileName}`);
+        fileDetailsProvider.updateFileDetailsByPath(editor.document.fileName);
+      }
+    });
+    context.subscriptions.push(activeEditorWatcher);
+
+    logger.debug('アクティブエディタ監視開始完了');
+
     const refreshCommand = vscode.commands.registerCommand('dialogoi.refreshExplorer', () => {
       treeDataProvider.refresh();
       vscode.window.showInformationMessage('Dialogoi Explorer を更新しました');
