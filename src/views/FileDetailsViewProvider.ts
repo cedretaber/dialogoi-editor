@@ -402,14 +402,14 @@ export class FileDetailsViewProvider implements vscode.WebviewViewProvider {
    */
   public checkInitialActiveEditor(): void {
     // VSCode APIが利用可能かチェック
-    if (typeof vscode === 'undefined' || !vscode.window) {
+    if (typeof vscode === 'undefined' || vscode.window === undefined) {
       this.logger.debug('VSCode APIが利用できません');
       return;
     }
 
     if (vscode.window.activeTextEditor) {
       const activeEditor = vscode.window.activeTextEditor;
-      if (activeEditor.document && activeEditor.document.fileName) {
+      if (activeEditor.document?.fileName) {
         this.logger.debug(`起動時のアクティブファイルをチェック: ${activeEditor.document.fileName}`);
         this.updateFileDetailsByPath(activeEditor.document.fileName);
       }

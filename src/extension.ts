@@ -10,6 +10,7 @@ import { registerFilterCommands } from './commands/filterCommands.js';
 import { registerProjectCommands } from './commands/projectCommands.js';
 import { registerDropCommands } from './commands/dropCommands.js';
 import { FileDetailsViewProvider } from './views/FileDetailsViewProvider.js';
+import { ProjectSettingsViewProvider } from './views/ProjectSettingsViewProvider.js';
 import { VSCodeServiceContainer } from './di/VSCodeServiceContainer.js';
 import { ServiceContainer } from './di/ServiceContainer.js';
 import { Logger } from './utils/Logger.js';
@@ -66,6 +67,20 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     );
     logger.debug('FileDetailsViewProvider作成完了');
 
+    logger.debug('ProjectSettingsViewProvider作成を開始...');
+    const projectSettingsProvider = new ProjectSettingsViewProvider(
+      context,
+      container.getProjectSettingsService(),
+      logger,
+    );
+    context.subscriptions.push(
+      vscode.window.registerWebviewViewProvider(
+        'dialogoi-project-settings',
+        projectSettingsProvider,
+      ),
+    );
+    logger.debug('ProjectSettingsViewProvider作成完了');
+
     // ReferenceManagerの初期化
     logger.debug('ReferenceManager初期化を開始...');
     const referenceManager = container.getReferenceManager();
@@ -111,10 +126,18 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
       }
     });
 
+    // ワークスペース変更時にプロジェクト設定ビューを更新
+    const workspaceWatcher = vscode.workspace.onDidChangeWorkspaceFolders(() => {
+      const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
+      const newProjectRoot = workspaceFolder?.uri.fsPath;
+      projectSettingsProvider.updateProjectRoot(newProjectRoot);
+    });
+    context.subscriptions.push(workspaceWatcher);
+
     // アクティブエディタ変更の監視（タブでファイルを開いた時）
     logger.debug('アクティブエディタ監視を開始...');
     const activeEditorWatcher = vscode.window.onDidChangeActiveTextEditor((editor) => {
-      if (editor && editor.document && editor.document.fileName) {
+      if (editor?.document?.fileName !== undefined && editor.document.fileName !== '') {
         logger.debug(`アクティブエディタ変更: ${editor.document.fileName}`);
         fileDetailsProvider.updateFileDetailsByPath(editor.document.fileName);
       }

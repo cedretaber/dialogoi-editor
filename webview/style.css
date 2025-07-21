@@ -8,6 +8,218 @@ body {
   line-height: 1.4;
 }
 
+/* プロジェクト設定専用スタイル */
+.container {
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+.container h3 {
+  margin: 0 0 16px 0;
+  color: var(--vscode-foreground);
+}
+
+.container .section {
+  background-color: var(--vscode-sideBar-background);
+  border: 1px solid var(--vscode-sideBar-border);
+  border-radius: 4px;
+  padding: 16px;
+  margin-bottom: 16px;
+}
+
+.section-title {
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--vscode-foreground);
+  display: block;
+  margin-bottom: 12px;
+}
+
+.form-group {
+  margin-bottom: 16px;
+}
+
+.form-group:last-child {
+  margin-bottom: 0;
+}
+
+.form-group label {
+  display: block;
+  font-weight: 600;
+  margin-bottom: 4px;
+  font-size: 13px;
+  color: var(--vscode-foreground);
+}
+
+.form-group input[type="text"] {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 6px 8px;
+  background-color: var(--vscode-input-background);
+  color: var(--vscode-input-foreground);
+  border: 1px solid var(--vscode-input-border);
+  border-radius: 2px;
+  font-size: 13px;
+}
+
+.form-group input[type="text"]:focus {
+  outline: 1px solid var(--vscode-focusBorder);
+  border-color: var(--vscode-focusBorder);
+}
+
+.help-text {
+  display: block;
+  font-size: 11px;
+  color: var(--vscode-descriptionForeground);
+  margin-top: 4px;
+}
+
+.error-message {
+  display: block;
+  font-size: 11px;
+  color: var(--vscode-errorForeground);
+  margin-top: 4px;
+}
+
+.warning {
+  background-color: #fff3cd;
+  padding: 4px 8px;
+  font-size: 11px;
+  margin-bottom: 8px;
+  border-radius: 2px;
+}
+
+.tags-container {
+  margin-bottom: 8px;
+  min-height: 32px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.tag {
+  display: inline-flex;
+  align-items: center;
+  background-color: var(--vscode-badge-background);
+  color: var(--vscode-badge-foreground);
+  padding: 2px 6px;
+  border-radius: 3px;
+  font-size: 11px;
+  gap: 4px;
+}
+
+.tag-remove, .pattern-remove {
+  background: none;
+  border: none;
+  color: var(--vscode-badge-foreground);
+  cursor: pointer;
+  font-size: 12px;
+  padding: 0;
+  width: 16px;
+  height: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.tag-remove:hover, .pattern-remove:hover {
+  background-color: var(--vscode-button-hoverBackground);
+  border-radius: 2px;
+}
+
+.add-tag-form, .add-pattern-form {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.add-tag-form input, .add-pattern-form input {
+  flex: 1;
+}
+
+.exclude-patterns {
+  margin-bottom: 8px;
+  min-height: 32px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.exclude-pattern {
+  display: inline-flex;
+  align-items: center;
+  background-color: var(--vscode-textCodeBlock-background);
+  color: var(--vscode-foreground);
+  padding: 2px 6px;
+  border-radius: 3px;
+  font-size: 11px;
+  font-family: var(--vscode-editor-font-family);
+  gap: 4px;
+  border: 1px solid var(--vscode-input-border);
+}
+
+.metadata-info {
+  font-size: 12px;
+  color: var(--vscode-descriptionForeground);
+  line-height: 1.5;
+}
+
+.actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-start;
+  flex-wrap: wrap;
+  margin-top: 24px;
+}
+
+.actions button {
+  padding: 6px 12px;
+  border: 1px solid var(--vscode-button-border);
+  border-radius: 2px;
+  cursor: pointer;
+  font-size: 13px;
+  min-width: 80px;
+}
+
+.primary {
+  background-color: var(--vscode-button-background);
+  color: var(--vscode-button-foreground);
+}
+
+.primary:hover {
+  background-color: var(--vscode-button-hoverBackground);
+}
+
+.secondary {
+  background-color: var(--vscode-button-secondaryBackground);
+  color: var(--vscode-button-secondaryForeground);
+}
+
+.secondary:hover {
+  background-color: var(--vscode-button-secondaryHoverBackground);
+}
+
+.tertiary {
+  background-color: transparent;
+  color: var(--vscode-button-foreground);
+  border-color: var(--vscode-button-border);
+}
+
+.tertiary:hover {
+  background-color: var(--vscode-button-hoverBackground);
+}
+
+.no-project, .error {
+  text-align: center;
+  padding: 32px 16px;
+  color: var(--vscode-descriptionForeground);
+}
+
+.no-project h3, .error h3 {
+  color: var(--vscode-foreground);
+  margin-bottom: 16px;
+}
+
 .file-title {
   font-size: 14px;
   font-weight: 600;

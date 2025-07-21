@@ -15,6 +15,8 @@ import { ProjectPathNormalizationService } from '../services/ProjectPathNormaliz
 import { DropHandlerService } from '../services/DropHandlerService.js';
 import { SettingsRepository } from '../repositories/SettingsRepository.js';
 import { DialogoiSettingsService } from '../services/DialogoiSettingsService.js';
+import { ProjectSettingsService } from '../services/ProjectSettingsService.js';
+import { Logger } from '../utils/Logger.js';
 import { Uri } from '../interfaces/Uri.js';
 
 /**
@@ -38,6 +40,7 @@ export interface IServiceContainer {
   getSettingsRepository(): SettingsRepository;
   setSettingsRepository(repository: SettingsRepository): void;
   getDialogoiSettingsService(): DialogoiSettingsService;
+  getProjectSettingsService(): ProjectSettingsService;
   reset(): void;
 }
 
@@ -64,6 +67,7 @@ export class ServiceContainer implements IServiceContainer {
   private dropHandlerService: DropHandlerService | null = null;
   private settingsRepository: SettingsRepository | null = null;
   private dialogoiSettingsService: DialogoiSettingsService | null = null;
+  private projectSettingsService: ProjectSettingsService | null = null;
 
   protected constructor() {}
 
@@ -98,6 +102,7 @@ export class ServiceContainer implements IServiceContainer {
     this.hyperlinkExtractorService = null;
     this.projectPathNormalizationService = null;
     this.dropHandlerService = null;
+    this.projectSettingsService = null;
   }
 
   /**
@@ -311,6 +316,15 @@ export class ServiceContainer implements IServiceContainer {
       this.dialogoiSettingsService = new DialogoiSettingsService(settingsRepository);
     }
     return this.dialogoiSettingsService;
+  }
+
+  getProjectSettingsService(): ProjectSettingsService {
+    if (!this.projectSettingsService) {
+      const dialogoiYamlService = this.getDialogoiYamlService();
+      const logger = Logger.getInstance();
+      this.projectSettingsService = new ProjectSettingsService(dialogoiYamlService, logger);
+    }
+    return this.projectSettingsService;
   }
 
   /**

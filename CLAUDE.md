@@ -121,6 +121,17 @@ npm run check-all
 - `vscode.workspace.getConfiguration()`で設定を取得
 - 設定変更時は`onDidChangeConfiguration`イベントで対応
 
+**WebView実装パターン:**
+- WebViewのUIは`webview/`ディレクトリにReact/TypeScriptで実装
+- 構成ファイル:
+  - `webview/index.html`: HTMLテンプレート（プレースホルダー含む）
+  - `webview/index.tsx`: Reactアプリのエントリーポイント  
+  - `webview/components/`: Reactコンポーネント群
+  - `webview/style.css`: 共通CSS
+  - `webview/types/`: TypeScript型定義
+- ビルド: TypeScriptが`out/webviews/`にコンパイル
+- Provider側でHTMLテンプレートを読み込み、プレースホルダーを置換してWebViewに設定
+
 ### meta.yaml/レビューファイル 固有の注意事項
 
 **YAMLファイル操作:**

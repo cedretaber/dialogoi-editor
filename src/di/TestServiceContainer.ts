@@ -24,6 +24,8 @@ import { Uri } from '../interfaces/Uri.js';
 import { IServiceContainer } from './ServiceContainer.js';
 import { SettingsRepository } from '../repositories/SettingsRepository.js';
 import { DialogoiSettingsService } from '../services/DialogoiSettingsService.js';
+import { ProjectSettingsService } from '../services/ProjectSettingsService.js';
+import { Logger } from '../utils/Logger.js';
 
 /**
  * テスト専用の依存関係注入コンテナ
@@ -48,6 +50,7 @@ export class TestServiceContainer implements IServiceContainer {
   private dropHandlerService: DropHandlerService | null = null;
   private settingsRepository: SettingsRepository | null = null;
   private dialogoiSettingsService: DialogoiSettingsService | null = null;
+  private projectSettingsService: ProjectSettingsService | null = null;
 
   private constructor() {
     // テスト環境では常にMockFileRepositoryを使用
@@ -278,6 +281,15 @@ export class TestServiceContainer implements IServiceContainer {
       this.dialogoiSettingsService = new DialogoiSettingsService(settingsRepository);
     }
     return this.dialogoiSettingsService;
+  }
+
+  getProjectSettingsService(): ProjectSettingsService {
+    if (!this.projectSettingsService) {
+      const dialogoiYamlService = this.getDialogoiYamlService();
+      const logger = Logger.getInstance();
+      this.projectSettingsService = new ProjectSettingsService(dialogoiYamlService, logger);
+    }
+    return this.projectSettingsService;
   }
 
   /**

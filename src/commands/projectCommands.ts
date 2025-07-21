@@ -133,7 +133,7 @@ export function registerProjectCommands(
     },
   );
 
-  // プロジェクト設定変更コマンド（将来拡張用）
+  // プロジェクト設定変更コマンド（視覚的編集画面を表示）
   const editProjectSettingsCommand = vscode.commands.registerCommand(
     'dialogoi.editProjectSettings',
     async () => {
@@ -153,13 +153,11 @@ export function registerProjectCommands(
           return;
         }
 
-        // dialogoi.yamlファイルを開く
-        const dialogoiYamlPath = dialogoiYamlService.getDialogoiYamlPath(projectRoot);
-        const uri = vscode.Uri.file(dialogoiYamlPath);
-        await vscode.window.showTextDocument(uri);
+        // プロジェクト設定ビューを開く
+        await vscode.commands.executeCommand('dialogoi-project-settings.focus');
 
         vscode.window.showInformationMessage(
-          'dialogoi.yamlファイルを編集してプロジェクト設定を変更できます。',
+          'プロジェクト設定パネルを開きました。フォーム形式で設定を編集できます。',
         );
       } catch (error) {
         logger.error(
