@@ -69,6 +69,12 @@ npx vsce package
 # 単体テスト実行（CI用 - VSCode非依存）
 npm test
 
+# Reactコンポーネントテスト実行（CI用 - VSCode非依存）
+npm run test:react
+
+# 全てのテスト実行（サーバサイド + React）
+npm run test:all
+
 # VSCode拡張機能テスト実行（開発用 - VSCode環境必要）
 npm run test:vscode
 
@@ -89,7 +95,9 @@ npm run check-all
 ```
 
 **テスト実行環境について：**
-- `npm test`: 標準のNode.js環境で実行可能（CI/CDで自動実行）
+- `npm test`: 標準のNode.js環境で実行可能（サーバサイドテストのCI/CD自動実行）
+- `npm run test:react`: 標準のNode.js環境で実行可能（ReactコンポーネントテストのCI/CD自動実行）
+- `npm run test:all`: 上記2つを結合した統合テスト
 - `npm run test:vscode`: VSCode環境が必要（開発時に手動実行）
   - VSCode内でF5キーでデバッグ実行時
   - または `xvfb-run -a npm run test:vscode` でヘッドレス実行
@@ -325,7 +333,7 @@ npm run check-all
 1. `npm run typecheck` - TypeScript 型チェック
 2. `npm run lint` - ESLint チェック（警告0個必須）
 3. `npm run format:check` - Prettier フォーマット確認
-4. `npm test` - 全単体テストの実行
+4. `npm run test:all` - 全テストの実行（サーバサイド + Reactコンポーネント）
 
 **重要な注意事項：**
 - `check-all`が失敗した場合は、必ず修正後に再度`check-all`を実行すること
@@ -337,4 +345,6 @@ npm run check-all
 - フォーマット修正：`npm run format`
 - 型チェックのみ：`npm run typecheck`
 - リントのみ：`npm run lint`
-- テストのみ：`npm test`
+- サーバサイドテストのみ：`npm test`
+- Reactコンポーネントテストのみ：`npm run test:react`
+- 全テスト：`npm run test:all`

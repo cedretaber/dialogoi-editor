@@ -110,6 +110,4 @@ export interface VSCodeApi {
   setState(state: unknown): void;
 }
 
-declare global {
-  const acquireVsCodeApi: (() => VSCodeApi) | undefined;
-}
+// Global declarations moved to test-setup.ts for test environment

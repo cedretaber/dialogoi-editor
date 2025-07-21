@@ -120,6 +120,11 @@
   - [x] FileDetailsViewに伏線管理UI追加
   - [x] サンプルプロジェクトのメタデータ更新
   - [x] 表示条件の最適化（伏線設定ファイルのみ表示）
+- [x] Reactコンポーネントテスト基盤構築✅ **2025-01-21完了**
+  - [x] Happy-DOM + React Testing Library + Mochaセットアップ
+  - [x] VSCode APIモック実装
+  - [x] TagSection.test.tsx完全テスト（20テストケース）
+  - [x] CI統合（`npm run check-all`に含まれる）
 - [ ] ファイル新規作成・名前変更のインライン編集
 - [ ] レビュー用 UI の整備
 - [ ] TODO機能の追加（レビュー機能との統合検討）
