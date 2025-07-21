@@ -1,6 +1,11 @@
 import * as path from 'path';
 import * as yaml from 'js-yaml';
 
+export interface ForeshadowingPoint {
+  location: string;
+  comment: string;
+}
+
 export interface DialogoiTreeItem {
   name: string;
   type: 'content' | 'setting' | 'subdirectory';
@@ -22,8 +27,8 @@ export interface DialogoiTreeItem {
     display_name?: string;
   };
   foreshadowing?: {
-    start: string;
-    goal: string;
+    plants: ForeshadowingPoint[];
+    payoff: ForeshadowingPoint;
   };
 }
 

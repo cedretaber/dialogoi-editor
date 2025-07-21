@@ -19,8 +19,12 @@ files:
       multiple_characters: false
       display_name: "主人公"
     foreshadowing:
-      start: "chapter1.txt"
-      goal: "chapter10.txt"
+      plants:
+        - location: "chapter1.txt"
+          comment: "伏線設置"
+      payoff:
+        location: "chapter10.txt"
+        comment: "伏線回収"
     reviews: "chapter1.txt_reviews.yaml"
     review_count:
       open: 2
@@ -46,8 +50,8 @@ files:
       assert.strictEqual(file1?.character?.importance, 'main');
       assert.strictEqual(file1?.character?.multiple_characters, false);
       assert.strictEqual(file1?.character?.display_name, '主人公');
-      assert.strictEqual(file1?.foreshadowing?.start, 'chapter1.txt');
-      assert.strictEqual(file1?.foreshadowing?.goal, 'chapter10.txt');
+      assert.strictEqual(file1?.foreshadowing?.plants?.[0]?.location, 'chapter1.txt');
+      assert.strictEqual(file1?.foreshadowing?.payoff?.location, 'chapter10.txt');
       assert.strictEqual(file1?.reviews, 'chapter1.txt_reviews.yaml');
       assert.strictEqual(file1?.review_count?.open, 2);
       assert.strictEqual(file1?.review_count?.in_progress, 1);
@@ -130,8 +134,8 @@ files:
               display_name: '主人公',
             },
             foreshadowing: {
-              start: 'chapter1.txt',
-              goal: 'chapter10.txt',
+              plants: [{ location: 'chapter1.txt', comment: '伏線設置' }],
+              payoff: { location: 'chapter10.txt', comment: '伏線回収' },
             },
             reviews: 'chapter1.txt_reviews.yaml',
             review_count: {
@@ -162,8 +166,8 @@ files:
       assert.ok(result.includes('importance: main'));
       assert.ok(result.includes('multiple_characters: false'));
       assert.ok(result.includes('display_name: 主人公'));
-      assert.ok(result.includes('start: chapter1.txt'));
-      assert.ok(result.includes('goal: chapter10.txt'));
+      assert.ok(result.includes('location: chapter1.txt'));
+      assert.ok(result.includes('location: chapter10.txt'));
       assert.ok(result.includes('open: 2'));
       assert.ok(result.includes('glossary: true'));
       assert.ok(result.includes('hash: abc123'));
@@ -216,8 +220,8 @@ files:
           display_name: 'テストキャラクター',
         },
         foreshadowing: {
-          start: 'chapter1.txt',
-          goal: 'chapter10.txt',
+          plants: [{ location: 'chapter1.txt', comment: '伏線設置' }],
+          payoff: { location: 'chapter10.txt', comment: '伏線回収' },
         },
         reviews: 'test.txt_reviews.yaml',
         review_count: {
@@ -537,8 +541,8 @@ files:
               display_name: '主人公',
             },
             foreshadowing: {
-              start: 'chapter1.txt',
-              goal: 'chapter10.txt',
+              plants: [{ location: 'chapter1.txt', comment: '伏線設置' }],
+              payoff: { location: 'chapter10.txt', comment: '伏線回収' },
             },
             reviews: 'chapter1.txt_reviews.yaml',
             review_count: {

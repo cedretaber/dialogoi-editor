@@ -1,9 +1,39 @@
 import * as vscode from 'vscode';
 import { DialogoiTreeDataProvider } from '../tree/DialogoiTreeDataProvider.js';
-import { ServiceContainer } from '../di/ServiceContainer.js';
-import { DialogoiTreeItem } from '../utils/MetaYamlUtils.js';
 
 export function registerForeshadowingCommands(
+  context: vscode.ExtensionContext,
+  _provider: DialogoiTreeDataProvider,
+): void {
+  // TODO: Phase 3でWebViewベースの新しいUIに置き換え予定
+  // 一時的に古いコマンドを無効化（破壊的変更のため）
+
+  // 伏線設定編集コマンド（一時的に無効化）
+  const editForeshadowingCommand = vscode.commands.registerCommand(
+    'dialogoi.editForeshadowing',
+    () => {
+      vscode.window.showInformationMessage(
+        '伏線機能は現在アップデート中です。新しいUIで間もなく利用可能になります。',
+      );
+    },
+  );
+
+  // 伏線削除コマンド（一時的に無効化）
+  const removeForeshadowingCommand = vscode.commands.registerCommand(
+    'dialogoi.removeForeshadowing',
+    () => {
+      vscode.window.showInformationMessage(
+        '伏線機能は現在アップデート中です。新しいUIで間もなく利用可能になります。',
+      );
+    },
+  );
+
+  context.subscriptions.push(editForeshadowingCommand);
+  context.subscriptions.push(removeForeshadowingCommand);
+}
+
+/* 古いコマンド実装（Phase 3で新しいUIに置き換え予定）
+export function registerForeshadowingCommandsOld(
   context: vscode.ExtensionContext,
   provider: DialogoiTreeDataProvider,
 ): void {
@@ -157,3 +187,4 @@ export function registerForeshadowingCommands(
   context.subscriptions.push(editForeshadowingCommand);
   context.subscriptions.push(removeForeshadowingCommand);
 }
+*/

@@ -1,9 +1,10 @@
 import * as path from 'path';
 import { FileRepository } from '../repositories/FileRepository.js';
+import { ForeshadowingPoint } from '../utils/MetaYamlUtils.js';
 
 export interface ForeshadowingData {
-  start: string;
-  goal: string;
+  plants: ForeshadowingPoint[];
+  payoff: ForeshadowingPoint;
 }
 
 export class ForeshadowingService {
@@ -69,18 +70,28 @@ export class ForeshadowingService {
   ): { valid: boolean; errors: string[] } {
     const errors: string[] = [];
 
-    // 埋蔵位置の検証
-    if (!foreshadowingData.start || foreshadowingData.start.trim() === '') {
-      errors.push('埋蔵位置（start）が指定されていません');
-    } else if (!this.validatePath(novelRootAbsolutePath, foreshadowingData.start)) {
-      errors.push(`埋蔵位置のファイルが存在しません: ${foreshadowingData.start}`);
+    // 埋蔵位置の検証（複数位置）
+    if (
+      foreshadowingData.plants === null ||
+      foreshadowingData.plants === undefined ||
+      foreshadowingData.plants.length === 0
+    ) {
+      errors.push('伏線の埋蔵位置（plants）が指定されていません');
+    } else {
+      foreshadowingData.plants.forEach((plant, index) => {
+        if (!plant.location || plant.location.trim() === '') {
+          errors.push(`埋蔵位置 ${index + 1} のファイルパスが指定されていません`);
+        } else if (!this.validatePath(novelRootAbsolutePath, plant.location)) {
+          errors.push(`埋蔵位置 ${index + 1} のファイルが存在しません: ${plant.location}`);
+        }
+      });
     }
 
     // 回収位置の検証
-    if (!foreshadowingData.goal || foreshadowingData.goal.trim() === '') {
-      errors.push('回収位置（goal）が指定されていません');
-    } else if (!this.validatePath(novelRootAbsolutePath, foreshadowingData.goal)) {
-      errors.push(`回収位置のファイルが存在しません: ${foreshadowingData.goal}`);
+    if (!foreshadowingData.payoff?.location || foreshadowingData.payoff.location.trim() === '') {
+      errors.push('伏線の回収位置（payoff）が指定されていません');
+    } else if (!this.validatePath(novelRootAbsolutePath, foreshadowingData.payoff.location)) {
+      errors.push(`回収位置のファイルが存在しません: ${foreshadowingData.payoff.location}`);
     }
 
     return {
@@ -93,25 +104,49 @@ export class ForeshadowingService {
    * 伏線の状態を取得
    * @param novelRootAbsolutePath 小説ルートの絶対パス
    * @param foreshadowingData 伏線データ
-   * @returns 伏線の状態（planted: 埋蔵済み, resolved: 回収済み, planned: 計画中）
+   * @returns 伏線の状態
    */
   getForeshadowingStatus(
     novelRootAbsolutePath: string,
     foreshadowingData: ForeshadowingData,
-  ): 'planted' | 'resolved' | 'planned' | 'error' {
-    const startExists = this.validatePath(novelRootAbsolutePath, foreshadowingData.start);
-    const goalExists = this.validatePath(novelRootAbsolutePath, foreshadowingData.goal);
-
-    if (!startExists && !goalExists) {
+  ): 'error' | 'planned' | 'partially_planted' | 'fully_planted' | 'resolved' {
+    // 基本的なデータ検証
+    if (
+      foreshadowingData.plants === null ||
+      foreshadowingData.plants === undefined ||
+      foreshadowingData.plants.length === 0
+    ) {
       return 'error';
     }
 
-    if (startExists && goalExists) {
+    // 各埋蔵位置の存在チェック
+    const plantsStatus = foreshadowingData.plants.map((plant) =>
+      this.validatePath(novelRootAbsolutePath, plant.location),
+    );
+    const existingPlantsCount = plantsStatus.filter((exists) => exists).length;
+    const totalPlantsCount = foreshadowingData.plants.length;
+
+    // 回収位置の存在チェック
+    const payoffExists =
+      foreshadowingData.payoff?.location !== null &&
+      foreshadowingData.payoff?.location !== undefined &&
+      this.validatePath(novelRootAbsolutePath, foreshadowingData.payoff.location);
+
+    // ステータス判定
+    if (existingPlantsCount === 0 && !payoffExists) {
+      return 'error';
+    }
+
+    if (existingPlantsCount === totalPlantsCount && payoffExists === true) {
       return 'resolved';
     }
 
-    if (startExists && !goalExists) {
-      return 'planted';
+    if (existingPlantsCount === totalPlantsCount && payoffExists === false) {
+      return 'fully_planted';
+    }
+
+    if (existingPlantsCount > 0 && existingPlantsCount < totalPlantsCount) {
+      return 'partially_planted';
     }
 
     return 'planned';

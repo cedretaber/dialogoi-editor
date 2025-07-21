@@ -124,8 +124,8 @@ export class FileOperationService {
           };
         } else if (subtype === 'foreshadowing') {
           newItem.foreshadowing = {
-            start: '',
-            goal: '',
+            plants: [],
+            payoff: { location: '', comment: '' },
           };
         } else if (subtype === 'glossary') {
           newItem.glossary = true;
@@ -718,8 +718,8 @@ export class FileOperationService {
         const fileItem = meta.files[fileIndex];
         if (fileItem !== undefined) {
           fileItem.foreshadowing = {
-            start: foreshadowingData.start,
-            goal: foreshadowingData.goal,
+            plants: foreshadowingData.plants,
+            payoff: foreshadowingData.payoff,
           };
         }
         return meta;

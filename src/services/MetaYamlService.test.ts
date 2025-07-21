@@ -116,8 +116,8 @@ files:
               display_name: '主人公',
             },
             foreshadowing: {
-              start: 'chapter1.txt',
-              goal: 'chapter10.txt',
+              plants: [{ location: 'chapter1.txt', comment: '伏線の設置' }],
+              payoff: { location: 'chapter10.txt', comment: '伏線の回収' },
             },
             reviews: 'chapter1.txt_reviews.yaml',
             review_count: {
@@ -152,8 +152,8 @@ files:
       assert.ok(savedContent.includes('type: content'));
       assert.ok(savedContent.includes('importance: main'));
       assert.ok(savedContent.includes('display_name: 主人公'));
-      assert.ok(savedContent.includes('start: chapter1.txt'));
-      assert.ok(savedContent.includes('goal: chapter10.txt'));
+      assert.ok(savedContent.includes('location: chapter1.txt'));
+      assert.ok(savedContent.includes('location: chapter10.txt'));
       assert.ok(savedContent.includes('open: 2'));
       assert.ok(savedContent.includes('glossary: true'));
       assert.ok(savedContent.includes('hash: abc123'));
@@ -678,8 +678,8 @@ files:
               display_name: '主人公',
             },
             foreshadowing: {
-              start: 'chapter1.txt',
-              goal: 'chapter10.txt',
+              plants: [{ location: 'chapter1.txt', comment: '伏線の設置' }],
+              payoff: { location: 'chapter10.txt', comment: '伏線の回収' },
             },
             reviews: 'chapter1.txt_reviews.yaml',
             review_count: {

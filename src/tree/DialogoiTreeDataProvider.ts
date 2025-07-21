@@ -548,24 +548,14 @@ export class DialogoiTreeDataProvider
       }
     }
 
-    // 伏線情報
+    // 伏線情報（Phase 3で新しいUI実装予定）
     if (element.foreshadowing !== undefined) {
       tooltipParts.push('');
       tooltipParts.push('伏線:');
-      tooltipParts.push(`• 埋蔵位置: ${element.foreshadowing.start}`);
-      tooltipParts.push(`• 回収位置: ${element.foreshadowing.goal}`);
-
-      // 伏線の状態を表示
-      if (this.novelRoot !== null && this.novelRoot !== undefined) {
-        const status = this.getForeshadowingStatus(element.foreshadowing);
-        const statusText = {
-          planted: '埋蔵済み',
-          resolved: '回収済み',
-          planned: '計画中',
-          error: 'エラー',
-        }[status];
-        tooltipParts.push(`• 状態: ${statusText}`);
-      }
+      const plantsCount = element.foreshadowing.plants?.length || 0;
+      tooltipParts.push(`• 埋蔵位置: ${plantsCount}箇所`);
+      tooltipParts.push(`• 回収位置: ${element.foreshadowing.payoff?.location || '未設定'}`);
+      tooltipParts.push('• 詳細はPhase 3で実装予定');
     }
 
     // レビュー情報
@@ -712,17 +702,6 @@ export class DialogoiTreeDataProvider
     }
 
     return result;
-  }
-
-  private getForeshadowingStatus(foreshadowing: {
-    start: string;
-    goal: string;
-  }): 'planted' | 'resolved' | 'planned' | 'error' {
-    if (this.novelRoot === null || this.novelRoot === undefined) {
-      return 'error';
-    }
-    const foreshadowingService = ServiceContainer.getInstance().getForeshadowingService();
-    return foreshadowingService.getForeshadowingStatus(this.novelRoot, foreshadowing);
   }
 
   private getContextValue(element: DialogoiTreeItem): string {

@@ -115,8 +115,9 @@ suite('FileOperationService テストスイート', () => {
       assertNotUndefined(fileItem);
       assert.strictEqual(fileItem.foreshadowing !== undefined, true);
       assertNotUndefined(fileItem.foreshadowing);
-      assert.strictEqual(fileItem.foreshadowing.start, '');
-      assert.strictEqual(fileItem.foreshadowing.goal, '');
+      assert.deepStrictEqual(fileItem.foreshadowing.plants, []);
+      assert.strictEqual(fileItem.foreshadowing.payoff.location, '');
+      assert.strictEqual(fileItem.foreshadowing.payoff.comment, '');
     });
 
     test('用語集サブタイプでファイルを作成する', () => {
