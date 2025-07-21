@@ -257,9 +257,10 @@ export class ForeshadowingService {
       // 保存
       const saveResult = this.metaYamlService.saveMetaYaml(dirPath, meta);
       if (saveResult) {
+        const plantLocation = removedPlant?.location ?? 'unknown';
         return {
           success: true,
-          message: `伏線の植込み位置を削除しました: ${removedPlant?.location || 'unknown'}`,
+          message: `伏線の植込み位置を削除しました: ${plantLocation}`,
         };
       } else {
         return { success: false, message: 'meta.yamlの保存に失敗しました' };

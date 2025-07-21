@@ -17,6 +17,11 @@ import { DisposableEvent } from '../repositories/EventEmitterRepository.js';
 /**
  * WebViewからのメッセージの型定義
  */
+interface ForeshadowingPoint {
+  location: string;
+  comment: string;
+}
+
 interface WebViewMessage {
   type:
     | 'addTag'
@@ -28,11 +33,19 @@ interface WebViewMessage {
     | 'openReference'
     | 'ready'
     | 'selectTreeItem'
-    | 'refreshTree';
+    | 'refreshTree'
+    | 'addForeshadowingPlant'
+    | 'removeForeshadowingPlant'
+    | 'updateForeshadowingPlant'
+    | 'setForeshadowingPayoff'
+    | 'removeForeshadowingPayoff';
   payload?: {
     tag?: string;
     reference?: string;
     itemPath?: string;
+    plant?: ForeshadowingPoint;
+    plantIndex?: number;
+    payoff?: ForeshadowingPoint;
   };
 }
 
@@ -478,6 +491,7 @@ export class FileDetailsViewProvider implements vscode.WebviewViewProvider {
             character: item.character,
             referenceData: referenceData,
             review_count: item.review_count,
+            foreshadowing: item.foreshadowing,
           }
         : null;
 
@@ -568,6 +582,34 @@ export class FileDetailsViewProvider implements vscode.WebviewViewProvider {
         break;
       case 'refreshTree':
         this.handleRefreshTree();
+        break;
+      case 'addForeshadowingPlant':
+        if (msg.payload?.plant !== undefined && msg.payload.plant !== null) {
+          this.handleAddForeshadowingPlant(msg.payload.plant);
+        }
+        break;
+      case 'removeForeshadowingPlant':
+        if (msg.payload?.plantIndex !== undefined && msg.payload.plantIndex !== null) {
+          this.handleRemoveForeshadowingPlant(msg.payload.plantIndex);
+        }
+        break;
+      case 'updateForeshadowingPlant':
+        if (
+          msg.payload?.plantIndex !== undefined &&
+          msg.payload.plantIndex !== null &&
+          msg.payload.plant !== undefined &&
+          msg.payload.plant !== null
+        ) {
+          this.handleUpdateForeshadowingPlant(msg.payload.plantIndex, msg.payload.plant);
+        }
+        break;
+      case 'setForeshadowingPayoff':
+        if (msg.payload?.payoff !== undefined && msg.payload.payoff !== null) {
+          this.handleSetForeshadowingPayoff(msg.payload.payoff);
+        }
+        break;
+      case 'removeForeshadowingPayoff':
+        this.handleRemoveForeshadowingPayoff();
         break;
       default:
         this.logger.debug('未知のメッセージタイプ', msg.type);
@@ -916,6 +958,231 @@ export class FileDetailsViewProvider implements vscode.WebviewViewProvider {
       this.logger.error('ツリー更新エラー', error instanceof Error ? error : String(error));
       vscode.window.showErrorMessage(
         `ツリーの更新に失敗しました: ${error instanceof Error ? error.message : String(error)}`,
+      );
+    }
+  }
+
+  /**
+   * 伏線の植込み位置を追加
+   */
+  private handleAddForeshadowingPlant(plant: ForeshadowingPoint): void {
+    if (!this.currentItem) {
+      return;
+    }
+
+    try {
+      const dirPath = path.dirname(this.currentItem.path || '');
+      const fileName = this.currentItem.name;
+
+      // ServiceContainerからForeshadowingServiceを取得
+      const serviceContainer = ServiceContainer.getInstance();
+      const foreshadowingService = serviceContainer.getForeshadowingService();
+
+      const result = foreshadowingService.addPlant(dirPath, fileName, plant);
+
+      if (result.success) {
+        this.logger.info(`伏線植込み位置追加: ${plant.location} → ${fileName}`);
+        vscode.window.showInformationMessage(result.message);
+
+        // TreeViewを更新
+        if (this.treeDataProvider !== null) {
+          this.treeDataProvider.refresh();
+        }
+
+        // メタデータ更新イベントを通知
+        const metaYamlPath = path.join(dirPath, '.dialogoi-meta.yaml');
+        this.fileChangeNotificationService.notifyMetaYamlUpdated(metaYamlPath, {
+          operation: 'add_foreshadowing_plant',
+          fileName,
+          plant,
+        });
+      } else {
+        vscode.window.showErrorMessage(result.message);
+      }
+    } catch (error) {
+      this.logger.error('伏線植込み位置追加エラー', error instanceof Error ? error : String(error));
+      vscode.window.showErrorMessage(
+        `伏線の追加に失敗しました: ${error instanceof Error ? error.message : String(error)}`,
+      );
+    }
+  }
+
+  /**
+   * 伏線の植込み位置を削除
+   */
+  private handleRemoveForeshadowingPlant(index: number): void {
+    if (!this.currentItem) {
+      return;
+    }
+
+    try {
+      const dirPath = path.dirname(this.currentItem.path || '');
+      const fileName = this.currentItem.name;
+
+      // ServiceContainerからForeshadowingServiceを取得
+      const serviceContainer = ServiceContainer.getInstance();
+      const foreshadowingService = serviceContainer.getForeshadowingService();
+
+      const result = foreshadowingService.removePlant(dirPath, fileName, index);
+
+      if (result.success) {
+        this.logger.info(`伏線植込み位置削除: インデックス ${index} → ${fileName}`);
+        vscode.window.showInformationMessage(result.message);
+
+        // TreeViewを更新
+        if (this.treeDataProvider !== null) {
+          this.treeDataProvider.refresh();
+        }
+
+        // メタデータ更新イベントを通知
+        const metaYamlPath = path.join(dirPath, '.dialogoi-meta.yaml');
+        this.fileChangeNotificationService.notifyMetaYamlUpdated(metaYamlPath, {
+          operation: 'remove_foreshadowing_plant',
+          fileName,
+          plantIndex: index,
+        });
+      } else {
+        vscode.window.showErrorMessage(result.message);
+      }
+    } catch (error) {
+      this.logger.error('伏線植込み位置削除エラー', error instanceof Error ? error : String(error));
+      vscode.window.showErrorMessage(
+        `伏線の削除に失敗しました: ${error instanceof Error ? error.message : String(error)}`,
+      );
+    }
+  }
+
+  /**
+   * 伏線の植込み位置を更新
+   */
+  private handleUpdateForeshadowingPlant(index: number, plant: ForeshadowingPoint): void {
+    if (!this.currentItem) {
+      return;
+    }
+
+    try {
+      const dirPath = path.dirname(this.currentItem.path || '');
+      const fileName = this.currentItem.name;
+
+      // ServiceContainerからForeshadowingServiceを取得
+      const serviceContainer = ServiceContainer.getInstance();
+      const foreshadowingService = serviceContainer.getForeshadowingService();
+
+      const result = foreshadowingService.updatePlant(dirPath, fileName, index, plant);
+
+      if (result.success) {
+        this.logger.info(`伏線植込み位置更新: インデックス ${index} → ${fileName}`);
+        vscode.window.showInformationMessage(result.message);
+
+        // TreeViewを更新
+        if (this.treeDataProvider !== null) {
+          this.treeDataProvider.refresh();
+        }
+
+        // メタデータ更新イベントを通知
+        const metaYamlPath = path.join(dirPath, '.dialogoi-meta.yaml');
+        this.fileChangeNotificationService.notifyMetaYamlUpdated(metaYamlPath, {
+          operation: 'update_foreshadowing_plant',
+          fileName,
+          plantIndex: index,
+          plant,
+        });
+      } else {
+        vscode.window.showErrorMessage(result.message);
+      }
+    } catch (error) {
+      this.logger.error('伏線植込み位置更新エラー', error instanceof Error ? error : String(error));
+      vscode.window.showErrorMessage(
+        `伏線の更新に失敗しました: ${error instanceof Error ? error.message : String(error)}`,
+      );
+    }
+  }
+
+  /**
+   * 伏線の回収位置を設定
+   */
+  private handleSetForeshadowingPayoff(payoff: ForeshadowingPoint): void {
+    if (!this.currentItem) {
+      return;
+    }
+
+    try {
+      const dirPath = path.dirname(this.currentItem.path || '');
+      const fileName = this.currentItem.name;
+
+      // ServiceContainerからForeshadowingServiceを取得
+      const serviceContainer = ServiceContainer.getInstance();
+      const foreshadowingService = serviceContainer.getForeshadowingService();
+
+      const result = foreshadowingService.setPayoff(dirPath, fileName, payoff);
+
+      if (result.success) {
+        this.logger.info(`伏線回収位置設定: ${payoff.location} → ${fileName}`);
+        vscode.window.showInformationMessage(result.message);
+
+        // TreeViewを更新
+        if (this.treeDataProvider !== null) {
+          this.treeDataProvider.refresh();
+        }
+
+        // メタデータ更新イベントを通知
+        const metaYamlPath = path.join(dirPath, '.dialogoi-meta.yaml');
+        this.fileChangeNotificationService.notifyMetaYamlUpdated(metaYamlPath, {
+          operation: 'set_foreshadowing_payoff',
+          fileName,
+          payoff,
+        });
+      } else {
+        vscode.window.showErrorMessage(result.message);
+      }
+    } catch (error) {
+      this.logger.error('伏線回収位置設定エラー', error instanceof Error ? error : String(error));
+      vscode.window.showErrorMessage(
+        `伏線回収位置の設定に失敗しました: ${error instanceof Error ? error.message : String(error)}`,
+      );
+    }
+  }
+
+  /**
+   * 伏線の回収位置を削除
+   */
+  private handleRemoveForeshadowingPayoff(): void {
+    if (!this.currentItem) {
+      return;
+    }
+
+    try {
+      const dirPath = path.dirname(this.currentItem.path || '');
+      const fileName = this.currentItem.name;
+
+      // ServiceContainerからForeshadowingServiceを取得
+      const serviceContainer = ServiceContainer.getInstance();
+      const foreshadowingService = serviceContainer.getForeshadowingService();
+
+      const result = foreshadowingService.removePayoff(dirPath, fileName);
+
+      if (result.success) {
+        this.logger.info(`伏線回収位置削除: ${fileName}`);
+        vscode.window.showInformationMessage(result.message);
+
+        // TreeViewを更新
+        if (this.treeDataProvider !== null) {
+          this.treeDataProvider.refresh();
+        }
+
+        // メタデータ更新イベントを通知
+        const metaYamlPath = path.join(dirPath, '.dialogoi-meta.yaml');
+        this.fileChangeNotificationService.notifyMetaYamlUpdated(metaYamlPath, {
+          operation: 'remove_foreshadowing_payoff',
+          fileName,
+        });
+      } else {
+        vscode.window.showErrorMessage(result.message);
+      }
+    } catch (error) {
+      this.logger.error('伏線回収位置削除エラー', error instanceof Error ? error : String(error));
+      vscode.window.showErrorMessage(
+        `伏線回収位置の削除に失敗しました: ${error instanceof Error ? error.message : String(error)}`,
       );
     }
   }

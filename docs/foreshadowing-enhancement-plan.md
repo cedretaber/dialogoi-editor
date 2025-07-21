@@ -34,7 +34,7 @@ foreshadowing:
 
 ## 🚀 実装フェーズ
 
-**現在の進捗: Phase 1 完了済み ✅ → Phase 2 開始可能**
+**現在の進捗: Phase 3 完了済み ✅ → Phase 4 開始可能**
 
 ### Phase 1: データ構造変更 ✅ **完了**
 
@@ -99,12 +99,12 @@ interface ForeshadowingPoint {
 
 ---
 
-### Phase 3: UI実装（サイドバー拡張） ✅ **コア機能**
+### Phase 3: UI実装（サイドバー拡張） ✅ **完了**
 
 #### 3.1 FileDetailsViewProviderの拡張
-- [ ] 伏線編集セクションをWebViewに追加
-- [ ] 折りたたみ可能なUI実装
-- [ ] React コンポーネント作成
+- [x] 伏線編集セクションをWebViewに追加
+- [x] 折りたたみ可能なUI実装
+- [x] React コンポーネント作成
 
 **追加するUIセクション:**
 ```
@@ -122,15 +122,15 @@ interface ForeshadowingPoint {
 ```
 
 #### 3.2 基本CRUD操作のUI実装
-- [ ] 植え込み地点の追加・削除・編集
-- [ ] 回収地点の設定・編集・削除
-- [ ] コメント入力フィールド
-- [ ] ファイルパス選択（QuickPick使用）
+- [x] 植え込み地点の追加・削除・編集
+- [x] 回収地点の設定・編集・削除
+- [x] コメント入力フィールド
+- [ ] ファイルパス選択（QuickPick使用） ※将来的に実装
 
 #### 3.3 既存コマンドの置き換え
-- [ ] `dialogoi.editForeshadowing` コマンドの新UI対応
-- [ ] `dialogoi.removeForeshadowing` コマンドの新UI対応
-- [ ] 既存の入力ダイアログベースUIの段階的廃止
+- [ ] `dialogoi.editForeshadowing` コマンドの新UI対応（Phase 5で対応予定）
+- [ ] `dialogoi.removeForeshadowing` コマンドの新UI対応（Phase 5で対応予定）
+- [ ] 既存の入力ダイアログベースUIの段階的廃止（Phase 5で対応予定）
 
 ---
 
@@ -221,11 +221,11 @@ Phase 1は**新しいデータ構造の基盤確立**に集中し、UI関連の�
 - [x] エラーハンドリングが適切に機能する
 - [x] 全346件のテストが成功している
 
-### Phase 3 完了条件
-- [ ] サイドバーに伏線編集UIが表示される
-- [ ] 基本的な編集操作が可能
-- [ ] 折りたたみ機能が動作する
-- [ ] 既存のTree Viewとの連携が保たれている
+### Phase 3 完了条件 ✅
+- [x] サイドバーに伏線編集UIが表示される
+- [x] 基本的な編集操作が可能
+- [x] 折りたたみ機能が動作する
+- [x] 既存のTree Viewとの連携が保たれている
 
 ### Phase 4 完了条件
 - [ ] 新機能の全テストが成功する
@@ -281,20 +281,49 @@ Phase 1は**新しいデータ構造の基盤確立**に集中し、UI関連の�
 - TypeScript型チェック、ESLint、Prettier全て通過
 - CRUD操作の正常系・異常系を網羅したテスト
 
+### Phase 3 実装完了 (2025-07-21)
+
+**実装した機能:**
+- ForeshadowingSection Reactコンポーネントの作成
+  - 植込み位置（plants）の追加・編集・削除UI
+  - 回収位置（payoff）の設定・編集・削除UI
+  - 折りたたみ可能なセクション実装
+- FileDetailsAppコンポーネントへの統合
+  - 設定ファイル（type: setting）のみに伏線管理セクション表示
+  - 全てのCRUD操作のイベントハンドラ実装
+- FileDetailsViewProviderの拡張
+  - 5つの新しいメッセージハンドラ追加
+  - ForeshadowingServiceとの連携実装
+  - WebViewとの双方向通信確立
+- CSSスタイリング
+  - VSCodeテーマに準拠したデザイン
+  - 折りたたみアニメーション、フォーム、ボタンスタイル
+
+**技術的知見:**
+- React Hooksを使用した状態管理（useState）
+- VSCode WebView通信パターンの実装
+- TypeScript strictモードでの型安全な実装
+- 既存のUIパターン（TagSection等）との一貫性維持
+
+**品質保証:**
+- 全346件のテスト成功
+- TypeScript型チェック、ESLint、Prettier全て通過
+- WebViewビルド成功
+- UI操作の正常動作確認
+
 ---
 
-## 🎯 次回作業開始時の手順（Phase 3向け）
+## 🎯 次回作業開始時の手順（Phase 4向け）
 
-**Phase 1・Phase 2完了済み** - 次はPhase 3: UI実装（サイドバー拡張）
+**Phase 1・Phase 2・Phase 3完了済み** - 次はPhase 4: テスト更新
 
 1. このドキュメントの確認
-2. Phase 3の作業内容を確認:
-   - FileDetailsViewProviderの拡張
-   - 伏線編集セクションをWebViewに追加
-   - 折りたたみ可能なReact UIコンポーネント作成
-   - 基本CRUD操作のUI実装
+2. Phase 4の作業内容を確認:
+   - ForeshadowingSection Reactコンポーネントのテスト作成
+   - WebView統合テストの実装
+   - 既存テストの回帰確認
 3. 実装完了後は必ず `npm run check-all` でテスト通過確認
-4. 完了後はチェックリストを更新し、Phase 4へ
+4. 完了後はチェックリストを更新し、Phase 5へ
 
 ---
 

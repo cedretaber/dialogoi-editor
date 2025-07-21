@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import type { FileDetailsData, UpdateFileMessage } from '../types/FileDetails';
+import type { FileDetailsData, UpdateFileMessage, ForeshadowingPoint } from '../types/FileDetails';
 import { TagSection } from './TagSection';
 import { CharacterSection } from './CharacterSection';
 import { ReferenceSection } from './ReferenceSection';
 import { ReviewSection } from './ReviewSection';
 import { BasicInfoSection } from './BasicInfoSection';
+import { ForeshadowingSection } from './ForeshadowingSection';
 import { useVSCodeApi } from '../hooks/useVSCodeApi';
 
 import type { WebViewMessage } from '../types/FileDetails';
@@ -67,6 +68,41 @@ export const FileDetailsApp: React.FC = () => {
     });
   };
 
+  // 伏線関連のハンドラー
+  const handleForeshadowingPlantAdd = (plant: ForeshadowingPoint): void => {
+    postMessage({
+      type: 'addForeshadowingPlant',
+      payload: { plant },
+    });
+  };
+
+  const handleForeshadowingPlantRemove = (index: number): void => {
+    postMessage({
+      type: 'removeForeshadowingPlant',
+      payload: { plantIndex: index },
+    });
+  };
+
+  const handleForeshadowingPlantUpdate = (index: number, plant: ForeshadowingPoint): void => {
+    postMessage({
+      type: 'updateForeshadowingPlant',
+      payload: { plantIndex: index, plant },
+    });
+  };
+
+  const handleForeshadowingPayoffSet = (payoff: ForeshadowingPoint): void => {
+    postMessage({
+      type: 'setForeshadowingPayoff',
+      payload: { payoff },
+    });
+  };
+
+  const handleForeshadowingPayoffRemove = (): void => {
+    postMessage({
+      type: 'removeForeshadowingPayoff',
+    });
+  };
+
   if (!fileData) {
     return (
       <div className="no-file-selected">
@@ -110,6 +146,17 @@ export const FileDetailsApp: React.FC = () => {
         onReferenceRemove={handleReferenceRemove}
         onReverseReferenceRemove={handleReverseReferenceRemove}
       />
+
+      {fileData.type === 'setting' && (
+        <ForeshadowingSection
+          foreshadowing={fileData.foreshadowing}
+          onPlantAdd={handleForeshadowingPlantAdd}
+          onPlantRemove={handleForeshadowingPlantRemove}
+          onPlantUpdate={handleForeshadowingPlantUpdate}
+          onPayoffSet={handleForeshadowingPayoffSet}
+          onPayoffRemove={handleForeshadowingPayoffRemove}
+        />
+      )}
 
       {fileData.review_count && Object.keys(fileData.review_count).length > 0 && (
         <ReviewSection reviewCount={fileData.review_count} />

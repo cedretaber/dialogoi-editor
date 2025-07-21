@@ -1,4 +1,20 @@
 /**
+ * 伏線位置の情報
+ */
+export interface ForeshadowingPoint {
+  location: string;
+  comment: string;
+}
+
+/**
+ * 伏線データ
+ */
+export interface ForeshadowingData {
+  plants: ForeshadowingPoint[];
+  payoff: ForeshadowingPoint;
+}
+
+/**
  * WebView ↔ Extension 間のメッセージ型定義
  */
 export interface WebViewMessage {
@@ -10,10 +26,20 @@ export interface WebViewMessage {
     | 'removeReverseReference'
     | 'removeCharacter'
     | 'openReference'
-    | 'ready';
+    | 'ready'
+    // 伏線関連のメッセージ
+    | 'addForeshadowingPlant'
+    | 'removeForeshadowingPlant'
+    | 'updateForeshadowingPlant'
+    | 'setForeshadowingPayoff'
+    | 'removeForeshadowingPayoff';
   payload?: {
     tag?: string;
     reference?: string;
+    // 伏線関連のペイロード
+    plant?: ForeshadowingPoint;
+    plantIndex?: number;
+    payoff?: ForeshadowingPoint;
   };
 }
 
@@ -72,6 +98,7 @@ export interface FileDetailsData {
   character?: CharacterInfo;
   referenceData?: ReferenceData;
   review_count?: ReviewCount;
+  foreshadowing?: ForeshadowingData;
 }
 
 /**
