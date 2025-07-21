@@ -20,23 +20,23 @@
 - [x] FileChangeNotificationServiceによる更新通知の実装
 - [x] ReferenceManagerの更新処理追加
 
-### Phase 2: FileDetailsViewProviderの修正
-- [ ] 参照表示をファイル名のみに変更
+### Phase 2: FileDetailsViewProviderの修正 ✅ **完了**
+- [x] 参照表示をファイル名のみに変更
 - [x] リアルタイム更新の実装（FileChangeNotificationService経由）
 - [x] getUpdatedCurrentItem()による最新データ取得機能
 - [x] タグ・参照・キャラクター情報の即座反映
 
-### Phase 3: 参照システムの仕様変更
-- [ ] 設定ファイルの参照をハイパーリンクベースに変更
-- [ ] FileDetailsViewProviderで設定ファイルの場合はHyperlinkExtractorServiceを使用
-- [ ] UI表示の調整（設定ファイルでは「参照追加」ボタンを非表示）
+### Phase 3: 参照システムの仕様変更 ✅ **完了**
+- [x] 設定ファイルの参照をハイパーリンクベースに変更
+- [x] FileDetailsViewProviderで設定ファイルの場合はHyperlinkExtractorServiceを使用
+- [x] UI表示の調整（設定ファイルでは「参照追加」ボタンを非表示）
 
-### Phase 4: テストの更新
+### Phase 4: テストの更新 ✅ **完了**
 - [x] DropHandlerServiceのテスト実装
 - [x] FileChangeNotificationServiceのテスト実装
 - [x] EventEmitterRepositoryのモック実装とテスト
-- [ ] 新しい仕様に合わせてテストを更新
-- [ ] 統合テストの追加
+- [x] 新しい仕様に合わせてテストを更新
+- [x] 統合テストの追加
 
 ## 技術的詳細
 
