@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import { DialogoiTreeDataProvider } from '../tree/DialogoiTreeDataProvider.js';
 import { Logger } from '../utils/Logger.js';
-import { VSCodeSettingsService } from '../services/VSCodeSettingsService.js';
+import { ServiceContainer } from '../di/ServiceContainer.js';
 
 /**
  * フィルター関連のコマンドを登録
@@ -153,7 +153,8 @@ export function registerFilterCommands(
     'dialogoi.manageExcludeSettings',
     async () => {
       try {
-        const settingsService = new VSCodeSettingsService();
+        const container = ServiceContainer.getInstance();
+        const settingsService = container.getDialogoiSettingsService();
         const hasPatterns = settingsService.hasDialogoiExcludePatterns();
 
         const action = await vscode.window.showQuickPick(

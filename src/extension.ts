@@ -10,15 +10,9 @@ import { registerFilterCommands } from './commands/filterCommands.js';
 import { registerProjectCommands } from './commands/projectCommands.js';
 import { registerDropCommands } from './commands/dropCommands.js';
 import { FileDetailsViewProvider } from './views/FileDetailsViewProvider.js';
-import { VSCodeSettingsService } from './services/VSCodeSettingsService.js';
 import { VSCodeServiceContainer } from './di/VSCodeServiceContainer.js';
 import { ServiceContainer } from './di/ServiceContainer.js';
 import { Logger } from './utils/Logger.js';
-import {
-  FileChangeNotificationService,
-  FileChangeEvent,
-} from './services/FileChangeNotificationService.js';
-import { VSCodeEventEmitterRepository } from './repositories/VSCodeEventEmitterRepository.js';
 
 export async function activate(context: vscode.ExtensionContext): Promise<void> {
   const logger = Logger.getInstance();
@@ -29,15 +23,10 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     await VSCodeServiceContainer.initialize(context);
     logger.debug('ServiceContainer初期化完了');
 
-    // FileChangeNotificationServiceを初期化
-    logger.debug('FileChangeNotificationService初期化を開始...');
-    const eventEmitterRepository = new VSCodeEventEmitterRepository<FileChangeEvent>();
-    FileChangeNotificationService.setInstance(eventEmitterRepository);
-    logger.debug('FileChangeNotificationService初期化完了');
-
     // VSCode設定の初期化
     logger.debug('VSCode設定の初期化を開始...');
-    const settingsService = new VSCodeSettingsService();
+    const container = ServiceContainer.getInstance();
+    const settingsService = container.getDialogoiSettingsService();
 
     // Dialogoi関連ファイルが設定されていない場合は追加
     if (!settingsService.hasDialogoiExcludePatterns()) {
@@ -64,11 +53,11 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     logger.debug('TreeView作成完了');
 
     logger.debug('FileDetailsViewProvider作成を開始...');
-    const serviceContainer = ServiceContainer.getInstance();
+    // ServiceContainerはすでに初期化されているので再取得
     const fileDetailsProvider = new FileDetailsViewProvider(context.extensionUri);
     fileDetailsProvider.setTreeDataProvider(treeDataProvider);
-    fileDetailsProvider.setMetaYamlService(serviceContainer.getMetaYamlService());
-    fileDetailsProvider.setDialogoiYamlService(serviceContainer.getDialogoiYamlService());
+    fileDetailsProvider.setMetaYamlService(container.getMetaYamlService());
+    fileDetailsProvider.setDialogoiYamlService(container.getDialogoiYamlService());
     context.subscriptions.push(
       vscode.window.registerWebviewViewProvider(
         FileDetailsViewProvider.viewType,
@@ -79,14 +68,14 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
 
     // ReferenceManagerの初期化
     logger.debug('ReferenceManager初期化を開始...');
-    const referenceManager = serviceContainer.getReferenceManager();
+    const referenceManager = container.getReferenceManager();
     if (vscode.workspace.workspaceFolders && vscode.workspace.workspaceFolders[0]) {
       const workspaceRoot = vscode.workspace.workspaceFolders[0].uri.fsPath;
-      const metaYamlService = serviceContainer.getMetaYamlService();
+      const metaYamlService = container.getMetaYamlService();
       const novelRoot = metaYamlService.findNovelRoot(workspaceRoot);
 
       if (novelRoot !== null && novelRoot !== undefined && novelRoot !== '') {
-        const fileRepository = serviceContainer.getFileRepository();
+        const fileRepository = container.getFileRepository();
         referenceManager.initialize(novelRoot, fileRepository);
         logger.info(`ReferenceManagerを初期化しました: ${novelRoot}`);
       }

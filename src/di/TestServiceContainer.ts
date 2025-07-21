@@ -19,8 +19,11 @@ import {
   FileChangeEvent,
 } from '../services/FileChangeNotificationService.js';
 import { MockEventEmitterRepository } from '../repositories/MockEventEmitterRepository.js';
+import { MockSettingsRepository } from '../repositories/MockSettingsRepository.js';
 import { Uri } from '../interfaces/Uri.js';
 import { IServiceContainer } from './ServiceContainer.js';
+import { SettingsRepository } from '../repositories/SettingsRepository.js';
+import { DialogoiSettingsService } from '../services/DialogoiSettingsService.js';
 
 /**
  * テスト専用の依存関係注入コンテナ
@@ -43,6 +46,8 @@ export class TestServiceContainer implements IServiceContainer {
   private hyperlinkExtractorService: HyperlinkExtractorService | null = null;
   private projectPathNormalizationService: ProjectPathNormalizationService | null = null;
   private dropHandlerService: DropHandlerService | null = null;
+  private settingsRepository: SettingsRepository | null = null;
+  private dialogoiSettingsService: DialogoiSettingsService | null = null;
 
   private constructor() {
     // テスト環境では常にMockFileRepositoryを使用
@@ -51,6 +56,10 @@ export class TestServiceContainer implements IServiceContainer {
     // テスト環境でFileChangeNotificationServiceを初期化
     const mockEventEmitterRepository = new MockEventEmitterRepository<FileChangeEvent>();
     FileChangeNotificationService.setInstance(mockEventEmitterRepository);
+
+    // SettingsRepositoryの初期化
+    const mockSettingsRepository = new MockSettingsRepository();
+    this.setSettingsRepository(mockSettingsRepository);
   }
 
   static getInstance(): TestServiceContainer {
@@ -248,6 +257,27 @@ export class TestServiceContainer implements IServiceContainer {
     this.hyperlinkExtractorService = null;
     this.projectPathNormalizationService = null;
     this.dropHandlerService = null;
+    this.settingsRepository = null;
+    this.dialogoiSettingsService = null;
+  }
+
+  getSettingsRepository(): SettingsRepository {
+    if (!this.settingsRepository) {
+      throw new Error('SettingsRepository has not been set');
+    }
+    return this.settingsRepository;
+  }
+
+  setSettingsRepository(repository: SettingsRepository): void {
+    this.settingsRepository = repository;
+  }
+
+  getDialogoiSettingsService(): DialogoiSettingsService {
+    if (!this.dialogoiSettingsService) {
+      const settingsRepository = this.getSettingsRepository();
+      this.dialogoiSettingsService = new DialogoiSettingsService(settingsRepository);
+    }
+    return this.dialogoiSettingsService;
   }
 
   /**

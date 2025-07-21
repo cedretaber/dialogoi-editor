@@ -13,6 +13,8 @@ import { FilePathMapService } from '../services/FilePathMapService.js';
 import { HyperlinkExtractorService } from '../services/HyperlinkExtractorService.js';
 import { ProjectPathNormalizationService } from '../services/ProjectPathNormalizationService.js';
 import { DropHandlerService } from '../services/DropHandlerService.js';
+import { SettingsRepository } from '../repositories/SettingsRepository.js';
+import { DialogoiSettingsService } from '../services/DialogoiSettingsService.js';
 import { Uri } from '../interfaces/Uri.js';
 
 /**
@@ -33,6 +35,9 @@ export interface IServiceContainer {
   getHyperlinkExtractorService(): HyperlinkExtractorService;
   getProjectPathNormalizationService(): ProjectPathNormalizationService;
   getDropHandlerService(): DropHandlerService;
+  getSettingsRepository(): SettingsRepository;
+  setSettingsRepository(repository: SettingsRepository): void;
+  getDialogoiSettingsService(): DialogoiSettingsService;
   reset(): void;
 }
 
@@ -57,6 +62,8 @@ export class ServiceContainer implements IServiceContainer {
   private hyperlinkExtractorService: HyperlinkExtractorService | null = null;
   private projectPathNormalizationService: ProjectPathNormalizationService | null = null;
   private dropHandlerService: DropHandlerService | null = null;
+  private settingsRepository: SettingsRepository | null = null;
+  private dialogoiSettingsService: DialogoiSettingsService | null = null;
 
   protected constructor() {}
 
@@ -283,6 +290,27 @@ export class ServiceContainer implements IServiceContainer {
     this.hyperlinkExtractorService = null;
     this.projectPathNormalizationService = null;
     this.dropHandlerService = null;
+    this.settingsRepository = null;
+    this.dialogoiSettingsService = null;
+  }
+
+  getSettingsRepository(): SettingsRepository {
+    if (!this.settingsRepository) {
+      throw new Error('SettingsRepository has not been set');
+    }
+    return this.settingsRepository;
+  }
+
+  setSettingsRepository(repository: SettingsRepository): void {
+    this.settingsRepository = repository;
+  }
+
+  getDialogoiSettingsService(): DialogoiSettingsService {
+    if (!this.dialogoiSettingsService) {
+      const settingsRepository = this.getSettingsRepository();
+      this.dialogoiSettingsService = new DialogoiSettingsService(settingsRepository);
+    }
+    return this.dialogoiSettingsService;
   }
 
   /**

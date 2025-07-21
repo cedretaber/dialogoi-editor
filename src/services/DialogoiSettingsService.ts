@@ -1,38 +1,49 @@
-import * as vscode from 'vscode';
 import { Logger } from '../utils/Logger.js';
+import { SettingsRepository, ExcludePatterns } from '../repositories/SettingsRepository.js';
 
 /**
- * VSCode設定管理サービス
+ * Dialogoi関連の設定管理サービス
  * files.exclude設定などを管理
  */
-export class VSCodeSettingsService {
+export class DialogoiSettingsService {
   private logger = Logger.getInstance();
+
+  /**
+   * Dialogoi関連のファイルパターン
+   */
+  private static readonly DIALOGOI_PATTERNS = {
+    '**/dialogoi.yaml': true,
+    '**/.dialogoi-meta.yaml': true,
+    '**/.dialogoi-reviews/**': true,
+  };
+
+  constructor(private settingsRepository: SettingsRepository) {}
 
   /**
    * Dialogoi関連ファイルをfiles.exclude設定に追加
    */
   async addDialogoiExcludePatterns(): Promise<boolean> {
     try {
-      const config = vscode.workspace.getConfiguration('files');
-      const currentExclude = config.get<{ [key: string]: boolean }>('exclude') || {};
-
-      const dialogoiPatterns = {
-        '**/dialogoi.yaml': true,
-        '**/.dialogoi-meta.yaml': true,
-        '**/.dialogoi-reviews/**': true,
-      };
+      const currentExclude = this.settingsRepository.get<ExcludePatterns>('files', 'exclude') || {};
 
       // 既存の設定と新しいパターンをマージ
       const updatedExclude = {
         ...currentExclude,
-        ...dialogoiPatterns,
+        ...DialogoiSettingsService.DIALOGOI_PATTERNS,
       };
 
       // 設定を更新（グローバル設定に保存）
-      await config.update('exclude', updatedExclude, vscode.ConfigurationTarget.Global);
+      const success = await this.settingsRepository.update(
+        'files',
+        'exclude',
+        updatedExclude,
+        'global',
+      );
 
-      this.logger.info('Dialogoi関連ファイルをfiles.exclude設定に追加しました');
-      return true;
+      if (success) {
+        this.logger.info('Dialogoi関連ファイルをfiles.exclude設定に追加しました');
+      }
+      return success;
     } catch (error) {
       this.logger.error(
         'files.exclude設定の追加に失敗しました',
@@ -47,26 +58,26 @@ export class VSCodeSettingsService {
    */
   async removeDialogoiExcludePatterns(): Promise<boolean> {
     try {
-      const config = vscode.workspace.getConfiguration('files');
-      const currentExclude = config.get<{ [key: string]: boolean }>('exclude') || {};
-
-      const dialogoiPatterns = [
-        '**/dialogoi.yaml',
-        '**/.dialogoi-meta.yaml',
-        '**/.dialogoi-reviews/**',
-      ];
+      const currentExclude = this.settingsRepository.get<ExcludePatterns>('files', 'exclude') || {};
 
       // Dialogoi関連パターンを削除
       const updatedExclude = { ...currentExclude };
-      for (const pattern of dialogoiPatterns) {
+      for (const pattern of Object.keys(DialogoiSettingsService.DIALOGOI_PATTERNS)) {
         delete updatedExclude[pattern];
       }
 
       // 設定を更新
-      await config.update('exclude', updatedExclude, vscode.ConfigurationTarget.Global);
+      const success = await this.settingsRepository.update(
+        'files',
+        'exclude',
+        updatedExclude,
+        'global',
+      );
 
-      this.logger.info('Dialogoi関連ファイルをfiles.exclude設定から削除しました');
-      return true;
+      if (success) {
+        this.logger.info('Dialogoi関連ファイルをfiles.exclude設定から削除しました');
+      }
+      return success;
     } catch (error) {
       this.logger.error(
         'files.exclude設定の削除に失敗しました',
@@ -81,17 +92,12 @@ export class VSCodeSettingsService {
    */
   hasDialogoiExcludePatterns(): boolean {
     try {
-      const config = vscode.workspace.getConfiguration('files');
-      const currentExclude = config.get<{ [key: string]: boolean }>('exclude') || {};
-
-      const requiredPatterns = [
-        '**/dialogoi.yaml',
-        '**/.dialogoi-meta.yaml',
-        '**/.dialogoi-reviews/**',
-      ];
+      const currentExclude = this.settingsRepository.get<ExcludePatterns>('files', 'exclude') || {};
 
       // 全てのパターンが設定されているかチェック
-      return requiredPatterns.every((pattern) => currentExclude[pattern] === true);
+      return Object.keys(DialogoiSettingsService.DIALOGOI_PATTERNS).every(
+        (pattern) => currentExclude[pattern] === true,
+      );
     } catch (error) {
       this.logger.error(
         'files.exclude設定の確認に失敗しました',
@@ -104,10 +110,9 @@ export class VSCodeSettingsService {
   /**
    * 現在のfiles.exclude設定を取得
    */
-  getCurrentExcludePatterns(): { [key: string]: boolean } {
+  getCurrentExcludePatterns(): ExcludePatterns {
     try {
-      const config = vscode.workspace.getConfiguration('files');
-      return config.get<{ [key: string]: boolean }>('exclude') || {};
+      return this.settingsRepository.get<ExcludePatterns>('files', 'exclude') || {};
     } catch (error) {
       this.logger.error(
         'files.exclude設定の取得に失敗しました',
@@ -122,26 +127,26 @@ export class VSCodeSettingsService {
    */
   async addWorkspaceExcludePatterns(): Promise<boolean> {
     try {
-      const config = vscode.workspace.getConfiguration('files');
-      const currentExclude = config.get<{ [key: string]: boolean }>('exclude') || {};
-
-      const dialogoiPatterns = {
-        '**/dialogoi.yaml': true,
-        '**/.dialogoi-meta.yaml': true,
-        '**/.dialogoi-reviews/**': true,
-      };
+      const currentExclude = this.settingsRepository.get<ExcludePatterns>('files', 'exclude') || {};
 
       // 既存の設定と新しいパターンをマージ
       const updatedExclude = {
         ...currentExclude,
-        ...dialogoiPatterns,
+        ...DialogoiSettingsService.DIALOGOI_PATTERNS,
       };
 
       // ワークスペース設定に保存
-      await config.update('exclude', updatedExclude, vscode.ConfigurationTarget.Workspace);
+      const success = await this.settingsRepository.update(
+        'files',
+        'exclude',
+        updatedExclude,
+        'workspace',
+      );
 
-      this.logger.info('Dialogoi関連ファイルをワークスペースのfiles.exclude設定に追加しました');
-      return true;
+      if (success) {
+        this.logger.info('Dialogoi関連ファイルをワークスペースのfiles.exclude設定に追加しました');
+      }
+      return success;
     } catch (error) {
       this.logger.error(
         'ワークスペースfiles.exclude設定の追加に失敗しました',
