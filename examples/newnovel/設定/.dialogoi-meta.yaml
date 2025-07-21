@@ -10,5 +10,7 @@ files:
     type: setting
     path: /home/cedretaber/src/ts/dialogoi-editor/examples/newnovel/設定/伏線1.md
     foreshadowing:
-      start: ''
-      goal: ''
+      plants: []
+      payoff:
+        location: ""
+        comment: ""

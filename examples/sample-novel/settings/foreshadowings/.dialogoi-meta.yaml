@@ -3,8 +3,12 @@ files:
   - name: hidden_power.md
     type: setting
     foreshadowing:
-      start: contents/03_first_magic_lesson.txt
-      goal: contents/未定_覚醒.txt
+      plants:
+        - location: contents/03_first_magic_lesson.txt
+          comment: 主人公の隠された力の最初の兆候
+      payoff:
+        location: contents/未定_覚醒.txt
+        comment: 隠された古代魔法の力の完全な覚醒
     tags:
       - 主人公
       - 古代魔法
@@ -12,8 +16,12 @@ files:
   - name: academy_secret.md
     type: setting
     foreshadowing:
-      start: contents/02_entrance_ceremony.txt
-      goal: contents/未定_学院の謎.txt
+      plants:
+        - location: contents/02_entrance_ceremony.txt
+          comment: 魔法学院に隠された秘密への最初の手がかり
+      payoff:
+        location: contents/未定_学院の謎.txt
+        comment: 魔法学院の真の目的と歴史の暴露
     tags:
       - 魔法学院
       - 秘密
@@ -21,8 +29,12 @@ files:
   - name: ancient_prophecy.md
     type: setting
     foreshadowing:
-      start: contents/01_prologue.txt
-      goal: contents/未定_予言の成就.txt
+      plants:
+        - location: contents/01_prologue.txt
+          comment: 古代予言の最初の言及と世界の危機の暗示
+      payoff:
+        location: contents/未定_予言の成就.txt
+        comment: 古代予言の完全な成就と世界の運命の決定
     tags:
       - 予言
       - 運命
