@@ -135,7 +135,10 @@ export class ServiceContainer implements IServiceContainer {
    */
   getForeshadowingService(): ForeshadowingService {
     if (!this.foreshadowingService) {
-      this.foreshadowingService = new ForeshadowingService(this.getFileRepository());
+      this.foreshadowingService = new ForeshadowingService(
+        this.getFileRepository(),
+        this.getMetaYamlService(),
+      );
     }
     return this.foreshadowingService;
   }

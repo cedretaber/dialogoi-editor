@@ -94,7 +94,10 @@ export class TestServiceContainer implements IServiceContainer {
    */
   getForeshadowingService(): ForeshadowingService {
     if (!this.foreshadowingService) {
-      this.foreshadowingService = new ForeshadowingService(this.fileRepository);
+      this.foreshadowingService = new ForeshadowingService(
+        this.fileRepository,
+        this.getMetaYamlService(),
+      );
     }
     return this.foreshadowingService;
   }

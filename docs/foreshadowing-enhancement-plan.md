@@ -77,28 +77,25 @@ interface ForeshadowingPoint {
 
 ---
 
-### Phase 2: サービス層の実装 ✅ **必須**
+### Phase 2: サービス層の実装 ✅ **完了**
 
 #### 2.1 ForeshadowingServiceの拡張
-- [ ] `addPlant(dirPath, fileName, plant)` メソッド追加
-- [ ] `removePlant(dirPath, fileName, index)` メソッド追加
-- [ ] `updatePlant(dirPath, fileName, index, plant)` メソッド追加
-- [ ] `setPayoff(dirPath, fileName, payoff)` メソッド追加
-- [ ] `removePayoff(dirPath, fileName)` メソッド追加
+- [x] `addPlant(dirPath, fileName, plant)` メソッド追加
+- [x] `removePlant(dirPath, fileName, index)` メソッド追加
+- [x] `updatePlant(dirPath, fileName, index, plant)` メソッド追加
+- [x] `setPayoff(dirPath, fileName, payoff)` メソッド追加
+- [x] `removePayoff(dirPath, fileName)` メソッド追加
 
-#### 2.2 バックワード互換性処理（移行期間）
-- [ ] 既存の `{start, goal}` 形式の自動変換機能
-- [ ] データマイグレーション用のユーティリティ関数
+#### 2.2 依存関係注入の更新
+- [x] ForeshadowingServiceコンストラクタにMetaYamlService追加
+- [x] ServiceContainer・TestServiceContainer更新
+- [x] テスト環境でのMetaYamlService統合
 
-```typescript
-// 旧形式から新形式への変換
-function migrateLegacyForeshadowing(legacy: {start: string, goal: string}): ForeshadowingData {
-  return {
-    plants: [{ location: legacy.start, comment: "" }],
-    payoff: { location: legacy.goal, comment: "" }
-  };
-}
-```
+#### 2.3 CRUD操作の特徴
+- [x] エラーハンドリング（ファイル存在チェック、インデックス範囲確認）
+- [x] 成功・失敗メッセージの提供
+- [x] meta.yamlファイルの自動読み込み・保存
+- [x] foreshadowing構造の自動初期化対応
 
 ---
 
@@ -218,10 +215,11 @@ interface ForeshadowingUIState {
 **Phase 1の範囲調整**:
 Phase 1は**新しいデータ構造の基盤確立**に集中し、UI関連のエラーは一時的に無効化してPhase 3で対応する。
 
-### Phase 2 完了条件
-- [ ] 伏線のCRUD操作が全て動作する
-- [ ] ステータス計算が正しく動作する
-- [ ] エラーハンドリングが適切に機能する
+### Phase 2 完了条件 ✅
+- [x] 伏線のCRUD操作が全て動作する
+- [x] ステータス計算が正しく動作する
+- [x] エラーハンドリングが適切に機能する
+- [x] 全346件のテストが成功している
 
 ### Phase 3 完了条件
 - [ ] サイドバーに伏線編集UIが表示される
@@ -260,19 +258,43 @@ Phase 1は**新しいデータ構造の基盤確立**に集中し、UI関連の�
 - TypeScript型チェック、ESLint、Prettier全て通過
 - WebViewビルド成功
 
+### Phase 2 実装完了 (2025-07-21)
+
+**実装した機能:**
+- ForeshadowingServiceの5つのCRUDメソッド追加:
+  - `addPlant()`: 植込み位置の追加
+  - `removePlant()`: 植込み位置の削除
+  - `updatePlant()`: 植込み位置の更新
+  - `setPayoff()`: 回収位置の設定
+  - `removePayoff()`: 回収位置の削除
+- MetaYamlServiceとの依存関係注入統合
+- ServiceContainer・TestServiceContainer更新
+
+**技術的知見:**
+- 全メソッドで統一されたエラーハンドリングパターン採用
+- 成功・失敗を明確にした戻り値設計: `{success: boolean, message: string}`
+- foreshadowing構造の自動初期化により、既存ファイルへのスムーズな追加を実現
+- MockFileRepository環境でのテスト戦略確立
+
+**品質保証:**
+- Phase 2専用テスト7件を含む全346件のテスト成功
+- TypeScript型チェック、ESLint、Prettier全て通過
+- CRUD操作の正常系・異常系を網羅したテスト
+
 ---
 
-## 🎯 次回作業開始時の手順（Phase 2向け）
+## 🎯 次回作業開始時の手順（Phase 3向け）
 
-**Phase 1完了済み** - 次はPhase 2: サービス層の実装
+**Phase 1・Phase 2完了済み** - 次はPhase 3: UI実装（サイドバー拡張）
 
 1. このドキュメントの確認
-2. Phase 2の作業内容を確認:
-   - `addPlant()`, `removePlant()`, `updatePlant()` メソッドの追加
-   - `setPayoff()`, `removePayoff()` メソッドの追加 
-   - 詳細なCRUD操作の実装
+2. Phase 3の作業内容を確認:
+   - FileDetailsViewProviderの拡張
+   - 伏線編集セクションをWebViewに追加
+   - 折りたたみ可能なReact UIコンポーネント作成
+   - 基本CRUD操作のUI実装
 3. 実装完了後は必ず `npm run check-all` でテスト通過確認
-4. 完了後はチェックリストを更新し、Phase 3へ
+4. 完了後はチェックリストを更新し、Phase 4へ
 
 ---
 

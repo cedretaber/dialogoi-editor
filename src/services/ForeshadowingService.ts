@@ -1,6 +1,7 @@
 import * as path from 'path';
 import { FileRepository } from '../repositories/FileRepository.js';
 import { ForeshadowingPoint } from '../utils/MetaYamlUtils.js';
+import { MetaYamlService } from './MetaYamlService.js';
 
 export interface ForeshadowingData {
   plants: ForeshadowingPoint[];
@@ -8,7 +9,10 @@ export interface ForeshadowingData {
 }
 
 export class ForeshadowingService {
-  constructor(private fileRepository: FileRepository) {}
+  constructor(
+    private fileRepository: FileRepository,
+    private metaYamlService: MetaYamlService,
+  ) {}
 
   /**
    * マークダウンファイルから表示名を取得
@@ -150,6 +154,288 @@ export class ForeshadowingService {
     }
 
     return 'planned';
+  }
+
+  /**
+   * 伏線の植込み位置を追加
+   * @param dirPath ディレクトリパス
+   * @param fileName ファイル名
+   * @param plant 追加する植込み位置
+   * @returns 操作の成功/失敗とメッセージ
+   */
+  addPlant(
+    dirPath: string,
+    fileName: string,
+    plant: ForeshadowingPoint,
+  ): { success: boolean; message: string } {
+    try {
+      // meta.yamlを読み込み
+      const meta = this.metaYamlService.loadMetaYaml(dirPath);
+      if (meta === null) {
+        return { success: false, message: '.dialogoi-meta.yamlが見つかりません' };
+      }
+
+      // ファイルを検索
+      const fileIndex = meta.files.findIndex((f) => f.name === fileName);
+      if (fileIndex === -1) {
+        return { success: false, message: `ファイル ${fileName} が見つかりません` };
+      }
+
+      const fileItem = meta.files[fileIndex];
+      if (fileItem === undefined) {
+        return { success: false, message: 'ファイルアイテムが見つかりません' };
+      }
+
+      // foreshadowing構造を初期化（存在しない場合）
+      if (!fileItem.foreshadowing) {
+        fileItem.foreshadowing = {
+          plants: [],
+          payoff: { location: '', comment: '' },
+        };
+      }
+
+      // 植込み位置を追加
+      fileItem.foreshadowing.plants.push(plant);
+
+      // 保存
+      const saveResult = this.metaYamlService.saveMetaYaml(dirPath, meta);
+      if (saveResult) {
+        return {
+          success: true,
+          message: `伏線の植込み位置を追加しました: ${plant.location}`,
+        };
+      } else {
+        return { success: false, message: 'meta.yamlの保存に失敗しました' };
+      }
+    } catch (error) {
+      return {
+        success: false,
+        message: `エラーが発生しました: ${error instanceof Error ? error.message : String(error)}`,
+      };
+    }
+  }
+
+  /**
+   * 伏線の植込み位置を削除
+   * @param dirPath ディレクトリパス
+   * @param fileName ファイル名
+   * @param index 削除する植込み位置のインデックス
+   * @returns 操作の成功/失敗とメッセージ
+   */
+  removePlant(
+    dirPath: string,
+    fileName: string,
+    index: number,
+  ): { success: boolean; message: string } {
+    try {
+      // meta.yamlを読み込み
+      const meta = this.metaYamlService.loadMetaYaml(dirPath);
+      if (meta === null) {
+        return { success: false, message: '.dialogoi-meta.yamlが見つかりません' };
+      }
+
+      // ファイルを検索
+      const fileIndex = meta.files.findIndex((f) => f.name === fileName);
+      if (fileIndex === -1) {
+        return { success: false, message: `ファイル ${fileName} が見つかりません` };
+      }
+
+      const fileItem = meta.files[fileIndex];
+      if (fileItem === undefined || !fileItem.foreshadowing) {
+        return { success: false, message: '伏線データが見つかりません' };
+      }
+
+      // インデックスの検証
+      if (index < 0 || index >= fileItem.foreshadowing.plants.length) {
+        return { success: false, message: '無効なインデックスです' };
+      }
+
+      // 植込み位置を削除
+      const removedPlant = fileItem.foreshadowing.plants[index];
+      fileItem.foreshadowing.plants.splice(index, 1);
+
+      // 保存
+      const saveResult = this.metaYamlService.saveMetaYaml(dirPath, meta);
+      if (saveResult) {
+        return {
+          success: true,
+          message: `伏線の植込み位置を削除しました: ${removedPlant?.location || 'unknown'}`,
+        };
+      } else {
+        return { success: false, message: 'meta.yamlの保存に失敗しました' };
+      }
+    } catch (error) {
+      return {
+        success: false,
+        message: `エラーが発生しました: ${error instanceof Error ? error.message : String(error)}`,
+      };
+    }
+  }
+
+  /**
+   * 伏線の植込み位置を更新
+   * @param dirPath ディレクトリパス
+   * @param fileName ファイル名
+   * @param index 更新する植込み位置のインデックス
+   * @param plant 新しい植込み位置データ
+   * @returns 操作の成功/失敗とメッセージ
+   */
+  updatePlant(
+    dirPath: string,
+    fileName: string,
+    index: number,
+    plant: ForeshadowingPoint,
+  ): { success: boolean; message: string } {
+    try {
+      // meta.yamlを読み込み
+      const meta = this.metaYamlService.loadMetaYaml(dirPath);
+      if (meta === null) {
+        return { success: false, message: '.dialogoi-meta.yamlが見つかりません' };
+      }
+
+      // ファイルを検索
+      const fileIndex = meta.files.findIndex((f) => f.name === fileName);
+      if (fileIndex === -1) {
+        return { success: false, message: `ファイル ${fileName} が見つかりません` };
+      }
+
+      const fileItem = meta.files[fileIndex];
+      if (fileItem === undefined || !fileItem.foreshadowing) {
+        return { success: false, message: '伏線データが見つかりません' };
+      }
+
+      // インデックスの検証
+      if (index < 0 || index >= fileItem.foreshadowing.plants.length) {
+        return { success: false, message: '無効なインデックスです' };
+      }
+
+      // 植込み位置を更新
+      const oldPlant = fileItem.foreshadowing.plants[index];
+      fileItem.foreshadowing.plants[index] = plant;
+
+      // 保存
+      const saveResult = this.metaYamlService.saveMetaYaml(dirPath, meta);
+      if (saveResult) {
+        return {
+          success: true,
+          message: `伏線の植込み位置を更新しました: ${oldPlant?.location} → ${plant.location}`,
+        };
+      } else {
+        return { success: false, message: 'meta.yamlの保存に失敗しました' };
+      }
+    } catch (error) {
+      return {
+        success: false,
+        message: `エラーが発生しました: ${error instanceof Error ? error.message : String(error)}`,
+      };
+    }
+  }
+
+  /**
+   * 伏線の回収位置を設定
+   * @param dirPath ディレクトリパス
+   * @param fileName ファイル名
+   * @param payoff 新しい回収位置データ
+   * @returns 操作の成功/失敗とメッセージ
+   */
+  setPayoff(
+    dirPath: string,
+    fileName: string,
+    payoff: ForeshadowingPoint,
+  ): { success: boolean; message: string } {
+    try {
+      // meta.yamlを読み込み
+      const meta = this.metaYamlService.loadMetaYaml(dirPath);
+      if (meta === null) {
+        return { success: false, message: '.dialogoi-meta.yamlが見つかりません' };
+      }
+
+      // ファイルを検索
+      const fileIndex = meta.files.findIndex((f) => f.name === fileName);
+      if (fileIndex === -1) {
+        return { success: false, message: `ファイル ${fileName} が見つかりません` };
+      }
+
+      const fileItem = meta.files[fileIndex];
+      if (fileItem === undefined) {
+        return { success: false, message: 'ファイルアイテムが見つかりません' };
+      }
+
+      // foreshadowing構造を初期化（存在しない場合）
+      if (!fileItem.foreshadowing) {
+        fileItem.foreshadowing = {
+          plants: [],
+          payoff: { location: '', comment: '' },
+        };
+      }
+
+      // 回収位置を設定
+      const oldPayoff = fileItem.foreshadowing.payoff;
+      fileItem.foreshadowing.payoff = payoff;
+
+      // 保存
+      const saveResult = this.metaYamlService.saveMetaYaml(dirPath, meta);
+      if (saveResult) {
+        return {
+          success: true,
+          message: `伏線の回収位置を設定しました: ${oldPayoff?.location || '(なし)'} → ${payoff.location}`,
+        };
+      } else {
+        return { success: false, message: 'meta.yamlの保存に失敗しました' };
+      }
+    } catch (error) {
+      return {
+        success: false,
+        message: `エラーが発生しました: ${error instanceof Error ? error.message : String(error)}`,
+      };
+    }
+  }
+
+  /**
+   * 伏線の回収位置を削除
+   * @param dirPath ディレクトリパス
+   * @param fileName ファイル名
+   * @returns 操作の成功/失敗とメッセージ
+   */
+  removePayoff(dirPath: string, fileName: string): { success: boolean; message: string } {
+    try {
+      // meta.yamlを読み込み
+      const meta = this.metaYamlService.loadMetaYaml(dirPath);
+      if (meta === null) {
+        return { success: false, message: '.dialogoi-meta.yamlが見つかりません' };
+      }
+
+      // ファイルを検索
+      const fileIndex = meta.files.findIndex((f) => f.name === fileName);
+      if (fileIndex === -1) {
+        return { success: false, message: `ファイル ${fileName} が見つかりません` };
+      }
+
+      const fileItem = meta.files[fileIndex];
+      if (fileItem === undefined || !fileItem.foreshadowing) {
+        return { success: false, message: '伏線データが見つかりません' };
+      }
+
+      // 回収位置を削除（空の値に設定）
+      const oldPayoff = fileItem.foreshadowing.payoff;
+      fileItem.foreshadowing.payoff = { location: '', comment: '' };
+
+      // 保存
+      const saveResult = this.metaYamlService.saveMetaYaml(dirPath, meta);
+      if (saveResult) {
+        return {
+          success: true,
+          message: `伏線の回収位置を削除しました: ${oldPayoff?.location || 'unknown'}`,
+        };
+      } else {
+        return { success: false, message: 'meta.yamlの保存に失敗しました' };
+      }
+    } catch (error) {
+      return {
+        success: false,
+        message: `エラーが発生しました: ${error instanceof Error ? error.message : String(error)}`,
+      };
+    }
   }
 
   /**

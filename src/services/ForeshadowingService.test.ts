@@ -2,16 +2,19 @@ import * as assert from 'assert';
 import * as path from 'path';
 import { ForeshadowingService, ForeshadowingData } from './ForeshadowingService.js';
 import { MockFileRepository } from '../repositories/MockFileRepository.js';
+import { MetaYamlService } from './MetaYamlService.js';
 
 suite('ForeshadowingService', () => {
   let mockFileRepository: MockFileRepository;
+  let metaYamlService: MetaYamlService;
   let foreshadowingService: ForeshadowingService;
   let novelRootAbsolutePath: string;
 
   setup(() => {
     // モックサービスを初期化
     mockFileRepository = new MockFileRepository();
-    foreshadowingService = new ForeshadowingService(mockFileRepository);
+    metaYamlService = new MetaYamlService(mockFileRepository);
+    foreshadowingService = new ForeshadowingService(mockFileRepository, metaYamlService);
     novelRootAbsolutePath = '/tmp/dialogoi-test/novel';
 
     // テスト用のファイル構造を作成
@@ -252,6 +255,124 @@ suite('ForeshadowingService', () => {
         foreshadowingData,
       );
       assert.strictEqual(status, 'error');
+    });
+  });
+
+  suite('Phase 2: CRUD操作', () => {
+    // テスト用のmeta.yamlセットアップ
+    setup(() => {
+      const metaYamlPath = path.join(novelRootAbsolutePath, '.dialogoi-meta.yaml');
+      const metaYamlContent = `files:
+  - name: test.md
+    type: setting
+    path: ${novelRootAbsolutePath}/settings/test.md
+    foreshadowing:
+      plants: []
+      payoff:
+        location: ""
+        comment: ""`;
+      mockFileRepository.addFile(metaYamlPath, metaYamlContent);
+    });
+
+    test('addPlant - 植込み位置を正常に追加', () => {
+      const plant = { location: 'contents/chapter1.txt', comment: '最初のヒント' };
+      
+      const result = foreshadowingService.addPlant(novelRootAbsolutePath, 'test.md', plant);
+      
+      assert.strictEqual(result.success, true);
+      assert.ok(result.message.includes('伏線の植込み位置を追加しました'));
+      
+      // meta.yamlの内容を確認
+      const meta = metaYamlService.loadMetaYaml(novelRootAbsolutePath);
+      assert.notStrictEqual(meta, null);
+      const fileItem = meta!.files.find(f => f.name === 'test.md');
+      assert.notStrictEqual(fileItem, undefined);
+      assert.strictEqual(fileItem!.foreshadowing!.plants.length, 1);
+      assert.strictEqual(fileItem!.foreshadowing!.plants[0]!.location, 'contents/chapter1.txt');
+      assert.strictEqual(fileItem!.foreshadowing!.plants[0]!.comment, '最初のヒント');
+    });
+
+    test('removePlant - 植込み位置を正常に削除', () => {
+      // 先に植込み位置を追加
+      const plant = { location: 'contents/chapter1.txt', comment: '削除予定' };
+      foreshadowingService.addPlant(novelRootAbsolutePath, 'test.md', plant);
+      
+      const result = foreshadowingService.removePlant(novelRootAbsolutePath, 'test.md', 0);
+      
+      assert.strictEqual(result.success, true);
+      assert.ok(result.message.includes('伏線の植込み位置を削除しました'));
+      
+      // meta.yamlの内容を確認
+      const meta = metaYamlService.loadMetaYaml(novelRootAbsolutePath);
+      assert.notStrictEqual(meta, null);
+      const fileItem = meta!.files.find(f => f.name === 'test.md');
+      assert.strictEqual(fileItem!.foreshadowing!.plants.length, 0);
+    });
+
+    test('updatePlant - 植込み位置を正常に更新', () => {
+      // 先に植込み位置を追加
+      const initialPlant = { location: 'contents/chapter1.txt', comment: '初期' };
+      foreshadowingService.addPlant(novelRootAbsolutePath, 'test.md', initialPlant);
+      
+      const updatedPlant = { location: 'contents/chapter2.txt', comment: '更新後' };
+      const result = foreshadowingService.updatePlant(novelRootAbsolutePath, 'test.md', 0, updatedPlant);
+      
+      assert.strictEqual(result.success, true);
+      assert.ok(result.message.includes('伏線の植込み位置を更新しました'));
+      
+      // meta.yamlの内容を確認
+      const meta = metaYamlService.loadMetaYaml(novelRootAbsolutePath);
+      const fileItem = meta!.files.find(f => f.name === 'test.md');
+      assert.strictEqual(fileItem!.foreshadowing!.plants[0]!.location, 'contents/chapter2.txt');
+      assert.strictEqual(fileItem!.foreshadowing!.plants[0]!.comment, '更新後');
+    });
+
+    test('setPayoff - 回収位置を正常に設定', () => {
+      const payoff = { location: 'contents/chapter5.txt', comment: '真相明示' };
+      
+      const result = foreshadowingService.setPayoff(novelRootAbsolutePath, 'test.md', payoff);
+      
+      assert.strictEqual(result.success, true);
+      assert.ok(result.message.includes('伏線の回収位置を設定しました'));
+      
+      // meta.yamlの内容を確認
+      const meta = metaYamlService.loadMetaYaml(novelRootAbsolutePath);
+      const fileItem = meta!.files.find(f => f.name === 'test.md');
+      assert.strictEqual(fileItem!.foreshadowing!.payoff.location, 'contents/chapter5.txt');
+      assert.strictEqual(fileItem!.foreshadowing!.payoff.comment, '真相明示');
+    });
+
+    test('removePayoff - 回収位置を正常に削除', () => {
+      // 先に回収位置を設定
+      const payoff = { location: 'contents/chapter5.txt', comment: '削除予定' };
+      foreshadowingService.setPayoff(novelRootAbsolutePath, 'test.md', payoff);
+      
+      const result = foreshadowingService.removePayoff(novelRootAbsolutePath, 'test.md');
+      
+      assert.strictEqual(result.success, true);
+      assert.ok(result.message.includes('伏線の回収位置を削除しました'));
+      
+      // meta.yamlの内容を確認
+      const meta = metaYamlService.loadMetaYaml(novelRootAbsolutePath);
+      const fileItem = meta!.files.find(f => f.name === 'test.md');
+      assert.strictEqual(fileItem!.foreshadowing!.payoff.location, '');
+      assert.strictEqual(fileItem!.foreshadowing!.payoff.comment, '');
+    });
+
+    test('エラーケース - 存在しないファイル', () => {
+      const plant = { location: 'contents/chapter1.txt', comment: 'テスト' };
+      
+      const result = foreshadowingService.addPlant(novelRootAbsolutePath, 'nonexistent.md', plant);
+      
+      assert.strictEqual(result.success, false);
+      assert.ok(result.message.includes('ファイル nonexistent.md が見つかりません'));
+    });
+
+    test('エラーケース - 無効なインデックス', () => {
+      const result = foreshadowingService.removePlant(novelRootAbsolutePath, 'test.md', 999);
+      
+      assert.strictEqual(result.success, false);
+      assert.ok(result.message.includes('無効なインデックス'));
     });
   });
 });
