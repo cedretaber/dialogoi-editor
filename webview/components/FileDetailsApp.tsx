@@ -147,7 +147,7 @@ export const FileDetailsApp: React.FC = () => {
         onReverseReferenceRemove={handleReverseReferenceRemove}
       />
 
-      {fileData.type === 'setting' && (
+      {fileData.type === 'setting' && fileData.foreshadowing && (
         <ForeshadowingSection
           foreshadowing={fileData.foreshadowing}
           onPlantAdd={handleForeshadowingPlantAdd}
