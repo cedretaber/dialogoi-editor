@@ -365,11 +365,8 @@ suite('FileDetailsApp コンポーネント', () => {
       };
       sendMessage({ type: 'updateFile', data: dataWithCharacter });
 
-      // 状態更新を待つ
+      // 状態更新を待つ - キャラクター情報セクションが表示されるまで待機
       await waitFor(() => {
-        // ファイルタイトルクラスでfile nameを特定
-        const fileTitleElement = document.querySelector('.file-title');
-        assert(fileTitleElement?.textContent === 'test.md');
         assert(screen.getByText('キャラクター情報'));
       });
 

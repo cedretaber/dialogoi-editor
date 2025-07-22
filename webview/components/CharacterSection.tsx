@@ -16,21 +16,20 @@ export const CharacterSection: React.FC<CharacterSectionProps> = ({
 
   return (
     <div className="section">
-      <button className="section-header" onClick={() => setIsExpanded(!isExpanded)} type="button">
-        <span className={`section-chevron ${isExpanded ? '' : 'collapsed'}`}>▶</span>
-        <span>キャラクター情報</span>
+      <div className="section-header-container">
+        <button className="section-header" onClick={() => setIsExpanded(!isExpanded)} type="button">
+          <span className={`section-chevron ${isExpanded ? '' : 'collapsed'}`}>▶</span>
+          <span>キャラクター情報</span>
+        </button>
         <button
           className="delete-button"
-          onClick={(e) => {
-            e.stopPropagation();
-            onCharacterRemove();
-          }}
+          onClick={onCharacterRemove}
           title="キャラクター情報を削除"
           type="button"
         >
           ×
         </button>
-      </button>
+      </div>
       <div className={`section-content ${isExpanded ? '' : 'collapsed'}`}>
         <div className="character-info">
           <div className="character-field">

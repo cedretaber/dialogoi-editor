@@ -440,13 +440,19 @@ body {
   margin-bottom: 2px;
 }
 
+.section-header-container {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
 .section-header {
   background-color: transparent;
   color: var(--vscode-sideBarSectionHeader-foreground);
   cursor: pointer;
   padding: 4px 8px;
   border: none;
-  width: 100%;
+  flex: 1;
   text-align: left;
   font-size: 11px;
   font-weight: 600;

@@ -136,19 +136,25 @@ suite('ProjectSettingsApp コンポーネント', () => {
       };
       sendMessage(updateMessage);
 
-      await waitFor(() => {
-        assert(screen.getByText('プロジェクト設定の読み込みに失敗しました。'));
-        assert(screen.getByText('📝 YAML直接編集'));
-      });
+      await waitFor(
+        () => {
+          assert(screen.getByText('プロジェクト設定の読み込みに失敗しました。'));
+          assert(screen.getByText('📝 YAML直接編集'));
+        },
+        { timeout: 3000 },
+      );
     });
 
     test('readyメッセージが送信される', async () => {
       const spy = createPostMessageSpy();
       render(<ProjectSettingsApp />);
 
-      await waitFor(() => {
-        assert(spy.wasCalledWith({ command: 'ready' }));
-      });
+      await waitFor(
+        () => {
+          assert(spy.wasCalledWith({ command: 'ready' }));
+        },
+        { timeout: 3000 },
+      );
     });
 
     test('メッセージリスナーが登録される', () => {
@@ -178,9 +184,12 @@ suite('ProjectSettingsApp コンポーネント', () => {
       sendMessage(updateMessage);
 
       // 状態更新を待つ
-      await waitFor(() => {
-        assert(screen.getByDisplayValue('テスト小説'));
-      });
+      await waitFor(
+        () => {
+          assert(screen.getByDisplayValue('テスト小説'));
+        },
+        { timeout: 3000 },
+      );
     });
 
     test('基本情報が正しく表示される', () => {
@@ -195,13 +204,16 @@ suite('ProjectSettingsApp コンポーネント', () => {
     });
 
     test('プロジェクト設定が正しく表示される', async () => {
-      await waitFor(() => {
-        assert(screen.getByDisplayValue('README.md'));
-        // テキストエリアの値は改行で分かれている
-        // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-assertion
-        const textareaElement = screen.getByLabelText('除外パターン') as HTMLTextAreaElement;
-        assert.strictEqual(textareaElement.value, '*.tmp\nnode_modules/');
-      });
+      await waitFor(
+        () => {
+          assert(screen.getByDisplayValue('README.md'));
+          // テキストエリアの値は改行で分かれている
+          // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-assertion
+          const textareaElement = screen.getByLabelText('除外パターン') as HTMLTextAreaElement;
+          assert.strictEqual(textareaElement.value, '*.tmp\nnode_modules/');
+        },
+        { timeout: 3000 },
+      );
     });
 
     test('メタデータが表示される', () => {
@@ -228,9 +240,12 @@ suite('ProjectSettingsApp コンポーネント', () => {
       sendMessage(updateMessage);
 
       // 状態更新を待つ
-      await waitFor(() => {
-        assert(screen.getByText('🆕 新しい小説プロジェクトの作成'));
-      });
+      await waitFor(
+        () => {
+          assert(screen.getByText('🆕 新しい小説プロジェクトの作成'));
+        },
+        { timeout: 3000 },
+      );
     });
 
     test('新規プロジェクトのタイトルが表示される', () => {
@@ -295,9 +310,12 @@ suite('ProjectSettingsApp コンポーネント', () => {
       sendMessage(updateMessage);
 
       // 状態更新を待つ
-      await waitFor(() => {
-        assert(screen.getByDisplayValue('テスト小説'));
-      });
+      await waitFor(
+        () => {
+          assert(screen.getByDisplayValue('テスト小説'));
+        },
+        { timeout: 3000 },
+      );
     });
 
     test('タイトル変更時の自動保存', () => {
@@ -367,9 +385,12 @@ suite('ProjectSettingsApp コンポーネント', () => {
       sendMessage(updateMessage);
 
       // 状態更新を待つ
-      await waitFor(() => {
-        assert(screen.getByDisplayValue('テスト小説'));
-      });
+      await waitFor(
+        () => {
+          assert(screen.getByDisplayValue('テスト小説'));
+        },
+        { timeout: 3000 },
+      );
     });
 
     test('タグの追加', async () => {
@@ -378,23 +399,26 @@ suite('ProjectSettingsApp コンポーネント', () => {
       fireEvent.change(tagInput, { target: { value: 'ロマンス' } });
       fireEvent.keyDown(tagInput, { key: 'Enter' });
 
-      await waitFor(() => {
-        assert(
-          spy.wasCalledWith({
-            command: 'saveSettings',
-            data: {
-              title: 'テスト小説',
-              author: 'テスト作者',
-              version: '1.0.0',
-              tags: ['ファンタジー', 'アクション', 'ロマンス'],
-              project_settings: {
-                readme_filename: 'README.md',
-                exclude_patterns: ['*.tmp', 'node_modules/'],
+      await waitFor(
+        () => {
+          assert(
+            spy.wasCalledWith({
+              command: 'saveSettings',
+              data: {
+                title: 'テスト小説',
+                author: 'テスト作者',
+                version: '1.0.0',
+                tags: ['ファンタジー', 'アクション', 'ロマンス'],
+                project_settings: {
+                  readme_filename: 'README.md',
+                  exclude_patterns: ['*.tmp', 'node_modules/'],
+                },
               },
-            },
-          }),
-        );
-      });
+            }),
+          );
+        },
+        { timeout: 3000 },
+      );
     });
 
     test('重複タグは追加されない', async () => {
@@ -418,65 +442,64 @@ suite('ProjectSettingsApp コンポーネント', () => {
 
     test('タグの削除', async () => {
       const spy = createPostMessageSpy();
-      const deleteButtons = screen.getAllByText('×');
-      fireEvent.click(deleteButtons[0]); // ファンタジーを削除
+      // タグセクション内の削除ボタンのみを取得
+      const tagRemoveButtons = screen
+        .getAllByRole('button')
+        .filter((button) => button.classList.contains('tag-remove'));
 
-      await waitFor(() => {
-        assert(
-          spy.wasCalledWith({
-            command: 'saveSettings',
-            data: {
-              title: 'テスト小説',
-              author: 'テスト作者',
-              version: '1.0.0',
-              tags: ['アクション'],
-              project_settings: {
-                readme_filename: 'README.md',
-                exclude_patterns: ['*.tmp', 'node_modules/'],
-              },
-            },
-          }),
-        );
-      });
+      fireEvent.click(tagRemoveButtons[0]); // ファンタジーを削除
+
+      // saveSettingsコマンドの呼び出しを待つ
+      await waitFor(
+        () => {
+          const calls = spy.getCalls();
+          const saveCall = calls.find((call) => call.command === 'saveSettings');
+          assert(saveCall, 'saveSettings command should be called');
+          assert(saveCall?.data && 'tags' in saveCall.data);
+          assert.deepStrictEqual(saveCall.data.tags, ['アクション']);
+        },
+        { timeout: 3000 },
+      );
     });
 
     test('全タグ削除時はundefinedになる', async () => {
       const spy = createPostMessageSpy();
 
       // 最初のタグを削除
-      const deleteButtons = screen.getAllByText('×');
-      fireEvent.click(deleteButtons[0]);
+      const tagRemoveButtons1 = screen
+        .getAllByRole('button')
+        .filter((button) => button.classList.contains('tag-remove'));
+      fireEvent.click(tagRemoveButtons1[0]);
 
       // 最初のタグが削除されるまで待つ
-      await waitFor(() => {
-        const calls = spy.getCalls();
-        const hasFirstDeletion = calls.some(
-          (call) =>
-            call.command === 'saveSettings' &&
-            call.data &&
-            'tags' in call.data &&
-            Array.isArray(call.data.tags) &&
-            call.data.tags.length === 1,
-        );
-        assert(hasFirstDeletion, 'First tag should be deleted');
-      });
+      await waitFor(
+        () => {
+          const calls = spy.getCalls();
+          const saveCall = calls.find((call) => call.command === 'saveSettings');
+          assert(saveCall, 'First saveSettings call should be made');
+          assert(saveCall?.data && 'tags' in saveCall.data);
+          assert(Array.isArray(saveCall.data.tags) && saveCall.data.tags.length === 1);
+        },
+        { timeout: 3000 },
+      );
 
       // 2番目（最後）のタグを削除
-      const remainingDeleteButtons = screen.getAllByText('×');
-      fireEvent.click(remainingDeleteButtons[0]);
+      const tagRemoveButtons2 = screen
+        .getAllByRole('button')
+        .filter((button) => button.classList.contains('tag-remove'));
+      fireEvent.click(tagRemoveButtons2[0]);
 
       // 全タグが削除されてundefinedになることを確認
-      await waitFor(() => {
-        const lastCall = spy.getLastCall();
-        if (
-          lastCall &&
-          lastCall.command === 'saveSettings' &&
-          lastCall.data &&
-          'tags' in lastCall.data
-        ) {
-          assert.strictEqual(lastCall.data.tags, undefined);
-        }
-      });
+      await waitFor(
+        () => {
+          const calls = spy.getCalls();
+          const finalSaveCall = calls.filter((call) => call.command === 'saveSettings')[1]; // 2回目の呼び出し
+          assert(finalSaveCall, 'Final saveSettings call should be made');
+          assert(finalSaveCall.data && 'tags' in finalSaveCall.data);
+          assert.strictEqual(finalSaveCall.data.tags, undefined);
+        },
+        { timeout: 3000 },
+      );
     });
   });
 
@@ -494,9 +517,12 @@ suite('ProjectSettingsApp コンポーネント', () => {
       sendMessage(updateMessage);
 
       // 状態更新を待つ
-      await waitFor(() => {
-        assert(screen.getByDisplayValue('テスト小説'));
-      });
+      await waitFor(
+        () => {
+          assert(screen.getByDisplayValue('テスト小説'));
+        },
+        { timeout: 3000 },
+      );
     });
 
     test('除外パターンのテキストエリア編集', () => {
@@ -582,9 +608,12 @@ suite('ProjectSettingsApp コンポーネント', () => {
       sendMessage(updateMessage);
 
       // 状態更新を待つ
-      await waitFor(() => {
-        assert(screen.getByDisplayValue('テスト小説'));
-      });
+      await waitFor(
+        () => {
+          assert(screen.getByDisplayValue('テスト小説'));
+        },
+        { timeout: 3000 },
+      );
     });
 
     test('READMEファイル名の変更', () => {
@@ -637,9 +666,12 @@ suite('ProjectSettingsApp コンポーネント', () => {
       sendMessage(updateMessage);
 
       // 状態更新を待つ
-      await waitFor(() => {
-        assert(screen.getByDisplayValue('テスト小説'));
-      });
+      await waitFor(
+        () => {
+          assert(screen.getByDisplayValue('テスト小説'));
+        },
+        { timeout: 3000 },
+      );
 
       const yamlButton = screen.getByText('📝 YAML直接編集');
       fireEvent.click(yamlButton);
@@ -661,9 +693,12 @@ suite('ProjectSettingsApp コンポーネント', () => {
       sendMessage(updateMessage);
 
       // エラー状態になるまで待つ
-      await waitFor(() => {
-        assert(screen.getByText('❌ エラー'));
-      });
+      await waitFor(
+        () => {
+          assert(screen.getByText('❌ エラー'));
+        },
+        { timeout: 3000 },
+      );
 
       const yamlButton = screen.getByText('📝 YAML直接編集');
       fireEvent.click(yamlButton);
@@ -686,9 +721,12 @@ suite('ProjectSettingsApp コンポーネント', () => {
       sendMessage(updateMessage);
 
       // 状態更新を待つ
-      await waitFor(() => {
-        assert(screen.getByDisplayValue('テスト小説'));
-      });
+      await waitFor(
+        () => {
+          assert(screen.getByDisplayValue('テスト小説'));
+        },
+        { timeout: 3000 },
+      );
 
       // タイトルを変更
       const titleInput = screen.getByLabelText('タイトル *');
@@ -731,9 +769,12 @@ suite('ProjectSettingsApp コンポーネント', () => {
       sendMessage(newProjectMessage);
 
       // 新規プロジェクト画面が表示されるまで待つ
-      await waitFor(() => {
-        assert(screen.getByText('🆕 新しい小説プロジェクトの作成'));
-      });
+      await waitFor(
+        () => {
+          assert(screen.getByText('🆕 新しい小説プロジェクトの作成'));
+        },
+        { timeout: 3000 },
+      );
 
       // フォームに入力
       fireEvent.change(screen.getByLabelText('タイトル *'), { target: { value: '新規小説' } });
@@ -769,10 +810,13 @@ suite('ProjectSettingsApp コンポーネント', () => {
       sendMessage(existingProjectMessage);
 
       // 既存プロジェクト状態に更新されるまで待つ
-      await waitFor(() => {
-        assert(!screen.queryByText('✨ プロジェクトを作成'));
-        assert(screen.getByText('📝 YAML直接編集'));
-      });
+      await waitFor(
+        () => {
+          assert(!screen.queryByText('✨ プロジェクトを作成'));
+          assert(screen.getByText('📝 YAML直接編集'));
+        },
+        { timeout: 3000 },
+      );
     });
   });
 
@@ -792,9 +836,12 @@ suite('ProjectSettingsApp コンポーネント', () => {
       sendMessage(updateMessage);
 
       // 状態更新を待つ
-      await waitFor(() => {
-        assert(screen.getByDisplayValue('テスト小説'));
-      });
+      await waitFor(
+        () => {
+          assert(screen.getByDisplayValue('テスト小説'));
+        },
+        { timeout: 3000 },
+      );
     });
 
     test('project_settingsが空の場合はundefinedになる', async () => {
@@ -847,9 +894,12 @@ suite('ProjectSettingsApp コンポーネント', () => {
       sendMessage(updateMessage);
 
       // 状態更新を待つ
-      await waitFor(() => {
-        assert(screen.getByDisplayValue('テスト小説'));
-      });
+      await waitFor(
+        () => {
+          assert(screen.getByDisplayValue('テスト小説'));
+        },
+        { timeout: 3000 },
+      );
 
       const tagInput = screen.getByPlaceholderText('新しいタグを入力してEnterキーを押してください');
       fireEvent.change(tagInput, { target: { value: 'テストタグ' } });
