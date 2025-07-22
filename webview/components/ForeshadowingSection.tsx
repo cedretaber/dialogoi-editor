@@ -38,7 +38,7 @@ export const ForeshadowingSection: React.FC<ForeshadowingSectionProps> = ({
   );
 
   const handlePlantAdd = (): void => {
-    if (plantLocation.trim() && plantComment.trim()) {
+    if (plantLocation.trim()) {
       onPlantAdd({ location: plantLocation, comment: plantComment });
       setPlantLocation('');
       setPlantComment('');
@@ -57,7 +57,7 @@ export const ForeshadowingSection: React.FC<ForeshadowingSectionProps> = ({
   };
 
   const handlePlantUpdate = (): void => {
-    if (editingPlantIndex !== null && plantLocation.trim() && plantComment.trim()) {
+    if (editingPlantIndex !== null && plantLocation.trim()) {
       onPlantUpdate(editingPlantIndex, { location: plantLocation, comment: plantComment });
       setPlantLocation('');
       setPlantComment('');
@@ -67,7 +67,7 @@ export const ForeshadowingSection: React.FC<ForeshadowingSectionProps> = ({
   };
 
   const handlePayoffSet = (): void => {
-    if (payoffLocation.trim() && payoffComment.trim()) {
+    if (payoffLocation.trim()) {
       onPayoffSet({ location: payoffLocation, comment: payoffComment });
       setPayoffLocation('');
       setPayoffComment('');

@@ -357,6 +357,8 @@
     "lint:webview": "eslint \"webview/**/*.{ts,tsx}\" --max-warnings 0",
     "test": "NODE_ENV=test mocha --import=tsx --ui tdd \"src/**/*.test.ts\"",
     "test:react": "NODE_ENV=test mocha --import=tsx --ui tdd \"webview/components/**/*.test.tsx\" --require webview/test-setup.ts --timeout 8000",
+    "test:react:unit": "NODE_ENV=test mocha --import=tsx --ui tdd \"webview/components/TagSection.test.tsx\" \"webview/components/BasicInfoSection.test.tsx\" \"webview/components/ReviewSection.test.tsx\" \"webview/components/CharacterSection.test.tsx\" \"webview/components/ReferenceSection.test.tsx\" \"webview/components/ForeshadowingSection.test.tsx\" --require webview/test-setup.ts --timeout 8000",
+    "test:react:integration": "NODE_ENV=test mocha --import=tsx --ui tdd \"webview/components/FileDetailsApp.test.tsx\" \"webview/components/ProjectSettingsApp.test.tsx\" --require webview/test-setup.ts --timeout 15000",
     "test:all": "npm run test && npm run test:react",
     "test:vscode": "tsc -p tsconfig.vscode.json && mocha --import=tsx --ui tdd \"vscode-integration/**/*.test.ts\"",
     "typecheck": "tsc --noEmit && tsc --noEmit -p webview/tsconfig.json",

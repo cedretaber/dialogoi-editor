@@ -369,7 +369,7 @@ suite('ForeshadowingSection コンポーネント', () => {
       assert.strictEqual(addedPlants[0].comment, 'テスト伏線');
     });
 
-    test('空の値では追加できない', () => {
+    test('位置が空の場合は追加できない', () => {
       render(
         <ForeshadowingSection
           onPlantAdd={mockOnPlantAdd}
@@ -387,6 +387,32 @@ suite('ForeshadowingSection コンポーネント', () => {
       fireEvent.click(submitButton);
 
       assert.strictEqual(addedPlants.length, 0);
+    });
+
+    test('コメントが空でも位置があれば追加できる', () => {
+      render(
+        <ForeshadowingSection
+          onPlantAdd={mockOnPlantAdd}
+          onPlantRemove={mockOnPlantRemove}
+          onPlantUpdate={mockOnPlantUpdate}
+          onPayoffSet={mockOnPayoffSet}
+          onPayoffRemove={mockOnPayoffRemove}
+        />,
+      );
+
+      const addButton = screen.getByText('+ 位置を追加');
+      fireEvent.click(addButton);
+
+      const locationInput = screen.getByPlaceholderText('例: contents/chapter1.txt');
+      fireEvent.change(locationInput, { target: { value: 'chapter1.txt' } });
+      // コメントは入力しない
+
+      const submitButton = screen.getByText('追加');
+      fireEvent.click(submitButton);
+
+      assert.strictEqual(addedPlants.length, 1);
+      assert.strictEqual(addedPlants[0].location, 'chapter1.txt');
+      assert.strictEqual(addedPlants[0].comment, '');
     });
 
     test('キャンセルボタンでフォームを閉じる', () => {
@@ -550,6 +576,32 @@ suite('ForeshadowingSection コンポーネント', () => {
       assert.strictEqual(setPayoffs[0].comment, '伏線の回収');
     });
 
+    test('コメントが空でも位置があれば回収位置を設定できる', () => {
+      render(
+        <ForeshadowingSection
+          onPlantAdd={mockOnPlantAdd}
+          onPlantRemove={mockOnPlantRemove}
+          onPlantUpdate={mockOnPlantUpdate}
+          onPayoffSet={mockOnPayoffSet}
+          onPayoffRemove={mockOnPayoffRemove}
+        />,
+      );
+
+      const setButton = screen.getByText('+ 回収位置を設定');
+      fireEvent.click(setButton);
+
+      const locationInput = screen.getByPlaceholderText('例: contents/chapter5.txt');
+      fireEvent.change(locationInput, { target: { value: 'chapter5.txt' } });
+      // コメントは入力しない
+
+      const submitButton = screen.getByText('設定');
+      fireEvent.click(submitButton);
+
+      assert.strictEqual(setPayoffs.length, 1);
+      assert.strictEqual(setPayoffs[0].location, 'chapter5.txt');
+      assert.strictEqual(setPayoffs[0].comment, '');
+    });
+
     test('回収位置の編集', () => {
       const foreshadowingData: ForeshadowingData = {
         payoff: { location: 'chapter5.txt', comment: '既存の回収' },
@@ -681,7 +733,7 @@ suite('ForeshadowingSection コンポーネント', () => {
       assert(screen.getByText('🎯 伏線回収 (未設定)'));
     });
 
-    test('植込み位置の追加で空白のみの値は無視される', () => {
+    test('植込み位置の追加で位置が空白のみの場合は追加されない', () => {
       render(
         <ForeshadowingSection
           onPlantAdd={mockOnPlantAdd}
@@ -696,10 +748,8 @@ suite('ForeshadowingSection コンポーネント', () => {
       fireEvent.click(addButton);
 
       const locationInput = screen.getByPlaceholderText('例: contents/chapter1.txt');
-      const commentTextarea = screen.getByPlaceholderText('伏線の内容や目的を説明');
-
       fireEvent.change(locationInput, { target: { value: '   ' } });
-      fireEvent.change(commentTextarea, { target: { value: '   ' } });
+      // コメントは入力済みでも位置が空白なら追加されない
 
       const submitButton = screen.getByText('追加');
       fireEvent.click(submitButton);
@@ -707,7 +757,7 @@ suite('ForeshadowingSection コンポーネント', () => {
       assert.strictEqual(addedPlants.length, 0);
     });
 
-    test('回収位置の設定で空白のみの値は無視される', () => {
+    test('回収位置の設定で位置が空白のみの場合は設定されない', () => {
       render(
         <ForeshadowingSection
           onPlantAdd={mockOnPlantAdd}
@@ -722,10 +772,8 @@ suite('ForeshadowingSection コンポーネント', () => {
       fireEvent.click(setButton);
 
       const locationInput = screen.getByPlaceholderText('例: contents/chapter5.txt');
-      const commentTextarea = screen.getByPlaceholderText('伏線の回収方法や結果を説明');
-
       fireEvent.change(locationInput, { target: { value: '   ' } });
-      fireEvent.change(commentTextarea, { target: { value: '   ' } });
+      // コメントは入力済みでも位置が空白なら設定されない
 
       const submitButton = screen.getByText('設定');
       fireEvent.click(submitButton);
