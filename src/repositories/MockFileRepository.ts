@@ -322,6 +322,61 @@ export class MockFileRepository extends FileRepository {
     return Promise.resolve();
   }
 
+  // === 非同期ファイル操作メソッド（モック実装） ===
+
+  async existsAsync(uri: Uri): Promise<boolean> {
+    return await Promise.resolve(this.existsSync(uri));
+  }
+
+  async readFileAsync(uri: Uri, encoding?: BufferEncoding): Promise<string>;
+  async readFileAsync(uri: Uri): Promise<Uint8Array>;
+  async readFileAsync(uri: Uri, encoding?: BufferEncoding): Promise<string | Uint8Array> {
+    if (encoding !== undefined) {
+      return await Promise.resolve(this.readFileSync(uri, encoding));
+    } else {
+      // エンコーディングが指定されない場合はUint8Arrayとして返す
+      const content = this.readFileSync(uri, null);
+      if (Buffer.isBuffer(content)) {
+        return await Promise.resolve(new Uint8Array(content));
+      }
+      return await Promise.resolve(new Uint8Array(Buffer.from(content)));
+    }
+  }
+
+  async writeFileAsync(uri: Uri, data: string | Uint8Array): Promise<void> {
+    // Uint8ArrayをstringまたはBufferに変換
+    if (data instanceof Uint8Array) {
+      this.writeFileSync(uri, Buffer.from(data));
+    } else {
+      this.writeFileSync(uri, data);
+    }
+    await Promise.resolve();
+  }
+
+  async createDirectoryAsync(uri: Uri): Promise<void> {
+    this.createDirectorySync(uri);
+    await Promise.resolve();
+  }
+
+  async unlinkAsync(uri: Uri): Promise<void> {
+    this.unlinkSync(uri);
+    await Promise.resolve();
+  }
+
+  async rmAsync(uri: Uri, options?: { recursive?: boolean }): Promise<void> {
+    this.rmSync(uri, options);
+    await Promise.resolve();
+  }
+
+  async readdirAsync(uri: Uri): Promise<DirectoryEntry[]> {
+    const result = this.readdirSync(uri, { withFileTypes: true });
+    return await Promise.resolve(result as DirectoryEntry[]);
+  }
+
+  async statAsync(uri: Uri): Promise<FileStats> {
+    return await Promise.resolve(this.statSync(uri));
+  }
+
   // === Uriファクトリーメソッド ===
 
   createFileUri(path: string): Uri {

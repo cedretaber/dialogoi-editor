@@ -502,4 +502,129 @@ files:
       );
     });
   });
+
+  suite('非同期メソッドテスト', () => {
+    test('ファイルからプロジェクト内リンクを抽出（非同期版）できる', async () => {
+      const novelRoot = '/test/novel';
+
+      const metaYamlService = container.getMetaYamlService();
+      const fileOpService = container.getFileOperationService(novelRoot);
+      const filePathMapService = new FilePathMapService(metaYamlService, fileOpService);
+      service = new HyperlinkExtractorService(mockFileRepo, filePathMapService);
+
+      mockFileRepo.createFileForTest(
+        `${novelRoot}/.dialogoi-meta.yaml`,
+        `
+project_name: "テストプロジェクト"
+files:
+  - name: "chapter1.md"
+    type: "content"
+  - name: "settings"
+    type: "subdirectory"
+`,
+      );
+
+      mockFileRepo.createFileForTest(
+        `${novelRoot}/settings/.dialogoi-meta.yaml`,
+        `
+files:
+  - name: "world.md"
+    type: "setting"
+`,
+      );
+
+      mockFileRepo.createFileForTest(
+        `${novelRoot}/chapter1.md`,
+        `
+[世界設定](settings/world.md)
+[外部リンク](https://example.com)
+`,
+      );
+
+      filePathMapService.buildFileMap(novelRoot);
+
+      const links = await service.extractProjectLinksAsync(`${novelRoot}/chapter1.md`);
+
+      assert.strictEqual(links.length, 1);
+      assert.strictEqual(links[0], 'settings/world.md');
+    });
+
+    test('複数ファイルのリンクを一括抽出（非同期版）できる', async () => {
+      const novelRoot = '/test/novel';
+
+      const metaYamlService = container.getMetaYamlService();
+      const fileOpService = container.getFileOperationService(novelRoot);
+      const filePathMapService = new FilePathMapService(metaYamlService, fileOpService);
+      service = new HyperlinkExtractorService(mockFileRepo, filePathMapService);
+
+      mockFileRepo.createFileForTest(
+        `${novelRoot}/.dialogoi-meta.yaml`,
+        `
+project_name: "テストプロジェクト"
+files:
+  - name: "file1.md"
+    type: "content"
+  - name: "file2.md"
+    type: "content"
+  - name: "target.md"
+    type: "setting"
+`,
+      );
+
+      mockFileRepo.createFileForTest(`${novelRoot}/file1.md`, `[ターゲット](target.md)`);
+
+      mockFileRepo.createFileForTest(`${novelRoot}/file2.md`, `[同じターゲット](target.md)`);
+
+      filePathMapService.buildFileMap(novelRoot);
+
+      const filePaths = [`${novelRoot}/file1.md`, `${novelRoot}/file2.md`];
+      const result = await service.extractProjectLinksFromFilesAsync(filePaths);
+
+      assert.strictEqual(result.size, 2);
+
+      const file1Links = result.get(`${novelRoot}/file1.md`);
+      assert.notStrictEqual(file1Links, undefined);
+      if (file1Links !== undefined) {
+        assert.strictEqual(file1Links.length, 1);
+        assert.strictEqual(file1Links[0], 'target.md');
+      }
+
+      const file2Links = result.get(`${novelRoot}/file2.md`);
+      assert.notStrictEqual(file2Links, undefined);
+      if (file2Links !== undefined) {
+        assert.strictEqual(file2Links.length, 1);
+        assert.strictEqual(file2Links[0], 'target.md');
+      }
+    });
+
+    test('refreshFileLinksAsync で更新されたリンクを取得できる', async () => {
+      const novelRoot = '/test/novel';
+
+      const metaYamlService = container.getMetaYamlService();
+      const fileOpService = container.getFileOperationService(novelRoot);
+      const filePathMapService = new FilePathMapService(metaYamlService, fileOpService);
+      service = new HyperlinkExtractorService(mockFileRepo, filePathMapService);
+
+      mockFileRepo.createFileForTest(
+        `${novelRoot}/.dialogoi-meta.yaml`,
+        `
+project_name: "テストプロジェクト"
+files:
+  - name: "chapter.md"
+    type: "content"
+  - name: "target.md"
+    type: "setting"
+`,
+      );
+
+      mockFileRepo.createFileForTest(`${novelRoot}/chapter.md`, `[リンク](target.md)`);
+
+      filePathMapService.buildFileMap(novelRoot);
+
+      const refreshedLinks = await service.refreshFileLinksAsync(`${novelRoot}/chapter.md`);
+
+      assert.strictEqual(refreshedLinks.length, 1);
+      assert.strictEqual(refreshedLinks[0], 'target.md');
+    });
+  });
 });

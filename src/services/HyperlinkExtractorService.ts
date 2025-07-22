@@ -23,6 +23,30 @@ export class HyperlinkExtractorService {
   ) {}
 
   /**
+   * マークダウンファイルからプロジェクト内のハイパーリンクを抽出（非同期版）
+   * @param fileAbsolutePath ファイルの絶対パス
+   * @returns プロジェクト内ファイルの相対パス配列
+   * TODO: Phase 3での利用を想定
+   */
+  async extractProjectLinksAsync(fileAbsolutePath: string): Promise<string[]> {
+    try {
+      const fileUri = this.fileRepository.createFileUri(fileAbsolutePath);
+
+      if (!(await this.fileRepository.existsAsync(fileUri))) {
+        return [];
+      }
+
+      const content = await this.fileRepository.readFileAsync(fileUri, 'utf8');
+      const allLinks = this.parseMarkdownLinks(content);
+      const projectLinks = this.filterProjectLinks(allLinks, fileAbsolutePath);
+
+      return projectLinks;
+    } catch {
+      return [];
+    }
+  }
+
+  /**
    * マークダウンファイルからプロジェクト内のハイパーリンクを抽出
    * @param fileAbsolutePath ファイルの絶対パス
    * @returns プロジェクト内ファイルの相対パス配列
@@ -154,12 +178,41 @@ export class HyperlinkExtractorService {
   }
 
   /**
+   * ファイルの更新時にハイパーリンクを再抽出（非同期版）
+   * @param fileAbsolutePath 更新されたファイルの絶対パス
+   * @returns 新しいプロジェクト内リンク配列
+   * TODO: Phase 3での利用を想定
+   */
+  async refreshFileLinksAsync(fileAbsolutePath: string): Promise<string[]> {
+    return this.extractProjectLinksAsync(fileAbsolutePath);
+  }
+
+  /**
    * ファイルの更新時にハイパーリンクを再抽出
    * @param fileAbsolutePath 更新されたファイルの絶対パス
    * @returns 新しいプロジェクト内リンク配列
    */
   refreshFileLinks(fileAbsolutePath: string): string[] {
     return this.extractProjectLinks(fileAbsolutePath);
+  }
+
+  /**
+   * 複数ファイルのハイパーリンクを一括抽出（非同期版）
+   * @param fileAbsolutePaths ファイルの絶対パス配列
+   * @returns ファイルパスをキーとした、プロジェクト内リンクのマップ
+   * TODO: Phase 3での利用を想定
+   */
+  async extractProjectLinksFromFilesAsync(
+    fileAbsolutePaths: string[],
+  ): Promise<Map<string, string[]>> {
+    const result = new Map<string, string[]>();
+
+    for (const filePath of fileAbsolutePaths) {
+      const links = await this.extractProjectLinksAsync(filePath);
+      result.set(filePath, links);
+    }
+
+    return result;
   }
 
   /**

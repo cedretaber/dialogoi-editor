@@ -53,7 +53,7 @@ export class FileOperationService {
   }
 
   /**
-   * 新しいファイルを作成し、.dialogoi-meta.yamlに追加する
+   * 新しいファイルを作成し、.dialogoi-meta.yamlに追加する（同期版）
    */
   createFile(
     dirPath: string,
@@ -1271,6 +1271,54 @@ export class FileOperationService {
   }
 
   /**
+   * .dialogoi-meta.yamlを更新（非同期版）
+   */
+  private async updateMetaYamlAsync(
+    dirPath: string,
+    updateFunction: (meta: MetaYaml) => MetaYaml,
+  ): Promise<FileOperationResult> {
+    try {
+      // .dialogoi-meta.yamlを読み込み
+      const meta = await this.metaYamlService.loadMetaYamlAsync(dirPath);
+      if (meta === null) {
+        return {
+          success: false,
+          message: '.dialogoi-meta.yamlが見つからないか、読み込みに失敗しました。',
+        };
+      }
+
+      // 更新を実行
+      const updatedMeta = updateFunction(meta);
+
+      // .dialogoi-meta.yamlを保存
+      const saveResult = await this.metaYamlService.saveMetaYamlAsync(dirPath, updatedMeta);
+      if (!saveResult) {
+        return {
+          success: false,
+          message: '.dialogoi-meta.yamlの保存に失敗しました。',
+        };
+      }
+
+      // パスを更新したアイテムを返す
+      const updatedItems = updatedMeta.files.map((file: DialogoiTreeItem) => ({
+        ...file,
+        path: path.join(dirPath, file.name),
+      }));
+
+      return {
+        success: true,
+        message: '.dialogoi-meta.yamlを更新しました。',
+        updatedItems,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: `.dialogoi-meta.yaml更新エラー: ${error instanceof Error ? error.message : String(error)}`,
+      };
+    }
+  }
+
+  /**
    * ファイルのハイパーリンク参照を更新
    * @param fileAbsolutePath 更新対象ファイルの絶対パス
    */
@@ -1299,6 +1347,36 @@ export class FileOperationService {
   }
 
   /**
+   * ファイルのハイパーリンク参照を更新（非同期版）
+   * @param fileAbsolutePath 更新対象ファイルの絶対パス
+   */
+  // 一時的にコメントアウト - 既存の非同期メソッドで使用される可能性がある
+  // private async updateHyperlinkReferencesAsync(fileAbsolutePath: string): Promise<void> {
+  //   if (
+  //     this.novelRootPath === undefined ||
+  //     this.novelRootPath === null ||
+  //     this.novelRootPath === ''
+  //   ) {
+  //     return;
+  //   }
+
+  //   try {
+  //     const referenceManager = ReferenceManager.getInstance();
+
+  //     // .mdファイルの場合のみハイパーリンク参照を更新
+  //     if (fileAbsolutePath.endsWith('.md')) {
+  //       // ReferenceManagerのメソッドが同期的であるため、Promiseでラップ
+  //       await Promise.resolve(referenceManager.updateFileHyperlinkReferences(fileAbsolutePath));
+  //     }
+  //   } catch (error) {
+  //     // ハイパーリンク更新の失敗は主操作を妨げない
+  //     console.warn(
+  //       `ハイパーリンク参照更新に失敗しました: ${error instanceof Error ? error.message : String(error)}`,
+  //     );
+  //   }
+  // }
+
+  /**
    * ファイル作成・更新後の参照関係を更新
    * @param fileAbsolutePath 更新対象ファイルの絶対パス
    * @param manualReferences 手動で設定された参照関係
@@ -1321,5 +1399,193 @@ export class FileOperationService {
         `参照関係更新に失敗しました: ${error instanceof Error ? error.message : String(error)}`,
       );
     }
+  }
+
+  // === 非同期版メソッド（vscode.workspace.fs対応） ===
+
+  /**
+   * 新しいファイルを作成し、.dialogoi-meta.yamlに追加する（非同期版）
+   */
+  async createFileAsync(
+    dirPath: string,
+    fileName: string,
+    fileType: 'content' | 'setting' | 'subdirectory',
+    initialContent: string = '',
+    tags: string[] = [],
+    subtype?: 'character' | 'foreshadowing' | 'glossary',
+  ): Promise<FileOperationResult> {
+    try {
+      const filePath = path.join(dirPath, fileName);
+      const fileUri = this.fileRepository.createFileUri(filePath);
+
+      // ファイルが既に存在する場合はエラー
+      const exists = await this.fileRepository.existsAsync(fileUri);
+      if (exists) {
+        return {
+          success: false,
+          message: `ファイル ${fileName} は既に存在します。`,
+        };
+      }
+
+      // ファイルを作成
+      if (fileType === 'subdirectory') {
+        await this.fileRepository.createDirectoryAsync(fileUri);
+
+        // サブディレクトリにはデフォルトの.dialogoi-meta.yamlとREADME.mdを作成
+        const defaultMeta = MetaYamlUtils.createMetaYaml('README.md');
+        const defaultReadme = `# ${fileName}\n\n`;
+
+        const metaYamlContent = MetaYamlUtils.stringifyMetaYaml(defaultMeta);
+        await this.fileRepository.writeFileAsync(
+          this.fileRepository.joinPath(fileUri, '.dialogoi-meta.yaml'),
+          metaYamlContent,
+        );
+        await this.fileRepository.writeFileAsync(
+          this.fileRepository.joinPath(fileUri, 'README.md'),
+          defaultReadme,
+        );
+      } else {
+        // ファイルタイプに応じて初期コンテンツを設定
+        let content = initialContent;
+        if (content === '') {
+          if (fileType === 'content' && fileName.endsWith('.txt')) {
+            const baseName = fileName.substring(0, fileName.lastIndexOf('.'));
+            content = `${baseName}\n\n`;
+          } else if (fileType === 'setting' && fileName.endsWith('.md')) {
+            const baseName = fileName.substring(0, fileName.lastIndexOf('.'));
+            content = `# ${baseName}\n\n`;
+          }
+        }
+        await this.fileRepository.writeFileAsync(fileUri, content);
+      }
+
+      // .dialogoi-meta.yamlを更新
+      const result = await this.updateMetaYamlAsync(dirPath, (meta) => {
+        const newItem: DialogoiTreeItem = {
+          name: fileName,
+          type: fileType,
+          path: filePath,
+          tags: tags.length > 0 ? tags : undefined,
+        };
+
+        // サブタイプに応じてプロパティを設定
+        if (subtype === 'character') {
+          newItem.character = {
+            importance: 'main',
+            multiple_characters: false,
+          };
+        } else if (subtype === 'foreshadowing') {
+          newItem.foreshadowing = {
+            plants: [],
+            payoff: { location: '', comment: '' },
+          };
+        } else if (subtype === 'glossary') {
+          newItem.glossary = true;
+        }
+
+        meta.files.push(newItem);
+        return meta;
+      });
+
+      if (!result.success) {
+        // .dialogoi-meta.yaml更新に失敗した場合は作成したファイルを削除
+        const fileExists = await this.fileRepository.existsAsync(fileUri);
+        if (fileExists) {
+          if (fileType === 'subdirectory') {
+            await this.fileRepository.rmAsync(fileUri, { recursive: true });
+          } else {
+            await this.fileRepository.unlinkAsync(fileUri);
+          }
+        }
+        return result;
+      }
+
+      // ファイル作成後にハイパーリンク参照を更新
+      this.updateHyperlinkReferences(filePath);
+
+      return {
+        success: true,
+        message: `${fileName} を作成しました。`,
+        updatedItems: result.updatedItems,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: `ファイル作成エラー: ${error instanceof Error ? error.message : String(error)}`,
+      };
+    }
+  }
+
+  /**
+   * ファイルを削除し、.dialogoi-meta.yamlから除去する（非同期版）
+   */
+  async deleteFileAsync(dirPath: string, fileName: string): Promise<FileOperationResult> {
+    try {
+      const filePath = path.join(dirPath, fileName);
+      const fileUri = this.fileRepository.createFileUri(filePath);
+
+      // ファイルが存在しない場合はエラー
+      const exists = await this.fileRepository.existsAsync(fileUri);
+      if (!exists) {
+        return {
+          success: false,
+          message: `ファイル ${fileName} が見つかりません。`,
+        };
+      }
+
+      // .dialogoi-meta.yamlから削除
+      const result = await this.updateMetaYamlAsync(dirPath, (meta) => {
+        meta.files = meta.files.filter((file) => file.name !== fileName);
+        return meta;
+      });
+
+      if (!result.success) {
+        return result;
+      }
+
+      // ファイルを削除
+      const stat = await this.fileRepository.statAsync(fileUri);
+      const isDirectory = stat.isDirectory();
+      if (isDirectory) {
+        await this.fileRepository.rmAsync(fileUri, { recursive: true });
+      } else {
+        await this.fileRepository.unlinkAsync(fileUri);
+      }
+
+      return {
+        success: true,
+        message: `${fileName} を削除しました。`,
+        updatedItems: result.updatedItems,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: `ファイル削除エラー: ${error instanceof Error ? error.message : String(error)}`,
+      };
+    }
+  }
+
+  /**
+   * ファイルを読み込む（非同期版）
+   */
+  async readFileAsync(filePath: string, encoding: 'utf8' = 'utf8'): Promise<string> {
+    const fileUri = this.fileRepository.createFileUri(filePath);
+    return await this.fileRepository.readFileAsync(fileUri, encoding);
+  }
+
+  /**
+   * ファイルに書き込む（非同期版）
+   */
+  async writeFileAsync(filePath: string, content: string): Promise<void> {
+    const fileUri = this.fileRepository.createFileUri(filePath);
+    await this.fileRepository.writeFileAsync(fileUri, content);
+  }
+
+  /**
+   * ファイルが存在するかどうかチェック（非同期版）
+   */
+  async existsAsync(filePath: string): Promise<boolean> {
+    const fileUri = this.fileRepository.createFileUri(filePath);
+    return await this.fileRepository.existsAsync(fileUri);
   }
 }

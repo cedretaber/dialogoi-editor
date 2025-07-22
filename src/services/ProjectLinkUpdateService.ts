@@ -108,6 +108,53 @@ export class ProjectLinkUpdateService {
   }
 
   /**
+   * 単一マークダウンファイル内のリンクを更新（非同期版）
+   * TODO: Phase 3での利用を想定
+   */
+  // @ts-expect-error - TS6133: 将来のPhase 3で使用予定
+  private async updateLinksInMarkdownFileAsync(
+    fileAbsolutePath: string,
+    oldProjectRelativePath: string,
+    newProjectRelativePath: string,
+  ): Promise<boolean> {
+    const fileUri = this.fileRepository.createFileUri(fileAbsolutePath);
+    const content = await this.fileRepository.readFileAsync(fileUri, 'utf8');
+
+    // マークダウンリンクの正規表現パターン
+    // [テキスト](リンク先) および [テキスト](リンク先 "タイトル") の形式をマッチ
+    const linkPattern = /\[([^\]]*)\]\(([^\s)]+)(?:\s+"[^"]*")?\)/g;
+    let hasUpdates = false;
+
+    const updatedContent = content.replace(
+      linkPattern,
+      (match: string, text: string, url: string) => {
+        // プロジェクト内リンクのみ更新対象
+        const normalizedUrl = this.pathNormalizationService.normalizeToProjectPath(
+          url,
+          fileAbsolutePath,
+        );
+
+        if (
+          normalizedUrl !== null &&
+          normalizedUrl !== '' &&
+          this.pathNormalizationService.isSamePath(normalizedUrl, oldProjectRelativePath)
+        ) {
+          hasUpdates = true;
+          return `[${text}](${newProjectRelativePath})`;
+        }
+
+        return match;
+      },
+    );
+
+    if (hasUpdates) {
+      await this.fileRepository.writeFileAsync(fileUri, updatedContent);
+    }
+
+    return hasUpdates;
+  }
+
+  /**
    * 単一マークダウンファイル内のリンクを更新
    */
   private updateLinksInMarkdownFile(
@@ -195,6 +242,48 @@ export class ProjectLinkUpdateService {
   }
 
   /**
+   * プロジェクト内の全.mdファイルを再帰的に検索（非同期版）
+   * TODO: Phase 3での利用を想定
+   */
+  // @ts-expect-error - TS6133: 将来のPhase 3で使用予定
+  private async findAllMarkdownFilesAsync(): Promise<string[]> {
+    const markdownFiles: string[] = [];
+
+    const walkDirectory = async (dirAbsolutePath: string): Promise<void> => {
+      const dirUri = this.fileRepository.createFileUri(dirAbsolutePath);
+      try {
+        const entries = await this.fileRepository.readdirAsync(dirUri);
+
+        for (const entry of entries) {
+          const entryName = typeof entry === 'string' ? entry : entry.name;
+          const entryAbsolutePath = path.join(dirAbsolutePath, entryName);
+          const entryUri = this.fileRepository.createFileUri(entryAbsolutePath);
+
+          try {
+            const stat = await this.fileRepository.statAsync(entryUri);
+
+            if (stat.isDirectory()) {
+              // ディレクトリの場合は再帰的に走査
+              await walkDirectory(entryAbsolutePath);
+            } else if (entryName.endsWith('.md')) {
+              // .mdファイルの場合はリストに追加
+              markdownFiles.push(entryAbsolutePath);
+            }
+          } catch {
+            // ファイルのstat取得に失敗した場合は無視
+            continue;
+          }
+        }
+      } catch {
+        // ディレクトリ読み込みエラーは無視
+      }
+    };
+
+    await walkDirectory(this.novelRootAbsolutePath);
+    return markdownFiles;
+  }
+
+  /**
    * プロジェクト内の全.mdファイルを再帰的に検索
    */
   private findAllMarkdownFiles(): string[] {
@@ -235,6 +324,48 @@ export class ProjectLinkUpdateService {
   }
 
   /**
+   * プロジェクト内の全.dialogoi-meta.yamlファイルを検索（非同期版）
+   * TODO: Phase 3での利用を想定
+   */
+  // @ts-expect-error - TS6133: 将来のPhase 3で使用予定
+  private async findAllMetaYamlFilesAsync(): Promise<string[]> {
+    const metaFiles: string[] = [];
+
+    const walkDirectory = async (dirAbsolutePath: string): Promise<void> => {
+      const dirUri = this.fileRepository.createFileUri(dirAbsolutePath);
+      try {
+        const entries = await this.fileRepository.readdirAsync(dirUri);
+
+        for (const entry of entries) {
+          const entryName = typeof entry === 'string' ? entry : entry.name;
+          if (entryName === '.dialogoi-meta.yaml') {
+            const metaFileAbsolutePath = path.join(dirAbsolutePath, entryName);
+            metaFiles.push(metaFileAbsolutePath);
+          } else {
+            const entryAbsolutePath = path.join(dirAbsolutePath, entryName);
+            const entryUri = this.fileRepository.createFileUri(entryAbsolutePath);
+
+            try {
+              const stat = await this.fileRepository.statAsync(entryUri);
+              if (stat.isDirectory()) {
+                await walkDirectory(entryAbsolutePath);
+              }
+            } catch {
+              // ファイルのstat取得に失敗した場合は無視
+              continue;
+            }
+          }
+        }
+      } catch {
+        // ディレクトリ読み込みエラーは無視
+      }
+    };
+
+    await walkDirectory(this.novelRootAbsolutePath);
+    return metaFiles;
+  }
+
+  /**
    * プロジェクト内の全.dialogoi-meta.yamlファイルを検索
    */
   private findAllMetaYamlFiles(): string[] {
@@ -272,6 +403,35 @@ export class ProjectLinkUpdateService {
 
     walkDirectory(this.novelRootAbsolutePath);
     return metaFiles;
+  }
+
+  /**
+   * 指定ファイルがプロジェクト内のリンクを含むかチェック（デバッグ用・非同期版）
+   * TODO: Phase 3での利用を想定
+   */
+  async scanFileForProjectLinksAsync(fileAbsolutePath: string): Promise<string[]> {
+    const fileUri = this.fileRepository.createFileUri(fileAbsolutePath);
+    const content = await this.fileRepository.readFileAsync(fileUri, 'utf8');
+    const projectLinks: string[] = [];
+
+    const linkPattern = /\[([^\]]*)\]\(([^\s)]+)(?:\s+"[^"]*")?\)/g;
+    let match;
+
+    while ((match = linkPattern.exec(content)) !== null) {
+      const url = match[2];
+      if (url !== undefined && url !== null && url !== '') {
+        const normalizedUrl = this.pathNormalizationService.normalizeToProjectPath(
+          url,
+          fileAbsolutePath,
+        );
+
+        if (normalizedUrl !== null && normalizedUrl !== '') {
+          projectLinks.push(normalizedUrl);
+        }
+      }
+    }
+
+    return projectLinks;
   }
 
   /**

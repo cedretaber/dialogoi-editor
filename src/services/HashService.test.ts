@@ -97,4 +97,74 @@ suite('HashService テストスイート', () => {
       assert.strictEqual(value, 'abc:def:123');
     });
   });
+
+  suite('非同期メソッドテスト', () => {
+    test('calculateFileHashAsync でファイルハッシュを計算できる', async () => {
+      const testFilePath = '/test/sample.txt';
+      const testContent = 'Hello, World!';
+
+      mockFileRepository.createFileForTest(testFilePath, testContent);
+      const fileUri = mockFileRepository.createFileUri(testFilePath);
+
+      const hash = await hashService.calculateFileHashAsync(fileUri);
+
+      assert.strictEqual(hash.startsWith('sha256:'), true);
+      assert.strictEqual(hash.length, 71); // "sha256:" + 64文字のハッシュ
+    });
+
+    test('calculateFileHashAsync で存在しないファイルのハッシュ計算でエラーが発生する', async () => {
+      const nonExistentPath = '/test/non-existent.txt';
+      const fileUri = mockFileRepository.createFileUri(nonExistentPath);
+
+      try {
+        await hashService.calculateFileHashAsync(fileUri);
+        assert.fail('エラーが発生するはず');
+      } catch (error) {
+        assert.strictEqual(error instanceof Error, true);
+        if (error instanceof Error) {
+          assert.strictEqual(error.message.includes('ファイルハッシュの計算に失敗しました'), true);
+        }
+      }
+    });
+
+    test('verifyFileHashAsync で正しいハッシュの検証ができる', async () => {
+      const testFilePath = '/test/sample.txt';
+      const testContent = 'Hello, World!';
+
+      mockFileRepository.createFileForTest(testFilePath, testContent);
+      const fileUri = mockFileRepository.createFileUri(testFilePath);
+
+      // まずハッシュを計算
+      const expectedHash = await hashService.calculateFileHashAsync(fileUri);
+
+      // ハッシュを検証
+      const isValid = await hashService.verifyFileHashAsync(fileUri, expectedHash);
+
+      assert.strictEqual(isValid, true);
+    });
+
+    test('verifyFileHashAsync で間違ったハッシュの検証ができる', async () => {
+      const testFilePath = '/test/sample.txt';
+      const testContent = 'Hello, World!';
+
+      mockFileRepository.createFileForTest(testFilePath, testContent);
+      const fileUri = mockFileRepository.createFileUri(testFilePath);
+
+      const wrongHash = 'sha256:wronghash123456789';
+
+      const isValid = await hashService.verifyFileHashAsync(fileUri, wrongHash);
+
+      assert.strictEqual(isValid, false);
+    });
+
+    test('verifyFileHashAsync で存在しないファイルの検証は false を返す', async () => {
+      const nonExistentPath = '/test/non-existent.txt';
+      const fileUri = mockFileRepository.createFileUri(nonExistentPath);
+      const anyHash = 'sha256:anyhash123456789';
+
+      const isValid = await hashService.verifyFileHashAsync(fileUri, anyHash);
+
+      assert.strictEqual(isValid, false);
+    });
+  });
 });

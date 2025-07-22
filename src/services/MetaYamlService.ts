@@ -528,4 +528,311 @@ export class MetaYamlService {
 
     return this.saveMetaYaml(dirAbsolutePath, meta);
   }
+
+  // === 非同期版メソッド（vscode.workspace.fs対応） ===
+
+  /**
+   * .dialogoi-meta.yaml を読み込む（非同期版）
+   */
+  async loadMetaYamlAsync(dirAbsolutePath: string): Promise<MetaYaml | null> {
+    const metaAbsolutePath = path.join(dirAbsolutePath, '.dialogoi-meta.yaml');
+
+    try {
+      const metaUri = this.fileRepository.createFileUri(metaAbsolutePath);
+      const exists = await this.fileRepository.existsAsync(metaUri);
+      if (!exists) {
+        return null;
+      }
+      const metaContent = await this.fileRepository.readFileAsync(metaUri, 'utf8');
+      return MetaYamlUtils.parseMetaYaml(metaContent);
+    } catch (error) {
+      console.error('.dialogoi-meta.yaml の読み込みエラー:', error);
+      return null;
+    }
+  }
+
+  /**
+   * .dialogoi-meta.yamlファイルを保存（非同期版）
+   */
+  async saveMetaYamlAsync(dirAbsolutePath: string, meta: MetaYaml): Promise<boolean> {
+    const metaAbsolutePath = path.join(dirAbsolutePath, '.dialogoi-meta.yaml');
+
+    try {
+      // バリデーション
+      const validationErrors = MetaYamlUtils.validateMetaYaml(meta);
+      if (validationErrors.length > 0) {
+        console.error('.dialogoi-meta.yaml検証エラー:', validationErrors);
+        return false;
+      }
+
+      const metaUri = this.fileRepository.createFileUri(metaAbsolutePath);
+      const yamlContent = MetaYamlUtils.stringifyMetaYaml(meta);
+      await this.fileRepository.writeFileAsync(metaUri, yamlContent);
+      return true;
+    } catch (error) {
+      console.error('.dialogoi-meta.yaml の保存エラー:', error);
+      return false;
+    }
+  }
+
+  /**
+   * READMEファイルのパスを取得（非同期版）
+   */
+  async getReadmeFilePathAsync(dirAbsolutePath: string): Promise<string | null> {
+    const meta = await this.loadMetaYamlAsync(dirAbsolutePath);
+
+    if (meta === null || meta.readme === undefined) {
+      return null;
+    }
+
+    const readmeAbsolutePath = path.join(dirAbsolutePath, meta.readme);
+    const readmeUri = this.fileRepository.createFileUri(readmeAbsolutePath);
+    const exists = await this.fileRepository.existsAsync(readmeUri);
+    if (exists) {
+      return readmeAbsolutePath;
+    }
+
+    return null;
+  }
+
+  /**
+   * 小説ルートディレクトリを探す（非同期版）
+   */
+  async findNovelRootAsync(workspaceRootAbsolutePath: string): Promise<string | null> {
+    const findDialogoiYamlAsync = async (dirAbsolutePath: string): Promise<string | null> => {
+      const dirUri = this.fileRepository.createFileUri(dirAbsolutePath);
+      const items = await this.fileRepository.readdirAsync(dirUri);
+
+      for (const item of items) {
+        const fullAbsolutePath = path.join(dirAbsolutePath, item.name);
+        if (item.isFile() && item.name === 'dialogoi.yaml') {
+          return dirAbsolutePath;
+        } else if (item.isDirectory()) {
+          const result = await findDialogoiYamlAsync(fullAbsolutePath);
+          if (result !== null) {
+            return result;
+          }
+        }
+      }
+      return null;
+    };
+
+    return findDialogoiYamlAsync(workspaceRootAbsolutePath);
+  }
+
+  /**
+   * .dialogoi-meta.yaml のファイルエントリにレビュー情報を設定（非同期版）
+   */
+  async updateReviewInfoAsync(
+    dirAbsolutePath: string,
+    fileName: string,
+    reviewSummary: ReviewSummary | null,
+  ): Promise<boolean> {
+    const metaAbsolutePath = path.join(dirAbsolutePath, '.dialogoi-meta.yaml');
+
+    try {
+      const metaUri = this.fileRepository.createFileUri(metaAbsolutePath);
+
+      const exists = await this.fileRepository.existsAsync(metaUri);
+      if (!exists) {
+        return false;
+      }
+
+      const content = await this.fileRepository.readFileAsync(metaUri, 'utf-8');
+      const meta = MetaYamlUtils.parseMetaYaml(content);
+
+      if (!meta) {
+        return false;
+      }
+
+      const fileItem = meta.files.find((item) => item.name === fileName);
+      if (!fileItem) {
+        return false;
+      }
+
+      if (
+        reviewSummary &&
+        (reviewSummary.open > 0 ||
+          (reviewSummary.resolved !== undefined && reviewSummary.resolved > 0))
+      ) {
+        // レビューが存在する場合
+        const filePathInDir = path.join(path.basename(dirAbsolutePath), fileName);
+        fileItem.reviews = MetaYamlUtils.generateReviewFilePath(filePathInDir);
+
+        // レビューサマリーを設定（0でない値のみ）
+        fileItem.review_count = { open: reviewSummary.open };
+        if (reviewSummary.in_progress !== undefined && reviewSummary.in_progress > 0) {
+          fileItem.review_count.in_progress = reviewSummary.in_progress;
+        }
+        if (reviewSummary.resolved !== undefined && reviewSummary.resolved > 0) {
+          fileItem.review_count.resolved = reviewSummary.resolved;
+        }
+        if (reviewSummary.dismissed !== undefined && reviewSummary.dismissed > 0) {
+          fileItem.review_count.dismissed = reviewSummary.dismissed;
+        }
+      } else {
+        // レビューが存在しない場合は削除
+        delete fileItem.reviews;
+        delete fileItem.review_count;
+      }
+
+      // .dialogoi-meta.yaml を更新
+      const updatedContent = MetaYamlUtils.stringifyMetaYaml(meta);
+      await this.fileRepository.writeFileAsync(metaUri, updatedContent);
+
+      return true;
+    } catch (error) {
+      console.error('レビュー情報の更新に失敗しました:', error);
+      return false;
+    }
+  }
+
+  /**
+   * .dialogoi-meta.yaml からレビュー情報を削除（非同期版）
+   */
+  async removeReviewInfoAsync(dirAbsolutePath: string, fileName: string): Promise<boolean> {
+    return this.updateReviewInfoAsync(dirAbsolutePath, fileName, null);
+  }
+
+  /**
+   * ファイルのタグを更新（非同期版）
+   */
+  async updateFileTagsAsync(
+    dirAbsolutePath: string,
+    fileName: string,
+    tags: string[],
+  ): Promise<boolean> {
+    const metaUri = this.fileRepository.createFileUri(
+      path.join(dirAbsolutePath, '.dialogoi-meta.yaml'),
+    );
+
+    try {
+      // 既存の .dialogoi-meta.yaml を読み込む
+      const meta = await this.loadMetaYamlAsync(dirAbsolutePath);
+      if (!meta) {
+        return false;
+      }
+
+      const fileItem = meta.files.find((item) => item.name === fileName);
+      if (!fileItem) {
+        return false;
+      }
+
+      // タグを更新
+      if (tags.length > 0) {
+        fileItem.tags = tags;
+      } else {
+        delete fileItem.tags;
+      }
+
+      // .dialogoi-meta.yaml を更新
+      const updatedContent = MetaYamlUtils.stringifyMetaYaml(meta);
+      await this.fileRepository.writeFileAsync(metaUri, updatedContent);
+
+      return true;
+    } catch (error) {
+      console.error('タグの更新に失敗しました:', error);
+      return false;
+    }
+  }
+
+  /**
+   * ファイルにタグを追加（非同期版）
+   */
+  async addFileTagAsync(dirAbsolutePath: string, fileName: string, tag: string): Promise<boolean> {
+    const meta = await this.loadMetaYamlAsync(dirAbsolutePath);
+    if (!meta) {
+      return false;
+    }
+
+    const fileItem = meta.files.find((item) => item.name === fileName);
+    if (!fileItem) {
+      return false;
+    }
+
+    // 既存のタグを取得
+    const currentTags = fileItem.tags || [];
+
+    // 重複チェック
+    if (currentTags.includes(tag)) {
+      return true; // 既に存在する場合は成功とする
+    }
+
+    // タグを追加
+    const newTags = [...currentTags, tag];
+    return this.updateFileTagsAsync(dirAbsolutePath, fileName, newTags);
+  }
+
+  /**
+   * ファイルからタグを削除（非同期版）
+   */
+  async removeFileTagAsync(
+    dirAbsolutePath: string,
+    fileName: string,
+    tag: string,
+  ): Promise<boolean> {
+    const meta = await this.loadMetaYamlAsync(dirAbsolutePath);
+    if (!meta) {
+      return false;
+    }
+
+    const fileItem = meta.files.find((item) => item.name === fileName);
+    if (!fileItem || !fileItem.tags) {
+      return true; // タグがない場合は成功とする
+    }
+
+    // タグを削除
+    const newTags = fileItem.tags.filter((t) => t !== tag);
+    return this.updateFileTagsAsync(dirAbsolutePath, fileName, newTags);
+  }
+
+  /**
+   * ファイルの参照関係を削除（非同期版）
+   */
+  async removeFileReferenceAsync(
+    dirAbsolutePath: string,
+    fileName: string,
+    reference: string,
+  ): Promise<boolean> {
+    const meta = await this.loadMetaYamlAsync(dirAbsolutePath);
+    if (!meta) {
+      return false;
+    }
+
+    const fileItem = meta.files.find((item) => item.name === fileName);
+    if (!fileItem || !fileItem.references) {
+      return true; // 参照がない場合は成功とする
+    }
+
+    // 参照を削除
+    const newReferences = fileItem.references.filter((ref) => ref !== reference);
+
+    if (newReferences.length === 0) {
+      delete fileItem.references;
+    } else {
+      fileItem.references = newReferences;
+    }
+
+    return this.saveMetaYamlAsync(dirAbsolutePath, meta);
+  }
+
+  /**
+   * ファイルのキャラクター情報を削除（非同期版）
+   */
+  async removeFileCharacterAsync(dirAbsolutePath: string, fileName: string): Promise<boolean> {
+    const meta = await this.loadMetaYamlAsync(dirAbsolutePath);
+    if (!meta) {
+      return false;
+    }
+
+    const fileItem = meta.files.find((item) => item.name === fileName);
+    if (!fileItem) {
+      return false;
+    }
+
+    // キャラクター情報を削除
+    delete fileItem.character;
+
+    return this.saveMetaYamlAsync(dirAbsolutePath, meta);
+  }
 }

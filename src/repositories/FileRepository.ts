@@ -106,6 +106,58 @@ export abstract class FileRepository {
    */
   abstract renameAsync(oldUri: Uri, newUri: Uri): Promise<void>;
 
+  // === 非同期ファイル操作メソッド（vscode.workspace.fs対応） ===
+
+  /**
+   * ファイルまたはディレクトリが存在するかチェック（非同期）
+   * VSCodeのworkspace.fs.statを使用
+   */
+  abstract existsAsync(uri: Uri): Promise<boolean>;
+
+  /**
+   * ファイルを読み込む（非同期）
+   * VSCodeのworkspace.fs.readFileを使用
+   */
+  abstract readFileAsync(uri: Uri, encoding?: BufferEncoding): Promise<string>;
+  abstract readFileAsync(uri: Uri): Promise<Uint8Array>;
+  abstract readFileAsync(uri: Uri, encoding?: BufferEncoding): Promise<string | Uint8Array>;
+
+  /**
+   * ファイルに書き込む（非同期）
+   * VSCodeのworkspace.fs.writeFileを使用
+   */
+  abstract writeFileAsync(uri: Uri, data: string | Uint8Array): Promise<void>;
+
+  /**
+   * ディレクトリを再帰的に作成（非同期）
+   * VSCodeのworkspace.fs.createDirectoryを使用
+   */
+  abstract createDirectoryAsync(uri: Uri): Promise<void>;
+
+  /**
+   * ファイルを削除（非同期）
+   * VSCodeのworkspace.fs.deleteを使用
+   */
+  abstract unlinkAsync(uri: Uri): Promise<void>;
+
+  /**
+   * ディレクトリを削除（非同期・再帰的）
+   * VSCodeのworkspace.fs.deleteを使用
+   */
+  abstract rmAsync(uri: Uri, options?: { recursive?: boolean }): Promise<void>;
+
+  /**
+   * ディレクトリの内容を読み込む（非同期）
+   * VSCodeのworkspace.fs.readDirectoryを使用
+   */
+  abstract readdirAsync(uri: Uri): Promise<DirectoryEntry[]>;
+
+  /**
+   * ファイルの統計情報を取得（非同期）
+   * VSCodeのworkspace.fs.statを使用
+   */
+  abstract statAsync(uri: Uri): Promise<FileStats>;
+
   // === Uriファクトリーメソッド ===
 
   /**

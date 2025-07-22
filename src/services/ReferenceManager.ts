@@ -290,6 +290,20 @@ export class ReferenceManager {
   }
 
   /**
+   * 参照先ファイルが存在するかチェック（非同期版）
+   * TODO: Phase 3での利用を想定
+   */
+  async checkFileExistsAsync(referencedFile: string): Promise<boolean> {
+    if (this.novelRoot === null || this.fileRepository === null) {
+      return false;
+    }
+
+    const fullPath = path.join(this.novelRoot, referencedFile);
+    const fileUri = this.fileRepository.createFileUri(fullPath);
+    return this.fileRepository.existsAsync(fileUri);
+  }
+
+  /**
    * 参照先ファイルが存在するかチェック
    */
   checkFileExists(referencedFile: string): boolean {
@@ -300,6 +314,24 @@ export class ReferenceManager {
     const fullPath = path.join(this.novelRoot, referencedFile);
     const fileUri = this.fileRepository.createFileUri(fullPath);
     return this.fileRepository.existsSync(fileUri);
+  }
+
+  /**
+   * 存在しない参照先ファイルを取得（非同期版）
+   * TODO: Phase 3での利用を想定
+   */
+  async getInvalidReferencesAsync(filePath: string): Promise<string[]> {
+    const references = this.getReferences(filePath);
+    const result: string[] = [];
+
+    for (const ref of references.references) {
+      const exists = await this.checkFileExistsAsync(ref.path);
+      if (!exists) {
+        result.push(ref.path);
+      }
+    }
+
+    return result;
   }
 
   /**
