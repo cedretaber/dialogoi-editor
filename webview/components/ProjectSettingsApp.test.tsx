@@ -1,7 +1,6 @@
 import { suite, test, beforeEach, afterEach } from 'mocha';
 import { strict as assert } from 'assert';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import React from 'react';
 import { ProjectSettingsApp } from './ProjectSettingsApp';
 import type {
   ProjectSettingsData,

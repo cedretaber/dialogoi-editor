@@ -1,7 +1,6 @@
 import { suite, test, beforeEach, afterEach } from 'mocha';
 import { strict as assert } from 'assert';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import React from 'react';
 import { FileDetailsApp } from './FileDetailsApp';
 import type { FileDetailsData, UpdateFileMessage, WebViewMessage } from '../types/FileDetails';
 
