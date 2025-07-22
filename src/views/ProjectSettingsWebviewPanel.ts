@@ -1,6 +1,5 @@
 import * as vscode from 'vscode';
 import * as path from 'path';
-import * as fs from 'fs';
 import {
   ProjectSettingsService,
   ProjectSettingsUpdateData,
@@ -84,7 +83,7 @@ export class ProjectSettingsWebviewPanel {
     }
 
     // WebViewのコンテンツを設定
-    this.panel.webview.html = this._getHtmlForWebview(this.panel.webview);
+    void this.initializeWebview();
 
     // WebViewからのメッセージを処理
     this.panel.webview.onDidReceiveMessage(
@@ -97,6 +96,18 @@ export class ProjectSettingsWebviewPanel {
     this.panel.onDidDispose(() => this.dispose(), undefined, this.disposables);
 
     this.logger.debug('ProjectSettingsWebviewPanel created');
+  }
+
+  /**
+   * WebViewの初期化（非同期）
+   */
+  private async initializeWebview(): Promise<void> {
+    try {
+      this.panel.webview.html = await this._getHtmlForWebview(this.panel.webview);
+    } catch (error) {
+      this.logger.error('Failed to initialize webview', error instanceof Error ? error : String(error));
+      vscode.window.showErrorMessage('WebViewの初期化に失敗しました');
+    }
   }
 
   /**
@@ -136,7 +147,7 @@ export class ProjectSettingsWebviewPanel {
   /**
    * WebView用HTMLを生成
    */
-  private _getHtmlForWebview(webview: vscode.Webview): string {
+  private async _getHtmlForWebview(webview: vscode.Webview): Promise<string> {
     const nonce = this._getNonce();
 
     // WebViewリソースのURIを生成
@@ -149,7 +160,8 @@ export class ProjectSettingsWebviewPanel {
 
     // HTMLテンプレートファイルを読み込み
     const htmlPath = path.join(webviewDir, 'projectSettings.html');
-    let htmlContent = fs.readFileSync(htmlPath, 'utf8');
+    const htmlContentBytes = await vscode.workspace.fs.readFile(vscode.Uri.file(htmlPath));
+    let htmlContent = Buffer.from(htmlContentBytes).toString('utf8');
 
     // プレースホルダーを置換
     htmlContent = htmlContent

@@ -42,11 +42,13 @@ export abstract class FileRepository {
 
   /**
    * ファイルまたはディレクトリが存在するかチェック
+   * @deprecated Use existsAsync instead for better VSCode integration
    */
   abstract existsSync(uri: Uri): boolean;
 
   /**
    * ファイルを読み込む
+   * @deprecated Use readFileAsync instead for better VSCode integration
    */
   abstract readFileSync(uri: Uri, encoding?: BufferEncoding): string;
   abstract readFileSync(uri: Uri, encoding?: null): Buffer;
@@ -54,31 +56,37 @@ export abstract class FileRepository {
 
   /**
    * ファイルに書き込む
+   * @deprecated Use writeFileAsync instead for better VSCode integration
    */
   abstract writeFileSync(uri: Uri, data: string | Buffer, encoding?: BufferEncoding): void;
 
   /**
    * ディレクトリを作成
+   * @deprecated Use createDirectoryAsync instead for better VSCode integration
    */
   abstract mkdirSync(uri: Uri): void;
 
   /**
    * ディレクトリを再帰的に作成
+   * @deprecated Use createDirectoryAsync instead for better VSCode integration
    */
   abstract createDirectorySync(uri: Uri): void;
 
   /**
    * ファイルを削除
+   * @deprecated Use unlinkAsync instead for better VSCode integration
    */
   abstract unlinkSync(uri: Uri): void;
 
   /**
    * ディレクトリを削除（再帰的）
+   * @deprecated Use rmAsync instead for better VSCode integration
    */
   abstract rmSync(uri: Uri, options?: { recursive?: boolean; force?: boolean }): void;
 
   /**
    * ディレクトリの内容を読み込む
+   * @deprecated Use readdirAsync instead for better VSCode integration
    */
   abstract readdirSync(
     uri: Uri,
@@ -87,16 +95,19 @@ export abstract class FileRepository {
 
   /**
    * ファイルの統計情報を取得
+   * @deprecated Use statAsync instead for better VSCode integration
    */
   abstract statSync(uri: Uri): FileStats;
 
   /**
    * ファイルの統計情報を取得（シンボリックリンクの場合はリンク自体の情報）
+   * @deprecated Use statAsync instead for better VSCode integration
    */
   abstract lstatSync(uri: Uri): FileStats;
 
   /**
    * ファイル名を変更（同期）
+   * @deprecated Use renameAsync instead for better VSCode integration
    */
   abstract renameSync(oldUri: Uri, newUri: Uri): void;
 
