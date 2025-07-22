@@ -27,6 +27,7 @@ export interface WebViewMessage {
     | 'removeCharacter'
     | 'openReference'
     | 'ready'
+    | 'renameFile'
     // 伏線関連のメッセージ
     | 'addForeshadowingPlant'
     | 'removeForeshadowingPlant'
@@ -36,6 +37,10 @@ export interface WebViewMessage {
   payload?: {
     tag?: string;
     reference?: string;
+    // ファイル名変更関連
+    oldName?: string;
+    newName?: string;
+    responseId?: string;
     // 伏線関連のペイロード
     plant?: ForeshadowingPoint;
     plantIndex?: number;
@@ -49,6 +54,16 @@ export interface WebViewMessage {
 export interface UpdateFileMessage {
   type: 'updateFile';
   data: FileDetailsData | null;
+}
+
+/**
+ * Extension → WebView へのレスポンスメッセージ
+ */
+export interface RenameFileResponseMessage {
+  type: 'renameFileResponse';
+  responseId: string;
+  success: boolean;
+  error?: string;
 }
 
 /**

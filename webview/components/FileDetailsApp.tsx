@@ -1,5 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import type { FileDetailsData, UpdateFileMessage, ForeshadowingPoint } from '../types/FileDetails';
+import type {
+  FileDetailsData,
+  UpdateFileMessage,
+  ForeshadowingPoint,
+  RenameFileResponseMessage,
+} from '../types/FileDetails';
 import { TagSection } from './TagSection';
 import { CharacterSection } from './CharacterSection';
 import { ReferenceSection } from './ReferenceSection';
@@ -103,6 +108,40 @@ export const FileDetailsApp: React.FC = () => {
     });
   };
 
+  const handleFileRename = async (oldName: string, newName: string): Promise<void> => {
+    return new Promise((resolve, reject) => {
+      // レスポンス用の一意なID
+      const responseId = `rename-${Date.now()}-${Math.random()}`;
+
+      // レスポンスリスナー
+      const handleResponse = (event: MessageEvent<RenameFileResponseMessage>): void => {
+        const message = event.data;
+        if (message.type === 'renameFileResponse' && message.responseId === responseId) {
+          window.removeEventListener('message', handleResponse);
+          if (message.success) {
+            resolve();
+          } else {
+            reject(new Error(message.error || 'ファイル名の変更に失敗しました'));
+          }
+        }
+      };
+
+      window.addEventListener('message', handleResponse);
+
+      // 名前変更リクエスト送信
+      postMessage({
+        type: 'renameFile',
+        payload: { oldName, newName, responseId },
+      });
+
+      // 10秒後にタイムアウト
+      setTimeout(() => {
+        window.removeEventListener('message', handleResponse);
+        reject(new Error('操作がタイムアウトしました'));
+      }, 10000);
+    });
+  };
+
   if (!fileData) {
     return (
       <div className="no-file-selected">
@@ -129,6 +168,8 @@ export const FileDetailsApp: React.FC = () => {
           VSCode API初期化中...
         </div>
       )}
+
+      <BasicInfoSection fileData={fileData} onFileRename={handleFileRename} />
 
       <TagSection tags={fileData.tags} onTagAdd={handleTagAdd} onTagRemove={handleTagRemove} />
 
@@ -161,8 +202,6 @@ export const FileDetailsApp: React.FC = () => {
       {fileData.review_count && Object.keys(fileData.review_count).length > 0 && (
         <ReviewSection reviewCount={fileData.review_count} />
       )}
-
-      <BasicInfoSection fileData={fileData} />
     </div>
   );
 };

@@ -38,11 +38,17 @@ interface WebViewMessage {
     | 'removeForeshadowingPlant'
     | 'updateForeshadowingPlant'
     | 'setForeshadowingPayoff'
-    | 'removeForeshadowingPayoff';
+    | 'removeForeshadowingPayoff'
+    | 'renameFile';
   payload?: {
     tag?: string;
     reference?: string;
     itemPath?: string;
+    // ファイル名変更関連
+    oldName?: string;
+    newName?: string;
+    responseId?: string;
+    // 伏線関連
     plant?: ForeshadowingPoint;
     plantIndex?: number;
     payoff?: ForeshadowingPoint;
@@ -570,6 +576,21 @@ export class FileDetailsViewProvider implements vscode.WebviewViewProvider {
         this.checkInitialActiveEditor();
         this.updateFileDetails(this.currentItem);
         void this.updateTreeData();
+        break;
+      case 'renameFile':
+        if (
+          msg.payload?.oldName !== undefined &&
+          msg.payload.oldName !== null &&
+          msg.payload.newName !== undefined &&
+          msg.payload.newName !== null &&
+          msg.payload.responseId !== undefined
+        ) {
+          void this.handleRenameFile(
+            msg.payload.oldName,
+            msg.payload.newName,
+            msg.payload.responseId,
+          );
+        }
         break;
       case 'selectTreeItem':
         if (
@@ -1185,6 +1206,50 @@ export class FileDetailsViewProvider implements vscode.WebviewViewProvider {
         `伏線回収位置の削除に失敗しました: ${error instanceof Error ? error.message : String(error)}`,
       );
     }
+  }
+
+  /**
+   * ファイル名変更処理
+   */
+  private handleRenameFile(oldName: string, newName: string, responseId: string): void {
+    try {
+      if (!this.currentItem || !this.treeDataProvider) {
+        this.sendRenameResponse(responseId, false, 'ファイルが選択されていません');
+        return;
+      }
+
+      const dirPath = this.treeDataProvider.getDirectoryPath(this.currentItem);
+      this.logger.info(`ファイル名変更: ${oldName} → ${newName} (${dirPath})`);
+
+      // TreeDataProviderのrenameFileメソッドを使用
+      this.treeDataProvider.renameFile(dirPath, oldName, newName);
+
+      this.sendRenameResponse(responseId, true);
+      this.logger.info(`ファイル名変更成功: ${oldName} → ${newName}`);
+
+      // 詳細パネルの更新
+      this.refreshCurrentItem();
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      this.logger.error('ファイル名変更エラー', error instanceof Error ? error : String(error));
+      this.sendRenameResponse(responseId, false, errorMessage);
+    }
+  }
+
+  /**
+   * ファイル名変更のレスポンスをWebViewに送信
+   */
+  private sendRenameResponse(responseId: string, success: boolean, error?: string): void {
+    if (!this._view) {
+      return;
+    }
+
+    this._view.webview.postMessage({
+      type: 'renameFileResponse',
+      responseId,
+      success,
+      error,
+    });
   }
 
   /**

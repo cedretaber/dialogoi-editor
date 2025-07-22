@@ -72,22 +72,40 @@ export function registerFileCommands(
 
   const renameFileCommand = vscode.commands.registerCommand(
     'dialogoi.renameFile',
-    async (item: DialogoiTreeItem) => {
-      if (item === undefined || item.name === undefined || item.name === '') {
-        vscode.window.showErrorMessage('リネームするファイルを選択してください。');
+    async (item?: DialogoiTreeItem) => {
+      // キーバインドから呼び出された場合は、選択中のアイテムを取得
+      if (item === undefined) {
+        const selection = treeView.selection;
+        if (selection !== undefined && selection.length > 0 && selection[0] !== undefined) {
+          item = selection[0];
+        } else {
+          vscode.window.showWarningMessage('名前を変更するファイルを選択してください。');
+          return;
+        }
+      }
+
+      if (item.name === undefined || item.name === '') {
+        vscode.window.showErrorMessage('名前を変更できないアイテムです。');
         return;
       }
 
+      const dirPath = treeDataProvider.getDirectoryPath(item);
+      const currentDir = treeDataProvider.getCurrentDirectory();
+      const relativePrompt =
+        currentDir !== null && currentDir !== undefined
+          ? path.relative(currentDir, dirPath)
+          : dirPath;
       const newName = await vscode.window.showInputBox({
-        prompt: '新しいファイル名を入力してください',
+        prompt: `新しいファイル名を入力してください（現在のパス: ${relativePrompt}）`,
         value: item.name,
+        placeHolder: item.name,
+        validateInput: createValidateInput(dirPath, item.name),
       });
 
       if (newName === undefined || newName === '' || newName === item.name) {
         return;
       }
 
-      const dirPath = treeDataProvider.getDirectoryPath(item);
       treeDataProvider.renameFile(dirPath, item.name, newName);
     },
   );
@@ -121,6 +139,137 @@ export function registerFileCommands(
 }
 
 /**
+ * ファイル名バリデーション関数を作成（名前変更用）
+ */
+function createValidateInput(
+  dirPath: string,
+  currentName: string,
+): (value: string) => Promise<string | undefined> {
+  let debounceTimer: ReturnType<typeof setTimeout> | undefined;
+
+  return (value: string): Promise<string | undefined> => {
+    // デバウンス処理：短時間の連続入力は無視
+    if (debounceTimer) {
+      clearTimeout(debounceTimer);
+    }
+
+    return new Promise((resolve) => {
+      debounceTimer = setTimeout(() => {
+        void (async (): Promise<void> => {
+          if (!value.trim()) {
+            resolve('ファイル名を入力してください');
+            return;
+          }
+
+          // 不正文字チェック
+          const invalidChars = /[<>:"/\\|?*]/g;
+          if (invalidChars.test(value)) {
+            resolve('ファイル名に使用できない文字が含まれています: < > : " / \\ | ? *');
+            return;
+          }
+
+          // 同じ名前の場合はスキップ
+          if (value === currentName) {
+            resolve(undefined);
+            return;
+          }
+
+          // 重複チェック
+          const targetPath = path.join(dirPath, value);
+          try {
+            await vscode.workspace.fs.stat(vscode.Uri.file(targetPath));
+            resolve(`"${value}" は既に存在します（完全パス: ${targetPath}）`);
+          } catch {
+            // ファイルが存在しない場合は正常
+            resolve(undefined);
+          }
+        })();
+      }, 150); // 150msのデバウンス
+    });
+  };
+}
+
+/**
+ * ファイル名バリデーション関数を作成（ファイル作成用）
+ */
+function createValidateInputForCreate(
+  targetDir: string,
+  fileType: { label: string; value: string; subtype: string | undefined },
+): (value: string) => Promise<string | undefined> {
+  let debounceTimer: ReturnType<typeof setTimeout> | undefined;
+
+  return (value: string): Promise<string | undefined> => {
+    // デバウンス処理
+    if (debounceTimer) {
+      clearTimeout(debounceTimer);
+    }
+
+    return new Promise((resolve) => {
+      debounceTimer = setTimeout(() => {
+        void (async (): Promise<void> => {
+          if (!value.trim()) {
+            resolve(
+              `${fileType.value === 'subdirectory' ? 'フォルダ名' : 'ファイル名'}を入力してください`,
+            );
+            return;
+          }
+
+          // 不正文字チェック
+          const invalidChars = /[<>:"/\\|?*]/g;
+          if (invalidChars.test(value)) {
+            resolve('ファイル名に使用できない文字が含まれています: < > : " / \\ | ? *');
+            return;
+          }
+
+          // 最終ファイル名を決定（拡張子自動付与）
+          let finalFileName: string;
+          if (fileType.value === 'subdirectory') {
+            finalFileName = value;
+          } else {
+            if (fileType.value === 'content') {
+              finalFileName = value.endsWith('.txt') ? value : `${value}.txt`;
+            } else {
+              finalFileName = value.endsWith('.md') ? value : `${value}.md`;
+            }
+          }
+
+          // 重複チェック
+          const targetPath = path.join(targetDir, finalFileName);
+          try {
+            await vscode.workspace.fs.stat(vscode.Uri.file(targetPath));
+            resolve(`"${finalFileName}" は既に存在します`);
+          } catch {
+            // ファイルが存在しない場合は正常
+            // 拡張子が自動付与される場合の説明を含める
+            if (finalFileName !== value) {
+              resolve(undefined); // 成功時はプレビューメッセージを表示しない（混乱を避けるため）
+            } else {
+              resolve(undefined);
+            }
+          }
+        })();
+      }, 150); // 150msのデバウンス
+    });
+  };
+}
+
+/**
+ * ファイル種別に応じた拡張子情報を取得
+ */
+function getExtensionInfo(fileTypeValue: string): string | null {
+  switch (fileTypeValue) {
+    case 'content':
+      return '.txt';
+    case 'setting':
+      return '.md';
+    case 'subdirectory':
+      return null;
+    default:
+      return null;
+  }
+}
+
+/**
  * ディレクトリ内にファイルを作成する共通処理
  */
 async function createFileInDirectory(
@@ -144,9 +293,14 @@ async function createFileInDirectory(
     return;
   }
 
+  const extensionInfo = getExtensionInfo(fileType.value);
   const baseFileName = await vscode.window.showInputBox({
-    prompt: `${fileType.label}の名前を入力してください（拡張子は自動で付与されます）`,
-    placeHolder: fileType.value === 'subdirectory' ? 'フォルダ名' : 'ファイル名',
+    prompt: `${fileType.label}の名前を入力してください`,
+    placeHolder:
+      fileType.value === 'subdirectory'
+        ? 'フォルダ名'
+        : `ファイル名${extensionInfo !== null ? ' (拡張子: ' + extensionInfo + ')' : ''}`,
+    validateInput: createValidateInputForCreate(targetDir, fileType),
   });
 
   if (baseFileName === undefined || baseFileName === '') {

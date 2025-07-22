@@ -28,11 +28,13 @@
 ### 主要ライブラリ
 
 - **js-yaml** ✅ - YAMLファイルの読み書き（実装済み）
-- **mocha + tsx** ✅ - テストフレームワーク（実装済み）
+- **mocha + tsx** ✅ - テストフレームワーク（サーバーサイド・実装済み）
 - **crypto (Node.js標準)** ✅ - SHA-256ハッシュ計算（実装済み）
 - **micromatch** ✅ - glob パターンマッチング（実装済み）
+- **React** ✅ - WebView UI構築（実装済み）
+- **@testing-library/react** ✅ - Reactコンポーネントテスト（実装済み）
+- **happy-dom** ✅ - テスト用DOM環境（実装済み）
 - **ajv** (予定) - YAMLスキーマのバリデーション
-- **React** (WebView用・予定) - リッチなUI構築用
 - **青空文庫パーサー** (予定) - 将来的な実装予定
 
 ## アーキテクチャ概要
@@ -44,7 +46,10 @@
 │  Presentation Layer                             │
 │  ├─ TreeDataProvider (左サイドバー)             │
 │  │   └─ TreeDragAndDropController ✅ (D&D対応)  │
-│  ├─ WebView Provider (詳細画面)                 │
+│  ├─ WebView UI ✅ (React実装・完全テスト済み)   │
+│  │   ├─ FileDetailsViewProvider (詳細画面)      │
+│  │   ├─ ProjectSettingsWebviewPanel (設定画面)  │
+│  │   └─ Reactコンポーネント群 (8コンポーネント) │
 │  └─ Commands (コマンドパレット)                 │
 ├─────────────────────────────────────────────────┤
 │  Business Logic Layer                           │

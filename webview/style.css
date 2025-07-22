@@ -239,6 +239,84 @@ body {
   background-color: var(--vscode-button-hoverBackground);
 }
 
+/* ファイル名インライン編集 */
+.file-name-container {
+  flex: 1;
+  min-width: 0;
+}
+
+.file-name-display {
+  display: inline-block;
+  padding: 2px 6px;
+  border-radius: 3px;
+  cursor: pointer;
+  word-break: break-all;
+  transition: background-color 0.15s ease;
+}
+
+.file-name-display.clickable:hover {
+  background-color: var(--vscode-list-hoverBackground);
+}
+
+.file-name-display:focus-visible {
+  outline: 1px solid var(--vscode-focusBorder);
+  outline-offset: -1px;
+}
+
+.file-name-edit-container {
+  position: relative;
+}
+
+.file-name-input {
+  width: 100%;
+  padding: 2px 6px;
+  border: 1px solid var(--vscode-input-border);
+  background-color: var(--vscode-input-background);
+  color: var(--vscode-input-foreground);
+  border-radius: 3px;
+  font-family: inherit;
+  font-size: inherit;
+}
+
+.file-name-input:focus {
+  outline: 1px solid var(--vscode-focusBorder);
+  outline-offset: -1px;
+  border-color: var(--vscode-focusBorder);
+}
+
+.file-name-input.error {
+  border-color: var(--vscode-inputValidation-errorBorder);
+  background-color: var(--vscode-inputValidation-errorBackground);
+}
+
+.validation-error {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  padding: 4px 6px;
+  background-color: var(--vscode-inputValidation-errorBackground);
+  color: var(--vscode-inputValidation-errorForeground);
+  border: 1px solid var(--vscode-inputValidation-errorBorder);
+  border-radius: 3px;
+  font-size: 12px;
+  z-index: 10;
+  margin-top: 2px;
+}
+
+.saving-indicator {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  padding: 2px 6px;
+  background-color: var(--vscode-statusBar-background);
+  color: var(--vscode-statusBar-foreground);
+  font-size: 12px;
+  border-radius: 3px;
+  margin-top: 2px;
+  opacity: 0.8;
+}
+
 /* 伏線管理専用スタイル */
 .subsection {
   margin-bottom: 16px;

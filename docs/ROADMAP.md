@@ -123,13 +123,18 @@
 - [x] Reactコンポーネントテスト実装✅ **2025-01-22完了**
   - [x] Happy-DOM + React Testing Library + Mochaセットアップ **2025-01-21**
   - [x] VSCode APIモック実装 **2025-01-21**
-  - [x] TagSection.test.tsx完全テスト（26テストケース）**2025-01-21**
-  - [x] BasicInfoSection.test.tsx（16テストケース）**2025-01-22**
-  - [x] ReviewSection.test.tsx（18テストケース）**2025-01-22**
-  - [x] CharacterSection.test.tsx（26テストケース）**2025-01-22**
-  - [x] ReferenceSection.test.tsx（24テストケース + バグ修正）**2025-01-22**
-  - [x] ForeshadowingSection.test.tsx（27テストケース + 型定義修正）**2025-01-22**
-  - [x] CI統合（`npm run check-all`に含まれる）- 合計483テスト通過
+  - [x] 単体コンポーネントテスト完了（137テストケース）**2025-01-22**
+    - TagSection.test.tsx（26テストケース）
+    - BasicInfoSection.test.tsx（16テストケース）
+    - ReviewSection.test.tsx（18テストケース）
+    - CharacterSection.test.tsx（26テストケース）
+    - ReferenceSection.test.tsx（24テストケース + バグ修正）
+    - ForeshadowingSection.test.tsx（27テストケース + 型定義修正）
+  - [x] 統合テスト完了（171テストケース）**2025-01-22**
+    - FileDetailsApp.test.tsx（34テストケース + タイムアウト修正）
+    - ProjectSettingsApp.test.tsx（137テストケース + 無限ループ修正）
+  - [x] CI統合（`npm run check-all`に含まれる）- 合計517テスト通過
+  - [x] 技術課題解決：OOM問題、無限待機問題、HTML構造問題すべて解決済み
 - [ ] ファイル新規作成・名前変更のインライン編集
 - [ ] レビュー用 UI の整備
 - [ ] TODO機能の追加（レビュー機能との統合検討）

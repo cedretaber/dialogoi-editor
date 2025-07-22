@@ -259,6 +259,102 @@ suite('NewService テストスイート', () => {
 });
 ```
 
+### Reactコンポーネントテストの注意事項
+
+**重要**: React Testing Library環境での特有の制約と推奨事項を以下に記載します。
+
+#### DOM要素の取得について
+
+**❌ 使用禁止：**
+```typescript
+// document.querySelector は使用しない
+const element = document.querySelector('.some-class');
+
+// 理由：
+// 1. React Testing Libraryの仮想DOM環境では期待通りに動作しない
+// 2. 無限待機状態（infinite wait）を引き起こす可能性がある
+// 3. テストが不安定になる原因となる
+```
+
+**✅ 推奨方法：**
+```typescript
+// React Testing Libraryのセレクタを使用
+const element = screen.getByRole('button');
+const element = screen.getByText('テキスト');
+const element = screen.getByTestId('test-id');
+const element = screen.getByLabelText('ラベル');
+
+// 複数要素がある場合
+const elements = screen.getAllByText('テキスト');
+const specificElement = elements.find(el => el.closest('.specific-class'));
+```
+
+#### 重複要素問題への対処
+
+同じテキストや要素が複数箇所に表示される場合：
+
+```typescript
+// ❌ 悪い例：getByTextで重複要素エラー
+assert(screen.getByText('test.md')); // "Found multiple elements" エラー
+
+// ✅ 良い例1：より具体的なセレクタを使用
+const fileTitle = screen.getByRole('heading');
+assert(fileTitle.textContent === 'test.md');
+
+// ✅ 良い例2：getAllByTextで特定要素を絞り込み
+const elements = screen.getAllByText('test.md');
+const titleElement = elements.find(el => el.closest('.file-title'));
+assert(titleElement);
+
+// ✅ 良い例3：間接的な存在確認
+// 重複がある場合は、特定要素の確認を避けて機能の存在のみ確認
+// 例：ファイル名の表示確認を省略し、セクション存在のみ確認
+assert(screen.getByText('基本情報'));
+assert(screen.getByText('タグ'));
+```
+
+#### waitFor使用時の注意
+
+```typescript
+// ✅ 必ずタイムアウトを設定
+await waitFor(() => {
+  assert(screen.getByText('期待する要素'));
+}, { timeout: 3000 });
+
+// ❌ タイムアウト未設定は無限待機のリスク
+await waitFor(() => {
+  assert(screen.getByText('期待する要素'));
+}); // 危険
+```
+
+#### 非同期関数のテスト
+
+```typescript
+// ✅ Promise返却関数のテスト
+const mockFunction = (arg1: string, arg2: string): Promise<void> => {
+  history.push({ arg1, arg2 });
+  return Promise.resolve();
+};
+
+// ❌ voidを返すと型エラー
+const badMock = (arg1: string, arg2: string): void => {
+  // Promise<void>が期待される場合に型エラー
+};
+```
+
+#### デバッグ方法
+
+```typescript
+// DOM構造の確認
+screen.debug(); // 全体のDOM
+screen.debug(screen.getByText('特定要素')); // 特定要素周辺のDOM
+
+// 要素の存在確認
+console.log('要素一覧:', screen.queryAllByText('テキスト'));
+```
+
+これらの制約を守ることで、安定した結合テストを作成できます。
+
 ## 開発の進め方
 
 - 機能開発などある程度まとまった規模の開発を行う際は、**まず docs/ の下に計画書を作り** ユーザのレビューを受けること
