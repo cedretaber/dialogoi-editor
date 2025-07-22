@@ -1,6 +1,6 @@
 /**
  * FileDetailsApp コンポーネントの結合テスト
- * 
+ *
  * 重要な注意事項:
  * - document.querySelector() は使用禁止 (無限待機の原因)
  * - 重複要素がある場合は getAllByText() や特定セレクタを使用

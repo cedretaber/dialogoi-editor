@@ -9,6 +9,7 @@ files:
       - /home/cedretaber/src/ts/dialogoi-editor/examples/sample-novel/settings/characters/tarou.md
       - settings/characters/teachers.md
       - settings/world_setting.md
+    path: /home/cedretaber/src/ts/dialogoi-editor/examples/sample-novel/contents/01_prologue.txt
   - name: 02_entrance_ceremony.txt
     type: content
     tags:

@@ -316,6 +316,12 @@ export class MockFileRepository extends FileRepository {
     }
   }
 
+  renameAsync(oldUri: Uri, newUri: Uri): Promise<void> {
+    // モック環境では同期処理と同じ挙動でPromiseを返却
+    this.renameSync(oldUri, newUri);
+    return Promise.resolve();
+  }
+
   // === Uriファクトリーメソッド ===
 
   createFileUri(path: string): Uri {

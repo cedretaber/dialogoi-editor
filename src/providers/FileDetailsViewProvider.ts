@@ -1209,9 +1209,13 @@ export class FileDetailsViewProvider implements vscode.WebviewViewProvider {
   }
 
   /**
-   * ファイル名変更処理
+   * ファイル名変更処理（非同期）
    */
-  private handleRenameFile(oldName: string, newName: string, responseId: string): void {
+  private async handleRenameFile(
+    oldName: string,
+    newName: string,
+    responseId: string,
+  ): Promise<void> {
     try {
       if (!this.currentItem || !this.treeDataProvider) {
         this.sendRenameResponse(responseId, false, 'ファイルが選択されていません');
@@ -1221,14 +1225,27 @@ export class FileDetailsViewProvider implements vscode.WebviewViewProvider {
       const dirPath = this.treeDataProvider.getDirectoryPath(this.currentItem);
       this.logger.info(`ファイル名変更: ${oldName} → ${newName} (${dirPath})`);
 
-      // TreeDataProviderのrenameFileメソッドを使用
-      this.treeDataProvider.renameFile(dirPath, oldName, newName);
+      // ServiceContainerからFileOperationServiceを取得してrenameFileAsyncメソッドを使用
+      const serviceContainer = ServiceContainer.getInstance();
+      const fileOperationService = serviceContainer.getFileOperationService();
 
-      this.sendRenameResponse(responseId, true);
-      this.logger.info(`ファイル名変更成功: ${oldName} → ${newName}`);
+      const result = await fileOperationService.renameFileAsync(dirPath, oldName, newName);
 
-      // 詳細パネルの更新
-      this.refreshCurrentItem();
+      if (result.success) {
+        this.sendRenameResponse(responseId, true);
+        this.logger.info(`ファイル名変更成功: ${oldName} → ${newName}`);
+
+        // TreeViewを更新
+        if (this.treeDataProvider !== null) {
+          this.treeDataProvider.refresh();
+        }
+
+        // 詳細パネルの更新
+        this.refreshCurrentItem();
+      } else {
+        this.sendRenameResponse(responseId, false, result.message);
+        this.logger.error(`ファイル名変更失敗: ${result.message}`);
+      }
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
       this.logger.error('ファイル名変更エラー', error instanceof Error ? error : String(error));

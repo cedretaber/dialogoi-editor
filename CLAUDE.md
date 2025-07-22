@@ -444,3 +444,50 @@ npm run check-all
 - サーバサイドテストのみ：`npm test`
 - Reactコンポーネントテストのみ：`npm run test:react`
 - 全テスト：`npm run test:all`
+
+## 実装実績
+
+### Phase 3.5b: インライン編集機能の完全実装 ✅ **2025-01-22完了**
+
+**VSCode標準エクスプローラー準拠のファイル名編集機能を実現**
+
+#### 技術的成果
+- **非同期ファイル操作**: `workspace.fs.rename` APIによるエディタ状態保持
+- **Repository層拡張**: 同期・非同期両対応のファイルリネーム機能
+- **React WebView**: 150msデバウンスバリデーション付きインライン編集
+- **VSCode API準拠**: 標準エクスプローラーと同じ挙動を実現
+
+#### アーキテクチャ改善
+```typescript
+// 抽象層での非同期メソッド定義
+abstract class FileRepository {
+  abstract renameAsync(oldUri: Uri, newUri: Uri): Promise<void>;
+}
+
+// VSCode API実装
+class VSCodeFileRepository extends FileRepository {
+  async renameAsync(oldUri: Uri, newUri: Uri): Promise<void> {
+    await vscode.workspace.fs.rename(oldVsCodeUri, newVsCodeUri, {
+      overwrite: false
+    });
+  }
+}
+
+// サービス層での非同期対応
+class FileOperationService {
+  async renameFileAsync(dirPath: string, oldName: string, newName: string): Promise<FileOperationResult> {
+    await this.fileRepository.renameAsync(oldUri, newUri);
+  }
+}
+```
+
+#### UX改善
+- **直感的操作**: クリックするだけで編集モード切り替え
+- **リアルタイム検証**: 入力中の即座なフィードバック
+- **キーボード対応**: Enter（保存）/ Escape（キャンセル）
+- **エラーハンドリング**: 親切なエラーメッセージ表示
+
+#### テスト対応
+- MockFileRepository での非同期メソッド実装
+- Promise.resolve() による適切な型対応
+- ESLint require-await ルール準拠

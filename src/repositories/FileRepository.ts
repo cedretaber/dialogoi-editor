@@ -96,9 +96,15 @@ export abstract class FileRepository {
   abstract lstatSync(uri: Uri): FileStats;
 
   /**
-   * ファイル名を変更
+   * ファイル名を変更（同期）
    */
   abstract renameSync(oldUri: Uri, newUri: Uri): void;
+
+  /**
+   * ファイル名を変更（非同期）
+   * VSCodeのworkspace.fs.renameを使用して、エディタの状態を保持
+   */
+  abstract renameAsync(oldUri: Uri, newUri: Uri): Promise<void>;
 
   // === Uriファクトリーメソッド ===
 

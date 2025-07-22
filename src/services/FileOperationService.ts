@@ -252,7 +252,7 @@ export class FileOperationService {
   }
 
   /**
-   * ファイル名を変更する
+   * ファイル名を変更する（同期）
    */
   renameFile(dirPath: string, oldName: string, newName: string): FileOperationResult {
     try {
@@ -298,6 +298,95 @@ export class FileOperationService {
 
       // ファイルをリネーム
       this.fileRepository.renameSync(oldUri, newUri);
+
+      // プロジェクトルート相対パスでのリンク更新
+      if (this.linkUpdateService && this.pathNormalizationService) {
+        const oldProjectPath = this.pathNormalizationService.getProjectRelativePath(oldPath);
+        const newProjectPath = this.pathNormalizationService.getProjectRelativePath(newPath);
+
+        if (
+          oldProjectPath !== null &&
+          oldProjectPath !== '' &&
+          newProjectPath !== null &&
+          newProjectPath !== ''
+        ) {
+          const linkUpdateResult = this.linkUpdateService.updateLinksAfterFileOperation(
+            oldProjectPath,
+            newProjectPath,
+          );
+
+          // リンク更新の結果をログに記録（失敗してもファイルリネーム自体は成功とする）
+          if (!linkUpdateResult.success) {
+            console.warn(`リンク更新に失敗しました: ${linkUpdateResult.message}`);
+          }
+        }
+      }
+
+      return {
+        success: true,
+        message: `${oldName} を ${newName} にリネームしました。`,
+        updatedItems: result.updatedItems,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: `リネームエラー: ${error instanceof Error ? error.message : String(error)}`,
+      };
+    }
+  }
+
+  /**
+   * ファイル名を変更する（非同期・VSCode標準エクスプローラー挙動）
+   * エディタの状態を保持してファイル名を変更
+   */
+  async renameFileAsync(
+    dirPath: string,
+    oldName: string,
+    newName: string,
+  ): Promise<FileOperationResult> {
+    try {
+      const oldPath = path.join(dirPath, oldName);
+      const newPath = path.join(dirPath, newName);
+      const oldUri = this.fileRepository.createFileUri(oldPath);
+      const newUri = this.fileRepository.createFileUri(newPath);
+
+      // 元ファイルが存在しない場合はエラー
+      if (!this.fileRepository.existsSync(oldUri)) {
+        return {
+          success: false,
+          message: `ファイル ${oldName} が見つかりません。`,
+        };
+      }
+
+      // 新しい名前のファイルが既に存在する場合はエラー
+      if (this.fileRepository.existsSync(newUri)) {
+        return {
+          success: false,
+          message: `ファイル ${newName} は既に存在します。`,
+        };
+      }
+
+      // .dialogoi-meta.yamlを更新
+      const result = this.updateMetaYaml(dirPath, (meta) => {
+        const fileIndex = meta.files.findIndex((file) => file.name === oldName);
+        if (fileIndex === -1) {
+          throw new Error(`.dialogoi-meta.yaml内にファイル ${oldName} が見つかりません。`);
+        }
+
+        const fileItem = meta.files[fileIndex];
+        if (fileItem !== undefined) {
+          fileItem.name = newName;
+          fileItem.path = newPath;
+        }
+        return meta;
+      });
+
+      if (!result.success) {
+        return result;
+      }
+
+      // ファイルをリネーム（非同期・VSCodeのworkspace.fs.renameを使用）
+      await this.fileRepository.renameAsync(oldUri, newUri);
 
       // プロジェクトルート相対パスでのリンク更新
       if (this.linkUpdateService && this.pathNormalizationService) {

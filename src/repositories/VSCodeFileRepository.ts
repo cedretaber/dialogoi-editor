@@ -325,6 +325,22 @@ export class VSCodeFileRepository extends FileRepository {
     }
   }
 
+  async renameAsync(oldUri: Uri, newUri: Uri): Promise<void> {
+    const oldVsCodeUri = (oldUri as VSCodeUri).vsCodeUri;
+    const newVsCodeUri = (newUri as VSCodeUri).vsCodeUri;
+    try {
+      // VSCodeのworkspace.fs.renameを使用
+      // これにより、開いているエディタの状態が保持される
+      await vscode.workspace.fs.rename(oldVsCodeUri, newVsCodeUri, {
+        overwrite: false,
+      });
+    } catch (error) {
+      throw new Error(
+        `ファイル名変更エラー: ${error instanceof Error ? error.message : String(error)}`,
+      );
+    }
+  }
+
   // === Uriファクトリーメソッド ===
 
   createFileUri(path: string): Uri {

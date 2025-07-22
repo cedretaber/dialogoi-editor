@@ -100,6 +100,92 @@ VSCode TreeView APIの制限により真のインライン編集は実現でき�
 
 ## 📝 実装詳細
 
+### Phase 4: ファイル詳細パネル内インライン編集の実装
+
+#### VSCode標準エクスプローラー挙動の実現
+```typescript
+// FileRepository.ts - 非同期リネームメソッドの抽象定義
+abstract renameAsync(oldUri: Uri, newUri: Uri): Promise<void>;
+
+// VSCodeFileRepository.ts - VSCode APIを使用した実装
+async renameAsync(oldUri: Uri, newUri: Uri): Promise<void> {
+  const oldVsCodeUri = (oldUri as VSCodeUri).vsCodeUri;
+  const newVsCodeUri = (newUri as VSCodeUri).vsCodeUri;
+  
+  // VSCodeのworkspace.fs.renameを使用してエディタ状態を保持
+  await vscode.workspace.fs.rename(oldVsCodeUri, newVsCodeUri, {
+    overwrite: false
+  });
+}
+
+// FileOperationService.ts - サービス層での非同期対応
+async renameFileAsync(
+  dirPath: string, 
+  oldName: string, 
+  newName: string
+): Promise<FileOperationResult> {
+  // メタデータ更新
+  const result = this.updateMetaYaml(dirPath, (meta) => {
+    const fileIndex = meta.files.findIndex((file) => file.name === oldName);
+    const fileItem = meta.files[fileIndex];
+    if (fileItem !== undefined) {
+      fileItem.name = newName;
+      fileItem.path = newPath;
+    }
+    return meta;
+  });
+
+  // 非同期ファイルリネーム（エディタ状態保持）
+  await this.fileRepository.renameAsync(oldUri, newUri);
+  
+  return result;
+}
+```
+
+#### React WebView内インライン編集の実装
+```typescript
+// FileDetailsApp.tsx - ファイルタイトル部分のインライン編集
+const [isEditingTitle, setIsEditingTitle] = useState(false);
+const [editedTitle, setEditedTitle] = useState('');
+const [titleValidationError, setTitleValidationError] = useState<string | undefined>(undefined);
+const [isSavingTitle, setIsSavingTitle] = useState(false);
+
+// デバウンス付きバリデーション
+const debouncedValidateTitle = useMemo(
+  () => debounce(async (title: string) => {
+    if (title.trim() === '' || title === originalFileName) {
+      setTitleValidationError(undefined);
+      return;
+    }
+    
+    // リアルタイムバリデーション実装
+    const error = validateFileName(title);
+    setTitleValidationError(error);
+  }, 150),
+  [originalFileName]
+);
+
+// 保存処理（非同期）
+const handleTitleSave = async () => {
+  if (!editedTitle.trim() || editedTitle === originalFileName) return;
+  
+  setIsSavingTitle(true);
+  
+  const response = await sendMessageWithResponse('renameFile', {
+    oldName: originalFileName,
+    newName: editedTitle,
+  });
+  
+  if (response.success) {
+    setIsEditingTitle(false);
+  } else {
+    setTitleValidationError(response.error);
+  }
+  
+  setIsSavingTitle(false);
+};
+```
+
 ### キーバインド実装
 ```typescript
 // src/commands/fileCommands.ts での改善例
@@ -158,11 +244,12 @@ async function validateFileName(name: string, currentPath: string): Promise<stri
 - [ ] ユーザーガイダンス機能
 
 ### Phase 4 完了基準
-- [ ] ファイル詳細パネル内のインライン編集が動作する
-- [ ] クリック→編集→フォーカスアウト→保存の流れが完璧に動作する
-- [ ] リアルタイムバリデーションがインライン形式で表示される
-- [ ] キーボードショートカット（Enter/Escape）が動作する
-- [ ] エラーハンドリングが適切に動作する
+- [x] ファイル詳細パネル内のインライン編集が動作する
+- [x] クリック→編集→フォーカスアウト→保存の流れが完璧に動作する
+- [x] リアルタイムバリデーションがインライン形式で表示される
+- [x] キーボードショートカット（Enter/Escape）が動作する
+- [x] エラーハンドリングが適切に動作する
+- [x] VSCode標準エクスプローラーと同じ挙動（エディタ状態保持）を実現
 
 ## 📊 期待される効果
 

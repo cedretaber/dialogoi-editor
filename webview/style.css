@@ -505,13 +505,72 @@ body {
   margin-bottom: 16px;
 }
 
+.file-title-container {
+  margin-bottom: 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--vscode-panel-border);
+}
+
 .file-title {
   font-size: 14px;
   font-weight: 600;
   color: var(--vscode-foreground);
-  margin-bottom: 12px;
-  padding-bottom: 8px;
-  border-bottom: 1px solid var(--vscode-panel-border);
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 3px;
+  transition: background-color 0.1s ease;
+  display: inline-block;
+  min-width: 200px;
+}
+
+.file-title.clickable:hover {
+  background-color: var(--vscode-list-hoverBackground);
+}
+
+.file-title.clickable:focus {
+  background-color: var(--vscode-list-activeSelectionBackground);
+  outline: 1px solid var(--vscode-focusBorder);
+}
+
+.file-title-edit-container {
+  position: relative;
+  display: inline-block;
+}
+
+.file-title-input {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--vscode-input-foreground);
+  background-color: var(--vscode-input-background);
+  border: 1px solid var(--vscode-input-border);
+  padding: 4px 6px;
+  border-radius: 3px;
+  outline: none;
+  min-width: 200px;
+  box-sizing: border-box;
+}
+
+.file-title-input:focus {
+  border-color: var(--vscode-focusBorder);
+}
+
+.file-title-input.error {
+  border-color: var(--vscode-inputValidation-errorBorder);
+}
+
+.title-validation-error {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  background-color: var(--vscode-inputValidation-errorBackground);
+  color: var(--vscode-inputValidation-errorForeground);
+  border: 1px solid var(--vscode-inputValidation-errorBorder);
+  border-radius: 3px;
+  padding: 4px 8px;
+  font-size: 11px;
+  z-index: 1000;
+  white-space: nowrap;
+  margin-top: 2px;
 }
 
 .section {
