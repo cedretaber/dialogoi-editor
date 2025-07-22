@@ -65,7 +65,7 @@ export function registerFileCommands(
 
       if (answer === '削除') {
         const dirPath = treeDataProvider.getDirectoryPath(item);
-        treeDataProvider.deleteFile(dirPath, item.name);
+        await treeDataProvider.deleteFile(dirPath, item.name);
       }
     },
   );
@@ -106,7 +106,7 @@ export function registerFileCommands(
         return;
       }
 
-      treeDataProvider.renameFile(dirPath, item.name, newName);
+      await treeDataProvider.renameFile(dirPath, item.name, newName);
     },
   );
 
@@ -320,7 +320,7 @@ async function createFileInDirectory(
     }
   }
 
-  treeDataProvider.createFile(
+  await treeDataProvider.createFile(
     targetDir,
     fileName,
     fileType.value as 'content' | 'setting' | 'subdirectory',

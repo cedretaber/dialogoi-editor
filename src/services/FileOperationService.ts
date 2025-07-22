@@ -867,6 +867,58 @@ export class FileOperationService {
   }
 
   /**
+   * ディレクトリを削除し、親ディレクトリの.dialogoi-meta.yamlから除去する（非同期版）
+   * TODO: Phase 3での利用を想定
+   */
+  async deleteDirectoryAsync(parentDir: string, dirName: string): Promise<FileOperationResult> {
+    try {
+      const dirPath = path.join(parentDir, dirName);
+      const dirUri = this.fileRepository.createFileUri(dirPath);
+
+      // ディレクトリが存在しない場合はエラー
+      if (!(await this.fileRepository.existsAsync(dirUri))) {
+        return {
+          success: false,
+          message: `ディレクトリ ${dirName} が見つかりません。`,
+        };
+      }
+
+      // ディレクトリかどうかチェック
+      const stats = await this.fileRepository.statAsync(dirUri);
+      if (!stats.isDirectory()) {
+        return {
+          success: false,
+          message: `${dirName} はディレクトリではありません。`,
+        };
+      }
+
+      // 親ディレクトリの.dialogoi-meta.yamlから削除
+      const result = await this.updateMetaYamlAsync(parentDir, (meta) => {
+        meta.files = meta.files.filter((file) => file.name !== dirName);
+        return meta;
+      });
+
+      if (!result.success) {
+        return result;
+      }
+
+      // ディレクトリを物理削除（再帰的）
+      await this.fileRepository.rmAsync(dirUri, { recursive: true });
+
+      return {
+        success: true,
+        message: `ディレクトリ ${dirName} を削除しました。`,
+        updatedItems: result.updatedItems,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: `ディレクトリ削除エラー: ${error instanceof Error ? error.message : String(error)}`,
+      };
+    }
+  }
+
+  /**
    * ディレクトリを削除し、親ディレクトリの.dialogoi-meta.yamlから除去する
    */
   deleteDirectory(parentDir: string, dirName: string): FileOperationResult {

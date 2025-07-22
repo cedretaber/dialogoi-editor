@@ -360,18 +360,18 @@ export class DialogoiTreeDataProvider
   }
 
   // ファイル操作メソッド
-  createFile(
+  async createFile(
     dirPath: string,
     fileName: string,
     fileType: 'content' | 'setting' | 'subdirectory',
     initialContent: string = '',
     tags: string[] = [],
     subtype?: 'character' | 'foreshadowing' | 'glossary',
-  ): void {
+  ): Promise<void> {
     const fileOperationService = ServiceContainer.getInstance().getFileOperationService(
       this.novelRoot ?? undefined,
     );
-    const result = fileOperationService.createFile(
+    const result = await fileOperationService.createFileAsync(
       dirPath,
       fileName,
       fileType,
@@ -388,11 +388,11 @@ export class DialogoiTreeDataProvider
     }
   }
 
-  deleteFile(dirPath: string, fileName: string): void {
+  async deleteFile(dirPath: string, fileName: string): Promise<void> {
     const fileOperationService = ServiceContainer.getInstance().getFileOperationService(
       this.novelRoot ?? undefined,
     );
-    const result = fileOperationService.deleteFile(dirPath, fileName);
+    const result = await fileOperationService.deleteFileAsync(dirPath, fileName);
 
     if (result.success) {
       this.refresh();
@@ -420,7 +420,7 @@ export class DialogoiTreeDataProvider
     const fileOperationService = ServiceContainer.getInstance().getFileOperationService(
       this.novelRoot ?? undefined,
     );
-    const result = fileOperationService.deleteDirectory(parentDir, dirName);
+    const result = await fileOperationService.deleteDirectoryAsync(parentDir, dirName);
 
     if (result.success) {
       this.refresh();
@@ -444,11 +444,11 @@ export class DialogoiTreeDataProvider
     }
   }
 
-  renameFile(dirPath: string, oldName: string, newName: string): void {
+  async renameFile(dirPath: string, oldName: string, newName: string): Promise<void> {
     const fileOperationService = ServiceContainer.getInstance().getFileOperationService(
       this.novelRoot ?? undefined,
     );
-    const result = fileOperationService.renameFile(dirPath, oldName, newName);
+    const result = await fileOperationService.renameFileAsync(dirPath, oldName, newName);
 
     if (result.success) {
       this.refresh();

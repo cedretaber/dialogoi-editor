@@ -1,6 +1,5 @@
 import * as vscode from 'vscode';
 import * as path from 'path';
-import * as fs from 'fs';
 import { DialogoiTreeItem } from '../utils/MetaYamlUtils.js';
 import { Logger } from '../utils/Logger.js';
 import { DialogoiTreeDataProvider } from '../tree/DialogoiTreeDataProvider.js';
@@ -394,11 +393,11 @@ export class FileDetailsViewProvider implements vscode.WebviewViewProvider {
     }
   }
 
-  public resolveWebviewView(
+  public async resolveWebviewView(
     webviewView: vscode.WebviewView,
     _context: vscode.WebviewViewResolveContext,
     _token: vscode.CancellationToken,
-  ): void {
+  ): Promise<void> {
     this._view = webviewView;
 
     webviewView.webview.options = {
@@ -406,7 +405,7 @@ export class FileDetailsViewProvider implements vscode.WebviewViewProvider {
       localResourceRoots: [this._extensionUri],
     };
 
-    webviewView.webview.html = this._getHtmlForWebview(webviewView.webview);
+    webviewView.webview.html = await this._getHtmlForWebview(webviewView.webview);
 
     // WebViewからのメッセージを受信
     webviewView.webview.onDidReceiveMessage((data) => {
@@ -1295,7 +1294,7 @@ export class FileDetailsViewProvider implements vscode.WebviewViewProvider {
   /**
    * WebView用HTMLを生成
    */
-  private _getHtmlForWebview(webview: vscode.Webview): string {
+  private async _getHtmlForWebview(webview: vscode.Webview): Promise<string> {
     const nonce = this._getNonce();
 
     // WebViewリソースのURIを生成
@@ -1306,15 +1305,16 @@ export class FileDetailsViewProvider implements vscode.WebviewViewProvider {
 
     // HTMLテンプレートファイルを読み込み
     const htmlPath = path.join(webviewDir, 'index.html');
-    let htmlContent = fs.readFileSync(htmlPath, 'utf8');
+    const htmlContent = await vscode.workspace.fs.readFile(vscode.Uri.file(htmlPath));
+    let htmlContentString = Buffer.from(htmlContent).toString('utf8');
 
     // プレースホルダーを置換
-    htmlContent = htmlContent
+    htmlContentString = htmlContentString
       .replace(/{nonce}/g, nonce)
       .replace(/{stylesheetUri}/g, stylesheetUri.toString())
       .replace(/{scriptUri}/g, scriptUri.toString());
 
-    return htmlContent;
+    return htmlContentString;
   }
 
   /**
