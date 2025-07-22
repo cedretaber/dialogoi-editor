@@ -62,6 +62,8 @@ export const ReferenceSection: React.FC<ReferenceSectionProps> = ({
   onReferenceRemove,
   onReverseReferenceRemove,
 }) => {
+  const [isExpandedCharacters, setIsExpandedCharacters] = useState(true);
+  const [isExpandedSettings, setIsExpandedSettings] = useState(true);
   const [isExpanded, setIsExpanded] = useState(true);
   const { referenceData, type } = fileData;
 
@@ -70,7 +72,11 @@ export const ReferenceSection: React.FC<ReferenceSectionProps> = ({
   }
 
   // 本文ファイルの場合は「登場人物」と「関連設定」に分けて表示
-  if (type === 'content' && referenceData.allReferences.length > 0) {
+  if (type === 'content') {
+    // 参照が全くない場合は何も表示しない
+    if (referenceData.allReferences.length === 0 && referenceData.referencedBy.length === 0) {
+      return null;
+    }
     const characterRefs: ReferenceEntry[] = [];
     const settingRefs: ReferenceEntry[] = [];
 
@@ -90,13 +96,15 @@ export const ReferenceSection: React.FC<ReferenceSectionProps> = ({
           <div className="section">
             <button
               className="section-header"
-              onClick={() => setIsExpanded(!isExpanded)}
+              onClick={() => setIsExpandedCharacters(!isExpandedCharacters)}
               type="button"
             >
-              <span className={`section-chevron ${isExpanded ? '' : 'collapsed'}`}>▶</span>
+              <span className={`section-chevron ${isExpandedCharacters ? '' : 'collapsed'}`}>
+                ▶
+              </span>
               <span>登場人物 ({characterRefs.length})</span>
             </button>
-            <div className={`section-content ${isExpanded ? '' : 'collapsed'}`}>
+            <div className={`section-content ${isExpandedCharacters ? '' : 'collapsed'}`}>
               {characterRefs.map((refEntry, index) => (
                 <ReferenceItem
                   key={`char-${index}`}
@@ -113,13 +121,13 @@ export const ReferenceSection: React.FC<ReferenceSectionProps> = ({
           <div className="section">
             <button
               className="section-header"
-              onClick={() => setIsExpanded(!isExpanded)}
+              onClick={() => setIsExpandedSettings(!isExpandedSettings)}
               type="button"
             >
-              <span className={`section-chevron ${isExpanded ? '' : 'collapsed'}`}>▶</span>
+              <span className={`section-chevron ${isExpandedSettings ? '' : 'collapsed'}`}>▶</span>
               <span>関連設定 ({settingRefs.length})</span>
             </button>
-            <div className={`section-content ${isExpanded ? '' : 'collapsed'}`}>
+            <div className={`section-content ${isExpandedSettings ? '' : 'collapsed'}`}>
               {settingRefs.map((refEntry, index) => (
                 <ReferenceItem
                   key={`setting-${index}`}

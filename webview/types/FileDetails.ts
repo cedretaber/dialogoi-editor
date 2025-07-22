@@ -10,8 +10,8 @@ export interface ForeshadowingPoint {
  * 伏線データ
  */
 export interface ForeshadowingData {
-  plants: ForeshadowingPoint[];
-  payoff: ForeshadowingPoint;
+  plants?: ForeshadowingPoint[];
+  payoff?: ForeshadowingPoint;
 }
 
 /**

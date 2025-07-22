@@ -22,20 +22,16 @@ declare global {
 
 // VSCode APIのモック実装
 globalThis.acquireVsCodeApi = (): VSCodeApi => ({
-  postMessage: (message: unknown): void => {
+  postMessage: (_message: unknown): void => {
     // テスト時はpostMessageを記録できるよう空の実装
-    // eslint-disable-next-line no-console
-    console.log('Mock postMessage:', message);
+    // 本番環境では実際のメッセージ送信が行われる
   },
-  setState: (state: unknown): void => {
+  setState: (_state: unknown): void => {
     // テスト時の状態管理モック
-    // eslint-disable-next-line no-console
-    console.log('Mock setState:', state);
+    // 本番環境では実際の状態保存が行われる
   },
   getState: (): unknown => {
     // テスト時の状態取得モック
     return {};
   },
 });
-
-// テスト環境設定完了
