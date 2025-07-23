@@ -31,10 +31,10 @@ export class ProjectLinkUpdateService {
   /**
    * ファイル移動・改名時にプロジェクト全体のリンクを更新
    */
-  updateLinksAfterFileOperation(
+  async updateLinksAfterFileOperation(
     oldProjectRelativePath: string,
     newProjectRelativePath: string,
-  ): LinkUpdateResult {
+  ): Promise<LinkUpdateResult> {
     const updatedFiles: string[] = [];
     const failedFiles: { path: string; error: string }[] = [];
     let totalScannedFiles = 0;
@@ -46,7 +46,7 @@ export class ProjectLinkUpdateService {
 
       for (const markdownFile of markdownFiles) {
         try {
-          const updated = this.updateLinksInMarkdownFile(
+          const updated = await this.updateLinksInMarkdownFile(
             markdownFile,
             oldProjectRelativePath,
             newProjectRelativePath,
@@ -68,7 +68,7 @@ export class ProjectLinkUpdateService {
 
       for (const metaFile of metaFiles) {
         try {
-          const updated = this.updateReferencesInMetaFile(
+          const updated = await this.updateReferencesInMetaFile(
             metaFile,
             oldProjectRelativePath,
             newProjectRelativePath,
@@ -157,13 +157,13 @@ export class ProjectLinkUpdateService {
   /**
    * 単一マークダウンファイル内のリンクを更新
    */
-  private updateLinksInMarkdownFile(
+  private async updateLinksInMarkdownFile(
     fileAbsolutePath: string,
     oldProjectRelativePath: string,
     newProjectRelativePath: string,
-  ): boolean {
+  ): Promise<boolean> {
     const fileUri = this.fileRepository.createFileUri(fileAbsolutePath);
-    const content = this.fileRepository.readFileSync(fileUri, 'utf8');
+    const content = await this.fileRepository.readFileAsync(fileUri, 'utf8');
 
     // マークダウンリンクの正規表現パターン
     // [テキスト](リンク先) および [テキスト](リンク先 "タイトル") の形式をマッチ
@@ -193,7 +193,7 @@ export class ProjectLinkUpdateService {
     );
 
     if (hasUpdates) {
-      this.fileRepository.writeFileSync(fileUri, updatedContent);
+      await this.fileRepository.writeFileAsync(fileUri, updatedContent);
     }
 
     return hasUpdates;
@@ -202,13 +202,13 @@ export class ProjectLinkUpdateService {
   /**
    * .dialogoi-meta.yamlファイルのreferencesを更新
    */
-  private updateReferencesInMetaFile(
+  private async updateReferencesInMetaFile(
     metaFileAbsolutePath: string,
     oldProjectRelativePath: string,
     newProjectRelativePath: string,
-  ): boolean {
+  ): Promise<boolean> {
     const dirPath = path.dirname(metaFileAbsolutePath);
-    const meta = this.metaYamlService.loadMetaYaml(dirPath);
+    const meta = await this.metaYamlService.loadMetaYamlAsync(dirPath);
 
     if (!meta) {
       return false;
@@ -234,7 +234,7 @@ export class ProjectLinkUpdateService {
     }
 
     if (hasUpdates) {
-      const saveResult = this.metaYamlService.saveMetaYaml(dirPath, meta);
+      const saveResult = await this.metaYamlService.saveMetaYamlAsync(dirPath, meta);
       return saveResult;
     }
 
@@ -437,9 +437,9 @@ export class ProjectLinkUpdateService {
   /**
    * 指定ファイルがプロジェクト内のリンクを含むかチェック（デバッグ用）
    */
-  scanFileForProjectLinks(fileAbsolutePath: string): string[] {
+  async scanFileForProjectLinks(fileAbsolutePath: string): Promise<string[]> {
     const fileUri = this.fileRepository.createFileUri(fileAbsolutePath);
-    const content = this.fileRepository.readFileSync(fileUri, 'utf8');
+    const content = await this.fileRepository.readFileAsync(fileUri, 'utf8');
     const projectLinks: string[] = [];
 
     const linkPattern = /\[([^\]]*)\]\(([^\s)]+)(?:\s+"[^"]*")?\)/g;

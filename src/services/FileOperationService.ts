@@ -254,7 +254,11 @@ export class FileOperationService {
   /**
    * ファイル名を変更する（同期）
    */
-  renameFile(dirPath: string, oldName: string, newName: string): FileOperationResult {
+  async renameFile(
+    dirPath: string,
+    oldName: string,
+    newName: string,
+  ): Promise<FileOperationResult> {
     try {
       const oldPath = path.join(dirPath, oldName);
       const newPath = path.join(dirPath, newName);
@@ -310,7 +314,7 @@ export class FileOperationService {
           newProjectPath !== null &&
           newProjectPath !== ''
         ) {
-          const linkUpdateResult = this.linkUpdateService.updateLinksAfterFileOperation(
+          const linkUpdateResult = await this.linkUpdateService.updateLinksAfterFileOperation(
             oldProjectPath,
             newProjectPath,
           );
@@ -399,7 +403,7 @@ export class FileOperationService {
           newProjectPath !== null &&
           newProjectPath !== ''
         ) {
-          const linkUpdateResult = this.linkUpdateService.updateLinksAfterFileOperation(
+          const linkUpdateResult = await this.linkUpdateService.updateLinksAfterFileOperation(
             oldProjectPath,
             newProjectPath,
           );
@@ -1156,7 +1160,7 @@ export class FileOperationService {
             newProjectPath !== ''
           ) {
             // TODO: Phase 4完了後にupdateLinksAfterFileOperationAsyncに変更
-            const linkUpdateResult = this.linkUpdateService.updateLinksAfterFileOperation(
+            const linkUpdateResult = await this.linkUpdateService.updateLinksAfterFileOperation(
               oldProjectPath,
               newProjectPath,
             );
@@ -1261,7 +1265,7 @@ export class FileOperationService {
               oldProjectPath !== newProjectPath
             ) {
               // TODO: Phase 4完了後にupdateLinksAfterFileOperationAsyncに変更
-              const linkUpdateResult = this.linkUpdateService.updateLinksAfterFileOperation(
+              const linkUpdateResult = await this.linkUpdateService.updateLinksAfterFileOperation(
                 oldProjectPath,
                 newProjectPath,
               );
@@ -1332,7 +1336,7 @@ export class FileOperationService {
   }
 
   /**
-   * .dialogoi-meta.yamlを更新（非同期版）
+   * .dialogoi-meta.yamlを更新する共通ロジック（非同期版）
    */
   private async updateMetaYamlAsync(
     dirPath: string,

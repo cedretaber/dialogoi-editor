@@ -67,7 +67,7 @@ export class DropHandlerService {
 
       if (targetFileType === 'content') {
         // 本文ファイル: referencesに追加
-        return this.handleDropToContentFile(targetFileAbsolutePath, droppedData);
+        return await this.handleDropToContentFile(targetFileAbsolutePath, droppedData);
       } else if (targetFileType === 'setting') {
         // 設定ファイル: マークダウンリンク挿入
         return this.handleDropToSettingFile(targetFileAbsolutePath, droppedData);
@@ -123,10 +123,10 @@ export class DropHandlerService {
   /**
    * 本文ファイルへのドロップ処理（references追加）
    */
-  private handleDropToContentFile(
+  private async handleDropToContentFile(
     targetFileAbsolutePath: string,
     droppedData: DroppedFileInfo,
-  ): DropResult {
+  ): Promise<DropResult> {
     // プロジェクトルートを取得
     const projectRootAbsolutePath =
       this.dialogoiYamlService.findProjectRoot(targetFileAbsolutePath);
@@ -152,7 +152,7 @@ export class DropHandlerService {
     }
 
     // meta.yamlのreferencesに追加
-    const meta = this.metaYamlService.loadMetaYaml(targetDirAbsolutePath);
+    const meta = await this.metaYamlService.loadMetaYamlAsync(targetDirAbsolutePath);
     if (!meta) {
       return {
         success: false,
@@ -181,7 +181,7 @@ export class DropHandlerService {
     fileItem.references = [...existingReferences, droppedFileProjectRelativePath];
 
     // meta.yamlを保存
-    const success = this.metaYamlService.saveMetaYaml(targetDirAbsolutePath, meta);
+    const success = await this.metaYamlService.saveMetaYamlAsync(targetDirAbsolutePath, meta);
     if (success === true) {
       // ReferenceManagerを更新
       const referenceManager = ReferenceManager.getInstance();

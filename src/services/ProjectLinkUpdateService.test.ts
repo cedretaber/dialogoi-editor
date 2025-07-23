@@ -119,7 +119,7 @@ files:
 
   test('ファイル名変更時のマークダウンリンク更新', async () => {
     // world.md → world-setting.md にリネーム
-    const result = service.updateLinksAfterFileOperation(
+    const result = await service.updateLinksAfterFileOperation(
       'settings/world.md',
       'settings/world-setting.md',
     );
@@ -161,9 +161,9 @@ files:
     );
   });
 
-  test('meta.yamlファイルのreferences更新', () => {
+  test('meta.yamlファイルのreferences更新', async () => {
     // hero.md → main-character.md にリネーム
-    const result = service.updateLinksAfterFileOperation(
+    const result = await service.updateLinksAfterFileOperation(
       'settings/characters/hero.md',
       'settings/characters/main-character.md',
     );
@@ -191,7 +191,7 @@ files:
   test('ファイル移動時の複数リンク更新', async () => {
     // charactersディレクトリ全体を別の場所に移動したと仮定
     // hero.md が settings/characters/hero.md → settings/people/hero.md に移動
-    const result = service.updateLinksAfterFileOperation(
+    const result = await service.updateLinksAfterFileOperation(
       'settings/characters/hero.md',
       'settings/people/hero.md',
     );
@@ -232,7 +232,10 @@ files:
     const chapter1Uri = mockFileRepository.createFileUri(chapter1Path);
     const originalContent = await mockFileRepository.readFileAsync(chapter1Uri, 'utf8');
 
-    const result = service.updateLinksAfterFileOperation('external/file.md', 'external/renamed.md');
+    const result = await service.updateLinksAfterFileOperation(
+      'external/file.md',
+      'external/renamed.md',
+    );
 
     assert.strictEqual(result.success, true);
     assert.strictEqual(result.updatedFiles.length, 0);
@@ -242,8 +245,8 @@ files:
     assert.strictEqual(originalContent, updatedContent);
   });
 
-  test('存在しないファイルの更新は無視', () => {
-    const result = service.updateLinksAfterFileOperation(
+  test('存在しないファイルの更新は無視', async () => {
+    const result = await service.updateLinksAfterFileOperation(
       'settings/nonexistent.md',
       'settings/still-nonexistent.md',
     );
@@ -253,9 +256,9 @@ files:
     assert.strictEqual(result.failedFiles.length, 0);
   });
 
-  test('scanFileForProjectLinks デバッグ機能', () => {
+  test('scanFileForProjectLinks デバッグ機能', async () => {
     const chapter1Path = path.join(testProjectRoot, 'contents', 'chapter1.md');
-    const projectLinks = service.scanFileForProjectLinks(chapter1Path);
+    const projectLinks = await service.scanFileForProjectLinks(chapter1Path);
 
     assert.deepStrictEqual(
       projectLinks.sort(),
@@ -284,7 +287,7 @@ files:
     const complexFilePath = path.join(testProjectRoot, 'contents', 'complex.md');
     mockFileRepository.addFile(complexFilePath, complexMarkdownContent);
 
-    const result = service.updateLinksAfterFileOperation(
+    const result = await service.updateLinksAfterFileOperation(
       'settings/world.md',
       'settings/new-world.md',
     );
@@ -306,7 +309,7 @@ files:
     );
   });
 
-  test('パフォーマンステスト（大量ファイル）', () => {
+  test('パフォーマンステスト（大量ファイル）', async () => {
     // 大量のファイルを作成してパフォーマンスをテスト
     const fileCount = 100;
 
@@ -317,7 +320,7 @@ files:
     }
 
     const startTime = Date.now();
-    const result = service.updateLinksAfterFileOperation(
+    const result = await service.updateLinksAfterFileOperation(
       'settings/world.md',
       'settings/world-new.md',
     );
