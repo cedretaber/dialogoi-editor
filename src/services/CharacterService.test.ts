@@ -32,64 +32,64 @@ suite('CharacterService テストスイート', () => {
   });
 
   suite('extractDisplayName', () => {
-    test('最初の # 見出しから表示名を取得する', () => {
+    test('最初の # 見出しから表示名を取得する', async () => {
       const testFile = path.join(testDir, 'character.md');
       mockFileRepository.addFile(testFile, '# 田中太郎\n\n## 基本情報\n- 年齢: 16歳');
 
-      const displayName = characterService.extractDisplayName(testFile);
+      const displayName = await characterService.extractDisplayName(testFile);
       assert.strictEqual(displayName, '田中太郎');
     });
 
-    test('見出しが複数ある場合は最初の # 見出しを取得する', () => {
+    test('見出しが複数ある場合は最初の # 見出しを取得する', async () => {
       const testFile = path.join(testDir, 'character.md');
       mockFileRepository.addFile(testFile, '# 主要キャラクター\n\n## 田中太郎\n\n# 別の見出し');
 
-      const displayName = characterService.extractDisplayName(testFile);
+      const displayName = await characterService.extractDisplayName(testFile);
       assert.strictEqual(displayName, '主要キャラクター');
     });
 
-    test('見出しが見つからない場合はファイル名を返す', () => {
+    test('見出しが見つからない場合はファイル名を返す', async () => {
       const testFile = path.join(testDir, 'character.md');
       mockFileRepository.addFile(testFile, '普通のテキスト\n\n## サブ見出し');
 
-      const displayName = characterService.extractDisplayName(testFile);
+      const displayName = await characterService.extractDisplayName(testFile);
       assert.strictEqual(displayName, 'character');
     });
 
-    test('ファイルが存在しない場合はファイル名を返す', () => {
+    test('ファイルが存在しない場合はファイル名を返す', async () => {
       const testFile = path.join(testDir, 'nonexistent.md');
 
-      const displayName = characterService.extractDisplayName(testFile);
+      const displayName = await characterService.extractDisplayName(testFile);
       assert.strictEqual(displayName, 'nonexistent');
     });
 
-    test('拡張子なしファイルの場合はファイル名全体を返す', () => {
+    test('拡張子なしファイルの場合はファイル名全体を返す', async () => {
       const testFile = path.join(testDir, 'character');
       mockFileRepository.addFile(testFile, '普通のテキスト');
 
-      const displayName = characterService.extractDisplayName(testFile);
+      const displayName = await characterService.extractDisplayName(testFile);
       assert.strictEqual(displayName, 'character');
     });
 
-    test('空のファイルの場合はファイル名を返す', () => {
+    test('空のファイルの場合はファイル名を返す', async () => {
       const testFile = path.join(testDir, 'empty.md');
       mockFileRepository.addFile(testFile, '');
 
-      const displayName = characterService.extractDisplayName(testFile);
+      const displayName = await characterService.extractDisplayName(testFile);
       assert.strictEqual(displayName, 'empty');
     });
 
-    test('空白のみの見出しの場合はファイル名を返す', () => {
+    test('空白のみの見出しの場合はファイル名を返す', async () => {
       const testFile = path.join(testDir, 'blank.md');
       mockFileRepository.addFile(testFile, '#   \n\n内容');
 
-      const displayName = characterService.extractDisplayName(testFile);
+      const displayName = await characterService.extractDisplayName(testFile);
       assert.strictEqual(displayName, 'blank');
     });
   });
 
   suite('isCharacterFile', () => {
-    test('キャラクターファイルの場合trueを返す', () => {
+    test('キャラクターファイルの場合trueを返す', async () => {
       const charFile = path.join(testDir, 'hero.md');
       mockFileRepository.addFile(charFile, '# 主人公\n\n勇敢な冒険者');
 
@@ -104,11 +104,11 @@ files:
 `;
       mockFileRepository.addFile(path.join(testDir, '.dialogoi-meta.yaml'), metaContent);
 
-      const result = characterService.isCharacterFile(charFile);
+      const result = await characterService.isCharacterFile(charFile);
       assert.strictEqual(result, true);
     });
 
-    test('通常の設定ファイルの場合falseを返す', () => {
+    test('通常の設定ファイルの場合falseを返す', async () => {
       const settingFile = path.join(testDir, 'world.md');
       mockFileRepository.addFile(settingFile, '# 世界設定\n\n世界観の説明');
 
@@ -120,19 +120,19 @@ files:
 `;
       mockFileRepository.addFile(path.join(testDir, '.dialogoi-meta.yaml'), metaContent);
 
-      const result = characterService.isCharacterFile(settingFile);
+      const result = await characterService.isCharacterFile(settingFile);
       assert.strictEqual(result, false);
     });
 
-    test('メタデータファイルが存在しない場合falseを返す', () => {
+    test('メタデータファイルが存在しない場合falseを返す', async () => {
       const charFile = path.join(testDir, 'hero.md');
       mockFileRepository.addFile(charFile, '# 主人公\n\n勇敢な冒険者');
 
-      const result = characterService.isCharacterFile(charFile);
+      const result = await characterService.isCharacterFile(charFile);
       assert.strictEqual(result, false);
     });
 
-    test('ファイルがメタデータに存在しない場合falseを返す', () => {
+    test('ファイルがメタデータに存在しない場合falseを返す', async () => {
       const charFile = path.join(testDir, 'hero.md');
       mockFileRepository.addFile(charFile, '# 主人公\n\n勇敢な冒険者');
 
@@ -144,7 +144,7 @@ files:
 `;
       mockFileRepository.addFile(path.join(testDir, '.dialogoi-meta.yaml'), metaContent);
 
-      const result = characterService.isCharacterFile(charFile);
+      const result = await characterService.isCharacterFile(charFile);
       assert.strictEqual(result, false);
     });
   });
@@ -159,7 +159,7 @@ files:
       mockFileRepository.addDirectory(path.join(novelRoot, 'settings', 'characters'));
     });
 
-    test('ファイル情報を正しく取得する', () => {
+    test('ファイル情報を正しく取得する', async () => {
       const heroFile = path.join(novelRoot, 'settings', 'characters', 'hero.md');
       mockFileRepository.addFile(heroFile, '# 主人公\n\n勇敢な冒険者');
 
@@ -178,7 +178,7 @@ files:
       const metaPath = path.join(novelRoot, 'settings', 'characters', '.dialogoi-meta.yaml');
       mockFileRepository.addFile(metaPath, metaContent);
 
-      const fileInfo = characterService.getFileInfo('settings/characters/hero.md', novelRoot);
+      const fileInfo = await characterService.getFileInfo('settings/characters/hero.md', novelRoot);
       assert.notStrictEqual(fileInfo, null);
       assert.strictEqual(fileInfo?.name, 'hero.md');
       assert.strictEqual(fileInfo?.type, 'setting');
@@ -186,16 +186,19 @@ files:
       assert.deepStrictEqual(fileInfo?.tags, ['主人公', '戦士']);
     });
 
-    test('ファイルが存在しない場合nullを返す', () => {
-      const fileInfo = characterService.getFileInfo('settings/characters/notexist.md', novelRoot);
+    test('ファイルが存在しない場合nullを返す', async () => {
+      const fileInfo = await characterService.getFileInfo(
+        'settings/characters/notexist.md',
+        novelRoot,
+      );
       assert.strictEqual(fileInfo, null);
     });
 
-    test('メタデータファイルが存在しない場合nullを返す', () => {
+    test('メタデータファイルが存在しない場合nullを返す', async () => {
       const heroFile = path.join(novelRoot, 'settings', 'characters', 'hero.md');
       mockFileRepository.addFile(heroFile, '# 主人公\n\n勇敢な冒険者');
 
-      const fileInfo = characterService.getFileInfo('settings/characters/hero.md', novelRoot);
+      const fileInfo = await characterService.getFileInfo('settings/characters/hero.md', novelRoot);
       assert.strictEqual(fileInfo, null);
     });
   });

@@ -28,6 +28,7 @@ export class HashService {
    * ファイルの SHA-256 ハッシュを計算
    * @param fileUri ファイルの URI
    * @returns SHA-256 ハッシュ文字列（プレフィックス付き）
+   * @deprecated Use calculateFileHashAsync instead for better VSCode integration
    */
   calculateFileHash(fileUri: Uri): string {
     try {
@@ -60,22 +61,6 @@ export class HashService {
   async verifyFileHashAsync(fileUri: Uri, expectedHash: string): Promise<boolean> {
     try {
       const actualHash = await this.calculateFileHashAsync(fileUri);
-      return actualHash === expectedHash;
-    } catch (error) {
-      console.error('ハッシュ検証エラー:', error);
-      return false;
-    }
-  }
-
-  /**
-   * ハッシュを検証
-   * @param fileUri ファイルの URI
-   * @param expectedHash 期待されるハッシュ値
-   * @returns ハッシュが一致するかどうか
-   */
-  verifyFileHash(fileUri: Uri, expectedHash: string): boolean {
-    try {
-      const actualHash = this.calculateFileHash(fileUri);
       return actualHash === expectedHash;
     } catch (error) {
       console.error('ハッシュ検証エラー:', error);

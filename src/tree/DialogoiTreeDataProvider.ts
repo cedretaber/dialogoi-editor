@@ -167,7 +167,7 @@ export class DialogoiTreeDataProvider
     } else if (element.character !== undefined && !isDirectory) {
       // display_nameが設定されていない場合は自動取得
       const characterService = ServiceContainer.getInstance().getCharacterService();
-      displayName = await characterService.extractDisplayNameAsync(element.path);
+      displayName = await characterService.extractDisplayName(element.path);
     }
 
     const item = new vscode.TreeItem(displayName, collapsibleState);
@@ -482,7 +482,7 @@ export class DialogoiTreeDataProvider
       let displayName = element.character.display_name;
       if (displayName === undefined && element.type !== 'subdirectory') {
         const characterService = ServiceContainer.getInstance().getCharacterService();
-        displayName = await characterService.extractDisplayNameAsync(element.path);
+        displayName = await characterService.extractDisplayName(element.path);
       }
       if (displayName !== undefined) {
         tooltipParts.push(`${displayName} (${element.character.importance})`);

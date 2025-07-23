@@ -109,7 +109,7 @@ export class DropHandlerService {
     }
 
     // CharacterServiceを使用してファイル種別を判定
-    const fileInfo = await this.characterService.getFileInfoAsync(
+    const fileInfo = await this.characterService.getFileInfo(
       fileProjectRelativePath,
       projectRootAbsolutePath,
     );
