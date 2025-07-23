@@ -93,7 +93,7 @@ export function registerProjectCommands(
       }
 
       const projectRoot = workspaceFolder.uri.fsPath;
-      if (!projectSettingsService.isDialogoiProject(projectRoot)) {
+      if (!(await projectSettingsService.isDialogoiProject(projectRoot))) {
         const action = await vscode.window.showWarningMessage(
           'Dialogoiプロジェクトが見つかりません。新しいプロジェクトを作成しますか？',
           'はい',

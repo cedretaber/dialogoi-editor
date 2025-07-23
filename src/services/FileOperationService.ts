@@ -355,7 +355,7 @@ export class FileOperationService {
       const newUri = this.fileRepository.createFileUri(newPath);
 
       // 元ファイルが存在しない場合はエラー
-      if (!this.fileRepository.existsSync(oldUri)) {
+      if (!(await this.fileRepository.existsAsync(oldUri))) {
         return {
           success: false,
           message: `ファイル ${oldName} が見つかりません。`,
@@ -363,7 +363,7 @@ export class FileOperationService {
       }
 
       // 新しい名前のファイルが既に存在する場合はエラー
-      if (this.fileRepository.existsSync(newUri)) {
+      if (await this.fileRepository.existsAsync(newUri)) {
         return {
           success: false,
           message: `ファイル ${newName} は既に存在します。`,

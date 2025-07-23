@@ -70,7 +70,7 @@ export class DropHandlerService {
         return await this.handleDropToContentFile(targetFileAbsolutePath, droppedData);
       } else if (targetFileType === 'setting') {
         // 設定ファイル: マークダウンリンク挿入
-        return this.handleDropToSettingFile(targetFileAbsolutePath, droppedData);
+        return await this.handleDropToSettingFile(targetFileAbsolutePath, droppedData);
       } else {
         return {
           success: false,
@@ -94,7 +94,7 @@ export class DropHandlerService {
   ): Promise<'content' | 'setting' | null> {
     // プロジェクトルートを取得
     const projectRootAbsolutePath =
-      this.dialogoiYamlService.findProjectRoot(targetFileAbsolutePath);
+      await this.dialogoiYamlService.findProjectRootAsync(targetFileAbsolutePath);
     if (projectRootAbsolutePath === null || projectRootAbsolutePath === undefined) {
       return null;
     }
@@ -129,7 +129,7 @@ export class DropHandlerService {
   ): Promise<DropResult> {
     // プロジェクトルートを取得
     const projectRootAbsolutePath =
-      this.dialogoiYamlService.findProjectRoot(targetFileAbsolutePath);
+      await this.dialogoiYamlService.findProjectRootAsync(targetFileAbsolutePath);
     if (projectRootAbsolutePath === null || projectRootAbsolutePath === undefined) {
       return {
         success: false,
@@ -211,13 +211,13 @@ export class DropHandlerService {
   /**
    * 設定ファイルへのドロップ処理（マークダウンリンク挿入）
    */
-  private handleDropToSettingFile(
+  private async handleDropToSettingFile(
     targetFileAbsolutePath: string,
     droppedData: DroppedFileInfo,
-  ): DropResult {
+  ): Promise<DropResult> {
     // プロジェクトルートを取得
     const projectRootAbsolutePath =
-      this.dialogoiYamlService.findProjectRoot(targetFileAbsolutePath);
+      await this.dialogoiYamlService.findProjectRootAsync(targetFileAbsolutePath);
     if (projectRootAbsolutePath === null || projectRootAbsolutePath === undefined) {
       return {
         success: false,

@@ -18,6 +18,7 @@ export class ForeshadowingService {
    * マークダウンファイルから表示名を取得
    * @param fileAbsolutePath ファイルの絶対パス
    * @returns 表示名（見出しが見つからない場合はファイル名）
+   * @deprecated Use extractDisplayNameAsync instead for better VSCode integration
    */
   extractDisplayName(fileAbsolutePath: string): string {
     try {
@@ -51,6 +52,7 @@ export class ForeshadowingService {
    * @param novelRootAbsolutePath 小説ルートの絶対パス
    * @param relativePath 検証対象の相対パス
    * @returns 有効な場合true
+   * @deprecated Use validatePathAsync instead for better VSCode integration
    */
   validatePath(novelRootAbsolutePath: string, relativePath: string): boolean {
     if (!relativePath || relativePath.trim() === '') {
@@ -60,6 +62,22 @@ export class ForeshadowingService {
     const absolutePath = path.join(novelRootAbsolutePath, relativePath);
     const fileUri = this.fileRepository.createFileUri(absolutePath);
     return this.fileRepository.existsSync(fileUri);
+  }
+
+  /**
+   * パスの有効性を検証（非同期版）
+   * @param novelRootAbsolutePath 小説ルートの絶対パス
+   * @param relativePath 検証対象の相対パス
+   * @returns 有効な場合true
+   */
+  async validatePathAsync(novelRootAbsolutePath: string, relativePath: string): Promise<boolean> {
+    if (!relativePath || relativePath.trim() === '') {
+      return false;
+    }
+
+    const absolutePath = path.join(novelRootAbsolutePath, relativePath);
+    const fileUri = this.fileRepository.createFileUri(absolutePath);
+    return await this.fileRepository.existsAsync(fileUri);
   }
 
   /**
@@ -568,22 +586,6 @@ export class ForeshadowingService {
       console.error('表示名の取得に失敗しました:', error);
       return this.getFileNameWithoutExtension(fileAbsolutePath);
     }
-  }
-
-  /**
-   * パスの有効性を検証（非同期版）
-   * @param novelRootAbsolutePath 小説ルートの絶対パス
-   * @param relativePath 検証対象の相対パス
-   * @returns 有効な場合true
-   */
-  async validatePathAsync(novelRootAbsolutePath: string, relativePath: string): Promise<boolean> {
-    if (!relativePath || relativePath.trim() === '') {
-      return false;
-    }
-
-    const absolutePath = path.join(novelRootAbsolutePath, relativePath);
-    const fileUri = this.fileRepository.createFileUri(absolutePath);
-    return await this.fileRepository.existsAsync(fileUri);
   }
 
   /**

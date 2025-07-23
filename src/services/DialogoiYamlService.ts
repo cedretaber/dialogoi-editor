@@ -11,6 +11,7 @@ export class DialogoiYamlService {
    * 指定されたディレクトリがDialogoiプロジェクトのルートかどうかを判定
    * @param directoryAbsolutePath ディレクトリの絶対パス
    * @returns プロジェクトルートの場合true
+   * @deprecated Use isDialogoiProjectRootAsync instead for better VSCode integration
    */
   isDialogoiProjectRoot(directoryAbsolutePath: string): boolean {
     const dialogoiYamlPath = path.join(
@@ -52,6 +53,7 @@ export class DialogoiYamlService {
    * @param projectRootAbsolutePath プロジェクトルートの絶対パス
    * @param data DialogoiYamlオブジェクト
    * @returns 保存に成功した場合true
+   * @deprecated Use saveDialogoiYamlAsync instead for better VSCode integration
    */
   saveDialogoiYaml(projectRootAbsolutePath: string, data: DialogoiYaml): boolean {
     // バリデーション
@@ -90,6 +92,7 @@ export class DialogoiYamlService {
    * @param author 著者名
    * @param tags タグ（オプション）
    * @returns 作成に成功した場合true
+   * @deprecated Use createDialogoiProjectAsync instead for better VSCode integration
    */
   createDialogoiProject(
     projectRootAbsolutePath: string,
@@ -124,6 +127,7 @@ export class DialogoiYamlService {
    * @param projectRootAbsolutePath プロジェクトルートの絶対パス
    * @param updates 更新するフィールド
    * @returns 更新に成功した場合true
+   * @deprecated Use updateDialogoiYamlAsync instead for better VSCode integration
    */
   updateDialogoiYaml(projectRootAbsolutePath: string, updates: Partial<DialogoiYaml>): boolean {
     const currentData = this.loadDialogoiYaml(projectRootAbsolutePath);
@@ -140,6 +144,7 @@ export class DialogoiYamlService {
    * プロジェクトルートディレクトリの検索
    * @param startAbsolutePath 検索開始のディレクトリ
    * @returns プロジェクトルートの絶対パス、見つからない場合はnull
+   * @deprecated Use findProjectRootAsync instead for better VSCode integration
    */
   findProjectRoot(startAbsolutePath: string): string | null {
     let currentPath = startAbsolutePath;

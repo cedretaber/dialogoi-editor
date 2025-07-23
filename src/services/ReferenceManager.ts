@@ -76,6 +76,7 @@ export class ReferenceManager {
 
   /**
    * ファイルのハイパーリンク参照を更新
+   * @deprecated Use updateFileHyperlinkReferencesAsync instead for better VSCode integration
    */
   updateFileHyperlinkReferences(filePath: string): void {
     if (this.novelRoot === null || this.hyperlinkExtractorService === null) {
@@ -113,6 +114,7 @@ export class ReferenceManager {
 
   /**
    * ファイルの全参照関係を更新（手動+ハイパーリンク）
+   * @deprecated Use updateFileAllReferencesAsync instead for better VSCode integration
    */
   updateFileAllReferences(filePath: string, manualReferences: string[]): void {
     this.updateFileReferences(filePath, manualReferences);
@@ -332,6 +334,7 @@ export class ReferenceManager {
 
   /**
    * 参照先ファイルが存在するかチェック
+   * @deprecated Use checkFileExistsAsync instead for better VSCode integration
    */
   checkFileExists(referencedFile: string): boolean {
     if (this.novelRoot === null || this.fileRepository === null) {
@@ -363,6 +366,7 @@ export class ReferenceManager {
 
   /**
    * 存在しない参照先ファイルを取得
+   * @deprecated Use getInvalidReferencesAsync instead for better VSCode integration
    */
   getInvalidReferences(filePath: string): string[] {
     const references = this.getReferences(filePath);

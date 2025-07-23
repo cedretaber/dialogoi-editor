@@ -119,20 +119,24 @@ export class ProjectSettingsWebviewPanel {
   public update(isNewProject: boolean = false): void {
     this.isNewProject = isNewProject;
     this.panel.title = isNewProject ? '新しい小説プロジェクトの設定' : '小説プロジェクトの設定';
-    this.updateWebViewContent();
+    void this.updateWebViewContent();
   }
 
   /**
    * WebViewのコンテンツを更新
    */
-  private updateWebViewContent(): void {
+  private async updateWebViewContent(): Promise<void> {
     let projectSettings: DialogoiYaml | null = null;
     let isDialogoiProject = false;
 
     if (this.currentProjectRoot !== undefined && this.currentProjectRoot !== '') {
-      isDialogoiProject = this.projectSettingsService.isDialogoiProject(this.currentProjectRoot);
+      isDialogoiProject = await this.projectSettingsService.isDialogoiProject(
+        this.currentProjectRoot,
+      );
       if (isDialogoiProject && !this.isNewProject) {
-        projectSettings = this.projectSettingsService.loadProjectSettings(this.currentProjectRoot);
+        projectSettings = await this.projectSettingsService.loadProjectSettings(
+          this.currentProjectRoot,
+        );
       }
     }
 
@@ -194,11 +198,11 @@ export class ProjectSettingsWebviewPanel {
     switch (message.command) {
       case 'ready':
         this.logger.debug('Project settings WebView ready');
-        this.updateWebViewContent();
+        void this.updateWebViewContent();
         break;
 
       case 'saveSettings':
-        this.handleSaveSettings(message.data as ProjectSettingsUpdateData);
+        void this.handleSaveSettings(message.data as ProjectSettingsUpdateData);
         break;
 
       case 'openYamlEditor':
@@ -213,7 +217,7 @@ export class ProjectSettingsWebviewPanel {
   /**
    * プロジェクト設定の保存を処理
    */
-  private handleSaveSettings(data: ProjectSettingsUpdateData): void {
+  private async handleSaveSettings(data: ProjectSettingsUpdateData): Promise<void> {
     if (this.currentProjectRoot === undefined || this.currentProjectRoot === '') {
       void vscode.window.showErrorMessage('プロジェクトルートが見つかりません。');
       return;
@@ -224,7 +228,10 @@ export class ProjectSettingsWebviewPanel {
 
       // 新規プロジェクトの場合は作成
       if (this.isNewProject) {
-        const created = this.projectSettingsService.createNewProject(this.currentProjectRoot, data);
+        const created = await this.projectSettingsService.createNewProject(
+          this.currentProjectRoot,
+          data,
+        );
         if (created) {
           void vscode.window.showInformationMessage('新しい小説プロジェクトを作成しました。');
           this.logger.info('New project created successfully');
@@ -250,7 +257,7 @@ export class ProjectSettingsWebviewPanel {
         }
       } else {
         // 既存プロジェクトの更新
-        const success = this.projectSettingsService.updateProjectSettings(
+        const success = await this.projectSettingsService.updateProjectSettings(
           this.currentProjectRoot,
           data,
         );

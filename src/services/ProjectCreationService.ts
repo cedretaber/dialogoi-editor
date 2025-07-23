@@ -1,4 +1,4 @@
-import { FileRepository, DirectoryEntry } from '../repositories/FileRepository.js';
+import { FileRepository } from '../repositories/FileRepository.js';
 import { DialogoiYamlService } from './DialogoiYamlService.js';
 import { DialogoiTemplateService } from './DialogoiTemplateService.js';
 import { MetaYaml } from '../utils/MetaYamlUtils.js';
@@ -62,14 +62,14 @@ export class ProjectCreationService {
     try {
       // 1. プロジェクトディレクトリの存在確認・作成
       const projectUri = this.fileRepository.createDirectoryUri(projectRootAbsolutePath);
-      if (!this.fileRepository.existsSync(projectUri)) {
-        this.fileRepository.createDirectorySync(projectUri);
+      if (!(await this.fileRepository.existsAsync(projectUri))) {
+        await this.fileRepository.createDirectoryAsync(projectUri);
         result.createdFiles?.push(projectRootAbsolutePath);
       }
 
       // 2. 既存のdialogoi.yamlの確認
       const existingProject =
-        this.dialogoiYamlService.isDialogoiProjectRoot(projectRootAbsolutePath);
+        await this.dialogoiYamlService.isDialogoiProjectRootAsync(projectRootAbsolutePath);
       if (existingProject === true && options.overwriteDialogoiYaml !== true) {
         result.message = 'Dialogoiプロジェクトが既に存在します。上書きが許可されていません。';
         return result;
@@ -147,7 +147,7 @@ export class ProjectCreationService {
       }
 
       // dialogoi.yamlを保存
-      const saveSuccess = this.dialogoiYamlService.saveDialogoiYaml(
+      const saveSuccess = await this.dialogoiYamlService.saveDialogoiYamlAsync(
         projectRootAbsolutePath,
         dialogoiYaml,
       );
@@ -244,14 +244,12 @@ export class ProjectCreationService {
     }
 
     // ディレクトリ内のファイルを取得
-    const entries = this.fileRepository.readdirSync(currentUri, {
-      withFileTypes: true,
-    }) as DirectoryEntry[];
+    const entries = await this.fileRepository.readdirAsync(currentUri);
     const files: string[] = [];
     const subdirectories: string[] = [];
 
     for (const entry of entries) {
-      const entryName = entry.name;
+      const entryName = typeof entry === 'string' ? entry : entry.name;
       const entryAbsolutePath = path.join(currentAbsolutePath, entryName);
       const entryRelativePath = path.relative(projectRootAbsolutePath, entryAbsolutePath);
 
@@ -261,17 +259,25 @@ export class ProjectCreationService {
         continue;
       }
 
-      if (entry.isDirectory()) {
-        subdirectories.push(entryAbsolutePath);
-      } else if (entry.isFile()) {
-        files.push(entryName);
+      // ファイルタイプの判定のためにstatを使用
+      const entryUri = this.fileRepository.createFileUri(entryAbsolutePath);
+      try {
+        const stat = await this.fileRepository.statAsync(entryUri);
+        if (stat.isDirectory()) {
+          subdirectories.push(entryAbsolutePath);
+        } else if (stat.isFile()) {
+          files.push(entryName);
+        }
+      } catch {
+        // stat取得に失敗した場合は無視
+        continue;
       }
     }
 
     // .dialogoi-meta.yamlを作成または更新
     const metaYamlAbsolutePath = path.join(currentAbsolutePath, '.dialogoi-meta.yaml');
     const metaYamlUri = this.fileRepository.createFileUri(metaYamlAbsolutePath);
-    const metaYamlExists = this.fileRepository.existsSync(metaYamlUri);
+    const metaYamlExists = await this.fileRepository.existsAsync(metaYamlUri);
 
     if (metaYamlExists === true && overwriteMetaYaml !== true) {
       result.skippedFiles?.push(metaYamlAbsolutePath);
@@ -279,7 +285,7 @@ export class ProjectCreationService {
       const metaYaml = this.createMetaYamlFromFiles(files, subdirectories, readmeFilename);
       const yamlContent = yaml.dump(metaYaml, { flowLevel: -1, lineWidth: -1 });
 
-      this.fileRepository.writeFileSync(metaYamlUri, yamlContent);
+      await this.fileRepository.writeFileAsync(metaYamlUri, yamlContent);
       result.createdFiles?.push(metaYamlAbsolutePath);
     }
 

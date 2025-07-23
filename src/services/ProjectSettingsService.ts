@@ -33,14 +33,15 @@ export class ProjectSettingsService {
    * @param projectRootAbsolutePath プロジェクトルートの絶対パス
    * @returns プロジェクト設定、存在しない場合はnull
    */
-  loadProjectSettings(projectRootAbsolutePath: string): DialogoiYaml | null {
+  async loadProjectSettings(projectRootAbsolutePath: string): Promise<DialogoiYaml | null> {
     try {
-      if (!this.dialogoiYamlService.isDialogoiProjectRoot(projectRootAbsolutePath)) {
+      if (!(await this.dialogoiYamlService.isDialogoiProjectRootAsync(projectRootAbsolutePath))) {
         this.logger.debug(`Not a Dialogoi project: ${projectRootAbsolutePath}`);
         return null;
       }
 
-      const settings = this.dialogoiYamlService.loadDialogoiYaml(projectRootAbsolutePath);
+      const settings =
+        await this.dialogoiYamlService.loadDialogoiYamlAsync(projectRootAbsolutePath);
       if (settings === null) {
         this.logger.warn(`Failed to load project settings: ${projectRootAbsolutePath}`);
         return null;
@@ -115,10 +116,10 @@ export class ProjectSettingsService {
    * @param updateData 更新データ
    * @returns 更新が成功した場合true
    */
-  updateProjectSettings(
+  async updateProjectSettings(
     projectRootAbsolutePath: string,
     updateData: ProjectSettingsUpdateData,
-  ): boolean {
+  ): Promise<boolean> {
     try {
       // バリデーション
       const validation = this.validateUpdateData(updateData);
@@ -128,7 +129,7 @@ export class ProjectSettingsService {
       }
 
       // 現在の設定を読み込み
-      const currentSettings = this.loadProjectSettings(projectRootAbsolutePath);
+      const currentSettings = await this.loadProjectSettings(projectRootAbsolutePath);
       if (currentSettings === null) {
         this.logger.error('Failed to load current project settings');
         return false;
@@ -151,7 +152,7 @@ export class ProjectSettingsService {
       };
 
       // 設定を保存
-      const success = this.dialogoiYamlService.saveDialogoiYaml(
+      const success = await this.dialogoiYamlService.saveDialogoiYamlAsync(
         projectRootAbsolutePath,
         updatedSettings,
       );
@@ -177,8 +178,8 @@ export class ProjectSettingsService {
    * @param projectRootAbsolutePath プロジェクトルートの絶対パス
    * @returns プロジェクトが存在する場合true
    */
-  isDialogoiProject(projectRootAbsolutePath: string): boolean {
-    return this.dialogoiYamlService.isDialogoiProjectRoot(projectRootAbsolutePath);
+  async isDialogoiProject(projectRootAbsolutePath: string): Promise<boolean> {
+    return await this.dialogoiYamlService.isDialogoiProjectRootAsync(projectRootAbsolutePath);
   }
 
   /**
@@ -247,10 +248,10 @@ export class ProjectSettingsService {
    * @param settingsData プロジェクト設定データ
    * @returns 作成が成功した場合true
    */
-  createNewProject(
+  async createNewProject(
     projectRootAbsolutePath: string,
     settingsData: ProjectSettingsUpdateData,
-  ): boolean {
+  ): Promise<boolean> {
     try {
       // バリデーション
       const validation = this.validateUpdateData(settingsData);
@@ -274,7 +275,7 @@ export class ProjectSettingsService {
       };
 
       // プロジェクトを作成
-      const success = this.dialogoiYamlService.createDialogoiProject(
+      const success = await this.dialogoiYamlService.createDialogoiProjectAsync(
         projectRootAbsolutePath,
         newSettings.title,
         newSettings.author,
@@ -289,7 +290,7 @@ export class ProjectSettingsService {
         if (newSettings.project_settings !== undefined) {
           updates.project_settings = newSettings.project_settings;
         }
-        this.dialogoiYamlService.updateDialogoiYaml(projectRootAbsolutePath, updates);
+        await this.dialogoiYamlService.updateDialogoiYamlAsync(projectRootAbsolutePath, updates);
         this.logger.info('New project created successfully');
       } else {
         this.logger.error('Failed to create new project');

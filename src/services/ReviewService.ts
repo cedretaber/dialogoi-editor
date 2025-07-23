@@ -54,6 +54,7 @@ export class ReviewService {
    * レビューファイルを読み込み
    * @param targetRelativeFilePath 対象ファイルのパス（小説ルートからの相対パス）
    * @returns レビューファイルの内容
+   * @deprecated Use loadReviewFileAsync instead for better VSCode integration
    */
   loadReviewFile(targetRelativeFilePath: string): ReviewFile | null {
     const reviewFileUri = this.getReviewFileUri(targetRelativeFilePath);
@@ -98,6 +99,7 @@ export class ReviewService {
    * レビューファイルを保存
    * @param targetRelativeFilePath 対象ファイルのパス（小説ルートからの相対パス）
    * @param reviewFile レビューファイルの内容
+   * @deprecated Use saveReviewFileAsync instead for better VSCode integration
    */
   saveReviewFile(targetRelativeFilePath: string, reviewFile: ReviewFile): void {
     const reviewFileUri = this.getReviewFileUri(targetRelativeFilePath);
@@ -149,6 +151,7 @@ export class ReviewService {
    * @param targetRelativeFilePath 対象ファイルのパス（小説ルートからの相対パス）
    * @param options レビュー作成オプション
    * @returns 追加されたレビューのインデックス
+   * @deprecated Use async version for better VSCode integration
    */
   addReview(targetRelativeFilePath: string, options: CreateReviewOptions): number {
     const targetFileUri = this.fileRepository.joinPath(this.workspaceRoot, targetRelativeFilePath);
@@ -191,6 +194,7 @@ export class ReviewService {
    * @param targetRelativeFilePath 対象ファイルのパス（小説ルートからの相対パス）
    * @param reviewIndex レビューのインデックス
    * @param options 更新オプション
+   * @deprecated Use async version for better VSCode integration
    */
   updateReview(
     targetRelativeFilePath: string,
@@ -230,6 +234,7 @@ export class ReviewService {
    * @param targetRelativeFilePath 対象ファイルのパス（小説ルートからの相対パス）
    * @param reviewIndex レビューのインデックス
    * @param options コメントオプション
+   * @deprecated Use async version for better VSCode integration
    */
   addComment(
     targetRelativeFilePath: string,
@@ -268,6 +273,7 @@ export class ReviewService {
    * レビューを削除
    * @param targetRelativeFilePath 対象ファイルのパス（小説ルートからの相対パス）
    * @param reviewIndex レビューのインデックス
+   * @deprecated Use async version for better VSCode integration
    */
   deleteReview(targetRelativeFilePath: string, reviewIndex: number): void {
     const reviewFile = this.loadReviewFile(targetRelativeFilePath);
@@ -295,6 +301,7 @@ export class ReviewService {
    * レビューサマリーを取得
    * @param targetRelativeFilePath 対象ファイルのパス（小説ルートからの相対パス）
    * @returns レビューサマリー
+   * @deprecated Use getReviewSummaryAsync instead for better VSCode integration
    */
   getReviewSummary(targetRelativeFilePath: string): ReviewSummary | null {
     const reviewFile = this.loadReviewFile(targetRelativeFilePath);
@@ -347,6 +354,7 @@ export class ReviewService {
    * ファイルハッシュの変更を検証
    * @param targetRelativeFilePath 対象ファイルのパス（小説ルートからの相対パス）
    * @returns ファイルが変更されているかどうか
+   * @deprecated Use async version for better VSCode integration
    */
   isFileChanged(targetRelativeFilePath: string): boolean {
     const reviewFile = this.loadReviewFile(targetRelativeFilePath);

@@ -41,7 +41,7 @@ export class ProjectLinkUpdateService {
 
     try {
       // プロジェクト内の全.mdファイルを検索してハイパーリンク更新
-      const markdownFiles = this.findAllMarkdownFiles();
+      const markdownFiles = await this.findAllMarkdownFiles();
       totalScannedFiles += markdownFiles.length;
 
       for (const markdownFile of markdownFiles) {
@@ -63,7 +63,7 @@ export class ProjectLinkUpdateService {
       }
 
       // .dialogoi-meta.yamlファイルのreferencesも更新
-      const metaFiles = this.findAllMetaYamlFiles();
+      const metaFiles = await this.findAllMetaYamlFiles();
       totalScannedFiles += metaFiles.length;
 
       for (const metaFile of metaFiles) {
@@ -286,13 +286,13 @@ export class ProjectLinkUpdateService {
   /**
    * プロジェクト内の全.mdファイルを再帰的に検索
    */
-  private findAllMarkdownFiles(): string[] {
+  private async findAllMarkdownFiles(): Promise<string[]> {
     const markdownFiles: string[] = [];
 
-    const walkDirectory = (dirAbsolutePath: string): void => {
+    const walkDirectory = async (dirAbsolutePath: string): Promise<void> => {
       const dirUri = this.fileRepository.createFileUri(dirAbsolutePath);
       try {
-        const entries = this.fileRepository.readdirSync(dirUri);
+        const entries = await this.fileRepository.readdirAsync(dirUri);
 
         for (const entry of entries) {
           const entryName = typeof entry === 'string' ? entry : entry.name;
@@ -300,11 +300,11 @@ export class ProjectLinkUpdateService {
           const entryUri = this.fileRepository.createFileUri(entryAbsolutePath);
 
           try {
-            const stat = this.fileRepository.statSync(entryUri);
+            const stat = await this.fileRepository.statAsync(entryUri);
 
             if (stat.isDirectory()) {
               // ディレクトリの場合は再帰的に走査
-              walkDirectory(entryAbsolutePath);
+              await walkDirectory(entryAbsolutePath);
             } else if (entryName.endsWith('.md')) {
               // .mdファイルの場合はリストに追加
               markdownFiles.push(entryAbsolutePath);
@@ -319,7 +319,7 @@ export class ProjectLinkUpdateService {
       }
     };
 
-    walkDirectory(this.novelRootAbsolutePath);
+    await walkDirectory(this.novelRootAbsolutePath);
     return markdownFiles;
   }
 
@@ -368,13 +368,13 @@ export class ProjectLinkUpdateService {
   /**
    * プロジェクト内の全.dialogoi-meta.yamlファイルを検索
    */
-  private findAllMetaYamlFiles(): string[] {
+  private async findAllMetaYamlFiles(): Promise<string[]> {
     const metaFiles: string[] = [];
 
-    const walkDirectory = (dirAbsolutePath: string): void => {
+    const walkDirectory = async (dirAbsolutePath: string): Promise<void> => {
       const dirUri = this.fileRepository.createFileUri(dirAbsolutePath);
       try {
-        const entries = this.fileRepository.readdirSync(dirUri);
+        const entries = await this.fileRepository.readdirAsync(dirUri);
 
         for (const entry of entries) {
           const entryName = typeof entry === 'string' ? entry : entry.name;
@@ -386,9 +386,9 @@ export class ProjectLinkUpdateService {
             const entryUri = this.fileRepository.createFileUri(entryAbsolutePath);
 
             try {
-              const stat = this.fileRepository.statSync(entryUri);
+              const stat = await this.fileRepository.statAsync(entryUri);
               if (stat.isDirectory()) {
-                walkDirectory(entryAbsolutePath);
+                await walkDirectory(entryAbsolutePath);
               }
             } catch {
               // ファイルのstat取得に失敗した場合は無視
@@ -401,7 +401,7 @@ export class ProjectLinkUpdateService {
       }
     };
 
-    walkDirectory(this.novelRootAbsolutePath);
+    await walkDirectory(this.novelRootAbsolutePath);
     return metaFiles;
   }
 

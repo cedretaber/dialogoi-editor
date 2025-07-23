@@ -54,7 +54,7 @@ project_settings:
       );
 
       // 設定が正しく読み込まれることを確認
-      const loadedSettings = service.loadProjectSettings(projectRoot);
+      const loadedSettings = await service.loadProjectSettings(projectRoot);
       assert.notStrictEqual(loadedSettings, null);
       assert.strictEqual(loadedSettings?.title, dialogoiYaml.title);
       assert.strictEqual(loadedSettings?.author, dialogoiYaml.author);
@@ -65,10 +65,10 @@ project_settings:
       );
     });
 
-    test('Dialogoiプロジェクトが存在しない場合はnullを返す', () => {
+    test('Dialogoiプロジェクトが存在しない場合はnullを返す', async () => {
       const projectRoot = '/test/non-project';
 
-      const loadedSettings = service.loadProjectSettings(projectRoot);
+      const loadedSettings = await service.loadProjectSettings(projectRoot);
       assert.strictEqual(loadedSettings, null);
     });
 
@@ -81,7 +81,7 @@ project_settings:
         'invalid yaml content: [',
       );
 
-      const loadedSettings = service.loadProjectSettings(projectRoot);
+      const loadedSettings = await service.loadProjectSettings(projectRoot);
       assert.strictEqual(loadedSettings, null);
     });
   });
@@ -217,11 +217,11 @@ tags:
       };
 
       // 更新実行
-      const success = service.updateProjectSettings(projectRoot, updateData);
+      const success = await service.updateProjectSettings(projectRoot, updateData);
       assert.strictEqual(success, true);
 
       // 更新後の設定を確認
-      const updatedSettings = service.loadProjectSettings(projectRoot);
+      const updatedSettings = await service.loadProjectSettings(projectRoot);
       assert.notStrictEqual(updatedSettings, null);
       assert.strictEqual(updatedSettings?.['title'], updateData['title']);
       assert.strictEqual(updatedSettings?.['author'], updateData['author']);
@@ -267,18 +267,18 @@ created_at: "${existingSettings.created_at}"`,
       };
 
       // 更新実行
-      const success = service.updateProjectSettings(projectRoot, updateData);
+      const success = await service.updateProjectSettings(projectRoot, updateData);
       assert.strictEqual(success, false);
 
       // 元の設定が変更されていないことを確認
-      const unchangedSettings = service.loadProjectSettings(projectRoot);
+      const unchangedSettings = await service.loadProjectSettings(projectRoot);
       assert.notStrictEqual(unchangedSettings, null);
       assert.strictEqual(unchangedSettings?.['title'], existingSettings['title']);
       assert.strictEqual(unchangedSettings?.['author'], existingSettings['author']);
       assert.strictEqual(unchangedSettings?.['version'], existingSettings['version']);
     });
 
-    test('プロジェクトが存在しない場合は更新が失敗する', () => {
+    test('プロジェクトが存在しない場合は更新が失敗する', async () => {
       const projectRoot = '/test/non-project';
 
       const updateData: ProjectSettingsUpdateData = {
@@ -287,7 +287,7 @@ created_at: "${existingSettings.created_at}"`,
         version: '1.0.0',
       };
 
-      const success = service.updateProjectSettings(projectRoot, updateData);
+      const success = await service.updateProjectSettings(projectRoot, updateData);
       assert.strictEqual(success, false);
     });
 
@@ -334,11 +334,11 @@ project_settings:
       };
 
       // 更新実行
-      const success = service.updateProjectSettings(projectRoot, updateData);
+      const success = await service.updateProjectSettings(projectRoot, updateData);
       assert.strictEqual(success, true);
 
       // 更新後の設定を確認
-      const updatedSettings = service.loadProjectSettings(projectRoot);
+      const updatedSettings = await service.loadProjectSettings(projectRoot);
       assert.notStrictEqual(updatedSettings, null);
       assert.strictEqual(updatedSettings?.tags, undefined);
       assert.strictEqual(updatedSettings?.project_settings, undefined);
@@ -354,14 +354,14 @@ project_settings:
         'title: "Test"',
       );
 
-      const exists = service.isDialogoiProject(projectRoot);
+      const exists = await service.isDialogoiProject(projectRoot);
       assert.strictEqual(exists, true);
     });
 
-    test('Dialogoiプロジェクトが存在しない場合はfalseを返す', () => {
+    test('Dialogoiプロジェクトが存在しない場合はfalseを返す', async () => {
       const projectRoot = '/test/non-project';
 
-      const exists = service.isDialogoiProject(projectRoot);
+      const exists = await service.isDialogoiProject(projectRoot);
       assert.strictEqual(exists, false);
     });
   });

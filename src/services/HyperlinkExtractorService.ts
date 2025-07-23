@@ -50,6 +50,7 @@ export class HyperlinkExtractorService {
    * マークダウンファイルからプロジェクト内のハイパーリンクを抽出
    * @param fileAbsolutePath ファイルの絶対パス
    * @returns プロジェクト内ファイルの相対パス配列
+   * @deprecated Use extractProjectLinksAsync instead for better VSCode integration
    */
   extractProjectLinks(fileAbsolutePath: string): string[] {
     try {
@@ -191,6 +192,7 @@ export class HyperlinkExtractorService {
    * ファイルの更新時にハイパーリンクを再抽出
    * @param fileAbsolutePath 更新されたファイルの絶対パス
    * @returns 新しいプロジェクト内リンク配列
+   * @deprecated Use refreshFileLinksAsync instead for better VSCode integration
    */
   refreshFileLinks(fileAbsolutePath: string): string[] {
     return this.extractProjectLinks(fileAbsolutePath);
@@ -219,6 +221,7 @@ export class HyperlinkExtractorService {
    * 複数ファイルのハイパーリンクを一括抽出
    * @param fileAbsolutePaths ファイルの絶対パス配列
    * @returns ファイルパスをキーとした、プロジェクト内リンクのマップ
+   * @deprecated Use extractProjectLinksFromFilesAsync instead for better VSCode integration
    */
   extractProjectLinksFromFiles(fileAbsolutePaths: string[]): Map<string, string[]> {
     const result = new Map<string, string[]>();
