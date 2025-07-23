@@ -47,30 +47,6 @@ export class HyperlinkExtractorService {
   }
 
   /**
-   * マークダウンファイルからプロジェクト内のハイパーリンクを抽出
-   * @param fileAbsolutePath ファイルの絶対パス
-   * @returns プロジェクト内ファイルの相対パス配列
-   * @deprecated Use extractProjectLinksAsync instead for better VSCode integration
-   */
-  extractProjectLinks(fileAbsolutePath: string): string[] {
-    try {
-      const fileUri = this.fileRepository.createFileUri(fileAbsolutePath);
-
-      if (!this.fileRepository.existsSync(fileUri)) {
-        return [];
-      }
-
-      const content = this.fileRepository.readFileSync(fileUri, 'utf-8');
-      const allLinks = this.parseMarkdownLinks(content);
-      const projectLinks = this.filterProjectLinks(allLinks, fileAbsolutePath);
-
-      return projectLinks;
-    } catch {
-      return [];
-    }
-  }
-
-  /**
    * マークダウンコンテンツからリンクをパース
    * @param content マークダウンコンテンツ
    * @returns パースされたリンク配列
@@ -189,16 +165,6 @@ export class HyperlinkExtractorService {
   }
 
   /**
-   * ファイルの更新時にハイパーリンクを再抽出
-   * @param fileAbsolutePath 更新されたファイルの絶対パス
-   * @returns 新しいプロジェクト内リンク配列
-   * @deprecated Use refreshFileLinksAsync instead for better VSCode integration
-   */
-  refreshFileLinks(fileAbsolutePath: string): string[] {
-    return this.extractProjectLinks(fileAbsolutePath);
-  }
-
-  /**
    * 複数ファイルのハイパーリンクを一括抽出（非同期版）
    * @param fileAbsolutePaths ファイルの絶対パス配列
    * @returns ファイルパスをキーとした、プロジェクト内リンクのマップ
@@ -211,23 +177,6 @@ export class HyperlinkExtractorService {
 
     for (const filePath of fileAbsolutePaths) {
       const links = await this.extractProjectLinksAsync(filePath);
-      result.set(filePath, links);
-    }
-
-    return result;
-  }
-
-  /**
-   * 複数ファイルのハイパーリンクを一括抽出
-   * @param fileAbsolutePaths ファイルの絶対パス配列
-   * @returns ファイルパスをキーとした、プロジェクト内リンクのマップ
-   * @deprecated Use extractProjectLinksFromFilesAsync instead for better VSCode integration
-   */
-  extractProjectLinksFromFiles(fileAbsolutePaths: string[]): Map<string, string[]> {
-    const result = new Map<string, string[]>();
-
-    for (const filePath of fileAbsolutePaths) {
-      const links = this.extractProjectLinks(filePath);
       result.set(filePath, links);
     }
 

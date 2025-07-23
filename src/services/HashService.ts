@@ -25,23 +25,6 @@ export class HashService {
   }
 
   /**
-   * ファイルの SHA-256 ハッシュを計算
-   * @param fileUri ファイルの URI
-   * @returns SHA-256 ハッシュ文字列（プレフィックス付き）
-   * @deprecated Use calculateFileHashAsync instead for better VSCode integration
-   */
-  calculateFileHash(fileUri: Uri): string {
-    try {
-      const content = this.fileRepository.readFileSync(fileUri, null);
-      const hash = createHash('sha256').update(content).digest('hex');
-      return `sha256:${hash}`;
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      throw new Error(`ファイルハッシュの計算に失敗しました: ${errorMessage}`);
-    }
-  }
-
-  /**
    * ファイルの内容からハッシュを計算
    * @param content ファイルの内容（文字列）
    * @returns SHA-256 ハッシュ文字列（プレフィックス付き）

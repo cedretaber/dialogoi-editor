@@ -340,7 +340,7 @@ export class FileDetailsViewProvider implements vscode.WebviewViewProvider {
       const hyperlinkExtractorService = serviceContainer.getHyperlinkExtractorService();
 
       // ファイルからプロジェクト内リンクを抽出
-      const projectLinks = hyperlinkExtractorService.extractProjectLinks(filePath);
+      const projectLinks = await hyperlinkExtractorService.extractProjectLinksAsync(filePath);
 
       // ReferenceManager形式に変換
       const references = projectLinks.map((linkPath) => ({

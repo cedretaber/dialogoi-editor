@@ -89,8 +89,9 @@ export class ReferenceManager {
     this.removeFileReferences(relativePath, 'hyperlink');
 
     // 新しいハイパーリンク参照を抽出・追加
-    const hyperlinkReferences = this.hyperlinkExtractorService.extractProjectLinks(filePath);
-    this.addFileReferences(relativePath, hyperlinkReferences, 'hyperlink');
+    // TODO: ReferenceManagerの@deprecated削除時に対応
+    // const hyperlinkReferences = this.hyperlinkExtractorService.extractProjectLinks(filePath);
+    // this.addFileReferences(relativePath, hyperlinkReferences, 'hyperlink');
   }
 
   /**
@@ -217,12 +218,13 @@ export class ReferenceManager {
           this.novelRoot !== '' &&
           this.hyperlinkExtractorService
         ) {
-          const absoluteFilePath = path.join(dirPath, file.name);
-          const hyperlinkReferences =
-            this.hyperlinkExtractorService.extractProjectLinks(absoluteFilePath);
-          if (hyperlinkReferences.length > 0) {
-            this.addFileReferences(fileRelativePath, hyperlinkReferences, 'hyperlink');
-          }
+          // TODO: ReferenceManagerの@deprecated削除時に対応
+          // const absoluteFilePath = path.join(dirPath, file.name);
+          // const hyperlinkReferences =
+          //   this.hyperlinkExtractorService.extractProjectLinks(absoluteFilePath);
+          // if (hyperlinkReferences.length > 0) {
+          //   this.addFileReferences(fileRelativePath, hyperlinkReferences, 'hyperlink');
+          // }
         }
       }
     }

@@ -211,8 +211,8 @@ files:
     });
   });
 
-  suite('extractProjectLinks', () => {
-    test('ファイルからプロジェクト内リンクを抽出できる', () => {
+  suite('extractProjectLinksAsync', () => {
+    test('ファイルからプロジェクト内リンクを抽出できる', async () => {
       // テストプロジェクト構造を作成
       const novelRoot = '/test/novel';
 
@@ -262,19 +262,19 @@ files:
 
       filePathMapService.buildFileMap(novelRoot);
 
-      const projectLinks = service.extractProjectLinks(`${novelRoot}/第1章.md`);
+      const projectLinks = await service.extractProjectLinksAsync(`${novelRoot}/第1章.md`);
 
       assert.strictEqual(projectLinks.length, 2);
       assert.strictEqual(projectLinks.includes('settings/world.md'), true);
       assert.strictEqual(projectLinks.includes('settings/character.md'), true);
     });
 
-    test('存在しないファイルは空配列を返す', () => {
-      const projectLinks = service.extractProjectLinks('/nonexistent/file.md');
+    test('存在しないファイルは空配列を返す', async () => {
+      const projectLinks = await service.extractProjectLinksAsync('/nonexistent/file.md');
       assert.strictEqual(projectLinks.length, 0);
     });
 
-    test('リンクが含まれていないファイルは空配列を返す', () => {
+    test('リンクが含まれていないファイルは空配列を返す', async () => {
       const novelRoot = '/test/novel';
 
       mockFileRepo.createFileForTest(
@@ -286,13 +286,13 @@ files:
       `,
       );
 
-      const projectLinks = service.extractProjectLinks(`${novelRoot}/simple.md`);
+      const projectLinks = await service.extractProjectLinksAsync(`${novelRoot}/simple.md`);
       assert.strictEqual(projectLinks.length, 0);
     });
   });
 
-  suite('refreshFileLinks', () => {
-    test('ファイルのリンクを再抽出できる', () => {
+  suite('refreshFileLinksAsync', () => {
+    test('ファイルのリンクを再抽出できる', async () => {
       // テストプロジェクト構造を作成
       const novelRoot = '/test/novel';
 
@@ -323,15 +323,15 @@ files:
 
       filePathMapService.buildFileMap(novelRoot);
 
-      const projectLinks = service.refreshFileLinks(`${novelRoot}/test.md`);
+      const projectLinks = await service.refreshFileLinksAsync(`${novelRoot}/test.md`);
 
       assert.strictEqual(projectLinks.length, 1);
       assert.strictEqual(projectLinks[0], 'target.md');
     });
   });
 
-  suite('extractProjectLinksFromFiles', () => {
-    test('複数ファイルのリンクを一括抽出できる', () => {
+  suite('extractProjectLinksFromFilesAsync', () => {
+    test('複数ファイルのリンクを一括抽出できる', async () => {
       // テストプロジェクト構造を作成
       const novelRoot = '/test/novel';
 
@@ -373,7 +373,7 @@ files:
       filePathMapService.buildFileMap(novelRoot);
 
       const filePaths = [`${novelRoot}/file1.md`, `${novelRoot}/file2.md`];
-      const result = service.extractProjectLinksFromFiles(filePaths);
+      const result = await service.extractProjectLinksFromFilesAsync(filePaths);
 
       assert.strictEqual(result.size, 2);
 
@@ -487,7 +487,9 @@ files:
       assert.strictEqual(allLinks[0]?.url, 'contents/01_prologue.txt', 'リンクURLが正しくない');
 
       // プロジェクト内リンクを抽出
-      const projectLinks = service.extractProjectLinks(`${novelRoot}/settings/character.md`);
+      const projectLinks = await service.extractProjectLinksAsync(
+        `${novelRoot}/settings/character.md`,
+      );
 
       // 検証
       assert.strictEqual(
