@@ -918,7 +918,7 @@ export class DialogoiTreeDataProvider
         const fileOperationService = ServiceContainer.getInstance().getFileOperationService(
           this.novelRoot ?? undefined,
         );
-        const result = fileOperationService.moveFile(
+        const result = await fileOperationService.moveFileAsync(
           sourceDir,
           draggedItem.name,
           targetDir,
@@ -959,7 +959,7 @@ export class DialogoiTreeDataProvider
         const fileOperationService = ServiceContainer.getInstance().getFileOperationService(
           this.novelRoot ?? undefined,
         );
-        const result = fileOperationService.moveDirectory(
+        const result = await fileOperationService.moveDirectoryAsync(
           sourceDir,
           draggedItem.name,
           targetDir,
