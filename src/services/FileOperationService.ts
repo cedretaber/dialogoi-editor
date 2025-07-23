@@ -948,7 +948,7 @@ export class FileOperationService {
       }
 
       // 親ディレクトリの.dialogoi-meta.yamlから削除
-      const result = this.updateMetaYaml(parentDir, (meta) => {
+      const result = await this.updateMetaYamlAsync(parentDir, (meta) => {
         meta.files = meta.files.filter((file) => file.name !== dirName);
         return meta;
       });
