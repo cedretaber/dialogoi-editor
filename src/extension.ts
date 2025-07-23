@@ -105,9 +105,9 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     treeView.onDidChangeSelection((e) => {
       if (e.selection.length > 0) {
         const selectedItem = e.selection[0];
-        fileDetailsProvider.updateFileDetails(selectedItem || null);
+        void fileDetailsProvider.updateFileDetails(selectedItem || null);
       } else {
-        fileDetailsProvider.updateFileDetails(null);
+        void fileDetailsProvider.updateFileDetails(null);
       }
     });
 

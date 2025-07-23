@@ -116,7 +116,7 @@ export class FileDetailsViewProvider implements vscode.WebviewViewProvider {
         this.logger.info(
           `ファイル変更イベントによるWebView更新実行: ${event.type} - ${event.filePath}`,
         );
-        this.refreshCurrentItem();
+        void this.refreshCurrentItem();
       } else {
         this.logger.warn(
           `WebView更新をスキップ: ${event.type} - ${event.filePath} (現在: ${this.currentItem?.path})`,
@@ -199,18 +199,18 @@ export class FileDetailsViewProvider implements vscode.WebviewViewProvider {
     // ファイル変更時の処理
     this.fileWatcher.onDidChange((uri) => {
       this.logger.debug(`meta.yamlファイルが変更されました: ${uri.fsPath}`);
-      this.refreshCurrentItem();
+      void this.refreshCurrentItem();
     });
 
     // ファイル作成・削除時の処理
     this.fileWatcher.onDidCreate((uri) => {
       this.logger.debug(`meta.yamlファイルが作成されました: ${uri.fsPath}`);
-      this.refreshCurrentItem();
+      void this.refreshCurrentItem();
     });
 
     this.fileWatcher.onDidDelete((uri) => {
       this.logger.debug(`meta.yamlファイルが削除されました: ${uri.fsPath}`);
-      this.refreshCurrentItem();
+      void this.refreshCurrentItem();
     });
 
     // マークダウンファイル（設定ファイル）の変更も監視（ハイパーリンク変更の検出用）
@@ -224,7 +224,7 @@ export class FileDetailsViewProvider implements vscode.WebviewViewProvider {
       );
       if (shouldRefresh) {
         this.logger.info('ハイパーリンク変更による詳細パネル更新を実行');
-        this.refreshCurrentItem();
+        void this.refreshCurrentItem();
       }
     });
 
@@ -269,10 +269,10 @@ export class FileDetailsViewProvider implements vscode.WebviewViewProvider {
       const updatedItem = this.getUpdatedCurrentItem();
       if (updatedItem) {
         this.logger.debug('最新のアイテムデータを取得して更新');
-        this.updateFileDetails(updatedItem);
+        void this.updateFileDetails(updatedItem);
       } else {
         this.logger.warn('最新のアイテムデータが取得できませんでした。古いデータで更新します。');
-        this.updateFileDetails(this.currentItem);
+        void this.updateFileDetails(this.currentItem);
       }
     } else {
       this.logger.debug('WebView更新スキップ: currentItem、view、またはtreeDataProviderが無効');
@@ -323,14 +323,14 @@ export class FileDetailsViewProvider implements vscode.WebviewViewProvider {
   /**
    * 設定ファイルの参照をハイパーリンクから抽出
    */
-  private getSettingFileReferences(filePath: string): {
+  private async getSettingFileReferences(filePath: string): Promise<{
     allReferences: string[];
     references: Array<{ path: string; source: 'hyperlink' }>;
     referencedBy: Array<{ path: string; source: 'manual' | 'hyperlink' }>;
-  } {
+  }> {
     try {
       // プロジェクトルートを取得
-      const projectRoot = this.dialogoiYamlService?.findProjectRoot(filePath);
+      const projectRoot = await this.dialogoiYamlService?.findProjectRootAsync(filePath);
       if (projectRoot === undefined || projectRoot === null || projectRoot === '') {
         return { allReferences: [], references: [], referencedBy: [] };
       }
@@ -452,18 +452,18 @@ export class FileDetailsViewProvider implements vscode.WebviewViewProvider {
     const item = await this.treeDataProvider.findItemByAbsolutePath(filePath);
     if (item !== null) {
       this.logger.debug(`アクティブエディタファイルの詳細を更新: ${item.name}`);
-      this.updateFileDetails(item);
+      await this.updateFileDetails(item);
     } else {
       // Dialogoi管理対象外のファイルの場合は詳細表示をクリア
       this.logger.debug(`Dialogoi管理対象外ファイル: ${filePath}`);
-      this.updateFileDetails(null);
+      await this.updateFileDetails(null);
     }
   }
 
   /**
    * ファイル詳細情報を更新
    */
-  public updateFileDetails(item: DialogoiTreeItem | null): void {
+  public async updateFileDetails(item: DialogoiTreeItem | null): Promise<void> {
     this.currentItem = item;
 
     if (this._view) {
@@ -472,7 +472,7 @@ export class FileDetailsViewProvider implements vscode.WebviewViewProvider {
       if (item?.path !== undefined && item.path !== null && item.path !== '') {
         if (item.type === 'setting') {
           // 設定ファイルの場合：ハイパーリンクから参照を抽出
-          referenceData = this.getSettingFileReferences(item.path);
+          referenceData = await this.getSettingFileReferences(item.path);
         } else {
           // 本文ファイルの場合：ReferenceManagerから参照情報を取得
           const referenceManager = ReferenceManager.getInstance();
@@ -554,7 +554,7 @@ export class FileDetailsViewProvider implements vscode.WebviewViewProvider {
           msg.payload.reference !== null &&
           msg.payload.reference !== ''
         ) {
-          this.handleRemoveReverseReference(msg.payload.reference);
+          void this.handleRemoveReverseReference(msg.payload.reference);
         }
         break;
       case 'removeCharacter':
@@ -566,14 +566,14 @@ export class FileDetailsViewProvider implements vscode.WebviewViewProvider {
           msg.payload.reference !== null &&
           msg.payload.reference !== ''
         ) {
-          this.handleOpenReference(msg.payload.reference);
+          void this.handleOpenReference(msg.payload.reference);
         }
         break;
       case 'ready':
         // WebViewの準備完了
         this.logger.debug('WebView準備完了 - 起動時アクティブエディタをチェック');
         this.checkInitialActiveEditor();
-        this.updateFileDetails(this.currentItem);
+        void this.updateFileDetails(this.currentItem);
         void this.updateTreeData();
         break;
       case 'renameFile':
@@ -757,7 +757,7 @@ export class FileDetailsViewProvider implements vscode.WebviewViewProvider {
   /**
    * 参照ファイルを開く
    */
-  private handleOpenReference(reference: string): void {
+  private async handleOpenReference(reference: string): Promise<void> {
     if (!reference || !this.currentItem) {
       return;
     }
@@ -767,7 +767,7 @@ export class FileDetailsViewProvider implements vscode.WebviewViewProvider {
       let projectRoot: string | null = null;
       if (this.dialogoiYamlService) {
         const currentFileAbsolutePath = this.currentItem.path;
-        projectRoot = this.dialogoiYamlService.findProjectRoot(currentFileAbsolutePath);
+        projectRoot = await this.dialogoiYamlService.findProjectRootAsync(currentFileAbsolutePath);
       }
 
       if (projectRoot === null || projectRoot === '') {
@@ -827,14 +827,16 @@ export class FileDetailsViewProvider implements vscode.WebviewViewProvider {
   /**
    * 逆参照削除処理（参照元ファイルから参照を削除）
    */
-  private handleRemoveReverseReference(referenceSourceFile: string): void {
+  private async handleRemoveReverseReference(referenceSourceFile: string): Promise<void> {
     if (!this.currentItem || !referenceSourceFile) {
       return;
     }
 
     try {
       // 現在のファイルのプロジェクトルートを取得
-      const projectRoot = this.dialogoiYamlService?.findProjectRoot(this.currentItem.path);
+      const projectRoot = await this.dialogoiYamlService?.findProjectRootAsync(
+        this.currentItem.path,
+      );
       if (projectRoot === undefined || projectRoot === null || projectRoot === '') {
         throw new Error('プロジェクトルートが見つかりません');
       }
@@ -1240,7 +1242,7 @@ export class FileDetailsViewProvider implements vscode.WebviewViewProvider {
         }
 
         // 詳細パネルの更新
-        this.refreshCurrentItem();
+        void this.refreshCurrentItem();
       } else {
         this.sendRenameResponse(responseId, false, result.message);
         this.logger.error(`ファイル名変更失敗: ${result.message}`);
