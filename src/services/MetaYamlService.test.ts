@@ -99,7 +99,7 @@ files:
   });
 
   suite('saveMetaYaml', () => {
-    test('正常なMetaYamlオブジェクトを保存する', () => {
+    test('正常なMetaYamlオブジェクトを保存する', async () => {
       const testDir = '/test/project';
       const meta: MetaYaml = {
         readme: 'README.md',
@@ -143,7 +143,7 @@ files:
       assert.strictEqual(result, true);
 
       // 保存されたファイルを確認
-      const savedContent = mockFileRepository.readFileSync(
+      const savedContent = await mockFileRepository.readFileAsync(
         mockFileRepository.createFileUri(`${testDir}/.dialogoi-meta.yaml`),
         'utf8',
       );
@@ -159,7 +159,7 @@ files:
       assert.ok(savedContent.includes('hash: abc123'));
     });
 
-    test('空のfilesを持つMetaYamlを保存する', () => {
+    test('空のfilesを持つMetaYamlを保存する', async () => {
       const testDir = '/test/project';
       const meta: MetaYaml = {
         readme: 'README.md',
@@ -171,7 +171,7 @@ files:
       const result = service.saveMetaYaml(testDir, meta);
       assert.strictEqual(result, true);
 
-      const savedContent = mockFileRepository.readFileSync(
+      const savedContent = await mockFileRepository.readFileAsync(
         mockFileRepository.createFileUri(`${testDir}/.dialogoi-meta.yaml`),
         'utf8',
       );
@@ -179,7 +179,7 @@ files:
       assert.ok(savedContent.includes('files: []'));
     });
 
-    test('readmeがないMetaYamlを保存する', () => {
+    test('readmeがないMetaYamlを保存する', async () => {
       const testDir = '/test/project';
       const meta: MetaYaml = {
         files: [
@@ -196,7 +196,7 @@ files:
       const result = service.saveMetaYaml(testDir, meta);
       assert.strictEqual(result, true);
 
-      const savedContent = mockFileRepository.readFileSync(
+      const savedContent = await mockFileRepository.readFileAsync(
         mockFileRepository.createFileUri(`${testDir}/.dialogoi-meta.yaml`),
         'utf8',
       );
@@ -205,7 +205,7 @@ files:
       assert.ok(!savedContent.includes('readme:'));
     });
 
-    test('バリデーションエラーがある場合falseを返す', () => {
+    test('バリデーションエラーがある場合falseを返す', async () => {
       const testDir = '/test/project';
       const invalidMeta = {
         readme: 'README.md',
@@ -225,7 +225,7 @@ files:
 
       // .dialogoi-meta.yamlファイルが作成されていないことを確認
       const metaUri = mockFileRepository.createFileUri(`${testDir}/.dialogoi-meta.yaml`);
-      assert.strictEqual(mockFileRepository.existsSync(metaUri), false);
+      assert.strictEqual(await mockFileRepository.existsAsync(metaUri), false);
     });
 
     test('複数のバリデーションエラーがある場合falseを返す', () => {
@@ -1190,7 +1190,7 @@ files:
         assert.strictEqual(result, true);
 
         // 保存されたファイルを確認
-        const savedContent = mockFileRepository.readFileSync(
+        const savedContent = await mockFileRepository.readFileAsync(
           mockFileRepository.createFileUri(`${testDir}/.dialogoi-meta.yaml`),
           'utf8',
         );

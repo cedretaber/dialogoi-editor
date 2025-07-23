@@ -64,7 +64,9 @@ project_settings:
 
       // dialogoi.yamlが作成されているか確認
       const dialogoiYamlPath = path.join(projectPath, 'dialogoi.yaml');
-      assert.ok(mockFileRepository.existsSync(mockFileRepository.createFileUri(dialogoiYamlPath)));
+      assert.ok(
+        await mockFileRepository.existsAsync(mockFileRepository.createFileUri(dialogoiYamlPath)),
+      );
     });
 
     test('既存プロジェクトがある場合は上書きを拒否する', async () => {
@@ -141,12 +143,16 @@ project_settings:
 
       // .dialogoi-meta.yamlが作成されているか確認
       const metaYamlPath = path.join(projectPath, '.dialogoi-meta.yaml');
-      assert.ok(mockFileRepository.existsSync(mockFileRepository.createFileUri(metaYamlPath)));
+      assert.ok(
+        await mockFileRepository.existsAsync(mockFileRepository.createFileUri(metaYamlPath)),
+      );
 
       // characters/.dialogoi-meta.yamlも作成されているか確認
       const charactersMetaYamlPath = path.join(charactersDir, '.dialogoi-meta.yaml');
       assert.ok(
-        mockFileRepository.existsSync(mockFileRepository.createFileUri(charactersMetaYamlPath)),
+        await mockFileRepository.existsAsync(
+          mockFileRepository.createFileUri(charactersMetaYamlPath),
+        ),
       );
     });
 
@@ -267,7 +273,7 @@ files:
 
       // .dialogoi-meta.yamlを読み込んで確認
       const metaYamlPath = path.join(projectPath, '.dialogoi-meta.yaml');
-      const metaContent = mockFileRepository.readFileSync(
+      const metaContent = await mockFileRepository.readFileAsync(
         mockFileRepository.createFileUri(metaYamlPath),
         'utf8',
       );

@@ -117,7 +117,7 @@ files:
     );
   }
 
-  test('ファイル名変更時のマークダウンリンク更新', () => {
+  test('ファイル名変更時のマークダウンリンク更新', async () => {
     // world.md → world-setting.md にリネーム
     const result = service.updateLinksAfterFileOperation(
       'settings/world.md',
@@ -131,7 +131,7 @@ files:
     // chapter1.mdの内容確認
     const chapter1Path = path.join(testProjectRoot, 'contents', 'chapter1.md');
     const chapter1Uri = mockFileRepository.createFileUri(chapter1Path);
-    const chapter1Content = mockFileRepository.readFileSync(chapter1Uri, 'utf8');
+    const chapter1Content = await mockFileRepository.readFileAsync(chapter1Uri, 'utf8');
 
     assert.strictEqual(
       chapter1Content.includes('[世界設定](settings/world-setting.md)'),
@@ -152,7 +152,7 @@ files:
     // chapter2.mdの内容確認
     const chapter2Path = path.join(testProjectRoot, 'contents', 'chapter2.md');
     const chapter2Uri = mockFileRepository.createFileUri(chapter2Path);
-    const chapter2Content = mockFileRepository.readFileSync(chapter2Uri, 'utf8');
+    const chapter2Content = await mockFileRepository.readFileAsync(chapter2Uri, 'utf8');
 
     assert.strictEqual(
       chapter2Content.includes('[世界設定](settings/world-setting.md)'),
@@ -188,7 +188,7 @@ files:
     ]);
   });
 
-  test('ファイル移動時の複数リンク更新', () => {
+  test('ファイル移動時の複数リンク更新', async () => {
     // charactersディレクトリ全体を別の場所に移動したと仮定
     // hero.md が settings/characters/hero.md → settings/people/hero.md に移動
     const result = service.updateLinksAfterFileOperation(
@@ -202,7 +202,7 @@ files:
     // マークダウンファイルの更新確認
     const chapter1Path = path.join(testProjectRoot, 'contents', 'chapter1.md');
     const chapter1Uri = mockFileRepository.createFileUri(chapter1Path);
-    const chapter1Content = mockFileRepository.readFileSync(chapter1Uri, 'utf8');
+    const chapter1Content = await mockFileRepository.readFileAsync(chapter1Uri, 'utf8');
 
     assert.strictEqual(
       chapter1Content.includes('[主人公](settings/people/hero.md)'),
@@ -226,11 +226,11 @@ files:
     ]);
   });
 
-  test('プロジェクト外リンクは更新しない', () => {
+  test('プロジェクト外リンクは更新しない', async () => {
     // 外部URLや絶対パスは更新対象外
     const chapter1Path = path.join(testProjectRoot, 'contents', 'chapter1.md');
     const chapter1Uri = mockFileRepository.createFileUri(chapter1Path);
-    const originalContent = mockFileRepository.readFileSync(chapter1Uri, 'utf8');
+    const originalContent = await mockFileRepository.readFileAsync(chapter1Uri, 'utf8');
 
     const result = service.updateLinksAfterFileOperation('external/file.md', 'external/renamed.md');
 
@@ -238,7 +238,7 @@ files:
     assert.strictEqual(result.updatedFiles.length, 0);
 
     // ファイル内容が変更されていないことを確認
-    const updatedContent = mockFileRepository.readFileSync(chapter1Uri, 'utf8');
+    const updatedContent = await mockFileRepository.readFileAsync(chapter1Uri, 'utf8');
     assert.strictEqual(originalContent, updatedContent);
   });
 
@@ -263,7 +263,7 @@ files:
     );
   });
 
-  test('複雑なマークダウンリンクパターンの処理', () => {
+  test('複雑なマークダウンリンクパターンの処理', async () => {
     // 複雑なリンクパターンを含むファイルを作成
     const complexMarkdownContent = `# 複雑なリンクテスト
 
@@ -292,7 +292,7 @@ files:
     assert.strictEqual(result.success, true);
 
     const complexFileUri = mockFileRepository.createFileUri(complexFilePath);
-    const updatedContent = mockFileRepository.readFileSync(complexFileUri, 'utf8');
+    const updatedContent = await mockFileRepository.readFileAsync(complexFileUri, 'utf8');
 
     // 複数の箇所でリンクが更新されていることを確認
     const linkCount = (updatedContent.match(/settings\/new-world\.md/g) || []).length;

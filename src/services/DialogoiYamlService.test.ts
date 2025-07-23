@@ -75,7 +75,7 @@ tags: ["ファンタジー"]`;
   });
 
   suite('saveDialogoiYaml', () => {
-    test('正常なデータを保存する', () => {
+    test('正常なデータを保存する', async () => {
       const projectRoot = '/test/project';
       const dialogoiYamlPath = path.join(projectRoot, 'dialogoi.yaml');
       const data = {
@@ -89,9 +89,11 @@ tags: ["ファンタジー"]`;
       const result = service.saveDialogoiYaml(projectRoot, data);
 
       assert.strictEqual(result, true);
-      assert.ok(mockFileRepository.existsSync(mockFileRepository.createFileUri(dialogoiYamlPath)));
+      assert.ok(
+        await mockFileRepository.existsAsync(mockFileRepository.createFileUri(dialogoiYamlPath)),
+      );
 
-      const savedContent = mockFileRepository.readFileSync(
+      const savedContent = await mockFileRepository.readFileAsync(
         mockFileRepository.createFileUri(dialogoiYamlPath),
         'utf8',
       );
@@ -113,7 +115,7 @@ tags: ["ファンタジー"]`;
       assert.strictEqual(result, false);
     });
 
-    test('updated_atが自動で追加される', () => {
+    test('updated_atが自動で追加される', async () => {
       const projectRoot = '/test/project';
       const dialogoiYamlPath = path.join(projectRoot, 'dialogoi.yaml');
       const data = {
@@ -129,7 +131,7 @@ tags: ["ファンタジー"]`;
 
       assert.strictEqual(result, true);
 
-      const savedContent = mockFileRepository.readFileSync(
+      const savedContent = await mockFileRepository.readFileAsync(
         mockFileRepository.createFileUri(dialogoiYamlPath),
         'utf8',
       );
@@ -173,13 +175,15 @@ tags: ["ファンタジー"]`;
       assert.strictEqual(result, false);
     });
 
-    test('プロジェクトディレクトリが存在しない場合は作成する', () => {
+    test('プロジェクトディレクトリが存在しない場合は作成する', async () => {
       const projectRoot = '/test/non-existing-dir';
 
       const result = service.createDialogoiProject(projectRoot, '新しい小説', '新しい著者');
 
       assert.strictEqual(result, true);
-      assert.ok(mockFileRepository.existsSync(mockFileRepository.createDirectoryUri(projectRoot)));
+      assert.ok(
+        await mockFileRepository.existsAsync(mockFileRepository.createDirectoryUri(projectRoot)),
+      );
       assert.ok(service.isDialogoiProjectRoot(projectRoot));
     });
   });

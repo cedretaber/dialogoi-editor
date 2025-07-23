@@ -22,7 +22,7 @@ suite('ProjectSettingsService テストスイート', () => {
   });
 
   suite('プロジェクト設定の読み込み', () => {
-    test('有効なDialogoiプロジェクトの設定を正しく読み込める', () => {
+    test('有効なDialogoiプロジェクトの設定を正しく読み込める', async () => {
       const projectRoot = '/test/project';
       const dialogoiYaml: DialogoiYaml = {
         title: 'テスト小説',
@@ -37,7 +37,7 @@ suite('ProjectSettingsService テストスイート', () => {
       };
 
       // dialogoi.yamlファイルをモック
-      mockFileRepository.writeFileSync(
+      await mockFileRepository.writeFileAsync(
         mockFileRepository.createFileUri(`${projectRoot}/dialogoi.yaml`),
         `title: "${dialogoiYaml.title}"
 author: "${dialogoiYaml.author}"
@@ -51,7 +51,6 @@ project_settings:
   exclude_patterns:
     - "${dialogoiYaml.project_settings?.exclude_patterns?.[0]}"
     - "${dialogoiYaml.project_settings?.exclude_patterns?.[1]}"`,
-        'utf8',
       );
 
       // 設定が正しく読み込まれることを確認
@@ -73,14 +72,13 @@ project_settings:
       assert.strictEqual(loadedSettings, null);
     });
 
-    test('dialogoi.yamlファイルが不正な場合はnullを返す', () => {
+    test('dialogoi.yamlファイルが不正な場合はnullを返す', async () => {
       const projectRoot = '/test/invalid-project';
 
       // 不正なYAMLファイルをモック
-      mockFileRepository.writeFileSync(
+      await mockFileRepository.writeFileAsync(
         mockFileRepository.createFileUri(`${projectRoot}/dialogoi.yaml`),
         'invalid yaml content: [',
-        'utf8',
       );
 
       const loadedSettings = service.loadProjectSettings(projectRoot);
@@ -184,7 +182,7 @@ project_settings:
   });
 
   suite('プロジェクト設定の更新', () => {
-    test('有効な更新データで設定を正しく更新できる', () => {
+    test('有効な更新データで設定を正しく更新できる', async () => {
       const projectRoot = '/test/project';
 
       // 既存の設定を作成
@@ -196,7 +194,7 @@ project_settings:
         tags: ['元のタグ'],
       };
 
-      mockFileRepository.writeFileSync(
+      await mockFileRepository.writeFileAsync(
         mockFileRepository.createFileUri(`${projectRoot}/dialogoi.yaml`),
         `title: "${existingSettings.title}"
 author: "${existingSettings.author}"
@@ -204,7 +202,6 @@ version: "${existingSettings.version}"
 created_at: "${existingSettings.created_at}"
 tags:
   - "${existingSettings.tags?.[0]}"`,
-        'utf8',
       );
 
       // 更新データ
@@ -243,7 +240,7 @@ tags:
       assert.strictEqual(updatedSettings?.created_at, existingSettings.created_at);
     });
 
-    test('バリデーションエラーがある場合は更新が失敗する', () => {
+    test('バリデーションエラーがある場合は更新が失敗する', async () => {
       const projectRoot = '/test/project';
 
       // 既存の設定を作成
@@ -254,13 +251,12 @@ tags:
         created_at: '2024-01-01T00:00:00Z',
       };
 
-      mockFileRepository.writeFileSync(
+      await mockFileRepository.writeFileAsync(
         mockFileRepository.createFileUri(`${projectRoot}/dialogoi.yaml`),
         `title: "${existingSettings.title}"
 author: "${existingSettings.author}"
 version: "${existingSettings.version}"
 created_at: "${existingSettings.created_at}"`,
-        'utf8',
       );
 
       // 不正な更新データ
@@ -295,7 +291,7 @@ created_at: "${existingSettings.created_at}"`,
       assert.strictEqual(success, false);
     });
 
-    test('空のタグと除外パターンはundefinedとして保存される', () => {
+    test('空のタグと除外パターンはundefinedとして保存される', async () => {
       const projectRoot = '/test/project';
 
       // 既存の設定を作成
@@ -311,7 +307,7 @@ created_at: "${existingSettings.created_at}"`,
         },
       };
 
-      mockFileRepository.writeFileSync(
+      await mockFileRepository.writeFileAsync(
         mockFileRepository.createFileUri(`${projectRoot}/dialogoi.yaml`),
         `title: "${existingSettings.title}"
 author: "${existingSettings.author}"
@@ -323,7 +319,6 @@ project_settings:
   readme_filename: "${existingSettings.project_settings?.readme_filename}"
   exclude_patterns:
     - "${existingSettings.project_settings?.exclude_patterns?.[0]}"`,
-        'utf8',
       );
 
       // 空の配列・文字列で更新
@@ -351,13 +346,12 @@ project_settings:
   });
 
   suite('プロジェクト存在チェック', () => {
-    test('Dialogoiプロジェクトが存在する場合はtrueを返す', () => {
+    test('Dialogoiプロジェクトが存在する場合はtrueを返す', async () => {
       const projectRoot = '/test/project';
 
-      mockFileRepository.writeFileSync(
+      await mockFileRepository.writeFileAsync(
         mockFileRepository.createFileUri(`${projectRoot}/dialogoi.yaml`),
         'title: "Test"',
-        'utf8',
       );
 
       const exists = service.isDialogoiProject(projectRoot);

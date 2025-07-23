@@ -80,7 +80,7 @@ tags: []`,
 
       // meta.yamlに参照が追加されたことを確認
       const metaUri = mockFileRepository.createFileUri(`${contentsDir}/.dialogoi-meta.yaml`);
-      const metaContent = mockFileRepository.readFileSync(metaUri, 'utf8');
+      const metaContent = await mockFileRepository.readFileAsync(metaUri, 'utf8');
       assert.match(metaContent, /references:\s*\n\s*- settings\/character1\.md/);
     });
 

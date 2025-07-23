@@ -392,7 +392,7 @@ files:
       }
     });
 
-    test('ユーザケース：設定ファイルから本文ファイルへのリンクを抽出（デバッグ版）', () => {
+    test('ユーザケース：設定ファイルから本文ファイルへのリンクを抽出（デバッグ版）', async () => {
       // テストプロジェクト構造を作成
       const novelRoot = '/test/novel';
 
@@ -476,7 +476,7 @@ files:
       );
 
       // デバッグ：パースされるリンクを確認
-      const content = mockFileRepo.readFileSync(
+      const content = await mockFileRepo.readFileAsync(
         mockFileRepo.createFileUri(`${novelRoot}/settings/character.md`),
         'utf-8',
       );
