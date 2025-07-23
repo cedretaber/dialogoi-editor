@@ -93,11 +93,38 @@ export class ReferenceManager {
   }
 
   /**
+   * ファイルのハイパーリンク参照を更新（非同期版）
+   */
+  async updateFileHyperlinkReferencesAsync(filePath: string): Promise<void> {
+    if (this.novelRoot === null || this.hyperlinkExtractorService === null) {
+      return;
+    }
+
+    const relativePath = path.relative(this.novelRoot, filePath).replace(/\\/g, '/');
+
+    // 既存のハイパーリンク参照を削除
+    this.removeFileReferences(relativePath, 'hyperlink');
+
+    // 新しいハイパーリンク参照を抽出・追加
+    const hyperlinkReferences =
+      await this.hyperlinkExtractorService.extractProjectLinksAsync(filePath);
+    this.addFileReferences(relativePath, hyperlinkReferences, 'hyperlink');
+  }
+
+  /**
    * ファイルの全参照関係を更新（手動+ハイパーリンク）
    */
   updateFileAllReferences(filePath: string, manualReferences: string[]): void {
     this.updateFileReferences(filePath, manualReferences);
     this.updateFileHyperlinkReferences(filePath);
+  }
+
+  /**
+   * ファイルの全参照関係を更新（手動+ハイパーリンク・非同期版）
+   */
+  async updateFileAllReferencesAsync(filePath: string, manualReferences: string[]): Promise<void> {
+    this.updateFileReferences(filePath, manualReferences);
+    await this.updateFileHyperlinkReferencesAsync(filePath);
   }
 
   /**

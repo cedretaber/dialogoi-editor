@@ -73,6 +73,28 @@ export class ReviewService {
   }
 
   /**
+   * レビューファイルを読み込み（非同期版）
+   * @param targetRelativeFilePath 対象ファイルのパス（小説ルートからの相対パス）
+   * @returns レビューファイルの内容
+   */
+  async loadReviewFileAsync(targetRelativeFilePath: string): Promise<ReviewFile | null> {
+    const reviewFileUri = this.getReviewFileUri(targetRelativeFilePath);
+
+    try {
+      if (!(await this.fileRepository.existsAsync(reviewFileUri))) {
+        return null;
+      }
+      const yamlContent = await this.fileRepository.readFileAsync(reviewFileUri, 'utf8');
+      const reviewData = yaml.load(yamlContent) as ReviewFile;
+
+      return reviewData;
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      throw new Error(`レビューファイルの読み込みに失敗しました: ${errorMessage}`);
+    }
+  }
+
+  /**
    * レビューファイルを保存
    * @param targetRelativeFilePath 対象ファイルのパス（小説ルートからの相対パス）
    * @param reviewFile レビューファイルの内容
@@ -91,6 +113,31 @@ export class ReviewService {
       // YAML として保存
       const yamlContent = yaml.dump(reviewFile, { indent: 2 });
       this.fileRepository.writeFileSync(reviewFileUri, yamlContent, 'utf8');
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      throw new Error(`レビューファイルの保存に失敗しました: ${errorMessage}`);
+    }
+  }
+
+  /**
+   * レビューファイルを保存（非同期版）
+   * @param targetRelativeFilePath 対象ファイルのパス（小説ルートからの相対パス）
+   * @param reviewFile レビューファイルの内容
+   */
+  async saveReviewFileAsync(targetRelativeFilePath: string, reviewFile: ReviewFile): Promise<void> {
+    const reviewFileUri = this.getReviewFileUri(targetRelativeFilePath);
+
+    try {
+      // 対象ファイルと同じディレクトリに保存するため、そのディレクトリを作成
+      const reviewRelativeDirPath = path.dirname(this.getReviewFilePath(targetRelativeFilePath));
+      const reviewDir = this.fileRepository.joinPath(this.workspaceRoot, reviewRelativeDirPath);
+      if (!(await this.fileRepository.existsAsync(reviewDir))) {
+        await this.fileRepository.createDirectoryAsync(reviewDir);
+      }
+
+      // YAML として保存
+      const yamlContent = yaml.dump(reviewFile, { indent: 2 });
+      await this.fileRepository.writeFileAsync(reviewFileUri, yamlContent);
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
       throw new Error(`レビューファイルの保存に失敗しました: ${errorMessage}`);
@@ -251,6 +298,32 @@ export class ReviewService {
    */
   getReviewSummary(targetRelativeFilePath: string): ReviewSummary | null {
     const reviewFile = this.loadReviewFile(targetRelativeFilePath);
+
+    if (!reviewFile || reviewFile.reviews.length === 0) {
+      return null;
+    }
+
+    const summary: ReviewSummary = {
+      open: 0,
+      in_progress: 0,
+      resolved: 0,
+      dismissed: 0,
+    };
+
+    for (const review of reviewFile.reviews) {
+      summary[review.status]++;
+    }
+
+    return summary;
+  }
+
+  /**
+   * レビューサマリーを取得（非同期版）
+   * @param targetRelativeFilePath 対象ファイルのパス（小説ルートからの相対パス）
+   * @returns レビューサマリー
+   */
+  async getReviewSummaryAsync(targetRelativeFilePath: string): Promise<ReviewSummary | null> {
+    const reviewFile = await this.loadReviewFileAsync(targetRelativeFilePath);
 
     if (!reviewFile || reviewFile.reviews.length === 0) {
       return null;
