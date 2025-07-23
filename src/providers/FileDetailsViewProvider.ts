@@ -431,7 +431,7 @@ export class FileDetailsViewProvider implements vscode.WebviewViewProvider {
         this.logger.debug(
           `起動時のアクティブファイルをチェック: ${activeEditor.document.fileName}`,
         );
-        this.updateFileDetailsByPath(activeEditor.document.fileName);
+        void this.updateFileDetailsByPath(activeEditor.document.fileName);
       }
     } else {
       this.logger.debug('起動時にアクティブなエディタはありません');
@@ -442,14 +442,14 @@ export class FileDetailsViewProvider implements vscode.WebviewViewProvider {
    * アクティブエディタのファイルパスから詳細情報を更新
    * @param filePath アクティブエディタで開いているファイルの絶対パス
    */
-  public updateFileDetailsByPath(filePath: string): void {
+  public async updateFileDetailsByPath(filePath: string): Promise<void> {
     if (!this.treeDataProvider) {
       this.logger.debug('TreeDataProviderが設定されていません');
       return;
     }
 
     // ファイルパスからDialogoiTreeItemを検索
-    const item = this.treeDataProvider.findItemByAbsolutePath(filePath);
+    const item = await this.treeDataProvider.findItemByAbsolutePath(filePath);
     if (item !== null) {
       this.logger.debug(`アクティブエディタファイルの詳細を更新: ${item.name}`);
       this.updateFileDetails(item);

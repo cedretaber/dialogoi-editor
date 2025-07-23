@@ -210,7 +210,10 @@ export class DialogoiYamlService {
    * @param data DialogoiYamlオブジェクト
    * @returns 保存に成功した場合true
    */
-  async saveDialogoiYamlAsync(projectRootAbsolutePath: string, data: DialogoiYaml): Promise<boolean> {
+  async saveDialogoiYamlAsync(
+    projectRootAbsolutePath: string,
+    data: DialogoiYaml,
+  ): Promise<boolean> {
     // バリデーション
     const validation = DialogoiYamlUtils.validateDialogoiYaml(data);
     if (!validation.isValid) {
@@ -282,7 +285,10 @@ export class DialogoiYamlService {
    * @param updates 更新するフィールド
    * @returns 更新に成功した場合true
    */
-  async updateDialogoiYamlAsync(projectRootAbsolutePath: string, updates: Partial<DialogoiYaml>): Promise<boolean> {
+  async updateDialogoiYamlAsync(
+    projectRootAbsolutePath: string,
+    updates: Partial<DialogoiYaml>,
+  ): Promise<boolean> {
     const currentData = await this.loadDialogoiYamlAsync(projectRootAbsolutePath);
     if (!currentData) {
       console.error('dialogoi.yaml の読み込みに失敗しました');

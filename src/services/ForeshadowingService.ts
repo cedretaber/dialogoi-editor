@@ -105,6 +105,51 @@ export class ForeshadowingService {
   }
 
   /**
+   * 伏線データの検証（非同期版）
+   * @param novelRootAbsolutePath 小説ルートの絶対パス
+   * @param foreshadowingData 伏線データ
+   * @returns 検証結果（valid: 有効性, errors: エラーメッセージ配列）
+   */
+  async validateForeshadowingAsync(
+    novelRootAbsolutePath: string,
+    foreshadowingData: ForeshadowingData,
+  ): Promise<{ valid: boolean; errors: string[] }> {
+    const errors: string[] = [];
+
+    // 埋蔵位置の検証（複数位置）
+    if (
+      foreshadowingData.plants === null ||
+      foreshadowingData.plants === undefined ||
+      foreshadowingData.plants.length === 0
+    ) {
+      errors.push('伏線の埋蔵位置（plants）が指定されていません');
+    } else {
+      for (let index = 0; index < foreshadowingData.plants.length; index++) {
+        const plant = foreshadowingData.plants[index];
+        if (!plant || !plant.location || plant.location.trim() === '') {
+          errors.push(`埋蔵位置 ${index + 1} のファイルパスが指定されていません`);
+        } else if (!(await this.validatePathAsync(novelRootAbsolutePath, plant.location))) {
+          errors.push(`埋蔵位置 ${index + 1} のファイルが存在しません: ${plant.location}`);
+        }
+      }
+    }
+
+    // 回収位置の検証
+    if (!foreshadowingData.payoff?.location || foreshadowingData.payoff.location.trim() === '') {
+      errors.push('伏線の回収位置（payoff）が指定されていません');
+    } else if (
+      !(await this.validatePathAsync(novelRootAbsolutePath, foreshadowingData.payoff.location))
+    ) {
+      errors.push(`回収位置のファイルが存在しません: ${foreshadowingData.payoff.location}`);
+    }
+
+    return {
+      valid: errors.length === 0,
+      errors,
+    };
+  }
+
+  /**
    * 伏線の状態を取得
    * @param novelRootAbsolutePath 小説ルートの絶対パス
    * @param foreshadowingData 伏線データ
@@ -135,6 +180,60 @@ export class ForeshadowingService {
       foreshadowingData.payoff?.location !== null &&
       foreshadowingData.payoff?.location !== undefined &&
       this.validatePath(novelRootAbsolutePath, foreshadowingData.payoff.location);
+
+    // ステータス判定
+    if (existingPlantsCount === 0 && !payoffExists) {
+      return 'error';
+    }
+
+    if (existingPlantsCount === totalPlantsCount && payoffExists === true) {
+      return 'resolved';
+    }
+
+    if (existingPlantsCount === totalPlantsCount && payoffExists === false) {
+      return 'fully_planted';
+    }
+
+    if (existingPlantsCount > 0 && existingPlantsCount < totalPlantsCount) {
+      return 'partially_planted';
+    }
+
+    return 'planned';
+  }
+
+  /**
+   * 伏線の状態を取得（非同期版）
+   * @param novelRootAbsolutePath 小説ルートの絶対パス
+   * @param foreshadowingData 伏線データ
+   * @returns 伏線の状態
+   */
+  async getForeshadowingStatusAsync(
+    novelRootAbsolutePath: string,
+    foreshadowingData: ForeshadowingData,
+  ): Promise<'error' | 'planned' | 'partially_planted' | 'fully_planted' | 'resolved'> {
+    // 基本的なデータ検証
+    if (
+      foreshadowingData.plants === null ||
+      foreshadowingData.plants === undefined ||
+      foreshadowingData.plants.length === 0
+    ) {
+      return 'error';
+    }
+
+    // 各埋蔵位置の存在チェック
+    const plantsStatus = await Promise.all(
+      foreshadowingData.plants.map((plant) =>
+        this.validatePathAsync(novelRootAbsolutePath, plant.location),
+      ),
+    );
+    const existingPlantsCount = plantsStatus.filter((exists) => exists).length;
+    const totalPlantsCount = foreshadowingData.plants.length;
+
+    // 回収位置の存在チェック
+    const payoffExists =
+      foreshadowingData.payoff?.location !== null &&
+      foreshadowingData.payoff?.location !== undefined &&
+      (await this.validatePathAsync(novelRootAbsolutePath, foreshadowingData.payoff.location));
 
     // ステータス判定
     if (existingPlantsCount === 0 && !payoffExists) {
@@ -437,6 +536,54 @@ export class ForeshadowingService {
         message: `エラーが発生しました: ${error instanceof Error ? error.message : String(error)}`,
       };
     }
+  }
+
+  /**
+   * マークダウンファイルから表示名を取得（非同期版）
+   * @param fileAbsolutePath ファイルの絶対パス
+   * @returns 表示名（見出しが見つからない場合はファイル名）
+   */
+  async extractDisplayNameAsync(fileAbsolutePath: string): Promise<string> {
+    try {
+      const fileUri = this.fileRepository.createFileUri(fileAbsolutePath);
+
+      if (!(await this.fileRepository.existsAsync(fileUri))) {
+        return this.getFileNameWithoutExtension(fileAbsolutePath);
+      }
+
+      const content = await this.fileRepository.readFileAsync(fileUri, 'utf8');
+      const lines = content.split('\n');
+
+      // 最初の # 見出しを探す
+      for (const line of lines) {
+        const trimmedLine = line.trim();
+        if (trimmedLine.startsWith('# ')) {
+          return trimmedLine.substring(2).trim();
+        }
+      }
+
+      // 見出しが見つからない場合はファイル名（拡張子なし）を返す
+      return this.getFileNameWithoutExtension(fileAbsolutePath);
+    } catch (error) {
+      console.error('表示名の取得に失敗しました:', error);
+      return this.getFileNameWithoutExtension(fileAbsolutePath);
+    }
+  }
+
+  /**
+   * パスの有効性を検証（非同期版）
+   * @param novelRootAbsolutePath 小説ルートの絶対パス
+   * @param relativePath 検証対象の相対パス
+   * @returns 有効な場合true
+   */
+  async validatePathAsync(novelRootAbsolutePath: string, relativePath: string): Promise<boolean> {
+    if (!relativePath || relativePath.trim() === '') {
+      return false;
+    }
+
+    const absolutePath = path.join(novelRootAbsolutePath, relativePath);
+    const fileUri = this.fileRepository.createFileUri(absolutePath);
+    return await this.fileRepository.existsAsync(fileUri);
   }
 
   /**

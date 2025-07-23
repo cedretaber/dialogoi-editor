@@ -116,7 +116,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     const activeEditorWatcher = vscode.window.onDidChangeActiveTextEditor((editor) => {
       if (editor?.document?.fileName !== undefined && editor.document.fileName !== '') {
         logger.debug(`アクティブエディタ変更: ${editor.document.fileName}`);
-        fileDetailsProvider.updateFileDetailsByPath(editor.document.fileName);
+        void fileDetailsProvider.updateFileDetailsByPath(editor.document.fileName);
       }
     });
     context.subscriptions.push(activeEditorWatcher);

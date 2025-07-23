@@ -33,12 +33,12 @@ class DocumentDropProvider implements vscode.DocumentDropEditProvider {
 
   constructor(private dropHandlerService: DropHandlerService) {}
 
-  provideDocumentDropEdits(
+  async provideDocumentDropEdits(
     document: vscode.TextDocument,
     position: vscode.Position,
     dataTransfer: vscode.DataTransfer,
     _token: vscode.CancellationToken,
-  ): vscode.DocumentDropEdit | undefined {
+  ): Promise<vscode.DocumentDropEdit | undefined> {
     this.logger.info(
       `ドロップイベント検知: ${document.fileName} at ${position.line}:${position.character}`,
     );
@@ -47,7 +47,7 @@ class DocumentDropProvider implements vscode.DocumentDropEditProvider {
       // Dialogoi TreeViewからのドロップデータを確認
       const dialogoiData = dataTransfer.get('application/vnd.code.tree.dialogoi-explorer');
       if (dialogoiData) {
-        return this.handleDialogoiTreeDrop(document, position, dialogoiData);
+        return await this.handleDialogoiTreeDrop(document, position, dialogoiData);
       }
 
       // 外部ファイルドロップ（将来の拡張）
@@ -73,11 +73,11 @@ class DocumentDropProvider implements vscode.DocumentDropEditProvider {
   /**
    * Dialogoi TreeViewからのドロップを処理
    */
-  private handleDialogoiTreeDrop(
+  private async handleDialogoiTreeDrop(
     document: vscode.TextDocument,
     position: vscode.Position,
     dataTransfer: vscode.DataTransferItem,
-  ): vscode.DocumentDropEdit | undefined {
+  ): Promise<vscode.DocumentDropEdit | undefined> {
     const dataValue: unknown = dataTransfer.value;
     if (dataValue === null || dataValue === undefined || typeof dataValue !== 'string') {
       this.logger.warn('無効なドロップデータです');
@@ -97,7 +97,7 @@ class DocumentDropProvider implements vscode.DocumentDropEditProvider {
     }
 
     // DropHandlerServiceでビジネスロジックを実行
-    const result = this.dropHandlerService.handleDrop(document.uri.fsPath, droppedData);
+    const result = await this.dropHandlerService.handleDrop(document.uri.fsPath, droppedData);
 
     // 結果をVSCode APIで反映
     return this.applyDropResult(document, position, result);

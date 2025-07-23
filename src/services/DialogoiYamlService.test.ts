@@ -346,7 +346,9 @@ tags: ["ファンタジー"]`;
       const result = await service.saveDialogoiYamlAsync(projectRoot, data);
 
       assert.strictEqual(result, true);
-      assert.ok(await mockFileRepository.existsAsync(mockFileRepository.createFileUri(dialogoiYamlPath)));
+      assert.ok(
+        await mockFileRepository.existsAsync(mockFileRepository.createFileUri(dialogoiYamlPath)),
+      );
 
       const savedContent = await mockFileRepository.readFileAsync(
         mockFileRepository.createFileUri(dialogoiYamlPath),
@@ -406,9 +408,12 @@ tags: ["ファンタジー"]`;
     test('新しいプロジェクトを作成する', async () => {
       const projectRoot = '/test/new-project';
 
-      const result = await service.createDialogoiProjectAsync(projectRoot, '新しい小説', '新しい著者', [
-        'ファンタジー',
-      ]);
+      const result = await service.createDialogoiProjectAsync(
+        projectRoot,
+        '新しい小説',
+        '新しい著者',
+        ['ファンタジー'],
+      );
 
       assert.strictEqual(result, true);
       assert.ok(await service.isDialogoiProjectRootAsync(projectRoot));
@@ -426,17 +431,27 @@ tags: ["ファンタジー"]`;
 
       mockFileRepository.createFileForTest(dialogoiYamlPath, 'existing content');
 
-      const result = await service.createDialogoiProjectAsync(projectRoot, '新しい小説', '新しい著者');
+      const result = await service.createDialogoiProjectAsync(
+        projectRoot,
+        '新しい小説',
+        '新しい著者',
+      );
       assert.strictEqual(result, false);
     });
 
     test('プロジェクトディレクトリが存在しない場合は作成する', async () => {
       const projectRoot = '/test/non-existing-dir';
 
-      const result = await service.createDialogoiProjectAsync(projectRoot, '新しい小説', '新しい著者');
+      const result = await service.createDialogoiProjectAsync(
+        projectRoot,
+        '新しい小説',
+        '新しい著者',
+      );
 
       assert.strictEqual(result, true);
-      assert.ok(await mockFileRepository.existsAsync(mockFileRepository.createDirectoryUri(projectRoot)));
+      assert.ok(
+        await mockFileRepository.existsAsync(mockFileRepository.createDirectoryUri(projectRoot)),
+      );
       assert.ok(await service.isDialogoiProjectRootAsync(projectRoot));
     });
   });

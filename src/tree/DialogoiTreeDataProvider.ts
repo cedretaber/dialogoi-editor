@@ -103,7 +103,7 @@ export class DialogoiTreeDataProvider
    * @param absolutePath 検索するファイルの絶対パス
    * @returns 見つかったTreeItem、見つからない場合はnull
    */
-  findItemByAbsolutePath(absolutePath: string): DialogoiTreeItem | null {
+  async findItemByAbsolutePath(absolutePath: string): Promise<DialogoiTreeItem | null> {
     if (this.novelRoot === null) {
       return null;
     }
@@ -114,7 +114,7 @@ export class DialogoiTreeDataProvider
     }
 
     // ルートディレクトリから再帰的に検索
-    return this.searchItemInDirectory(this.novelRoot, absolutePath);
+    return await this.searchItemInDirectory(this.novelRoot, absolutePath);
   }
 
   /**
@@ -123,8 +123,11 @@ export class DialogoiTreeDataProvider
    * @param targetPath 検索対象のファイルパス
    * @returns 見つかったTreeItem、見つからない場合はnull
    */
-  private searchItemInDirectory(dirPath: string, targetPath: string): DialogoiTreeItem | null {
-    const items = this.loadMetaYaml(dirPath);
+  private async searchItemInDirectory(
+    dirPath: string,
+    targetPath: string,
+  ): Promise<DialogoiTreeItem | null> {
+    const items = await this.loadMetaYaml(dirPath);
 
     for (const item of items) {
       // アイテムのパス（item.path）と検索対象パスが一致するかチェック
@@ -134,7 +137,7 @@ export class DialogoiTreeDataProvider
 
       // サブディレクトリの場合は再帰的に検索
       if (item.type === 'subdirectory') {
-        const subResult = this.searchItemInDirectory(item.path, targetPath);
+        const subResult = await this.searchItemInDirectory(item.path, targetPath);
         if (subResult !== null) {
           return subResult;
         }
@@ -151,7 +154,7 @@ export class DialogoiTreeDataProvider
     return this.filterService.isFilterActive();
   }
 
-  getTreeItem(element: DialogoiTreeItem): vscode.TreeItem {
+  async getTreeItem(element: DialogoiTreeItem): Promise<vscode.TreeItem> {
     const isDirectory = element.type === 'subdirectory';
     const collapsibleState = isDirectory
       ? vscode.TreeItemCollapsibleState.Collapsed
@@ -164,7 +167,7 @@ export class DialogoiTreeDataProvider
     } else if (element.character !== undefined && !isDirectory) {
       // display_nameが設定されていない場合は自動取得
       const characterService = ServiceContainer.getInstance().getCharacterService();
-      displayName = characterService.extractDisplayName(element.path);
+      displayName = await characterService.extractDisplayNameAsync(element.path);
     }
 
     const item = new vscode.TreeItem(displayName, collapsibleState);
@@ -199,7 +202,7 @@ export class DialogoiTreeDataProvider
       };
     } else {
       // ディレクトリの場合は.dialogoi-meta.yamlで指定されたreadmeファイルを開く
-      const readmeFilePath = this.getReadmeFilePath(element.path);
+      const readmeFilePath = await this.getReadmeFilePath(element.path);
       if (readmeFilePath !== null) {
         item.command = {
           command: 'vscode.open',
@@ -229,7 +232,7 @@ export class DialogoiTreeDataProvider
     }
 
     // tooltipの設定（タグと参照関係）
-    this.setTooltip(item, element);
+    await this.setTooltip(item, element);
 
     // コンテキストメニュー用のcontextValue（ファイル種類とメタデータに基づく）
     item.contextValue = this.getContextValue(element);
@@ -237,27 +240,27 @@ export class DialogoiTreeDataProvider
     return item;
   }
 
-  getChildren(element?: DialogoiTreeItem): Promise<DialogoiTreeItem[]> {
+  async getChildren(element?: DialogoiTreeItem): Promise<DialogoiTreeItem[]> {
     if (this.novelRoot === null) {
-      return Promise.resolve([]);
+      return [];
     }
 
     let result: DialogoiTreeItem[];
     if (element) {
       // サブディレクトリの場合、その中の.dialogoi-meta.yamlを読み込む
-      result = this.loadMetaYaml(element.path);
+      result = await this.loadMetaYaml(element.path);
 
       // サブディレクトリが展開された時も再帰的フィルタリングを適用
       if (this.filterService.isFilterActive()) {
         this.logger.info(
           `サブディレクトリ ${element.name} 内で再帰的フィルタリング適用: ${result.length}個のアイテム`,
         );
-        result = this.applyRecursiveFilter(result);
+        result = await this.applyRecursiveFilter(result);
         this.logger.debug(`サブディレクトリ再帰的フィルタリング後: ${result.length}個のアイテム`);
       }
     } else {
       // ルートの場合、ノベルルートの.dialogoi-meta.yamlを読み込む
-      result = this.loadMetaYaml(this.novelRoot);
+      result = await this.loadMetaYaml(this.novelRoot);
 
       // ルートレベルで再帰的フィルタリングを適用
       if (this.filterService.isFilterActive()) {
@@ -266,7 +269,7 @@ export class DialogoiTreeDataProvider
           `フィルタリング適用前: ${result.length}個のアイテム, フィルター: ${filterState.filterType}="${filterState.filterValue}"`,
         );
 
-        result = this.applyRecursiveFilter(result);
+        result = await this.applyRecursiveFilter(result);
 
         this.logger.debug(`フィルタリング適用後: ${result.length}個のアイテム`);
 
@@ -277,7 +280,7 @@ export class DialogoiTreeDataProvider
       }
     }
 
-    return Promise.resolve(result);
+    return result;
   }
 
   /**
@@ -285,13 +288,13 @@ export class DialogoiTreeDataProvider
    * サブディレクトリ内のファイルも含めてフィルタリングし、
    * マッチするファイルを含むディレクトリは表示、含まないディレクトリは除外
    */
-  private applyRecursiveFilter(items: DialogoiTreeItem[]): DialogoiTreeItem[] {
+  private async applyRecursiveFilter(items: DialogoiTreeItem[]): Promise<DialogoiTreeItem[]> {
     const result: DialogoiTreeItem[] = [];
 
     for (const item of items) {
       if (item.type === 'subdirectory') {
         // サブディレクトリの場合、再帰的にチェック
-        const hasMatchingContent = this.hasMatchingContentInDirectory(item.path);
+        const hasMatchingContent = await this.hasMatchingContentInDirectory(item.path);
 
         this.logger.debug(
           `ディレクトリ ${item.name}: ${hasMatchingContent ? 'マッチする内容あり' : 'マッチする内容なし'}`,
@@ -316,13 +319,13 @@ export class DialogoiTreeDataProvider
   /**
    * ディレクトリ内に（再帰的に）マッチするコンテンツがあるかチェック
    */
-  private hasMatchingContentInDirectory(dirPath: string): boolean {
-    const subItems = this.loadMetaYaml(dirPath);
+  private async hasMatchingContentInDirectory(dirPath: string): Promise<boolean> {
+    const subItems = await this.loadMetaYaml(dirPath);
 
     for (const subItem of subItems) {
       if (subItem.type === 'subdirectory') {
         // サブディレクトリの場合、さらに再帰的にチェック
-        if (this.hasMatchingContentInDirectory(subItem.path)) {
+        if (await this.hasMatchingContentInDirectory(subItem.path)) {
           return true;
         }
       } else {
@@ -338,9 +341,9 @@ export class DialogoiTreeDataProvider
     return false;
   }
 
-  private loadMetaYaml(dirPath: string): DialogoiTreeItem[] {
+  private async loadMetaYaml(dirPath: string): Promise<DialogoiTreeItem[]> {
     const metaYamlService = ServiceContainer.getInstance().getMetaYamlService();
-    const meta = metaYamlService.loadMetaYaml(dirPath);
+    const meta = await metaYamlService.loadMetaYamlAsync(dirPath);
 
     if (meta === null) {
       return [];
@@ -354,9 +357,9 @@ export class DialogoiTreeDataProvider
     return result;
   }
 
-  private getReadmeFilePath(dirPath: string): string | null {
+  private async getReadmeFilePath(dirPath: string): Promise<string | null> {
     const metaYamlService = ServiceContainer.getInstance().getMetaYamlService();
-    return metaYamlService.getReadmeFilePath(dirPath);
+    return await metaYamlService.getReadmeFilePathAsync(dirPath);
   }
 
   // ファイル操作メソッド
@@ -471,7 +474,7 @@ export class DialogoiTreeDataProvider
   }
 
   // tooltip設定メソッド
-  private setTooltip(item: vscode.TreeItem, element: DialogoiTreeItem): void {
+  private async setTooltip(item: vscode.TreeItem, element: DialogoiTreeItem): Promise<void> {
     const tooltipParts: string[] = [];
 
     // キャラクター情報
@@ -479,7 +482,7 @@ export class DialogoiTreeDataProvider
       let displayName = element.character.display_name;
       if (displayName === undefined && element.type !== 'subdirectory') {
         const characterService = ServiceContainer.getInstance().getCharacterService();
-        displayName = characterService.extractDisplayName(element.path);
+        displayName = await characterService.extractDisplayNameAsync(element.path);
       }
       if (displayName !== undefined) {
         tooltipParts.push(`${displayName} (${element.character.importance})`);
@@ -900,7 +903,7 @@ export class DialogoiTreeDataProvider
         if (target && target.type !== 'subdirectory') {
           // 特定のファイルにドロップした場合、そのファイルの位置に挿入
           const metaYamlService = ServiceContainer.getInstance().getMetaYamlService();
-          const targetMeta = metaYamlService.loadMetaYaml(targetDir);
+          const targetMeta = await metaYamlService.loadMetaYamlAsync(targetDir);
           if (targetMeta) {
             newIndex = targetMeta.files.findIndex(
               (item: DialogoiTreeItem) => item.name === target.name,
@@ -941,7 +944,7 @@ export class DialogoiTreeDataProvider
         if (target && target.type !== 'subdirectory') {
           // 特定のファイルまたはディレクトリにドロップした場合、その位置に挿入
           const metaYamlService = ServiceContainer.getInstance().getMetaYamlService();
-          const targetMeta = metaYamlService.loadMetaYaml(targetDir);
+          const targetMeta = await metaYamlService.loadMetaYamlAsync(targetDir);
           if (targetMeta) {
             newIndex = targetMeta.files.findIndex(
               (item: DialogoiTreeItem) => item.name === target.name,
@@ -976,7 +979,7 @@ export class DialogoiTreeDataProvider
     // 並び替え処理
     try {
       const metaYamlService = ServiceContainer.getInstance().getMetaYamlService();
-      const metaData = metaYamlService.loadMetaYaml(targetDir);
+      const metaData = await metaYamlService.loadMetaYamlAsync(targetDir);
       if (!metaData) {
         vscode.window.showErrorMessage('メタデータの読み込みに失敗しました。');
         return;

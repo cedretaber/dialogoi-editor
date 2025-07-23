@@ -105,7 +105,10 @@ export class ProjectSettingsWebviewPanel {
     try {
       this.panel.webview.html = await this._getHtmlForWebview(this.panel.webview);
     } catch (error) {
-      this.logger.error('Failed to initialize webview', error instanceof Error ? error : String(error));
+      this.logger.error(
+        'Failed to initialize webview',
+        error instanceof Error ? error : String(error),
+      );
       vscode.window.showErrorMessage('WebViewの初期化に失敗しました');
     }
   }

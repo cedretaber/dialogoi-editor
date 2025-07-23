@@ -53,6 +53,25 @@ export class MetaYamlService {
   }
 
   /**
+   * .dialogoi-meta.yaml を読み込む（非同期版）
+   */
+  async loadMetaYamlAsync(dirAbsolutePath: string): Promise<MetaYaml | null> {
+    const metaAbsolutePath = path.join(dirAbsolutePath, '.dialogoi-meta.yaml');
+
+    try {
+      const metaUri = this.fileRepository.createFileUri(metaAbsolutePath);
+      if (!(await this.fileRepository.existsAsync(metaUri))) {
+        return null;
+      }
+      const metaContent = await this.fileRepository.readFileAsync(metaUri, 'utf8');
+      return MetaYamlUtils.parseMetaYaml(metaContent);
+    } catch (error) {
+      console.error('.dialogoi-meta.yaml の読み込みエラー:', error);
+      return null;
+    }
+  }
+
+  /**
    * READMEファイルのパスを取得
    */
   getReadmeFilePath(dirAbsolutePath: string): string | null {
@@ -65,6 +84,25 @@ export class MetaYamlService {
     const readmeAbsolutePath = path.join(dirAbsolutePath, meta.readme);
     const readmeUri = this.fileRepository.createFileUri(readmeAbsolutePath);
     if (this.fileRepository.existsSync(readmeUri)) {
+      return readmeAbsolutePath;
+    }
+
+    return null;
+  }
+
+  /**
+   * READMEファイルのパスを取得（非同期版）
+   */
+  async getReadmeFilePathAsync(dirAbsolutePath: string): Promise<string | null> {
+    const meta = await this.loadMetaYamlAsync(dirAbsolutePath);
+
+    if (meta === null || meta.readme === undefined) {
+      return null;
+    }
+
+    const readmeAbsolutePath = path.join(dirAbsolutePath, meta.readme);
+    const readmeUri = this.fileRepository.createFileUri(readmeAbsolutePath);
+    if (await this.fileRepository.existsAsync(readmeUri)) {
       return readmeAbsolutePath;
     }
 
@@ -96,6 +134,55 @@ export class MetaYamlService {
     };
 
     return findDialogoiYaml(workspaceRootAbsolutePath);
+  }
+
+  /**
+   * 小説ルートディレクトリを探す（非同期版）
+   */
+  async findNovelRootAsync(workspaceRootAbsolutePath: string): Promise<string | null> {
+    const findDialogoiYaml = async (dirAbsolutePath: string): Promise<string | null> => {
+      const dirUri = this.fileRepository.createFileUri(dirAbsolutePath);
+      const items = await this.fileRepository.readdirAsync(dirUri);
+
+      for (const item of items) {
+        const fullAbsolutePath = path.join(dirAbsolutePath, item.name);
+        if (item.isFile() && item.name === 'dialogoi.yaml') {
+          return dirAbsolutePath;
+        } else if (item.isDirectory()) {
+          const result = await findDialogoiYaml(fullAbsolutePath);
+          if (result !== null) {
+            return result;
+          }
+        }
+      }
+      return null;
+    };
+
+    return await findDialogoiYaml(workspaceRootAbsolutePath);
+  }
+
+  /**
+   * .dialogoi-meta.yamlファイルを保存（非同期版）
+   */
+  async saveMetaYamlAsync(dirAbsolutePath: string, meta: MetaYaml): Promise<boolean> {
+    const metaAbsolutePath = path.join(dirAbsolutePath, '.dialogoi-meta.yaml');
+
+    try {
+      // バリデーション
+      const validationErrors = MetaYamlUtils.validateMetaYaml(meta);
+      if (validationErrors.length > 0) {
+        console.error('.dialogoi-meta.yaml検証エラー:', validationErrors);
+        return false;
+      }
+
+      const metaUri = this.fileRepository.createFileUri(metaAbsolutePath);
+      const yamlContent = MetaYamlUtils.stringifyMetaYaml(meta);
+      await this.fileRepository.writeFileAsync(metaUri, yamlContent);
+      return true;
+    } catch (error) {
+      console.error('.dialogoi-meta.yaml の保存エラー:', error);
+      return false;
+    }
   }
 
   /**
@@ -527,97 +614,6 @@ export class MetaYamlService {
     delete fileItem.character;
 
     return this.saveMetaYaml(dirAbsolutePath, meta);
-  }
-
-  // === 非同期版メソッド（vscode.workspace.fs対応） ===
-
-  /**
-   * .dialogoi-meta.yaml を読み込む（非同期版）
-   */
-  async loadMetaYamlAsync(dirAbsolutePath: string): Promise<MetaYaml | null> {
-    const metaAbsolutePath = path.join(dirAbsolutePath, '.dialogoi-meta.yaml');
-
-    try {
-      const metaUri = this.fileRepository.createFileUri(metaAbsolutePath);
-      const exists = await this.fileRepository.existsAsync(metaUri);
-      if (!exists) {
-        return null;
-      }
-      const metaContent = await this.fileRepository.readFileAsync(metaUri, 'utf8');
-      return MetaYamlUtils.parseMetaYaml(metaContent);
-    } catch (error) {
-      console.error('.dialogoi-meta.yaml の読み込みエラー:', error);
-      return null;
-    }
-  }
-
-  /**
-   * .dialogoi-meta.yamlファイルを保存（非同期版）
-   */
-  async saveMetaYamlAsync(dirAbsolutePath: string, meta: MetaYaml): Promise<boolean> {
-    const metaAbsolutePath = path.join(dirAbsolutePath, '.dialogoi-meta.yaml');
-
-    try {
-      // バリデーション
-      const validationErrors = MetaYamlUtils.validateMetaYaml(meta);
-      if (validationErrors.length > 0) {
-        console.error('.dialogoi-meta.yaml検証エラー:', validationErrors);
-        return false;
-      }
-
-      const metaUri = this.fileRepository.createFileUri(metaAbsolutePath);
-      const yamlContent = MetaYamlUtils.stringifyMetaYaml(meta);
-      await this.fileRepository.writeFileAsync(metaUri, yamlContent);
-      return true;
-    } catch (error) {
-      console.error('.dialogoi-meta.yaml の保存エラー:', error);
-      return false;
-    }
-  }
-
-  /**
-   * READMEファイルのパスを取得（非同期版）
-   */
-  async getReadmeFilePathAsync(dirAbsolutePath: string): Promise<string | null> {
-    const meta = await this.loadMetaYamlAsync(dirAbsolutePath);
-
-    if (meta === null || meta.readme === undefined) {
-      return null;
-    }
-
-    const readmeAbsolutePath = path.join(dirAbsolutePath, meta.readme);
-    const readmeUri = this.fileRepository.createFileUri(readmeAbsolutePath);
-    const exists = await this.fileRepository.existsAsync(readmeUri);
-    if (exists) {
-      return readmeAbsolutePath;
-    }
-
-    return null;
-  }
-
-  /**
-   * 小説ルートディレクトリを探す（非同期版）
-   */
-  async findNovelRootAsync(workspaceRootAbsolutePath: string): Promise<string | null> {
-    const findDialogoiYamlAsync = async (dirAbsolutePath: string): Promise<string | null> => {
-      const dirUri = this.fileRepository.createFileUri(dirAbsolutePath);
-      const items = await this.fileRepository.readdirAsync(dirUri);
-
-      for (const item of items) {
-        const fullAbsolutePath = path.join(dirAbsolutePath, item.name);
-        if (item.isFile() && item.name === 'dialogoi.yaml') {
-          return dirAbsolutePath;
-        } else if (item.isDirectory()) {
-          const result = await findDialogoiYamlAsync(fullAbsolutePath);
-          if (result !== null) {
-            return result;
-          }
-        }
-      }
-      return null;
-    };
-
-    return findDialogoiYamlAsync(workspaceRootAbsolutePath);
   }
 
   /**

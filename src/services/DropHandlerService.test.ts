@@ -20,7 +20,7 @@ suite('DropHandlerService テストスイート', () => {
   });
 
   suite('handleDrop - 本文ファイルへのドロップ', () => {
-    test('本文ファイルに設定ファイルをドロップした場合、referencesに追加される', () => {
+    test('本文ファイルに設定ファイルをドロップした場合、referencesに追加される', async () => {
       // テスト用ファイル構造を準備
       const projectRoot = '/test/project';
       const contentsDir = '/test/project/contents';
@@ -68,7 +68,10 @@ tags: []`,
       };
 
       // 本文ファイルにドロップ
-      const result = dropHandlerService.handleDrop(`${contentsDir}/chapter1.txt`, droppedData);
+      const result = await dropHandlerService.handleDrop(
+        `${contentsDir}/chapter1.txt`,
+        droppedData,
+      );
 
       // 結果を検証
       assert.strictEqual(result.success, true);
@@ -81,7 +84,7 @@ tags: []`,
       assert.match(metaContent, /references:\s*\n\s*- settings\/character1\.md/);
     });
 
-    test('既に存在する参照をドロップした場合、重複追加されない', () => {
+    test('既に存在する参照をドロップした場合、重複追加されない', async () => {
       // テスト用ファイル構造を準備
       const projectRoot = '/test/project';
       const contentsDir = '/test/project/contents';
@@ -122,7 +125,10 @@ tags: []`,
       };
 
       // 本文ファイルにドロップ
-      const result = dropHandlerService.handleDrop(`${contentsDir}/chapter1.txt`, droppedData);
+      const result = await dropHandlerService.handleDrop(
+        `${contentsDir}/chapter1.txt`,
+        droppedData,
+      );
 
       // 結果を検証
       assert.strictEqual(result.success, true);
@@ -131,7 +137,7 @@ tags: []`,
   });
 
   suite('handleDrop - 設定ファイルへのドロップ', () => {
-    test('設定ファイルにファイルをドロップした場合、マークダウンリンクが生成される', () => {
+    test('設定ファイルにファイルをドロップした場合、マークダウンリンクが生成される', async () => {
       // テスト用ファイル構造を準備
       const projectRoot = '/test/project';
       const settingsDir = '/test/project/settings';
@@ -178,7 +184,7 @@ tags: []`,
       };
 
       // 設定ファイルにドロップ
-      const result = dropHandlerService.handleDrop(`${settingsDir}/overview.md`, droppedData);
+      const result = await dropHandlerService.handleDrop(`${settingsDir}/overview.md`, droppedData);
 
       // 結果を検証
       assert.strictEqual(result.success, true);
@@ -189,7 +195,7 @@ tags: []`,
   });
 
   suite('handleDrop - エラーケース', () => {
-    test('Dialogoiプロジェクト外のファイルにドロップした場合、エラーになる', () => {
+    test('Dialogoiプロジェクト外のファイルにドロップした場合、エラーになる', async () => {
       // プロジェクト外のファイル
       const outsideFile = '/outside/file.txt';
       mockFileRepository.addFile(outsideFile, 'プロジェクト外のファイル');
@@ -204,7 +210,7 @@ tags: []`,
       };
 
       // プロジェクト外のファイルにドロップ
-      const result = dropHandlerService.handleDrop(outsideFile, droppedData);
+      const result = await dropHandlerService.handleDrop(outsideFile, droppedData);
 
       // 結果を検証
       assert.strictEqual(result.success, false);
@@ -214,7 +220,7 @@ tags: []`,
       );
     });
 
-    test('meta.yamlが存在しないディレクトリの本文ファイルにドロップした場合、エラーになる', () => {
+    test('meta.yamlが存在しないディレクトリの本文ファイルにドロップした場合、エラーになる', async () => {
       // テスト用ファイル構造を準備
       const projectRoot = '/test/project';
       const contentsDir = '/test/project/contents';
@@ -242,7 +248,10 @@ tags: []`,
       };
 
       // 本文ファイルにドロップ
-      const result = dropHandlerService.handleDrop(`${contentsDir}/chapter1.txt`, droppedData);
+      const result = await dropHandlerService.handleDrop(
+        `${contentsDir}/chapter1.txt`,
+        droppedData,
+      );
 
       // 結果を検証
       assert.strictEqual(result.success, false);

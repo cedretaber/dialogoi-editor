@@ -47,14 +47,17 @@ export class DropHandlerService {
   /**
    * ドロップ処理のメイン関数
    */
-  public handleDrop(targetFileAbsolutePath: string, droppedData: DroppedFileInfo): DropResult {
+  public async handleDrop(
+    targetFileAbsolutePath: string,
+    droppedData: DroppedFileInfo,
+  ): Promise<DropResult> {
     this.logger.info(
       `ドロップ処理: ${droppedData.name} → ${path.basename(targetFileAbsolutePath)}`,
     );
 
     try {
       // ドロップ先ファイルの種別を判定
-      const targetFileType = this.determineTargetFileType(targetFileAbsolutePath);
+      const targetFileType = await this.determineTargetFileType(targetFileAbsolutePath);
       if (!targetFileType) {
         return {
           success: false,
@@ -86,7 +89,9 @@ export class DropHandlerService {
   /**
    * ドロップ先ファイルの種別を判定
    */
-  private determineTargetFileType(targetFileAbsolutePath: string): 'content' | 'setting' | null {
+  private async determineTargetFileType(
+    targetFileAbsolutePath: string,
+  ): Promise<'content' | 'setting' | null> {
     // プロジェクトルートを取得
     const projectRootAbsolutePath =
       this.dialogoiYamlService.findProjectRoot(targetFileAbsolutePath);
@@ -104,7 +109,7 @@ export class DropHandlerService {
     }
 
     // CharacterServiceを使用してファイル種別を判定
-    const fileInfo = this.characterService.getFileInfo(
+    const fileInfo = await this.characterService.getFileInfoAsync(
       fileProjectRelativePath,
       projectRootAbsolutePath,
     );
