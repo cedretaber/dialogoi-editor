@@ -300,7 +300,7 @@ export class ProjectLinkUpdateService {
           const entryUri = this.fileRepository.createFileUri(entryAbsolutePath);
 
           try {
-            const stat = this.fileRepository.lstatSync(entryUri);
+            const stat = this.fileRepository.statSync(entryUri);
 
             if (stat.isDirectory()) {
               // ディレクトリの場合は再帰的に走査
@@ -386,7 +386,7 @@ export class ProjectLinkUpdateService {
             const entryUri = this.fileRepository.createFileUri(entryAbsolutePath);
 
             try {
-              const stat = this.fileRepository.lstatSync(entryUri);
+              const stat = this.fileRepository.statSync(entryUri);
               if (stat.isDirectory()) {
                 walkDirectory(entryAbsolutePath);
               }

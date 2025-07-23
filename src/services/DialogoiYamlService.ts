@@ -25,6 +25,7 @@ export class DialogoiYamlService {
    * プロジェクトのdialogoi.yamlファイルを読み込み
    * @param projectRootAbsolutePath プロジェクトルートの絶対パス
    * @returns DialogoiYamlオブジェクト、存在しない場合やエラーの場合はnull
+   * @deprecated Use loadDialogoiYamlAsync instead for better VSCode integration
    */
   loadDialogoiYaml(projectRootAbsolutePath: string): DialogoiYaml | null {
     const dialogoiYamlPath = path.join(

@@ -166,13 +166,13 @@ export class FileOperationService {
   /**
    * ファイルを削除し、.dialogoi-meta.yamlから除去する
    */
-  deleteFile(dirPath: string, fileName: string): FileOperationResult {
+  async deleteFile(dirPath: string, fileName: string): Promise<FileOperationResult> {
     try {
       const filePath = path.join(dirPath, fileName);
       const fileUri = this.fileRepository.createFileUri(filePath);
 
       // ファイルが存在しない場合はエラー
-      if (!this.fileRepository.existsSync(fileUri)) {
+      if (!(await this.fileRepository.existsAsync(fileUri))) {
         return {
           success: false,
           message: `ファイル ${fileName} が見つかりません。`,
@@ -190,11 +190,11 @@ export class FileOperationService {
       }
 
       // ファイルを削除
-      const isDirectory = this.fileRepository.lstatSync(fileUri).isDirectory();
-      if (isDirectory) {
-        this.fileRepository.rmSync(fileUri, { recursive: true, force: true });
+      const stats = await this.fileRepository.statAsync(fileUri);
+      if (stats.isDirectory()) {
+        await this.fileRepository.rmAsync(fileUri, { recursive: true });
       } else {
-        this.fileRepository.unlinkSync(fileUri);
+        await this.fileRepository.unlinkAsync(fileUri);
       }
 
       return {
@@ -301,7 +301,7 @@ export class FileOperationService {
       }
 
       // ファイルをリネーム
-      this.fileRepository.renameSync(oldUri, newUri);
+      await this.fileRepository.renameAsync(oldUri, newUri);
 
       // プロジェクトルート相対パスでのリンク更新
       if (this.linkUpdateService && this.pathNormalizationService) {
@@ -925,13 +925,13 @@ export class FileOperationService {
   /**
    * ディレクトリを削除し、親ディレクトリの.dialogoi-meta.yamlから除去する
    */
-  deleteDirectory(parentDir: string, dirName: string): FileOperationResult {
+  async deleteDirectory(parentDir: string, dirName: string): Promise<FileOperationResult> {
     try {
       const dirPath = path.join(parentDir, dirName);
       const dirUri = this.fileRepository.createFileUri(dirPath);
 
       // ディレクトリが存在しない場合はエラー
-      if (!this.fileRepository.existsSync(dirUri)) {
+      if (!(await this.fileRepository.existsAsync(dirUri))) {
         return {
           success: false,
           message: `ディレクトリ ${dirName} が見つかりません。`,
@@ -939,7 +939,7 @@ export class FileOperationService {
       }
 
       // ディレクトリかどうかチェック
-      const stats = this.fileRepository.lstatSync(dirUri);
+      const stats = await this.fileRepository.statAsync(dirUri);
       if (!stats.isDirectory()) {
         return {
           success: false,
@@ -958,7 +958,7 @@ export class FileOperationService {
       }
 
       // ディレクトリを物理削除（再帰的）
-      this.fileRepository.rmSync(dirUri, { recursive: true, force: true });
+      await this.fileRepository.rmAsync(dirUri, { recursive: true });
 
       return {
         success: true,

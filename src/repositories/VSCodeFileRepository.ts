@@ -290,55 +290,6 @@ export class VSCodeFileRepository extends FileRepository {
     }
   }
 
-  statSync(uri: Uri): FileStats {
-    const vsCodeUri = (uri as VSCodeUri).vsCodeUri;
-    try {
-      // fs is imported at the top of the file
-      const stat = fs.statSync(vsCodeUri.fsPath);
-      return new VSCodeFileStats({
-        type: stat.isDirectory() ? vscode.FileType.Directory : vscode.FileType.File,
-        size: stat.size,
-        mtime: stat.mtime.getTime(),
-        ctime: stat.birthtime.getTime(),
-      });
-    } catch (error) {
-      throw new Error(
-        `ファイル統計情報取得エラー: ${error instanceof Error ? error.message : String(error)}`,
-      );
-    }
-  }
-
-  lstatSync(uri: Uri): FileStats {
-    const vsCodeUri = (uri as VSCodeUri).vsCodeUri;
-    try {
-      // fs is imported at the top of the file
-      const stat = fs.lstatSync(vsCodeUri.fsPath);
-      return new VSCodeFileStats({
-        type: stat.isDirectory() ? vscode.FileType.Directory : vscode.FileType.File,
-        size: stat.size,
-        mtime: stat.mtime.getTime(),
-        ctime: stat.birthtime.getTime(),
-      });
-    } catch (error) {
-      throw new Error(
-        `ファイル統計情報取得エラー: ${error instanceof Error ? error.message : String(error)}`,
-      );
-    }
-  }
-
-  renameSync(oldUri: Uri, newUri: Uri): void {
-    const oldVsCodeUri = (oldUri as VSCodeUri).vsCodeUri;
-    const newVsCodeUri = (newUri as VSCodeUri).vsCodeUri;
-    try {
-      // fs is imported at the top of the file
-      fs.renameSync(oldVsCodeUri.fsPath, newVsCodeUri.fsPath);
-    } catch (error) {
-      throw new Error(
-        `ファイル名変更エラー: ${error instanceof Error ? error.message : String(error)}`,
-      );
-    }
-  }
-
   async renameAsync(oldUri: Uri, newUri: Uri): Promise<void> {
     const oldVsCodeUri = (oldUri as VSCodeUri).vsCodeUri;
     const newVsCodeUri = (newUri as VSCodeUri).vsCodeUri;
@@ -460,6 +411,24 @@ export class VSCodeFileRepository extends FileRepository {
     } catch (error) {
       throw new Error(
         `ディレクトリ読み込みエラー: ${error instanceof Error ? error.message : String(error)}`,
+      );
+    }
+  }
+
+  statSync(uri: Uri): FileStats {
+    const vsCodeUri = (uri as VSCodeUri).vsCodeUri;
+    try {
+      // fs is imported at the top of the file
+      const stat = fs.statSync(vsCodeUri.fsPath);
+      return new VSCodeFileStats({
+        type: stat.isDirectory() ? vscode.FileType.Directory : vscode.FileType.File,
+        size: stat.size,
+        mtime: stat.mtime.getTime(),
+        ctime: stat.birthtime.getTime(),
+      });
+    } catch (error) {
+      throw new Error(
+        `ファイル統計情報取得エラー: ${error instanceof Error ? error.message : String(error)}`,
       );
     }
   }

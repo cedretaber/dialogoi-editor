@@ -11,6 +11,7 @@ export class MetaYamlService {
 
   /**
    * .dialogoi-meta.yaml を読み込む
+   * @deprecated Use loadMetaYamlAsync instead for better VSCode integration
    */
   loadMetaYaml(dirAbsolutePath: string): MetaYaml | null {
     const metaAbsolutePath = path.join(dirAbsolutePath, '.dialogoi-meta.yaml');
@@ -30,6 +31,7 @@ export class MetaYamlService {
 
   /**
    * .dialogoi-meta.yamlファイルを保存
+   * @deprecated Use saveMetaYamlAsync instead for better VSCode integration
    */
   saveMetaYaml(dirAbsolutePath: string, meta: MetaYaml): boolean {
     const metaAbsolutePath = path.join(dirAbsolutePath, '.dialogoi-meta.yaml');
@@ -73,6 +75,7 @@ export class MetaYamlService {
 
   /**
    * READMEファイルのパスを取得
+   * @deprecated Use getReadmeFilePathAsync instead for better VSCode integration
    */
   getReadmeFilePath(dirAbsolutePath: string): string | null {
     const meta = this.loadMetaYaml(dirAbsolutePath);
@@ -111,6 +114,7 @@ export class MetaYamlService {
 
   /**
    * 小説ルートディレクトリを探す
+   * @deprecated Use findNovelRootAsync instead for better VSCode integration
    */
   findNovelRoot(workspaceRootAbsolutePath: string): string | null {
     const findDialogoiYaml = (dirAbsolutePath: string): string | null => {

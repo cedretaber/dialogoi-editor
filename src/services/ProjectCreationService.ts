@@ -227,11 +227,11 @@ export class ProjectCreationService {
   ): Promise<void> {
     const currentUri = this.fileRepository.createDirectoryUri(currentAbsolutePath);
 
-    if (!this.fileRepository.existsSync(currentUri)) {
+    if (!(await this.fileRepository.existsAsync(currentUri))) {
       return;
     }
 
-    const stats = this.fileRepository.statSync(currentUri);
+    const stats = await this.fileRepository.statAsync(currentUri);
     if (!stats.isDirectory()) {
       return;
     }

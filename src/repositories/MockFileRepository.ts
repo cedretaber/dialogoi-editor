@@ -279,26 +279,7 @@ export class MockFileRepository extends FileRepository {
     return options?.withFileTypes === true ? entryObjects : entries;
   }
 
-  statSync(uri: Uri): FileStats {
-    const path = uri.fsPath;
-
-    if (this.files.has(path)) {
-      const content = this.files.get(path);
-      if (content !== undefined) {
-        const size = Buffer.isBuffer(content) ? content.length : Buffer.byteLength(content);
-        return new MockFileStats(true, false, size);
-      }
-    } else if (this.directories.has(path)) {
-      return new MockFileStats(false, true);
-    }
-    throw new Error(`ファイルまたはディレクトリが見つかりません: ${path}`);
-  }
-
-  lstatSync(uri: Uri): FileStats {
-    return this.statSync(uri);
-  }
-
-  renameSync(oldUri: Uri, newUri: Uri): void {
+  renameAsync(oldUri: Uri, newUri: Uri): Promise<void> {
     const oldPath = oldUri.fsPath;
     const newPath = newUri.fsPath;
 
@@ -314,11 +295,6 @@ export class MockFileRepository extends FileRepository {
     } else {
       throw new Error(`ファイルまたはディレクトリが見つかりません: ${oldPath}`);
     }
-  }
-
-  renameAsync(oldUri: Uri, newUri: Uri): Promise<void> {
-    // モック環境では同期処理と同じ挙動でPromiseを返却
-    this.renameSync(oldUri, newUri);
     return Promise.resolve();
   }
 
@@ -373,8 +349,23 @@ export class MockFileRepository extends FileRepository {
     return await Promise.resolve(result as DirectoryEntry[]);
   }
 
+  statSync(uri: Uri): FileStats {
+    const path = uri.fsPath;
+
+    if (this.files.has(path)) {
+      const content = this.files.get(path);
+      if (content !== undefined) {
+        const size = Buffer.isBuffer(content) ? content.length : Buffer.byteLength(content);
+        return new MockFileStats(true, false, size);
+      }
+    } else if (this.directories.has(path)) {
+      return new MockFileStats(false, true);
+    }
+    throw new Error(`ファイルまたはディレクトリが見つかりません: ${path}`);
+  }
+
   async statAsync(uri: Uri): Promise<FileStats> {
-    return await Promise.resolve(this.statSync(uri));
+    return Promise.resolve(this.statSync(uri));
   }
 
   // === Uriファクトリーメソッド ===

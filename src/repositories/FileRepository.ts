@@ -100,18 +100,6 @@ export abstract class FileRepository {
   abstract statSync(uri: Uri): FileStats;
 
   /**
-   * ファイルの統計情報を取得（シンボリックリンクの場合はリンク自体の情報）
-   * @deprecated Use statAsync instead for better VSCode integration
-   */
-  abstract lstatSync(uri: Uri): FileStats;
-
-  /**
-   * ファイル名を変更（同期）
-   * @deprecated Use renameAsync instead for better VSCode integration
-   */
-  abstract renameSync(oldUri: Uri, newUri: Uri): void;
-
-  /**
    * ファイル名を変更（非同期）
    * VSCodeのworkspace.fs.renameを使用して、エディタの状態を保持
    */
