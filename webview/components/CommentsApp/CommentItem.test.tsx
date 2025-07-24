@@ -150,14 +150,18 @@ suite('CommentItem コンポーネント', () => {
         />,
       );
 
-      // HTMLレンダリングされた要素を確認
+      // react-markdownでレンダリングされた要素を確認
       const markdownContent = document.querySelector('.markdown-content');
       assert(markdownContent);
 
-      const htmlContent = markdownContent.innerHTML;
-      assert(htmlContent.includes('<strong>太字</strong>'));
-      assert(htmlContent.includes('<em>斜体</em>'));
-      assert(htmlContent.includes('<code>コード</code>'));
+      // React Testing Library環境では、適切なセレクタで要素を確認
+      const strongElement = markdownContent.querySelector('strong');
+      const emElement = markdownContent.querySelector('em');
+      const codeElement = markdownContent.querySelector('code');
+
+      assert(strongElement && strongElement.textContent === '太字');
+      assert(emElement && emElement.textContent === '斜体');
+      assert(codeElement && codeElement.textContent === 'コード');
     });
 
     test('チェックボックスが正しく変換される', () => {
@@ -266,19 +270,24 @@ suite('CommentItem コンポーネント', () => {
       const markdownContent = document.querySelector('.markdown-content');
       assert(markdownContent);
 
-      const htmlContent = markdownContent.innerHTML;
+      // 特定の要素を適切なセレクタで確認
+      const olElement = markdownContent.querySelector('ol');
+      const preElement = markdownContent.querySelector('pre');
+      const ulElement = markdownContent.querySelector('ul');
 
-      // 番号付きリスト
-      assert(htmlContent.includes('<ol>'));
-      assert(htmlContent.includes('<li class="ordered">'));
+      // 番号付きリストの存在確認
+      assert(olElement);
+      assert(olElement.querySelector('li')?.textContent?.includes('番号付きリスト'));
 
-      // コードブロック
-      assert(htmlContent.includes('<pre><code>'));
-      assert(htmlContent.includes('code block'));
+      // コードブロックの存在確認
+      assert(preElement);
+      assert(preElement.querySelector('code')?.textContent?.includes('code block'));
 
-      // 箇条書きリスト
-      assert(htmlContent.includes('<ul>'));
-      assert(htmlContent.includes('<li>箇条書き</li>'));
+      // 箇条書きリストの存在確認
+      assert(ulElement);
+      const liElements = ulElement.querySelectorAll('li');
+      assert(liElements.length >= 1);
+      assert(Array.from(liElements).some((li) => li.textContent?.includes('箇条書き')));
     });
   });
 
@@ -607,15 +616,22 @@ suite('CommentItem コンポーネント', () => {
 
       const htmlContent = markdownContent.innerHTML;
 
-      // 改行が<br>に変換されていることを確認
-      assert(
-        htmlContent.includes('<br>'),
-        `Expected HTML to contain <br>, but got: ${htmlContent}`,
-      );
+      // react-markdownでは改行は<p>タグで囲まれ、<br>は使用されない
+      // 代わりに、全体がpタグで囲まれていることと太字の変換を確認
+      assert(htmlContent.includes('<p>'), `Expected HTML to contain <p>, but got: ${htmlContent}`);
       // 太字が<strong>に変換されていることを確認
       assert(
         htmlContent.includes('<strong>太字</strong>'),
         `Expected HTML to contain <strong>太字</strong>, but got: ${htmlContent}`,
+      );
+      // コンテンツが含まれていることを確認
+      assert(
+        htmlContent.includes('長いコメント'),
+        `Expected HTML to contain '長いコメント', but got: ${htmlContent}`,
+      );
+      assert(
+        htmlContent.includes('2行目'),
+        `Expected HTML to contain '2行目', but got: ${htmlContent}`,
       );
     });
   });
