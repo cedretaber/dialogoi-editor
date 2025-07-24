@@ -45,12 +45,62 @@ export class CommentsViewProvider implements vscode.WebviewViewProvider {
   private isFileChanged = false;
   private logger: Logger;
   private _treeDataProvider: DialogoiTreeDataProvider | null = null;
+  private disposables: vscode.Disposable[] = [];
 
   constructor(
     private readonly context: vscode.ExtensionContext,
     private readonly workspaceRoot: vscode.Uri,
   ) {
     this.logger = Logger.getInstance();
+
+    // アクティブエディタ変更イベントを監視
+    this.setupActiveEditorListener();
+  }
+
+  /**
+   * アクティブエディタ監視のセットアップ
+   */
+  private setupActiveEditorListener(): void {
+    // アクティブエディタ変更イベントを監視
+    const activeEditorDisposable = vscode.window.onDidChangeActiveTextEditor(async (editor) => {
+      if (editor && editor.document.uri.scheme === 'file') {
+        const filePath = editor.document.uri.fsPath;
+
+        // プロジェクト内のファイルかチェック
+        if (this.isProjectFile(filePath)) {
+          await this.updateCurrentFile(filePath);
+        } else {
+          // プロジェクト外のファイルの場合はクリア
+          this.clearComments();
+        }
+      }
+    });
+
+    this.disposables.push(activeEditorDisposable);
+    this.logger.debug('アクティブエディタ監視を開始しました');
+  }
+
+  /**
+   * プロジェクト内のファイルかどうかをチェック
+   */
+  private isProjectFile(filePath: string): boolean {
+    try {
+      const relativePath = path.relative(this.workspaceRoot.fsPath, filePath);
+      // 相対パスが '..' で始まる場合はプロジェクト外
+      return !relativePath.startsWith('..');
+    } catch {
+      return false;
+    }
+  }
+
+  /**
+   * コメントをクリア
+   */
+  private clearComments(): void {
+    this.currentFilePath = null;
+    this.comments = [];
+    this.isFileChanged = false;
+    this.updateWebView();
   }
 
   /**
@@ -230,14 +280,29 @@ export class CommentsViewProvider implements vscode.WebviewViewProvider {
   private async handleReady(): Promise<void> {
     this.logger.debug('CommentsViewProvider ready');
 
-    // 現在選択されているファイルがあれば読み込み
+    // 優先順位1: 現在のアクティブエディタ
+    const activeEditor = vscode.window.activeTextEditor;
+    if (activeEditor && activeEditor.document.uri.scheme === 'file') {
+      const filePath = activeEditor.document.uri.fsPath;
+      if (this.isProjectFile(filePath)) {
+        await this.updateCurrentFile(filePath);
+        this.updateWebView();
+        return;
+      }
+    }
+
+    // 優先順位2: TreeDataProviderの選択
     if (this._treeDataProvider) {
       const currentSelection = this._treeDataProvider.getSelection();
       if (currentSelection.length > 0 && currentSelection[0]) {
         await this.updateCurrentFile(currentSelection[0].path);
+        this.updateWebView();
+        return;
       }
-    } else if (this.currentFilePath !== null && this.currentFilePath !== '') {
-      // フォールバック: TreeDataProviderが設定されていない場合
+    }
+
+    // 優先順位3: 既存のcurrentFilePath
+    if (this.currentFilePath !== null && this.currentFilePath !== '') {
       await this.loadCommentsForCurrentFile();
     }
 
@@ -497,5 +562,15 @@ export class CommentsViewProvider implements vscode.WebviewViewProvider {
       text += possible.charAt(Math.floor(Math.random() * possible.length));
     }
     return text;
+  }
+
+  /**
+   * リソースクリーンアップ
+   */
+  public dispose(): void {
+    this.disposables.forEach((disposable: vscode.Disposable) => {
+      disposable.dispose();
+    });
+    this.disposables = [];
   }
 }

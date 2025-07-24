@@ -79,6 +79,10 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
       context.subscriptions.push(
         vscode.window.registerWebviewViewProvider(CommentsViewProvider.viewType, commentsProvider),
       );
+      // disposeも追加
+      context.subscriptions.push({
+        dispose: () => commentsProvider?.dispose(),
+      });
       logger.debug('CommentsViewProvider作成完了');
     } else {
       logger.warn(
