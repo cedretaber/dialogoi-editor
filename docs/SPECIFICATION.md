@@ -9,7 +9,7 @@ Dialogoi Editor は小説執筆支援ツールとして、小説作品の設定�
 ### 基本構造
 
 - 1つのディレクトリ = 1つの小説作品（小説のルートディレクトリ）
-- 各ディレクトリには `README.md` と `meta.yaml` を配置
+- 各ディレクトリには `README.md` と `.dialogoi-meta.yaml` を配置
 - 小説のルートディレクトリには追加で `dialogoi.yaml` を配置
 
 ### ファイルの種類
@@ -42,8 +42,12 @@ Dialogoi Editor は小説執筆支援ツールとして、小説作品の設定�
    - 将来的に一人称、呼び方などのメタデータ拡張予定
 
 4. **伏線** (`foreshadowing:`)
-   - 埋蔵位置 (`start:`)
-   - 回収位置 (`goal:`)
+   - 植込み位置 (`plants:` 配列)
+     - `location`: ファイルパス
+     - `comment`: コメント（オプション）
+   - 回収位置 (`payoff:` オブジェクト)
+     - `location`: ファイルパス
+     - `comment`: コメント（オプション）
    - 専用UIでの可視化を想定
 
 ## ディレクトリ構造例
@@ -51,40 +55,40 @@ Dialogoi Editor は小説執筆支援ツールとして、小説作品の設定�
 ```
 novel/
 ├── README.md
-├── meta.yaml
+├── .dialogoi-meta.yaml
 ├── dialogoi.yaml
 ├── contents/
 │   ├── README.md
-│   ├── meta.yaml
+│   ├── .dialogoi-meta.yaml
 │   ├── content1.txt
 │   ├── content2.txt
 │   ├── content3.txt
 │   ├── otherstories/
 │   │   ├── README.md
-│   │   ├── meta.yaml
+│   │   ├── .dialogoi-meta.yaml
 │   │   ├── a.txt
 │   │   └── b.txt
 │   └── memo.md
 └── settings/
     ├── README.md
-    ├── meta.yaml
+    ├── .dialogoi-meta.yaml
     ├── setting1.md
     ├── setting2.md
     ├── characters/
     │   ├── README.md
-    │   ├── meta.yaml
+    │   ├── .dialogoi-meta.yaml
     │   ├── character1.md
     │   ├── character2.md
     │   └── characters.md
     ├── glossary.md
     └── foreshadowings/
         ├── README.md
-        ├── meta.yaml
+        ├── .dialogoi-meta.yaml
         ├── foreshadowing1.md
         └── foreshadowing2.md
 ```
 
-## meta.yaml 仕様
+## .dialogoi-meta.yaml 仕様
 
 ### 基本構造
 
@@ -93,7 +97,6 @@ readme: README.md  # ディレクトリ選択時の表示内容
 files:            # ファイル・サブディレクトリのリスト（順序を保持）
   - name: ファイル名またはディレクトリ名
     type: content | setting | subdirectory
-    hash: "sha256:abcd1234..."  # ファイルのSHA-256ハッシュ（変更検知用）
     # 以下はオプション
     tags: ["タグ1", "タグ2"]
     references: ["パス1", "パス2"]  # 小説ルートからの相対パス
@@ -107,8 +110,12 @@ files:            # ファイル・サブディレクトリのリスト（順序
       multiple_characters: true/false
       display_name: "田中太郎"       # マークダウンから自動取得
     foreshadowing:                   # 伏線の場合
-      start: "開始位置のパス"
-      goal: "回収位置のパス"
+      plants:                        # 植込み位置（配列）
+        - location: "contents/chapter1.txt"
+          comment: "伏線の説明"
+      payoff:                        # 回収位置（オブジェクト）
+        location: "contents/chapter5.txt"
+        comment: "回収の説明"
 ```
 
 ### ファイルタイプ
@@ -189,11 +196,11 @@ project_settings:
 ## ファイル管理ルール
 
 1. **管理対象の判定**
-   - `meta.yaml` に記載されているファイル = 管理対象
+   - `.dialogoi-meta.yaml` に記載されているファイル = 管理対象
    - 記載のないファイル = 管理対象外（UIで薄く表示）
 
 2. **存在しないファイルの扱い**
-   - `meta.yaml` に記載があるが存在しない = エラー表示（赤色、取り消し線）
+   - `.dialogoi-meta.yaml` に記載があるが存在しない = エラー表示（赤色、取り消し線）
    - UIから設定削除または新規作成が可能
 
 3. **ファイル種別の変更**
@@ -206,7 +213,7 @@ project_settings:
 
 #### TreeView（左サイドバー）
 - VSCode左側ペインにツリービュー表示
-- `meta.yaml` の順序に従って表示
+- `.dialogoi-meta.yaml` の順序に従って表示
 - アイコンで種別を視覚的に区別
   - 📄 本文
   - ⚙️ 一般設定
@@ -226,7 +233,7 @@ project_settings:
 
 ### 操作
 
-- ドラッグ&ドロップで並び順変更（`meta.yaml` 自動更新）
+- ドラッグ&ドロップで並び順変更（`.dialogoi-meta.yaml` 自動更新）
 - ファイルクリックで内容表示・編集
 - ディレクトリクリックで `README.md` 表示
 - コンテキストメニューから各種操作
@@ -306,12 +313,12 @@ reviews:
 
 1. **`dialogoi.yaml` 作成**: プロジェクトメタデータファイルを生成
 2. **再帰的スキャン**: 指定ディレクトリ以下のすべてのファイルを検索
-3. **自動 `meta.yaml` 生成**: 各ディレクトリに適切な `meta.yaml` を作成
+3. **自動 `.dialogoi-meta.yaml` 生成**: 各ディレクトリに適切な `.dialogoi-meta.yaml` を作成
 4. **ファイル種別自動判定**: 
    - `.txt` → `content` (本文)
    - `.md` → `setting` (設定)
    - その他 → `setting` (設定)
-5. **既存ファイル尊重**: 既存の `meta.yaml` や `dialogoi.yaml` は変更しない
+5. **既存ファイル尊重**: 既存の `.dialogoi-meta.yaml` や `dialogoi.yaml` は変更しない
 6. **除外パターン**: 不要なファイルを自動的に除外
 
 ### 除外パターン
@@ -332,7 +339,7 @@ reviews:
 2. プロジェクトメタデータ（タイトル、著者、タグ）を入力
 3. 指定ディレクトリの再帰的スキャン
 4. 除外パターンに基づいてファイルをフィルタリング
-5. 各ディレクトリに対して `meta.yaml` を作成（既存があれば保持）
+5. 各ディレクトリに対して `.dialogoi-meta.yaml` を作成（既存があれば保持）
 6. プロジェクトルートに `dialogoi.yaml` を作成
 
 ## 今後の拡張予定
