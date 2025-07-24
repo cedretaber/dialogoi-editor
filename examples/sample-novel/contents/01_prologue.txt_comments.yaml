@@ -9,9 +9,10 @@ comments:
     content: |-
       ## コメント
 
-      テキストテキスト
+      テキスト**テキスト**テキスト
 
-      - [ ] xxx
+      - [x] xxx
       - [ ] yyy
     status: open
     created_at: '2025-07-24T14:48:29.994Z'
+    updated_at: '2025-07-24T18:51:47.703Z'

@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useVSCodeApi } from '../hooks/useVSCodeApi';
+import { CommentItem } from './CommentItem';
 
 /**
  * コメントアイテムの型定義
  */
-interface CommentItem {
+interface CommentItemData {
   line: number;
   endLine?: number;
   content: string;
@@ -21,7 +22,7 @@ interface UpdateCommentsMessage {
   data: {
     fileName: string;
     filePath: string | null;
-    comments: CommentItem[];
+    comments: CommentItemData[];
     isFileChanged: boolean;
   };
 }
@@ -40,7 +41,7 @@ export const CommentsApp: React.FC = () => {
   const vscode = useVSCodeApi();
   const [fileName, setFileName] = useState<string>('');
   const [filePath, setFilePath] = useState<string | null>(null);
-  const [comments, setComments] = useState<CommentItem[]>([]);
+  const [comments, setComments] = useState<CommentItemData[]>([]);
   const [_isFileChanged, setIsFileChanged] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -153,6 +154,16 @@ export const CommentsApp: React.FC = () => {
     });
   };
 
+  /**
+   * コメント編集
+   */
+  const handleEditComment = (commentIndex: number, content: string): void => {
+    vscode.postMessage({
+      type: 'updateComment',
+      payload: { commentIndex, content },
+    });
+  };
+
   return (
     <div className="comments-app">
       <div className="comments-header">
@@ -174,34 +185,15 @@ export const CommentsApp: React.FC = () => {
         ) : (
           <div className="comments-list">
             {comments.map((comment, index) => (
-              <div
+              <CommentItem
                 key={index}
-                className={`comment-item ${comment.status === 'resolved' ? 'resolved' : ''}`}
-              >
-                <div className="comment-header">
-                  <button
-                    className="tertiary"
-                    onClick={() => handleJumpToLine(comment.line, comment.endLine)}
-                  >
-                    {comment.endLine ? `行${comment.line}-${comment.endLine}` : `行${comment.line}`}
-                  </button>
-                  <span className="comment-status-icon">
-                    {comment.status === 'resolved' ? '✅' : '📝'}
-                  </span>
-                </div>
-                <div className="comment-content">{comment.content}</div>
-                <div className="comment-actions">
-                  <button className="btn-secondary" onClick={() => handleToggleStatus(index)}>
-                    {comment.status === 'resolved' ? '未完了に戻す' : '完了にする'}
-                  </button>
-                  <button className="delete-button" onClick={() => handleDeleteComment(index)}>
-                    削除
-                  </button>
-                </div>
-                <div className="comment-meta">
-                  {new Date(comment.created_at).toLocaleDateString()}
-                </div>
-              </div>
+                comment={comment}
+                index={index}
+                onToggleStatus={handleToggleStatus}
+                onDelete={handleDeleteComment}
+                onEdit={handleEditComment}
+                onJumpToLine={handleJumpToLine}
+              />
             ))}
           </div>
         )}

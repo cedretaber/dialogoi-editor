@@ -467,6 +467,9 @@ export class CommentsViewProvider implements vscode.WebviewViewProvider {
     const webviewDir = path.join(this.context.extensionUri.fsPath, 'webview');
     const outDir = path.join(this.context.extensionUri.fsPath, 'out', 'webviews', 'comments');
     const stylesheetUri = webview.asWebviewUri(vscode.Uri.file(path.join(webviewDir, 'style.css')));
+    const commentsStylesheetUri = webview.asWebviewUri(
+      vscode.Uri.file(path.join(webviewDir, 'comments.css')),
+    );
     const scriptUri = webview.asWebviewUri(vscode.Uri.file(path.join(outDir, 'script.js')));
 
     // HTMLテンプレートファイルを読み込み
@@ -478,6 +481,7 @@ export class CommentsViewProvider implements vscode.WebviewViewProvider {
     htmlContentString = htmlContentString
       .replace(/{nonce}/g, nonce)
       .replace(/{stylesheetUri}/g, stylesheetUri.toString())
+      .replace(/{commentsStylesheetUri}/g, commentsStylesheetUri.toString())
       .replace(/{scriptUri}/g, scriptUri.toString());
 
     return htmlContentString;

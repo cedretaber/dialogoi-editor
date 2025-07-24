@@ -1,0 +1,453 @@
+/* コメント・TODOパネル専用スタイル */
+
+/* コメントコンテナ */
+.comments-container {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  padding: 8px;
+}
+
+.comments-header {
+  border-bottom: 1px solid var(--vscode-panel-border);
+  padding-bottom: 8px;
+  margin-bottom: 12px;
+}
+
+.comments-header h2 {
+  font-size: 14px;
+  margin: 0 0 8px 0;
+  color: var(--vscode-foreground);
+}
+
+.file-info {
+  font-size: 12px;
+  color: var(--vscode-descriptionForeground);
+}
+
+/* コメントリスト */
+.comments-list {
+  flex: 1;
+  overflow-y: auto;
+  margin-bottom: 12px;
+}
+
+/* コメントアイテム */
+.comment-item {
+  background-color: var(--vscode-editor-background);
+  border: 1px solid var(--vscode-input-border);
+  border-radius: 4px;
+  margin-bottom: 8px;
+  padding: 12px;
+  transition: border-color 0.2s ease;
+}
+
+.comment-item.open {
+  border-left: 3px solid var(--vscode-notificationsInfoIcon-foreground);
+}
+
+.comment-item.resolved {
+  border-left: 3px solid var(--vscode-testing-iconPassed);
+  opacity: 0.8;
+}
+
+.comment-item:hover {
+  border-color: var(--vscode-focusBorder);
+}
+
+/* コメントヘッダー */
+.comment-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.line-link {
+  background: none;
+  border: none;
+  color: var(--vscode-textLink-foreground);
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 500;
+  padding: 0;
+  text-decoration: none;
+}
+
+.line-link:hover {
+  text-decoration: underline;
+}
+
+.comment-status {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+}
+
+.status-icon {
+  font-size: 14px;
+}
+
+.status-text {
+  color: var(--vscode-descriptionForeground);
+}
+
+/* TODO進捗表示 */
+.todo-progress {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  color: var(--vscode-descriptionForeground);
+}
+
+.progress-text {
+  min-width: 32px;
+  text-align: right;
+}
+
+.progress-bar {
+  width: 60px;
+  height: 4px;
+  background-color: var(--vscode-input-background);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  background-color: var(--vscode-progressBar-background);
+  transition: width 0.3s ease;
+}
+
+/* コメント内容 */
+.comment-content {
+  margin-bottom: 8px;
+}
+
+/* マークダウンコンテンツ */
+.markdown-content {
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--vscode-foreground);
+}
+
+.markdown-content strong {
+  font-weight: 600;
+}
+
+.markdown-content em {
+  font-style: italic;
+}
+
+.markdown-content code {
+  background-color: var(--vscode-textCodeBlock-background);
+  padding: 2px 4px;
+  border-radius: 3px;
+  font-family: var(--vscode-editor-font-family);
+  font-size: 0.9em;
+}
+
+.markdown-content pre {
+  background-color: var(--vscode-textCodeBlock-background);
+  border: 1px solid var(--vscode-input-border);
+  border-radius: 4px;
+  padding: 12px;
+  overflow-x: auto;
+  margin: 8px 0;
+}
+
+.markdown-content pre code {
+  background: none;
+  padding: 0;
+  border-radius: 0;
+  font-size: 12px;
+}
+
+.markdown-content ul,
+.markdown-content ol {
+  margin: 4px 0;
+  padding-left: 24px;
+}
+
+.markdown-content li {
+  margin: 2px 0;
+}
+
+/* TODOリスト */
+.markdown-content .todo-list {
+  list-style: none;
+  padding-left: 0;
+}
+
+.markdown-content .todo-item {
+  display: flex;
+  align-items: flex-start;
+  margin: 4px 0;
+  padding-left: 0;
+}
+
+.markdown-content .todo-item input[type="checkbox"] {
+  margin-right: 6px;
+  margin-top: 2px;
+  cursor: pointer;
+}
+
+.markdown-content .todo-item label {
+  cursor: pointer;
+  flex: 1;
+}
+
+.markdown-content .todo-item.completed label {
+  text-decoration: line-through;
+  opacity: 0.7;
+}
+
+/* 編集モード */
+.edit-mode {
+  position: relative;
+}
+
+.edit-textarea {
+  width: 100%;
+  min-height: 80px;
+  padding: 8px;
+  background-color: var(--vscode-input-background);
+  color: var(--vscode-input-foreground);
+  border: 1px solid var(--vscode-input-border);
+  border-radius: 4px;
+  font-family: var(--vscode-font-family);
+  font-size: 13px;
+  resize: vertical;
+}
+
+.edit-textarea:focus {
+  outline: none;
+  border-color: var(--vscode-focusBorder);
+}
+
+.edit-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+  align-items: center;
+}
+
+.save-button,
+.cancel-button {
+  padding: 4px 12px;
+  font-size: 12px;
+  border: none;
+  border-radius: 3px;
+  cursor: pointer;
+}
+
+.save-button {
+  background-color: var(--vscode-button-background);
+  color: var(--vscode-button-foreground);
+}
+
+.save-button:hover {
+  background-color: var(--vscode-button-hoverBackground);
+}
+
+.save-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.cancel-button {
+  background-color: var(--vscode-button-secondaryBackground);
+  color: var(--vscode-button-secondaryForeground);
+}
+
+.cancel-button:hover {
+  background-color: var(--vscode-button-secondaryHoverBackground);
+}
+
+.keyboard-hint {
+  font-size: 11px;
+  color: var(--vscode-descriptionForeground);
+  margin-left: auto;
+}
+
+/* プレビューモード */
+.preview-mode {
+  position: relative;
+}
+
+.raw-content {
+  font-family: var(--vscode-editor-font-family);
+  font-size: 12px;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  word-break: break-word;
+  margin: 0;
+  padding: 8px;
+  background-color: var(--vscode-textCodeBlock-background);
+  border-radius: 4px;
+}
+
+/* コメントアクション */
+.comment-actions {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.edit-button,
+.preview-toggle,
+.status-toggle,
+.delete-button {
+  padding: 4px 8px;
+  font-size: 11px;
+  border: none;
+  border-radius: 3px;
+  cursor: pointer;
+  background-color: var(--vscode-button-secondaryBackground);
+  color: var(--vscode-button-secondaryForeground);
+}
+
+.edit-button:hover,
+.preview-toggle:hover,
+.status-toggle:hover {
+  background-color: var(--vscode-button-secondaryHoverBackground);
+}
+
+.delete-button {
+  background-color: transparent;
+  color: var(--vscode-errorForeground);
+}
+
+.delete-button:hover {
+  background-color: var(--vscode-inputValidation-errorBackground);
+}
+
+/* コメントメタ情報 */
+.comment-meta {
+  display: flex;
+  gap: 12px;
+  font-size: 11px;
+  color: var(--vscode-descriptionForeground);
+}
+
+/* コメント追加フォーム */
+.add-comment-form {
+  background-color: var(--vscode-editor-background);
+  border: 1px solid var(--vscode-input-border);
+  border-radius: 4px;
+  padding: 12px;
+}
+
+.form-row {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.form-group {
+  flex: 1;
+}
+
+.form-group label {
+  display: block;
+  font-size: 11px;
+  color: var(--vscode-descriptionForeground);
+  margin-bottom: 4px;
+}
+
+.form-group input,
+.form-group textarea {
+  width: 100%;
+  padding: 6px 8px;
+  background-color: var(--vscode-input-background);
+  color: var(--vscode-input-foreground);
+  border: 1px solid var(--vscode-input-border);
+  border-radius: 3px;
+  font-size: 12px;
+}
+
+.form-group input:focus,
+.form-group textarea:focus {
+  outline: none;
+  border-color: var(--vscode-focusBorder);
+}
+
+.form-group textarea {
+  min-height: 80px;
+  font-family: var(--vscode-font-family);
+  resize: vertical;
+}
+
+.form-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.add-button {
+  width: 100%;
+  padding: 8px;
+  font-size: 12px;
+  border: 2px dashed var(--vscode-input-border);
+  background-color: transparent;
+  color: var(--vscode-textLink-foreground);
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.add-button:hover {
+  background-color: var(--vscode-list-hoverBackground);
+  border-color: var(--vscode-textLink-foreground);
+}
+
+/* エラー表示 */
+.error-message {
+  background-color: var(--vscode-inputValidation-errorBackground);
+  color: var(--vscode-inputValidation-errorForeground);
+  border: 1px solid var(--vscode-inputValidation-errorBorder);
+  border-radius: 4px;
+  padding: 8px 12px;
+  margin-bottom: 12px;
+  font-size: 12px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.close-button {
+  background: none;
+  border: none;
+  color: var(--vscode-inputValidation-errorForeground);
+  cursor: pointer;
+  font-size: 16px;
+  line-height: 1;
+  padding: 0;
+  margin-left: 8px;
+}
+
+.close-button:hover {
+  opacity: 0.8;
+}
+
+/* 空状態 */
+.no-comments {
+  text-align: center;
+  padding: 40px 20px;
+  color: var(--vscode-descriptionForeground);
+  font-style: italic;
+}
+
+.no-file {
+  text-align: center;
+  padding: 40px 20px;
+  color: var(--vscode-descriptionForeground);
+}
+
+.no-file p {
+  margin: 8px 0;
+  font-size: 13px;
+}

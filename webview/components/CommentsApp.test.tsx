@@ -49,6 +49,10 @@ suite('CommentsApp コンポーネント', () => {
       setState: (): void => {},
       getState: (): unknown => ({}),
     });
+
+    // window.confirm のモック
+    // eslint-disable-next-line no-undef
+    global.confirm = (): boolean => true;
   });
 
   suite('初期表示とマウント', () => {
