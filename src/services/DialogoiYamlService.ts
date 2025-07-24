@@ -154,11 +154,24 @@ export class DialogoiYamlService {
 
   /**
    * プロジェクトルートディレクトリの検索（非同期版）
-   * @param startAbsolutePath 検索開始のディレクトリ
+   * @param startAbsolutePath 検索開始のディレクトリまたはファイル
    * @returns プロジェクトルートの絶対パス、見つからない場合はnull
    */
   async findProjectRootAsync(startAbsolutePath: string): Promise<string | null> {
+    // ファイルが渡された場合は、その親ディレクトリから開始
     let currentPath = startAbsolutePath;
+    try {
+      const stat = await this.fileRepository.statAsync(
+        this.fileRepository.createFileUri(startAbsolutePath),
+      );
+      if (!stat.isDirectory()) {
+        currentPath = path.dirname(startAbsolutePath);
+      }
+    } catch {
+      // ファイルが存在しない場合も親ディレクトリから開始
+      currentPath = path.dirname(startAbsolutePath);
+    }
+
     const rootPath = path.parse(currentPath).root;
 
     while (currentPath !== rootPath) {

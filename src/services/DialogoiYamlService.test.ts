@@ -285,5 +285,31 @@ created_at: "2024-01-01T00:00:00Z"`;
       const result = await service.findProjectRootAsync(deepDir);
       assert.strictEqual(result, projectRoot);
     });
+
+    test('ファイルパスを渡してもプロジェクトルートを見つける', async () => {
+      const projectRoot = '/test/project';
+      const filePath = '/test/project/settings/characters/hero.md';
+      const dialogoiYamlPath = path.join(projectRoot, 'dialogoi.yaml');
+
+      // プロジェクトルートにdialogoi.yamlを作成
+      mockFileRepository.createFileForTest(dialogoiYamlPath, 'test content');
+      // ファイルも実際に作成
+      mockFileRepository.createFileForTest(filePath, '# ヒーロー');
+
+      const result = await service.findProjectRootAsync(filePath);
+      assert.strictEqual(result, projectRoot);
+    });
+
+    test('存在しないファイルパスでもプロジェクトルートを見つける', async () => {
+      const projectRoot = '/test/project';
+      const nonExistentFilePath = '/test/project/settings/characters/villain.md';
+      const dialogoiYamlPath = path.join(projectRoot, 'dialogoi.yaml');
+
+      // プロジェクトルートにdialogoi.yamlを作成（ファイルは作成しない）
+      mockFileRepository.createFileForTest(dialogoiYamlPath, 'test content');
+
+      const result = await service.findProjectRootAsync(nonExistentFilePath);
+      assert.strictEqual(result, projectRoot);
+    });
   });
 });

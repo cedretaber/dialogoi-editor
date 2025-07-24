@@ -11,6 +11,7 @@ import { suite, test, beforeEach, afterEach } from 'mocha';
 import { strict as assert } from 'assert';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { FileDetailsApp } from './FileDetailsApp';
+import { resetGlobalReadyMessageSent } from '../hooks/useVSCodeApi';
 import type { FileDetailsData, UpdateFileMessage, WebViewMessage } from '../types/FileDetails';
 
 suite('FileDetailsApp コンポーネント', () => {
@@ -20,6 +21,9 @@ suite('FileDetailsApp コンポーネント', () => {
   let originalRemoveEventListener: typeof window.removeEventListener;
 
   beforeEach((): void => {
+    // グローバルReadyメッセージフラグをリセット
+    resetGlobalReadyMessageSent();
+
     messageCallbacks = [];
     mockPostMessage = (): void => {};
 

@@ -28,11 +28,27 @@ export class DialogoiTreeDataProvider
   readonly onDidChangeTreeData: vscode.Event<DialogoiTreeItem | undefined | null | void> =
     this._onDidChangeTreeData.event;
 
+  // fire呼び出しを追跡するためのラッパー
+  private fireTreeDataChange(): void {
+    const stack = new Error().stack;
+    const caller = stack?.split('\n')[2]?.trim() ?? 'unknown';
+    this.logger.info(`_onDidChangeTreeData.fire呼び出し: caller=${caller}`);
+    this._onDidChangeTreeData.fire();
+  }
+
   private workspaceRoot: string;
   private novelRoot: string | null = null;
   private filterService: TreeViewFilterService = new TreeViewFilterService();
   private logger = Logger.getInstance();
   private fileChangeNotificationService: FileChangeNotificationService;
+  private loadMetaYamlCache: Map<string, DialogoiTreeItem[]> = new Map();
+  private cacheExpiry: Map<string, number> = new Map();
+  private readonly CACHE_DURATION = 1000; // 1秒間キャッシュ
+
+  // 無限ループ検出用
+  private searchInProgress: Set<string> = new Set();
+  private lastSearchPath: string | null = null;
+  private lastSearchTime: number = 0;
 
   // ドラッグ&ドロップ用のMIMEタイプ定義
   readonly dropMimeTypes = ['application/vnd.code.tree.dialogoi-explorer'];
@@ -58,15 +74,24 @@ export class DialogoiTreeDataProvider
         const fileRepository = ServiceContainer.getInstance().getFileRepository();
         void referenceManager.initialize(this.novelRoot, fileRepository);
       }
+
+      this.logger.info(`novelRoot初期化完了: ${this.novelRoot}`);
+      // 初期化完了後にTreeViewを更新
+      this.fireTreeDataChange();
     } else {
       // プロジェクトが見つからない場合は明示的にfalseに設定
       vscode.commands.executeCommand('setContext', 'dialogoi:hasNovelProject', false);
+      this.logger.warn('novelRootが見つかりませんでした');
     }
   }
 
   refresh(): void {
+    // キャッシュをクリア
+    this.loadMetaYamlCache.clear();
+    this.cacheExpiry.clear();
+
+    // findNovelRootの完了を待ってからTreeViewを更新（fireTreeDataChangeはfindNovelRoot内で実行）
     void this.findNovelRoot();
-    this._onDidChangeTreeData.fire();
   }
 
   /**
@@ -74,7 +99,7 @@ export class DialogoiTreeDataProvider
    */
   setTagFilter(tagValue: string): void {
     this.filterService.setTagFilter(tagValue);
-    this._onDidChangeTreeData.fire();
+    this.fireTreeDataChange();
   }
 
   /**
@@ -82,7 +107,7 @@ export class DialogoiTreeDataProvider
    */
   clearFilter(): void {
     this.filterService.clearFilter();
-    this._onDidChangeTreeData.fire();
+    this.fireTreeDataChange();
   }
 
   /**
@@ -90,6 +115,29 @@ export class DialogoiTreeDataProvider
    */
   getFilterState(): FilterState {
     return this.filterService.getFilterState();
+  }
+
+  /**
+   * WebView用のツリーデータを取得（getChildrenを呼ばない）
+   * キャッシュされたデータがある場合はそれを返し、ない場合は直接読み込む
+   */
+  async getTreeDataForWebView(): Promise<DialogoiTreeItem[]> {
+    if (this.novelRoot === null) {
+      return [];
+    }
+
+    // キャッシュをチェック（getChildrenを呼び出さない）
+    const cached = this.loadMetaYamlCache.get(this.novelRoot);
+    const expiry = this.cacheExpiry.get(this.novelRoot);
+    const now = Date.now();
+
+    if (cached && expiry !== null && expiry !== undefined && now < expiry) {
+      this.logger.debug(`WebView用データをキャッシュから返却: ${this.novelRoot}`);
+      return cached;
+    }
+
+    // キャッシュがない場合は直接読み込み（TreeViewの更新を発生させない）
+    return await this.loadMetaYaml(this.novelRoot);
   }
 
   /**
@@ -114,6 +162,15 @@ export class DialogoiTreeDataProvider
       return null;
     }
 
+    // 頻繁な同じパス検索を防ぐ（デバウンス）
+    const now = Date.now();
+    if (this.lastSearchPath === absolutePath && now - this.lastSearchTime < 300) {
+      return null;
+    }
+
+    this.lastSearchPath = absolutePath;
+    this.lastSearchTime = now;
+
     // ルートディレクトリから再帰的に検索
     return await this.searchItemInDirectory(this.novelRoot, absolutePath);
   }
@@ -128,24 +185,39 @@ export class DialogoiTreeDataProvider
     dirPath: string,
     targetPath: string,
   ): Promise<DialogoiTreeItem | null> {
-    const items = await this.loadMetaYaml(dirPath);
-
-    for (const item of items) {
-      // アイテムのパス（item.path）と検索対象パスが一致するかチェック
-      if (item.path === targetPath) {
-        return item;
-      }
-
-      // サブディレクトリの場合は再帰的に検索
-      if (item.type === 'subdirectory') {
-        const subResult = await this.searchItemInDirectory(item.path, targetPath);
-        if (subResult !== null) {
-          return subResult;
-        }
-      }
+    // 無限ループ検出: 既に検索中のディレクトリなら中断
+    const searchKey = `${dirPath}:${targetPath}`;
+    if (this.searchInProgress.has(searchKey)) {
+      this.logger.warn(`無限ループ検出: ${searchKey} の検索を中断しました`);
+      return null;
     }
 
-    return null;
+    // 検索開始をマーク
+    this.searchInProgress.add(searchKey);
+
+    try {
+      const items = await this.loadMetaYaml(dirPath);
+
+      for (const item of items) {
+        // アイテムのパス（item.path）と検索対象パスが一致するかチェック
+        if (item.path === targetPath) {
+          return item;
+        }
+
+        // サブディレクトリの場合は再帰的に検索
+        if (item.type === 'subdirectory') {
+          const subResult = await this.searchItemInDirectory(item.path, targetPath);
+          if (subResult !== null) {
+            return subResult;
+          }
+        }
+      }
+
+      return null;
+    } finally {
+      // 検索終了をマーク
+      this.searchInProgress.delete(searchKey);
+    }
   }
 
   /**
@@ -157,6 +229,7 @@ export class DialogoiTreeDataProvider
 
   async getTreeItem(element: DialogoiTreeItem): Promise<vscode.TreeItem> {
     const isDirectory = element.type === 'subdirectory';
+    // ディレクトリは手動展開のみ可能にする（自動展開による無限ループを回避）
     const collapsibleState = isDirectory
       ? vscode.TreeItemCollapsibleState.Collapsed
       : vscode.TreeItemCollapsibleState.None;
@@ -251,102 +324,45 @@ export class DialogoiTreeDataProvider
       // サブディレクトリの場合、その中の.dialogoi-meta.yamlを読み込む
       result = await this.loadMetaYaml(element.path);
 
-      // サブディレクトリが展開された時も再帰的フィルタリングを適用
-      if (this.filterService.isFilterActive()) {
-        this.logger.info(
-          `サブディレクトリ ${element.name} 内で再帰的フィルタリング適用: ${result.length}個のアイテム`,
-        );
-        result = await this.applyRecursiveFilter(result);
-        this.logger.debug(`サブディレクトリ再帰的フィルタリング後: ${result.length}個のアイテム`);
-      }
+      // フィルタリング機能を一時的に無効化（無限ループ回避）
     } else {
       // ルートの場合、ノベルルートの.dialogoi-meta.yamlを読み込む
       result = await this.loadMetaYaml(this.novelRoot);
 
-      // ルートレベルで再帰的フィルタリングを適用
-      if (this.filterService.isFilterActive()) {
-        const filterState = this.filterService.getFilterState();
-        this.logger.debug(
-          `フィルタリング適用前: ${result.length}個のアイテム, フィルター: ${filterState.filterType}="${filterState.filterValue}"`,
-        );
-
-        result = await this.applyRecursiveFilter(result);
-
-        this.logger.debug(`フィルタリング適用後: ${result.length}個のアイテム`);
-
-        // デバッグ用：各アイテムのタグを出力
-        result.forEach((item, index) => {
-          this.logger.debug(`  [${index}] ${item.name}: tags=${JSON.stringify(item.tags || [])}`);
-        });
-      }
+      // フィルタリング機能を一時的に無効化（無限ループ回避）
     }
 
     return result;
   }
 
   /**
+   * TODO: 一時的に削除（無限ループ修正後に復活させる）
    * 再帰的フィルタリングを適用
    * サブディレクトリ内のファイルも含めてフィルタリングし、
    * マッチするファイルを含むディレクトリは表示、含まないディレクトリは除外
    */
-  private async applyRecursiveFilter(items: DialogoiTreeItem[]): Promise<DialogoiTreeItem[]> {
-    const result: DialogoiTreeItem[] = [];
-
-    for (const item of items) {
-      if (item.type === 'subdirectory') {
-        // サブディレクトリの場合、再帰的にチェック
-        const hasMatchingContent = await this.hasMatchingContentInDirectory(item.path);
-
-        this.logger.debug(
-          `ディレクトリ ${item.name}: ${hasMatchingContent ? 'マッチする内容あり' : 'マッチする内容なし'}`,
-        );
-
-        // マッチするファイルがある場合、ディレクトリを含める
-        if (hasMatchingContent) {
-          result.push(item);
-        }
-      } else {
-        // ファイルの場合、直接フィルタリングを適用
-        const matchedItems = this.filterService.applyFilter([item]);
-        if (matchedItems.length > 0) {
-          result.push(item);
-        }
-      }
-    }
-
-    return result;
-  }
 
   /**
+   * TODO: 一時的に削除（無限ループ修正後に復活させる）
    * ディレクトリ内に（再帰的に）マッチするコンテンツがあるかチェック
    */
-  private async hasMatchingContentInDirectory(dirPath: string): Promise<boolean> {
-    const subItems = await this.loadMetaYaml(dirPath);
-
-    for (const subItem of subItems) {
-      if (subItem.type === 'subdirectory') {
-        // サブディレクトリの場合、さらに再帰的にチェック
-        if (await this.hasMatchingContentInDirectory(subItem.path)) {
-          return true;
-        }
-      } else {
-        // ファイルの場合、フィルター条件に一致するかチェック
-        const matchedItems = this.filterService.applyFilter([subItem]);
-        if (matchedItems.length > 0) {
-          this.logger.info(`  → ${subItem.name} がマッチ`);
-          return true;
-        }
-      }
-    }
-
-    return false;
-  }
 
   private async loadMetaYaml(dirPath: string): Promise<DialogoiTreeItem[]> {
+    // キャッシュチェック
+    const now = Date.now();
+    const cacheKey = dirPath;
+    const cached = this.loadMetaYamlCache.get(cacheKey);
+    const expiry = this.cacheExpiry.get(cacheKey);
+
+    if (cached && expiry !== null && expiry !== undefined && now < expiry) {
+      return cached;
+    }
+
     const metaYamlService = ServiceContainer.getInstance().getMetaYamlService();
     const meta = await metaYamlService.loadMetaYamlAsync(dirPath);
 
     if (meta === null) {
+      this.logger.warn(`loadMetaYaml: ${dirPath} のメタデータが見つかりません`);
       return [];
     }
 
@@ -355,6 +371,14 @@ export class DialogoiTreeDataProvider
       ...file,
       path: path.join(dirPath, file.name),
     }));
+
+    // キャッシュに保存
+    this.loadMetaYamlCache.set(cacheKey, result);
+    this.cacheExpiry.set(cacheKey, now + this.CACHE_DURATION);
+
+    this.logger.info(
+      `${dirPath} から ${result.length}個のアイテムを読み込みました（キャッシュに保存）`,
+    );
     return result;
   }
 

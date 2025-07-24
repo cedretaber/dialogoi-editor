@@ -400,6 +400,9 @@ export class FileDetailsViewProvider implements vscode.WebviewViewProvider {
   ): Promise<void> {
     this._view = webviewView;
 
+    // WebView が再作成される場合に備えて ready 状態をリセット
+    this.isWebViewReady = false;
+
     webviewView.webview.options = {
       enableScripts: true,
       localResourceRoots: [this._extensionUri],
@@ -438,6 +441,16 @@ export class FileDetailsViewProvider implements vscode.WebviewViewProvider {
     }
   }
 
+  // 前回の検索対象を記録（重複回避用）
+  private lastSearchedFilePath: string | null = null;
+  private lastSearchTime: number = 0;
+
+  // updateTreeData の重複呼び出し防止用
+  private lastUpdateTreeDataTime: number = 0;
+
+  // WebView ready 状態管理
+  private isWebViewReady: boolean = false;
+
   /**
    * アクティブエディタのファイルパスから詳細情報を更新
    * @param filePath アクティブエディタで開いているファイルの絶対パス
@@ -448,14 +461,32 @@ export class FileDetailsViewProvider implements vscode.WebviewViewProvider {
       return;
     }
 
-    // ファイルパスからDialogoiTreeItemを検索
-    const item = await this.treeDataProvider.findItemByAbsolutePath(filePath);
-    if (item !== null) {
-      this.logger.debug(`アクティブエディタファイルの詳細を更新: ${item.name}`);
-      await this.updateFileDetails(item);
-    } else {
-      // Dialogoi管理対象外のファイルの場合は詳細表示をクリア
-      this.logger.debug(`Dialogoi管理対象外ファイル: ${filePath}`);
+    // 重複呼び出し防止: 同じファイルパスが短時間で連続して呼ばれた場合はスキップ
+    const now = Date.now();
+    if (this.lastSearchedFilePath === filePath && now - this.lastSearchTime < 300) {
+      return;
+    }
+
+    this.lastSearchedFilePath = filePath;
+    this.lastSearchTime = now;
+
+    try {
+      // ファイルパスからDialogoiTreeItemを検索
+      const item = await this.treeDataProvider.findItemByAbsolutePath(filePath);
+      if (item !== null) {
+        this.logger.debug(`アクティブエディタファイルの詳細を更新: ${item.name}`);
+        await this.updateFileDetails(item);
+      } else {
+        // Dialogoi管理対象外のファイルの場合は詳細表示をクリア
+        this.logger.debug(`Dialogoi管理対象外ファイル: ${filePath}`);
+        await this.updateFileDetails(null);
+      }
+    } catch (error) {
+      this.logger.error(
+        `updateFileDetailsByPath エラー: ${filePath}`,
+        error instanceof Error ? error : String(error),
+      );
+      // エラーが発生した場合は詳細表示をクリア
       await this.updateFileDetails(null);
     }
   }
@@ -570,7 +601,13 @@ export class FileDetailsViewProvider implements vscode.WebviewViewProvider {
         }
         break;
       case 'ready':
-        // WebViewの準備完了
+        // WebViewの準備完了 - 重複処理を防ぐ
+        if (this.isWebViewReady) {
+          this.logger.debug('WebView ready イベントの重複をスキップ');
+          break;
+        }
+
+        this.isWebViewReady = true;
         this.logger.debug('WebView準備完了 - 起動時アクティブエディタをチェック');
         this.checkInitialActiveEditor();
         void this.updateFileDetails(this.currentItem);
@@ -1281,9 +1318,17 @@ export class FileDetailsViewProvider implements vscode.WebviewViewProvider {
       return;
     }
 
+    // 重複呼び出し防止: 短時間での連続呼び出しをスキップ
+    const now = Date.now();
+    if (now - this.lastUpdateTreeDataTime < 1000) {
+      // 1秒間隔制限
+      return;
+    }
+    this.lastUpdateTreeDataTime = now;
+
     try {
-      // ルートアイテムを取得
-      const rootItems = await this.treeDataProvider.getChildren();
+      // TreeViewのgetChildrenを呼ばず、専用メソッドでルートアイテムを取得
+      const rootItems = await this.treeDataProvider.getTreeDataForWebView();
 
       this._view.webview.postMessage({
         type: 'updateTree',
