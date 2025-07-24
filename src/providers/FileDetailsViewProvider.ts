@@ -1276,6 +1276,13 @@ export class FileDetailsViewProvider implements vscode.WebviewViewProvider {
         this.sendRenameResponse(responseId, true);
         this.logger.info(`ファイル名変更成功: ${oldName} → ${newName}`);
 
+        // currentItemの名前とパスを更新（詳細画面の更新で正しいファイルを検索できるように）
+        if (this.currentItem !== null) {
+          this.currentItem.name = newName;
+          this.currentItem.path = path.join(dirPath, newName);
+          this.logger.debug(`currentItem更新: name=${newName}, path=${this.currentItem.path}`);
+        }
+
         // TreeViewを更新
         if (this.treeDataProvider !== null) {
           this.treeDataProvider.refresh();
