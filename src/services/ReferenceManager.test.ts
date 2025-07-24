@@ -104,8 +104,8 @@ files:
     mockFileRepository.addFile(path.join(charactersDir, 'hero.md'), 'Hero character');
   }
 
-  test('初期化が正しく動作する', () => {
-    refManager.initialize(testDir, mockFileRepository);
+  test('初期化が正しく動作する', async () => {
+    await refManager.initialize(testDir, mockFileRepository);
 
     // chapter1.txtの参照関係をチェック
     const chapter1Refs = refManager.getReferences(path.join(testDir, 'contents', 'chapter1.txt'));
@@ -133,8 +133,8 @@ files:
     assert.deepStrictEqual(magicRefByPaths, ['contents/chapter2.txt']);
   });
 
-  test('単一ファイルの参照関係を更新できる', () => {
-    refManager.initialize(testDir, mockFileRepository);
+  test('単一ファイルの参照関係を更新できる', async () => {
+    await refManager.initialize(testDir, mockFileRepository);
 
     const filePath = path.join(testDir, 'contents', 'chapter1.txt');
     const newReferences = ['settings/world.md', 'settings/magic.md']; // hero.mdを削除、magic.mdを追加
@@ -160,8 +160,8 @@ files:
     );
   });
 
-  test('存在しないファイルの参照関係を取得すると空の配列が返る', () => {
-    refManager.initialize(testDir, mockFileRepository);
+  test('存在しないファイルの参照関係を取得すると空の配列が返る', async () => {
+    await refManager.initialize(testDir, mockFileRepository);
 
     const nonExistentPath = path.join(testDir, 'non-existent.txt');
     const refs = refManager.getReferences(nonExistentPath);
@@ -170,8 +170,8 @@ files:
     assert.deepStrictEqual(refs.referencedBy, []);
   });
 
-  test('clearメソッドで参照関係がクリアされる', () => {
-    refManager.initialize(testDir, mockFileRepository);
+  test('clearメソッドで参照関係がクリアされる', async () => {
+    await refManager.initialize(testDir, mockFileRepository);
 
     // 初期化後は参照関係がある
     const chapter1Refs = refManager.getReferences(path.join(testDir, 'contents', 'chapter1.txt'));
@@ -188,7 +188,7 @@ files:
   });
 
   test('ファイルの存在チェック（非同期版）が正しく動作する', async () => {
-    refManager.initialize(testDir, mockFileRepository);
+    await refManager.initialize(testDir, mockFileRepository);
 
     // 存在するファイル
     assert.strictEqual(await refManager.checkFileExistsAsync('settings/world.md'), true);
@@ -200,7 +200,7 @@ files:
   });
 
   test('無効な参照先ファイルを取得（非同期版）できる', async () => {
-    refManager.initialize(testDir, mockFileRepository);
+    await refManager.initialize(testDir, mockFileRepository);
 
     // chapter1.txtに存在しない参照を追加
     const filePath = path.join(testDir, 'contents', 'chapter1.txt');
@@ -219,8 +219,8 @@ files:
     );
   });
 
-  test('空の参照配列で更新すると参照関係が削除される', () => {
-    refManager.initialize(testDir, mockFileRepository);
+  test('空の参照配列で更新すると参照関係が削除される', async () => {
+    await refManager.initialize(testDir, mockFileRepository);
 
     const filePath = path.join(testDir, 'contents', 'chapter1.txt');
 
@@ -243,8 +243,8 @@ files:
     );
   });
 
-  test('同じファイルを複数回参照しても重複しない', () => {
-    refManager.initialize(testDir, mockFileRepository);
+  test('同じファイルを複数回参照しても重複しない', async () => {
+    await refManager.initialize(testDir, mockFileRepository);
 
     const filePath = path.join(testDir, 'contents', 'chapter1.txt');
     const duplicateReferences = [
@@ -275,7 +275,7 @@ files:
   });
 
   test('ファイルの存在チェック（非同期版）が正しく動作する', async () => {
-    refManager.initialize(testDir, mockFileRepository);
+    await refManager.initialize(testDir, mockFileRepository);
 
     // 存在するファイル
     assert.strictEqual(await refManager.checkFileExistsAsync('settings/world.md'), true);
@@ -287,7 +287,7 @@ files:
   });
 
   test('無効な参照先ファイルを取得（非同期版）できる', async () => {
-    refManager.initialize(testDir, mockFileRepository);
+    await refManager.initialize(testDir, mockFileRepository);
 
     // chapter1.txtに存在しない参照を追加
     const filePath = path.join(testDir, 'contents', 'chapter1.txt');

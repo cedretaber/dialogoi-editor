@@ -36,7 +36,7 @@ export function registerReferenceCommands(
         return;
       }
 
-      const result = treeDataProvider.addReference(dirPath, sourceFile, referencePath);
+      const result = await treeDataProvider.addReference(dirPath, sourceFile, referencePath);
 
       if (result.success) {
         vscode.window.showInformationMessage(result.message);
@@ -70,7 +70,7 @@ export function registerReferenceCommands(
       }
 
       const dirPath = treeDataProvider.getDirectoryPath(item);
-      const result = treeDataProvider.removeReference(dirPath, item.name, referenceToRemove);
+      const result = await treeDataProvider.removeReference(dirPath, item.name, referenceToRemove);
 
       if (result.success) {
         vscode.window.showInformationMessage(result.message);
@@ -112,7 +112,7 @@ export function registerReferenceCommands(
               .filter((r) => r !== '');
 
       const dirPath = treeDataProvider.getDirectoryPath(item);
-      const result = treeDataProvider.setReferences(dirPath, item.name, newReferences);
+      const result = await treeDataProvider.setReferences(dirPath, item.name, newReferences);
 
       if (result.success) {
         vscode.window.showInformationMessage(result.message);

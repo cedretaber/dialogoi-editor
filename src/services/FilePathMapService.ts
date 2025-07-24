@@ -39,10 +39,10 @@ export class FilePathMapService {
    * プロジェクト全体をスキャンしてファイルマップを構築
    * @param novelRootAbsolutePath プロジェクトルートの絶対パス
    */
-  buildFileMap(novelRootAbsolutePath: string): void {
+  async buildFileMap(novelRootAbsolutePath: string): Promise<void> {
     this.currentNovelRootPath = novelRootAbsolutePath;
     this.fileMap.clear();
-    this.scanDirectory(novelRootAbsolutePath, novelRootAbsolutePath);
+    await this.scanDirectory(novelRootAbsolutePath, novelRootAbsolutePath);
   }
 
   /**
@@ -50,8 +50,11 @@ export class FilePathMapService {
    * @param dirAbsolutePath スキャンするディレクトリの絶対パス
    * @param novelRootAbsolutePath プロジェクトルートの絶対パス
    */
-  private scanDirectory(dirAbsolutePath: string, novelRootAbsolutePath: string): void {
-    const meta = this.metaYamlService.loadMetaYaml(dirAbsolutePath);
+  private async scanDirectory(
+    dirAbsolutePath: string,
+    novelRootAbsolutePath: string,
+  ): Promise<void> {
+    const meta = await this.metaYamlService.loadMetaYamlAsync(dirAbsolutePath);
     if (!meta) {
       return;
     }
@@ -76,7 +79,7 @@ export class FilePathMapService {
 
       // サブディレクトリの場合は再帰的にスキャン
       if (item.type === 'subdirectory') {
-        this.scanDirectory(absolutePath, novelRootAbsolutePath);
+        await this.scanDirectory(absolutePath, novelRootAbsolutePath);
       }
     }
   }

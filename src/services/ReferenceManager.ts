@@ -41,7 +41,7 @@ export class ReferenceManager {
   /**
    * 参照関係を初期化（全.dialogoi-meta.yamlを走査）
    */
-  initialize(novelRoot: string, fileRepository: FileRepository): void {
+  async initialize(novelRoot: string, fileRepository: FileRepository): Promise<void> {
     this.novelRoot = novelRoot;
     this.fileRepository = fileRepository;
     this.referencesMap.clear();
@@ -52,9 +52,9 @@ export class ReferenceManager {
     this.hyperlinkExtractorService = serviceContainer.getHyperlinkExtractorService();
 
     // ファイルマップを構築
-    this.filePathMapService.buildFileMap(novelRoot);
+    await this.filePathMapService.buildFileMap(novelRoot);
 
-    this.scanAllReferences(novelRoot);
+    await this.scanAllReferences(novelRoot);
   }
 
   /**
@@ -150,19 +150,19 @@ export class ReferenceManager {
   /**
    * 全.dialogoi-meta.yamlを再帰的に走査して参照関係を構築
    */
-  private scanAllReferences(dirPath: string): void {
-    this.scanDirectoryReferences(dirPath, '');
+  private async scanAllReferences(dirPath: string): Promise<void> {
+    await this.scanDirectoryReferences(dirPath, '');
   }
 
   /**
    * 指定ディレクトリの.dialogoi-meta.yamlを読み込み、参照関係を構築
    */
-  private scanDirectoryReferences(dirPath: string, relativeDirPath: string): void {
+  private async scanDirectoryReferences(dirPath: string, relativeDirPath: string): Promise<void> {
     if (!this.fileRepository) {
       return;
     }
     const metaYamlService = ServiceContainer.getInstance().getMetaYamlService();
-    const meta = metaYamlService.loadMetaYaml(dirPath);
+    const meta = await metaYamlService.loadMetaYamlAsync(dirPath);
     if (!meta) {
       return;
     }
@@ -174,7 +174,7 @@ export class ReferenceManager {
       if (file.type === 'subdirectory') {
         // サブディレクトリを再帰的に処理
         const subDirPath = path.join(dirPath, file.name);
-        this.scanDirectoryReferences(subDirPath, fileRelativePath);
+        await this.scanDirectoryReferences(subDirPath, fileRelativePath);
       } else {
         // ファイルの手動参照関係を追加
         if (file.references && file.references.length > 0) {

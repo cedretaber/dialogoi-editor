@@ -55,14 +55,14 @@ export class FileOperationService {
   /**
    * 新しいファイルを作成し、.dialogoi-meta.yamlに追加する（同期版）
    */
-  createFile(
+  async createFile(
     dirPath: string,
     fileName: string,
     fileType: 'content' | 'setting' | 'subdirectory',
     initialContent: string = '',
     tags: string[] = [],
     subtype?: 'character' | 'foreshadowing' | 'glossary',
-  ): FileOperationResult {
+  ): Promise<FileOperationResult> {
     try {
       const filePath = path.join(dirPath, fileName);
       const fileUri = this.fileRepository.createFileUri(filePath);
@@ -108,7 +108,7 @@ export class FileOperationService {
       }
 
       // .dialogoi-meta.yamlを更新
-      const result = this.updateMetaYaml(dirPath, (meta) => {
+      const result = await this.updateMetaYamlAsync(dirPath, (meta) => {
         const newItem: DialogoiTreeItem = {
           name: fileName,
           type: fileType,
@@ -180,7 +180,7 @@ export class FileOperationService {
       }
 
       // .dialogoi-meta.yamlから削除
-      const result = this.updateMetaYaml(dirPath, (meta) => {
+      const result = await this.updateMetaYamlAsync(dirPath, (meta) => {
         meta.files = meta.files.filter((file) => file.name !== fileName);
         return meta;
       });
@@ -213,9 +213,13 @@ export class FileOperationService {
   /**
    * ファイルの順序を変更する
    */
-  reorderFiles(dirPath: string, fromIndex: number, toIndex: number): FileOperationResult {
+  async reorderFiles(
+    dirPath: string,
+    fromIndex: number,
+    toIndex: number,
+  ): Promise<FileOperationResult> {
     try {
-      const result = this.updateMetaYaml(dirPath, (meta) => {
+      const result = await this.updateMetaYamlAsync(dirPath, (meta) => {
         if (
           fromIndex < 0 ||
           fromIndex >= meta.files.length ||
@@ -282,7 +286,7 @@ export class FileOperationService {
       }
 
       // .dialogoi-meta.yamlを更新
-      const result = this.updateMetaYaml(dirPath, (meta) => {
+      const result = await this.updateMetaYamlAsync(dirPath, (meta) => {
         const fileIndex = meta.files.findIndex((file) => file.name === oldName);
         if (fileIndex === -1) {
           throw new Error(`.dialogoi-meta.yaml内にファイル ${oldName} が見つかりません。`);
@@ -371,7 +375,7 @@ export class FileOperationService {
       }
 
       // .dialogoi-meta.yamlを更新
-      const result = this.updateMetaYaml(dirPath, (meta) => {
+      const result = await this.updateMetaYamlAsync(dirPath, (meta) => {
         const fileIndex = meta.files.findIndex((file) => file.name === oldName);
         if (fileIndex === -1) {
           throw new Error(`.dialogoi-meta.yaml内にファイル ${oldName} が見つかりません。`);
@@ -431,9 +435,9 @@ export class FileOperationService {
   /**
    * ファイルにタグを追加する
    */
-  addTag(dirPath: string, fileName: string, tag: string): FileOperationResult {
+  async addTag(dirPath: string, fileName: string, tag: string): Promise<FileOperationResult> {
     try {
-      const result = this.updateMetaYaml(dirPath, (meta) => {
+      const result = await this.updateMetaYamlAsync(dirPath, (meta) => {
         const fileIndex = meta.files.findIndex((file) => file.name === fileName);
         if (fileIndex === -1) {
           throw new Error(`.dialogoi-meta.yaml内にファイル ${fileName} が見つかりません。`);
@@ -473,9 +477,9 @@ export class FileOperationService {
   /**
    * ファイルからタグを削除する
    */
-  removeTag(dirPath: string, fileName: string, tag: string): FileOperationResult {
+  async removeTag(dirPath: string, fileName: string, tag: string): Promise<FileOperationResult> {
     try {
-      const result = this.updateMetaYaml(dirPath, (meta) => {
+      const result = await this.updateMetaYamlAsync(dirPath, (meta) => {
         const fileIndex = meta.files.findIndex((file) => file.name === fileName);
         if (fileIndex === -1) {
           throw new Error(`.dialogoi-meta.yaml内にファイル ${fileName} が見つかりません。`);
@@ -514,9 +518,9 @@ export class FileOperationService {
   /**
    * ファイルのタグを一括で設定する
    */
-  setTags(dirPath: string, fileName: string, tags: string[]): FileOperationResult {
+  async setTags(dirPath: string, fileName: string, tags: string[]): Promise<FileOperationResult> {
     try {
-      const result = this.updateMetaYaml(dirPath, (meta) => {
+      const result = await this.updateMetaYamlAsync(dirPath, (meta) => {
         const fileIndex = meta.files.findIndex((file) => file.name === fileName);
         if (fileIndex === -1) {
           throw new Error(`.dialogoi-meta.yaml内にファイル ${fileName} が見つかりません。`);
@@ -550,9 +554,13 @@ export class FileOperationService {
   /**
    * ファイルに参照を追加する
    */
-  addReference(dirPath: string, fileName: string, referencePath: string): FileOperationResult {
+  async addReference(
+    dirPath: string,
+    fileName: string,
+    referencePath: string,
+  ): Promise<FileOperationResult> {
     try {
-      const result = this.updateMetaYaml(dirPath, (meta) => {
+      const result = await this.updateMetaYamlAsync(dirPath, (meta) => {
         const fileIndex = meta.files.findIndex((file) => file.name === fileName);
         if (fileIndex === -1) {
           throw new Error(`.dialogoi-meta.yaml内にファイル ${fileName} が見つかりません。`);
@@ -592,9 +600,13 @@ export class FileOperationService {
   /**
    * ファイルから参照を削除する
    */
-  removeReference(dirPath: string, fileName: string, referencePath: string): FileOperationResult {
+  async removeReference(
+    dirPath: string,
+    fileName: string,
+    referencePath: string,
+  ): Promise<FileOperationResult> {
     try {
-      const result = this.updateMetaYaml(dirPath, (meta) => {
+      const result = await this.updateMetaYamlAsync(dirPath, (meta) => {
         const fileIndex = meta.files.findIndex((file) => file.name === fileName);
         if (fileIndex === -1) {
           throw new Error(`.dialogoi-meta.yaml内にファイル ${fileName} が見つかりません。`);
@@ -633,9 +645,13 @@ export class FileOperationService {
   /**
    * ファイルの参照を一括で設定する
    */
-  setReferences(dirPath: string, fileName: string, references: string[]): FileOperationResult {
+  async setReferences(
+    dirPath: string,
+    fileName: string,
+    references: string[],
+  ): Promise<FileOperationResult> {
     try {
-      const result = this.updateMetaYaml(dirPath, (meta) => {
+      const result = await this.updateMetaYamlAsync(dirPath, (meta) => {
         const fileIndex = meta.files.findIndex((file) => file.name === fileName);
         if (fileIndex === -1) {
           throw new Error(`.dialogoi-meta.yaml内にファイル ${fileName} が見つかりません。`);
@@ -669,13 +685,13 @@ export class FileOperationService {
   /**
    * ファイルのキャラクター重要度を設定する
    */
-  setCharacterImportance(
+  async setCharacterImportance(
     dirPath: string,
     fileName: string,
     importance: 'main' | 'sub' | 'background',
-  ): FileOperationResult {
+  ): Promise<FileOperationResult> {
     try {
-      const result = this.updateMetaYaml(dirPath, (meta) => {
+      const result = await this.updateMetaYamlAsync(dirPath, (meta) => {
         const fileIndex = meta.files.findIndex((file) => file.name === fileName);
         if (fileIndex === -1) {
           throw new Error(`.dialogoi-meta.yaml内にファイル ${fileName} が見つかりません。`);
@@ -715,13 +731,13 @@ export class FileOperationService {
   /**
    * ファイルの複数キャラクターフラグを設定する
    */
-  setMultipleCharacters(
+  async setMultipleCharacters(
     dirPath: string,
     fileName: string,
     multipleCharacters: boolean,
-  ): FileOperationResult {
+  ): Promise<FileOperationResult> {
     try {
-      const result = this.updateMetaYaml(dirPath, (meta) => {
+      const result = await this.updateMetaYamlAsync(dirPath, (meta) => {
         const fileIndex = meta.files.findIndex((file) => file.name === fileName);
         if (fileIndex === -1) {
           throw new Error(`.dialogoi-meta.yaml内にファイル ${fileName} が見つかりません。`);
@@ -761,9 +777,9 @@ export class FileOperationService {
   /**
    * ファイルのキャラクター設定を削除する
    */
-  removeCharacter(dirPath: string, fileName: string): FileOperationResult {
+  async removeCharacter(dirPath: string, fileName: string): Promise<FileOperationResult> {
     try {
-      const result = this.updateMetaYaml(dirPath, (meta) => {
+      const result = await this.updateMetaYamlAsync(dirPath, (meta) => {
         const fileIndex = meta.files.findIndex((file) => file.name === fileName);
         if (fileIndex === -1) {
           throw new Error(`.dialogoi-meta.yaml内にファイル ${fileName} が見つかりません。`);
@@ -796,13 +812,13 @@ export class FileOperationService {
   /**
    * ファイルの伏線設定を設定する
    */
-  setForeshadowing(
+  async setForeshadowing(
     dirPath: string,
     fileName: string,
     foreshadowingData: ForeshadowingData,
-  ): FileOperationResult {
+  ): Promise<FileOperationResult> {
     try {
-      const result = this.updateMetaYaml(dirPath, (meta) => {
+      const result = await this.updateMetaYamlAsync(dirPath, (meta) => {
         const fileIndex = meta.files.findIndex((file) => file.name === fileName);
         if (fileIndex === -1) {
           throw new Error(`.dialogoi-meta.yaml内にファイル ${fileName} が見つかりません。`);
@@ -838,9 +854,9 @@ export class FileOperationService {
   /**
    * ファイルの伏線設定を削除する
    */
-  removeForeshadowing(dirPath: string, fileName: string): FileOperationResult {
+  async removeForeshadowing(dirPath: string, fileName: string): Promise<FileOperationResult> {
     try {
-      const result = this.updateMetaYaml(dirPath, (meta) => {
+      const result = await this.updateMetaYamlAsync(dirPath, (meta) => {
         const fileIndex = meta.files.findIndex((file) => file.name === fileName);
         if (fileIndex === -1) {
           throw new Error(`.dialogoi-meta.yaml内にファイル ${fileName} が見つかりません。`);
@@ -1023,7 +1039,7 @@ export class FileOperationService {
 
       // メタデータの更新（ロールバック対応のため、まずメタデータを更新）
       // TODO: Phase 4完了後にmoveDirectoryInMetadataAsyncに変更
-      const moveResult = this.metaYamlService.moveDirectoryInMetadata(
+      const moveResult = await this.metaYamlService.moveDirectoryInMetadata(
         sourceParentDir,
         targetParentDir,
         dirName,
@@ -1050,7 +1066,11 @@ export class FileOperationService {
       } catch (physicalMoveError) {
         // 物理ディレクトリ移動に失敗した場合、メタデータをロールバック
         // TODO: Phase 4完了後にmoveDirectoryInMetadataAsyncに変更
-        this.metaYamlService.moveDirectoryInMetadata(targetParentDir, sourceParentDir, dirName);
+        void this.metaYamlService.moveDirectoryInMetadata(
+          targetParentDir,
+          sourceParentDir,
+          dirName,
+        );
 
         return {
           success: false,
@@ -1132,7 +1152,7 @@ export class FileOperationService {
 
       // メタデータの更新（ロールバック対応のため、まずメタデータを更新）
       // TODO: Phase 4完了後にmoveFileInMetadataAsyncに変更
-      const moveFileResult = this.metaYamlService.moveFileInMetadata(
+      const moveFileResult = await this.metaYamlService.moveFileInMetadata(
         sourceDir,
         targetDir,
         fileName,
@@ -1180,7 +1200,7 @@ export class FileOperationService {
       } catch (physicalMoveError) {
         // 物理ファイル移動に失敗した場合、メタデータをロールバック
         // TODO: Phase 4完了後にmoveFileInMetadataAsyncに変更
-        this.metaYamlService.moveFileInMetadata(targetDir, sourceDir, fileName);
+        void this.metaYamlService.moveFileInMetadata(targetDir, sourceDir, fileName);
 
         return {
           success: false,
@@ -1284,54 +1304,6 @@ export class FileOperationService {
       }
     } catch {
       // ディレクトリ読み込みエラーは無視
-    }
-  }
-
-  /**
-   * .dialogoi-meta.yamlを更新する共通ロジック
-   */
-  private updateMetaYaml(
-    dirPath: string,
-    updateFunction: (meta: MetaYaml) => MetaYaml,
-  ): FileOperationResult {
-    try {
-      // .dialogoi-meta.yamlを読み込み
-      const meta = this.metaYamlService.loadMetaYaml(dirPath);
-      if (meta === null) {
-        return {
-          success: false,
-          message: '.dialogoi-meta.yamlが見つからないか、読み込みに失敗しました。',
-        };
-      }
-
-      // 更新を実行
-      const updatedMeta = updateFunction(meta);
-
-      // .dialogoi-meta.yamlを保存
-      const saveResult = this.metaYamlService.saveMetaYaml(dirPath, updatedMeta);
-      if (!saveResult) {
-        return {
-          success: false,
-          message: '.dialogoi-meta.yamlの保存に失敗しました。',
-        };
-      }
-
-      // パスを更新したアイテムを返す
-      const updatedItems = updatedMeta.files.map((file: DialogoiTreeItem) => ({
-        ...file,
-        path: path.join(dirPath, file.name),
-      }));
-
-      return {
-        success: true,
-        message: '.dialogoi-meta.yamlを更新しました。',
-        updatedItems,
-      };
-    } catch (error) {
-      return {
-        success: false,
-        message: `.dialogoi-meta.yaml更新エラー: ${error instanceof Error ? error.message : String(error)}`,
-      };
     }
   }
 

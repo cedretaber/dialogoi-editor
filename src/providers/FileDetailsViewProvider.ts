@@ -261,12 +261,12 @@ export class FileDetailsViewProvider implements vscode.WebviewViewProvider {
   /**
    * 現在のアイテムを再読み込みしてWebViewを更新
    */
-  private refreshCurrentItem(): void {
+  private async refreshCurrentItem(): Promise<void> {
     if (this.currentItem && this._view && this.treeDataProvider) {
       this.logger.debug(`WebView更新実行: ${this.currentItem.path}`);
 
       // TreeDataProviderから最新のアイテムデータを取得
-      const updatedItem = this.getUpdatedCurrentItem();
+      const updatedItem = await this.getUpdatedCurrentItem();
       if (updatedItem) {
         this.logger.debug('最新のアイテムデータを取得して更新');
         void this.updateFileDetails(updatedItem);
@@ -282,7 +282,7 @@ export class FileDetailsViewProvider implements vscode.WebviewViewProvider {
   /**
    * TreeDataProviderから現在のアイテムの最新データを取得
    */
-  private getUpdatedCurrentItem(): DialogoiTreeItem | null {
+  private async getUpdatedCurrentItem(): Promise<DialogoiTreeItem | null> {
     if (!this.currentItem || !this.treeDataProvider) {
       return null;
     }
@@ -295,7 +295,7 @@ export class FileDetailsViewProvider implements vscode.WebviewViewProvider {
       const fileName = this.currentItem.name;
 
       if (this.metaYamlService) {
-        const meta = this.metaYamlService.loadMetaYaml(dirPath);
+        const meta = await this.metaYamlService.loadMetaYamlAsync(dirPath);
         if (meta) {
           const fileItem = meta.files.find((item) => item.name === fileName);
           if (fileItem) {
@@ -354,7 +354,7 @@ export class FileDetailsViewProvider implements vscode.WebviewViewProvider {
       // ReferenceManagerが初期化されていない場合は初期化
       if (!referenceManager.isInitialized()) {
         const fileRepository = serviceContainer.getFileRepository();
-        referenceManager.initialize(projectRoot, fileRepository);
+        void referenceManager.initialize(projectRoot, fileRepository);
       }
 
       const referenceInfo = referenceManager.getReferences(filePath);
@@ -522,12 +522,12 @@ export class FileDetailsViewProvider implements vscode.WebviewViewProvider {
     switch (msg.type) {
       case 'addTag':
         if (msg.payload?.tag !== undefined && msg.payload.tag !== null && msg.payload.tag !== '') {
-          this.handleAddTag(msg.payload.tag);
+          void this.handleAddTag(msg.payload.tag);
         }
         break;
       case 'removeTag':
         if (msg.payload?.tag !== undefined && msg.payload.tag !== null && msg.payload.tag !== '') {
-          this.handleRemoveTag(msg.payload.tag);
+          void this.handleRemoveTag(msg.payload.tag);
         }
         break;
       case 'addReference':
@@ -536,7 +536,7 @@ export class FileDetailsViewProvider implements vscode.WebviewViewProvider {
           msg.payload.reference !== null &&
           msg.payload.reference !== ''
         ) {
-          this.handleAddReference(msg.payload.reference);
+          void this.handleAddReference(msg.payload.reference);
         }
         break;
       case 'removeReference':
@@ -545,7 +545,7 @@ export class FileDetailsViewProvider implements vscode.WebviewViewProvider {
           msg.payload.reference !== null &&
           msg.payload.reference !== ''
         ) {
-          this.handleRemoveReference(msg.payload.reference);
+          void this.handleRemoveReference(msg.payload.reference);
         }
         break;
       case 'removeReverseReference':
@@ -558,7 +558,7 @@ export class FileDetailsViewProvider implements vscode.WebviewViewProvider {
         }
         break;
       case 'removeCharacter':
-        this.handleRemoveCharacter();
+        void this.handleRemoveCharacter();
         break;
       case 'openReference':
         if (
@@ -605,12 +605,12 @@ export class FileDetailsViewProvider implements vscode.WebviewViewProvider {
         break;
       case 'addForeshadowingPlant':
         if (msg.payload?.plant !== undefined && msg.payload.plant !== null) {
-          this.handleAddForeshadowingPlant(msg.payload.plant);
+          void this.handleAddForeshadowingPlant(msg.payload.plant);
         }
         break;
       case 'removeForeshadowingPlant':
         if (msg.payload?.plantIndex !== undefined && msg.payload.plantIndex !== null) {
-          this.handleRemoveForeshadowingPlant(msg.payload.plantIndex);
+          void this.handleRemoveForeshadowingPlant(msg.payload.plantIndex);
         }
         break;
       case 'updateForeshadowingPlant':
@@ -620,16 +620,16 @@ export class FileDetailsViewProvider implements vscode.WebviewViewProvider {
           msg.payload.plant !== undefined &&
           msg.payload.plant !== null
         ) {
-          this.handleUpdateForeshadowingPlant(msg.payload.plantIndex, msg.payload.plant);
+          void this.handleUpdateForeshadowingPlant(msg.payload.plantIndex, msg.payload.plant);
         }
         break;
       case 'setForeshadowingPayoff':
         if (msg.payload?.payoff !== undefined && msg.payload.payoff !== null) {
-          this.handleSetForeshadowingPayoff(msg.payload.payoff);
+          void this.handleSetForeshadowingPayoff(msg.payload.payoff);
         }
         break;
       case 'removeForeshadowingPayoff':
-        this.handleRemoveForeshadowingPayoff();
+        void this.handleRemoveForeshadowingPayoff();
         break;
       default:
         this.logger.debug('未知のメッセージタイプ', msg.type);
@@ -639,7 +639,7 @@ export class FileDetailsViewProvider implements vscode.WebviewViewProvider {
   /**
    * タグ追加処理
    */
-  private handleAddTag(tag: string): void {
+  private async handleAddTag(tag: string): Promise<void> {
     if (!this.currentItem || !tag) {
       return;
     }
@@ -650,7 +650,7 @@ export class FileDetailsViewProvider implements vscode.WebviewViewProvider {
       const fileName = this.currentItem.name;
 
       // MetaYamlServiceを使ってタグを追加
-      const success = this.metaYamlService?.addFileTag(dirPath, fileName, tag);
+      const success = await this.metaYamlService?.addFileTag(dirPath, fileName, tag);
 
       if (success === true) {
         this.logger.info(`タグ追加: ${tag} → ${fileName}`);
@@ -682,7 +682,7 @@ export class FileDetailsViewProvider implements vscode.WebviewViewProvider {
   /**
    * タグ削除処理
    */
-  private handleRemoveTag(tag: string): void {
+  private async handleRemoveTag(tag: string): Promise<void> {
     if (!this.currentItem || !tag) {
       return;
     }
@@ -693,7 +693,7 @@ export class FileDetailsViewProvider implements vscode.WebviewViewProvider {
       const fileName = this.currentItem.name;
 
       // MetaYamlServiceを使ってタグを削除
-      const success = this.metaYamlService?.removeFileTag(dirPath, fileName, tag);
+      const success = await this.metaYamlService?.removeFileTag(dirPath, fileName, tag);
 
       if (success === true) {
         this.logger.info(`タグ削除: ${tag} ← ${fileName}`);
@@ -725,7 +725,7 @@ export class FileDetailsViewProvider implements vscode.WebviewViewProvider {
   /**
    * 参照追加処理
    */
-  private handleAddReference(reference: string): void {
+  private async handleAddReference(reference: string): Promise<void> {
     if (!this.currentItem || !reference || !this.treeDataProvider) {
       return;
     }
@@ -733,7 +733,7 @@ export class FileDetailsViewProvider implements vscode.WebviewViewProvider {
     try {
       // DialogoiTreeDataProviderのaddReferenceメソッドを使用
       const dirAbsolutePath = path.dirname(this.currentItem.path);
-      const result = this.treeDataProvider.addReference(
+      const result = await this.treeDataProvider.addReference(
         dirAbsolutePath,
         this.currentItem.name,
         reference,
@@ -852,7 +852,7 @@ export class FileDetailsViewProvider implements vscode.WebviewViewProvider {
         .replace(/\\/g, '/');
 
       // 参照元ファイルのmeta.yamlから現在のファイルへの参照を削除
-      const success = this.metaYamlService?.removeFileReference(
+      const success = await this.metaYamlService?.removeFileReferenceAsync(
         referenceSourceDirPath,
         referenceSourceFileName,
         currentFileRelativePath,
@@ -870,7 +870,7 @@ export class FileDetailsViewProvider implements vscode.WebviewViewProvider {
 
           // プロジェクト全体の参照関係を再スキャンして確実に更新
           const fileRepository = ServiceContainer.getInstance().getFileRepository();
-          referenceManager.initialize(projectRoot, fileRepository);
+          void referenceManager.initialize(projectRoot, fileRepository);
         }
 
         // TreeViewを更新（WebViewは自動的にイベント経由で更新される）
@@ -899,7 +899,7 @@ export class FileDetailsViewProvider implements vscode.WebviewViewProvider {
   /**
    * 参照削除処理
    */
-  private handleRemoveReference(reference: string): void {
+  private async handleRemoveReference(reference: string): Promise<void> {
     if (!this.currentItem || !reference || !this.treeDataProvider) {
       return;
     }
@@ -909,7 +909,7 @@ export class FileDetailsViewProvider implements vscode.WebviewViewProvider {
       const fileName = this.currentItem.name;
 
       // TreeDataProviderのremoveReferenceメソッドを使用
-      const result = this.treeDataProvider.removeReference(dirPath, fileName, reference);
+      const result = await this.treeDataProvider.removeReference(dirPath, fileName, reference);
       if (result.success) {
         this.logger.info(`参照削除: ${reference} → ${fileName}`);
         vscode.window.showInformationMessage(result.message);
@@ -928,7 +928,7 @@ export class FileDetailsViewProvider implements vscode.WebviewViewProvider {
   /**
    * キャラクター情報削除処理
    */
-  private handleRemoveCharacter(): void {
+  private async handleRemoveCharacter(): Promise<void> {
     if (!this.currentItem) {
       return;
     }
@@ -937,7 +937,7 @@ export class FileDetailsViewProvider implements vscode.WebviewViewProvider {
       const dirPath = path.dirname(this.currentItem.path || '');
       const fileName = this.currentItem.name;
 
-      const success = this.metaYamlService?.removeFileCharacter(dirPath, fileName);
+      const success = await this.metaYamlService?.removeFileCharacterAsync(dirPath, fileName);
       if (success === true) {
         this.logger.info(`キャラクター情報削除: ${fileName}`);
         vscode.window.showInformationMessage('キャラクター情報を削除しました');
@@ -987,7 +987,7 @@ export class FileDetailsViewProvider implements vscode.WebviewViewProvider {
   /**
    * 伏線の植込み位置を追加
    */
-  private handleAddForeshadowingPlant(plant: ForeshadowingPoint): void {
+  private async handleAddForeshadowingPlant(plant: ForeshadowingPoint): Promise<void> {
     if (!this.currentItem) {
       return;
     }
@@ -1000,7 +1000,7 @@ export class FileDetailsViewProvider implements vscode.WebviewViewProvider {
       const serviceContainer = ServiceContainer.getInstance();
       const foreshadowingService = serviceContainer.getForeshadowingService();
 
-      const result = foreshadowingService.addPlant(dirPath, fileName, plant);
+      const result = await foreshadowingService.addPlant(dirPath, fileName, plant);
 
       if (result.success) {
         this.logger.info(`伏線植込み位置追加: ${plant.location} → ${fileName}`);
@@ -1032,7 +1032,7 @@ export class FileDetailsViewProvider implements vscode.WebviewViewProvider {
   /**
    * 伏線の植込み位置を削除
    */
-  private handleRemoveForeshadowingPlant(index: number): void {
+  private async handleRemoveForeshadowingPlant(index: number): Promise<void> {
     if (!this.currentItem) {
       return;
     }
@@ -1045,7 +1045,7 @@ export class FileDetailsViewProvider implements vscode.WebviewViewProvider {
       const serviceContainer = ServiceContainer.getInstance();
       const foreshadowingService = serviceContainer.getForeshadowingService();
 
-      const result = foreshadowingService.removePlant(dirPath, fileName, index);
+      const result = await foreshadowingService.removePlant(dirPath, fileName, index);
 
       if (result.success) {
         this.logger.info(`伏線植込み位置削除: インデックス ${index} → ${fileName}`);
@@ -1077,7 +1077,10 @@ export class FileDetailsViewProvider implements vscode.WebviewViewProvider {
   /**
    * 伏線の植込み位置を更新
    */
-  private handleUpdateForeshadowingPlant(index: number, plant: ForeshadowingPoint): void {
+  private async handleUpdateForeshadowingPlant(
+    index: number,
+    plant: ForeshadowingPoint,
+  ): Promise<void> {
     if (!this.currentItem) {
       return;
     }
@@ -1090,7 +1093,7 @@ export class FileDetailsViewProvider implements vscode.WebviewViewProvider {
       const serviceContainer = ServiceContainer.getInstance();
       const foreshadowingService = serviceContainer.getForeshadowingService();
 
-      const result = foreshadowingService.updatePlant(dirPath, fileName, index, plant);
+      const result = await foreshadowingService.updatePlant(dirPath, fileName, index, plant);
 
       if (result.success) {
         this.logger.info(`伏線植込み位置更新: インデックス ${index} → ${fileName}`);
@@ -1123,7 +1126,7 @@ export class FileDetailsViewProvider implements vscode.WebviewViewProvider {
   /**
    * 伏線の回収位置を設定
    */
-  private handleSetForeshadowingPayoff(payoff: ForeshadowingPoint): void {
+  private async handleSetForeshadowingPayoff(payoff: ForeshadowingPoint): Promise<void> {
     if (!this.currentItem) {
       return;
     }
@@ -1136,7 +1139,7 @@ export class FileDetailsViewProvider implements vscode.WebviewViewProvider {
       const serviceContainer = ServiceContainer.getInstance();
       const foreshadowingService = serviceContainer.getForeshadowingService();
 
-      const result = foreshadowingService.setPayoff(dirPath, fileName, payoff);
+      const result = await foreshadowingService.setPayoff(dirPath, fileName, payoff);
 
       if (result.success) {
         this.logger.info(`伏線回収位置設定: ${payoff.location} → ${fileName}`);
@@ -1168,7 +1171,7 @@ export class FileDetailsViewProvider implements vscode.WebviewViewProvider {
   /**
    * 伏線の回収位置を削除
    */
-  private handleRemoveForeshadowingPayoff(): void {
+  private async handleRemoveForeshadowingPayoff(): Promise<void> {
     if (!this.currentItem) {
       return;
     }
@@ -1181,7 +1184,7 @@ export class FileDetailsViewProvider implements vscode.WebviewViewProvider {
       const serviceContainer = ServiceContainer.getInstance();
       const foreshadowingService = serviceContainer.getForeshadowingService();
 
-      const result = foreshadowingService.removePayoff(dirPath, fileName);
+      const result = await foreshadowingService.removePayoff(dirPath, fileName);
 
       if (result.success) {
         this.logger.info(`伏線回収位置削除: ${fileName}`);

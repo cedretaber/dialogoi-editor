@@ -136,14 +136,14 @@ export class ForeshadowingService {
    * @param plant 追加する植込み位置
    * @returns 操作の成功/失敗とメッセージ
    */
-  addPlant(
+  async addPlant(
     dirPath: string,
     fileName: string,
     plant: ForeshadowingPoint,
-  ): { success: boolean; message: string } {
+  ): Promise<{ success: boolean; message: string }> {
     try {
       // meta.yamlを読み込み
-      const meta = this.metaYamlService.loadMetaYaml(dirPath);
+      const meta = await this.metaYamlService.loadMetaYamlAsync(dirPath);
       if (meta === null) {
         return { success: false, message: '.dialogoi-meta.yamlが見つかりません' };
       }
@@ -171,7 +171,7 @@ export class ForeshadowingService {
       fileItem.foreshadowing.plants.push(plant);
 
       // 保存
-      const saveResult = this.metaYamlService.saveMetaYaml(dirPath, meta);
+      const saveResult = await this.metaYamlService.saveMetaYamlAsync(dirPath, meta);
       if (saveResult) {
         return {
           success: true,
@@ -195,14 +195,14 @@ export class ForeshadowingService {
    * @param index 削除する植込み位置のインデックス
    * @returns 操作の成功/失敗とメッセージ
    */
-  removePlant(
+  async removePlant(
     dirPath: string,
     fileName: string,
     index: number,
-  ): { success: boolean; message: string } {
+  ): Promise<{ success: boolean; message: string }> {
     try {
       // meta.yamlを読み込み
-      const meta = this.metaYamlService.loadMetaYaml(dirPath);
+      const meta = await this.metaYamlService.loadMetaYamlAsync(dirPath);
       if (meta === null) {
         return { success: false, message: '.dialogoi-meta.yamlが見つかりません' };
       }
@@ -228,7 +228,7 @@ export class ForeshadowingService {
       fileItem.foreshadowing.plants.splice(index, 1);
 
       // 保存
-      const saveResult = this.metaYamlService.saveMetaYaml(dirPath, meta);
+      const saveResult = await this.metaYamlService.saveMetaYamlAsync(dirPath, meta);
       if (saveResult) {
         const plantLocation = removedPlant?.location ?? 'unknown';
         return {
@@ -254,15 +254,15 @@ export class ForeshadowingService {
    * @param plant 新しい植込み位置データ
    * @returns 操作の成功/失敗とメッセージ
    */
-  updatePlant(
+  async updatePlant(
     dirPath: string,
     fileName: string,
     index: number,
     plant: ForeshadowingPoint,
-  ): { success: boolean; message: string } {
+  ): Promise<{ success: boolean; message: string }> {
     try {
       // meta.yamlを読み込み
-      const meta = this.metaYamlService.loadMetaYaml(dirPath);
+      const meta = await this.metaYamlService.loadMetaYamlAsync(dirPath);
       if (meta === null) {
         return { success: false, message: '.dialogoi-meta.yamlが見つかりません' };
       }
@@ -288,7 +288,7 @@ export class ForeshadowingService {
       fileItem.foreshadowing.plants[index] = plant;
 
       // 保存
-      const saveResult = this.metaYamlService.saveMetaYaml(dirPath, meta);
+      const saveResult = await this.metaYamlService.saveMetaYamlAsync(dirPath, meta);
       if (saveResult) {
         return {
           success: true,
@@ -312,14 +312,14 @@ export class ForeshadowingService {
    * @param payoff 新しい回収位置データ
    * @returns 操作の成功/失敗とメッセージ
    */
-  setPayoff(
+  async setPayoff(
     dirPath: string,
     fileName: string,
     payoff: ForeshadowingPoint,
-  ): { success: boolean; message: string } {
+  ): Promise<{ success: boolean; message: string }> {
     try {
       // meta.yamlを読み込み
-      const meta = this.metaYamlService.loadMetaYaml(dirPath);
+      const meta = await this.metaYamlService.loadMetaYamlAsync(dirPath);
       if (meta === null) {
         return { success: false, message: '.dialogoi-meta.yamlが見つかりません' };
       }
@@ -348,7 +348,7 @@ export class ForeshadowingService {
       fileItem.foreshadowing.payoff = payoff;
 
       // 保存
-      const saveResult = this.metaYamlService.saveMetaYaml(dirPath, meta);
+      const saveResult = await this.metaYamlService.saveMetaYamlAsync(dirPath, meta);
       if (saveResult) {
         return {
           success: true,
@@ -371,10 +371,13 @@ export class ForeshadowingService {
    * @param fileName ファイル名
    * @returns 操作の成功/失敗とメッセージ
    */
-  removePayoff(dirPath: string, fileName: string): { success: boolean; message: string } {
+  async removePayoff(
+    dirPath: string,
+    fileName: string,
+  ): Promise<{ success: boolean; message: string }> {
     try {
       // meta.yamlを読み込み
-      const meta = this.metaYamlService.loadMetaYaml(dirPath);
+      const meta = await this.metaYamlService.loadMetaYamlAsync(dirPath);
       if (meta === null) {
         return { success: false, message: '.dialogoi-meta.yamlが見つかりません' };
       }
@@ -395,7 +398,7 @@ export class ForeshadowingService {
       fileItem.foreshadowing.payoff = { location: '', comment: '' };
 
       // 保存
-      const saveResult = this.metaYamlService.saveMetaYaml(dirPath, meta);
+      const saveResult = await this.metaYamlService.saveMetaYamlAsync(dirPath, meta);
       if (saveResult) {
         return {
           success: true,

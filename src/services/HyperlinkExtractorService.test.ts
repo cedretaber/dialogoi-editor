@@ -111,7 +111,7 @@ suite('HyperlinkExtractorService テストスイート', () => {
   });
 
   suite('filterProjectLinks', () => {
-    test('プロジェクト内リンクのみをフィルタリングできる', () => {
+    test('プロジェクト内リンクのみをフィルタリングできる', async () => {
       // テストプロジェクト構造を作成
       const novelRoot = '/test/novel';
 
@@ -146,7 +146,7 @@ files:
 `,
       );
 
-      filePathMapService.buildFileMap(novelRoot);
+      await filePathMapService.buildFileMap(novelRoot);
 
       const links = [
         { text: 'プロジェクト内', url: 'settings/world.md' },
@@ -164,7 +164,7 @@ files:
       assert.strictEqual(projectLinks.includes('settings/character.md'), true);
     });
 
-    test('相対パスも正しく処理される', () => {
+    test('相対パスも正しく処理される', async () => {
       const novelRoot = '/test/novel';
 
       // サービスを作成
@@ -194,7 +194,7 @@ files:
 `,
       );
 
-      filePathMapService.buildFileMap(novelRoot);
+      await filePathMapService.buildFileMap(novelRoot);
 
       const links = [
         { text: 'カレント相対', url: './settings/world.md' },
@@ -260,7 +260,7 @@ files:
       `,
       );
 
-      filePathMapService.buildFileMap(novelRoot);
+      await filePathMapService.buildFileMap(novelRoot);
 
       const projectLinks = await service.extractProjectLinksAsync(`${novelRoot}/第1章.md`);
 
@@ -321,7 +321,7 @@ files:
       `,
       );
 
-      filePathMapService.buildFileMap(novelRoot);
+      await filePathMapService.buildFileMap(novelRoot);
 
       const projectLinks = await service.refreshFileLinksAsync(`${novelRoot}/test.md`);
 
@@ -370,7 +370,7 @@ files:
       `,
       );
 
-      filePathMapService.buildFileMap(novelRoot);
+      await filePathMapService.buildFileMap(novelRoot);
 
       const filePaths = [`${novelRoot}/file1.md`, `${novelRoot}/file2.md`];
       const result = await service.extractProjectLinksFromFilesAsync(filePaths);
@@ -450,7 +450,7 @@ files:
 その他の情報...`,
       );
 
-      filePathMapService.buildFileMap(novelRoot);
+      await filePathMapService.buildFileMap(novelRoot);
 
       // デバッグ：ファイルマップの状態を確認
       // テスト対象のファイルが正しく認識されているかチェック
@@ -543,7 +543,7 @@ files:
 `,
       );
 
-      filePathMapService.buildFileMap(novelRoot);
+      await filePathMapService.buildFileMap(novelRoot);
 
       const links = await service.extractProjectLinksAsync(`${novelRoot}/chapter1.md`);
 
@@ -577,7 +577,7 @@ files:
 
       mockFileRepo.createFileForTest(`${novelRoot}/file2.md`, `[同じターゲット](target.md)`);
 
-      filePathMapService.buildFileMap(novelRoot);
+      await filePathMapService.buildFileMap(novelRoot);
 
       const filePaths = [`${novelRoot}/file1.md`, `${novelRoot}/file2.md`];
       const result = await service.extractProjectLinksFromFilesAsync(filePaths);
@@ -621,7 +621,7 @@ files:
 
       mockFileRepo.createFileForTest(`${novelRoot}/chapter.md`, `[リンク](target.md)`);
 
-      filePathMapService.buildFileMap(novelRoot);
+      await filePathMapService.buildFileMap(novelRoot);
 
       const refreshedLinks = await service.refreshFileLinksAsync(`${novelRoot}/chapter.md`);
 

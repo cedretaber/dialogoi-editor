@@ -174,7 +174,7 @@ files:
     // contents/.dialogoi-meta.yamlの内容確認
     const metaYamlService = testContainer.getMetaYamlService();
     const contentsDir = path.join(testProjectRoot, 'contents');
-    const meta = metaYamlService.loadMetaYaml(contentsDir);
+    const meta = await metaYamlService.loadMetaYamlAsync(contentsDir);
 
     assert.notStrictEqual(meta, null);
     if (meta === null) {
@@ -213,7 +213,7 @@ files:
     // meta.yamlの更新確認
     const metaYamlService = testContainer.getMetaYamlService();
     const contentsDir = path.join(testProjectRoot, 'contents');
-    const meta = metaYamlService.loadMetaYaml(contentsDir);
+    const meta = await metaYamlService.loadMetaYamlAsync(contentsDir);
 
     assert.notStrictEqual(meta, null);
     if (meta === null) {

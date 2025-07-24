@@ -33,7 +33,7 @@ export function registerCharacterCommands(
         const fileOperationService = ServiceContainer.getInstance().getFileOperationService(
           provider.getNovelRoot() ?? undefined,
         );
-        const result = fileOperationService.setCharacterImportance(
+        const result = await fileOperationService.setCharacterImportance(
           dirPath,
           fileName,
           selected.value,
@@ -77,7 +77,11 @@ export function registerCharacterCommands(
         const fileOperationService = ServiceContainer.getInstance().getFileOperationService(
           provider.getNovelRoot() ?? undefined,
         );
-        const result = fileOperationService.setMultipleCharacters(dirPath, fileName, newValue);
+        const result = await fileOperationService.setMultipleCharacters(
+          dirPath,
+          fileName,
+          newValue,
+        );
 
         if (result.success) {
           provider.refresh();

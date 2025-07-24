@@ -20,7 +20,7 @@ suite('FilePathMapService テストスイート', () => {
   });
 
   suite('buildFileMap', () => {
-    test('プロジェクト全体をスキャンしてファイルマップを構築できる', () => {
+    test('プロジェクト全体をスキャンしてファイルマップを構築できる', async () => {
       // テストプロジェクト構造を作成
       const novelRoot = '/test/novel';
 
@@ -68,7 +68,7 @@ files:
       );
 
       // ファイルマップを構築
-      service.buildFileMap(novelRoot);
+      await service.buildFileMap(novelRoot);
 
       // マップサイズを確認
       assert.strictEqual(service.getMapSize(), 5); // 第1章.md, settings, world.md, characters, hero.md
@@ -89,7 +89,7 @@ files:
       }
     });
 
-    test('meta.yamlが存在しないディレクトリはスキップされる', () => {
+    test('meta.yamlが存在しないディレクトリはスキップされる', async () => {
       const novelRoot = '/test/novel';
 
       // ServiceをnovelRootPathと共に作成
@@ -108,14 +108,14 @@ files:
 `,
       );
 
-      service.buildFileMap(novelRoot);
+      await service.buildFileMap(novelRoot);
 
       assert.strictEqual(service.getMapSize(), 1);
     });
   });
 
   suite('isProjectFile', () => {
-    test('プロジェクト内ファイルを正しく判定できる', () => {
+    test('プロジェクト内ファイルを正しく判定できる', async () => {
       // テストプロジェクト構造を作成
       const novelRoot = '/test/novel';
 
@@ -146,7 +146,7 @@ files:
       );
 
       // ファイルマップを構築
-      service.buildFileMap(novelRoot);
+      await service.buildFileMap(novelRoot);
 
       const currentFile = `${novelRoot}/第1章.md`;
 
@@ -167,7 +167,7 @@ files:
   });
 
   suite('resolveFileAbsolutePath', () => {
-    test('相対パスから絶対パスに正しく解決できる', () => {
+    test('相対パスから絶対パスに正しく解決できる', async () => {
       // テストプロジェクト構造を作成
       const novelRoot = '/test/novel';
 
@@ -197,7 +197,7 @@ files:
 `,
       );
 
-      service.buildFileMap(novelRoot);
+      await service.buildFileMap(novelRoot);
 
       const currentFile = `${novelRoot}/第1章.md`;
 
@@ -212,7 +212,7 @@ files:
   });
 
   suite('updateFile', () => {
-    test('ファイル追加時にマップが更新される', () => {
+    test('ファイル追加時にマップが更新される', async () => {
       const novelRoot = '/test/novel';
 
       // ServiceをnovelRootPathと共に作成
@@ -228,7 +228,7 @@ files: []
 `,
       );
 
-      service.buildFileMap(novelRoot);
+      await service.buildFileMap(novelRoot);
       assert.strictEqual(service.getMapSize(), 0);
 
       // ファイルを追加
@@ -249,7 +249,7 @@ files: []
       }
     });
 
-    test('ファイル削除時にマップから除去される', () => {
+    test('ファイル削除時にマップから除去される', async () => {
       const novelRoot = '/test/novel';
 
       // ServiceをnovelRootPathと共に作成
@@ -267,7 +267,7 @@ files:
 `,
       );
 
-      service.buildFileMap(novelRoot);
+      await service.buildFileMap(novelRoot);
       assert.strictEqual(service.getMapSize(), 1);
 
       // ファイルを削除
@@ -279,7 +279,7 @@ files:
   });
 
   suite('getFileEntry', () => {
-    test('存在するファイルの情報を取得できる', () => {
+    test('存在するファイルの情報を取得できる', async () => {
       const novelRoot = '/test/novel';
 
       // ServiceをnovelRootPathと共に作成
@@ -303,7 +303,7 @@ files:
 `,
       );
 
-      service.buildFileMap(novelRoot);
+      await service.buildFileMap(novelRoot);
 
       // キャラクターファイル
       const characterEntry = service.getFileEntry('character.md');
@@ -330,7 +330,7 @@ files:
   });
 
   suite('clear', () => {
-    test('ファイルマップをクリアできる', () => {
+    test('ファイルマップをクリアできる', async () => {
       const novelRoot = '/test/novel';
 
       // ServiceをnovelRootPathと共に作成
@@ -348,7 +348,7 @@ files:
 `,
       );
 
-      service.buildFileMap(novelRoot);
+      await service.buildFileMap(novelRoot);
       assert.strictEqual(service.getMapSize(), 1);
 
       service.clear();

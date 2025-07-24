@@ -72,11 +72,11 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     if (vscode.workspace.workspaceFolders && vscode.workspace.workspaceFolders[0]) {
       const workspaceRoot = vscode.workspace.workspaceFolders[0].uri.fsPath;
       const metaYamlService = container.getMetaYamlService();
-      const novelRoot = metaYamlService.findNovelRoot(workspaceRoot);
+      const novelRoot = await metaYamlService.findNovelRootAsync(workspaceRoot);
 
       if (novelRoot !== null && novelRoot !== undefined && novelRoot !== '') {
         const fileRepository = container.getFileRepository();
-        referenceManager.initialize(novelRoot, fileRepository);
+        void referenceManager.initialize(novelRoot, fileRepository);
         logger.info(`ReferenceManagerを初期化しました: ${novelRoot}`);
       }
     }

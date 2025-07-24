@@ -1,6 +1,6 @@
 import * as path from 'path';
 import { ReviewSummary } from '../models/Review.js';
-import { FileRepository, DirectoryEntry } from '../repositories/FileRepository.js';
+import { FileRepository } from '../repositories/FileRepository.js';
 import { MetaYamlUtils, MetaYaml, DialogoiTreeItem } from '../utils/MetaYamlUtils.js';
 
 /**
@@ -8,51 +8,6 @@ import { MetaYamlUtils, MetaYaml, DialogoiTreeItem } from '../utils/MetaYamlUtil
  */
 export class MetaYamlService {
   constructor(private fileRepository: FileRepository) {}
-
-  /**
-   * .dialogoi-meta.yaml を読み込む
-   * @deprecated Use loadMetaYamlAsync instead for better VSCode integration
-   */
-  loadMetaYaml(dirAbsolutePath: string): MetaYaml | null {
-    const metaAbsolutePath = path.join(dirAbsolutePath, '.dialogoi-meta.yaml');
-
-    try {
-      const metaUri = this.fileRepository.createFileUri(metaAbsolutePath);
-      if (!this.fileRepository.existsSync(metaUri)) {
-        return null;
-      }
-      const metaContent = this.fileRepository.readFileSync(metaUri, 'utf8');
-      return MetaYamlUtils.parseMetaYaml(metaContent);
-    } catch (error) {
-      console.error('.dialogoi-meta.yaml の読み込みエラー:', error);
-      return null;
-    }
-  }
-
-  /**
-   * .dialogoi-meta.yamlファイルを保存
-   * @deprecated Use saveMetaYamlAsync instead for better VSCode integration
-   */
-  saveMetaYaml(dirAbsolutePath: string, meta: MetaYaml): boolean {
-    const metaAbsolutePath = path.join(dirAbsolutePath, '.dialogoi-meta.yaml');
-
-    try {
-      // バリデーション
-      const validationErrors = MetaYamlUtils.validateMetaYaml(meta);
-      if (validationErrors.length > 0) {
-        console.error('.dialogoi-meta.yaml検証エラー:', validationErrors);
-        return false;
-      }
-
-      const metaUri = this.fileRepository.createFileUri(metaAbsolutePath);
-      const yamlContent = MetaYamlUtils.stringifyMetaYaml(meta);
-      this.fileRepository.writeFileSync(metaUri, yamlContent, 'utf8');
-      return true;
-    } catch (error) {
-      console.error('.dialogoi-meta.yaml の保存エラー:', error);
-      return false;
-    }
-  }
 
   /**
    * .dialogoi-meta.yaml を読み込む（非同期版）
@@ -74,26 +29,6 @@ export class MetaYamlService {
   }
 
   /**
-   * READMEファイルのパスを取得
-   * @deprecated Use getReadmeFilePathAsync instead for better VSCode integration
-   */
-  getReadmeFilePath(dirAbsolutePath: string): string | null {
-    const meta = this.loadMetaYaml(dirAbsolutePath);
-
-    if (meta === null || meta.readme === undefined) {
-      return null;
-    }
-
-    const readmeAbsolutePath = path.join(dirAbsolutePath, meta.readme);
-    const readmeUri = this.fileRepository.createFileUri(readmeAbsolutePath);
-    if (this.fileRepository.existsSync(readmeUri)) {
-      return readmeAbsolutePath;
-    }
-
-    return null;
-  }
-
-  /**
    * READMEファイルのパスを取得（非同期版）
    */
   async getReadmeFilePathAsync(dirAbsolutePath: string): Promise<string | null> {
@@ -110,34 +45,6 @@ export class MetaYamlService {
     }
 
     return null;
-  }
-
-  /**
-   * 小説ルートディレクトリを探す
-   * @deprecated Use findNovelRootAsync instead for better VSCode integration
-   */
-  findNovelRoot(workspaceRootAbsolutePath: string): string | null {
-    const findDialogoiYaml = (dirAbsolutePath: string): string | null => {
-      const dirUri = this.fileRepository.createFileUri(dirAbsolutePath);
-      const items = this.fileRepository.readdirSync(dirUri, {
-        withFileTypes: true,
-      }) as DirectoryEntry[];
-
-      for (const item of items) {
-        const fullAbsolutePath = path.join(dirAbsolutePath, item.name);
-        if (item.isFile() && item.name === 'dialogoi.yaml') {
-          return dirAbsolutePath;
-        } else if (item.isDirectory()) {
-          const result = findDialogoiYaml(fullAbsolutePath);
-          if (result !== null) {
-            return result;
-          }
-        }
-      }
-      return null;
-    };
-
-    return findDialogoiYaml(workspaceRootAbsolutePath);
   }
 
   /**
@@ -265,14 +172,18 @@ export class MetaYamlService {
   /**
    * ファイルのタグを更新
    */
-  updateFileTags(dirAbsolutePath: string, fileName: string, tags: string[]): boolean {
+  async updateFileTags(
+    dirAbsolutePath: string,
+    fileName: string,
+    tags: string[],
+  ): Promise<boolean> {
     const metaUri = this.fileRepository.createFileUri(
       path.join(dirAbsolutePath, '.dialogoi-meta.yaml'),
     );
 
     try {
       // 既存の .dialogoi-meta.yaml を読み込む
-      const meta = this.loadMetaYaml(dirAbsolutePath);
+      const meta = await this.loadMetaYamlAsync(dirAbsolutePath);
       if (!meta) {
         return false;
       }
@@ -291,7 +202,7 @@ export class MetaYamlService {
 
       // .dialogoi-meta.yaml を更新
       const updatedContent = MetaYamlUtils.stringifyMetaYaml(meta);
-      this.fileRepository.writeFileSync(metaUri, updatedContent, 'utf-8');
+      await this.fileRepository.writeFileAsync(metaUri, updatedContent);
 
       return true;
     } catch (error) {
@@ -303,8 +214,8 @@ export class MetaYamlService {
   /**
    * ファイルにタグを追加
    */
-  addFileTag(dirAbsolutePath: string, fileName: string, tag: string): boolean {
-    const meta = this.loadMetaYaml(dirAbsolutePath);
+  async addFileTag(dirAbsolutePath: string, fileName: string, tag: string): Promise<boolean> {
+    const meta = await this.loadMetaYamlAsync(dirAbsolutePath);
     if (!meta) {
       return false;
     }
@@ -324,14 +235,14 @@ export class MetaYamlService {
 
     // タグを追加
     const newTags = [...currentTags, tag];
-    return this.updateFileTags(dirAbsolutePath, fileName, newTags);
+    return await this.updateFileTags(dirAbsolutePath, fileName, newTags);
   }
 
   /**
    * ファイルからタグを削除
    */
-  removeFileTag(dirAbsolutePath: string, fileName: string, tag: string): boolean {
-    const meta = this.loadMetaYaml(dirAbsolutePath);
+  async removeFileTag(dirAbsolutePath: string, fileName: string, tag: string): Promise<boolean> {
+    const meta = await this.loadMetaYamlAsync(dirAbsolutePath);
     if (!meta) {
       return false;
     }
@@ -343,21 +254,21 @@ export class MetaYamlService {
 
     // タグを削除
     const newTags = fileItem.tags.filter((t) => t !== tag);
-    return this.updateFileTags(dirAbsolutePath, fileName, newTags);
+    return await this.updateFileTags(dirAbsolutePath, fileName, newTags);
   }
 
   /**
    * ディレクトリをメタデータ内で移動する
    */
-  moveDirectoryInMetadata(
+  async moveDirectoryInMetadata(
     sourceParentDir: string,
     targetParentDir: string,
     dirName: string,
     newIndex?: number,
-  ): { success: boolean; message: string; updatedItems?: DialogoiTreeItem[] } {
+  ): Promise<{ success: boolean; message: string; updatedItems?: DialogoiTreeItem[] }> {
     try {
       // 移動元の親ディレクトリのメタデータを読み込み
-      const sourceParentMeta = this.loadMetaYaml(sourceParentDir);
+      const sourceParentMeta = await this.loadMetaYamlAsync(sourceParentDir);
       if (sourceParentMeta === null) {
         return {
           success: false,
@@ -367,7 +278,7 @@ export class MetaYamlService {
       }
 
       // 移動先の親ディレクトリのメタデータを読み込み
-      const targetParentMeta = this.loadMetaYaml(targetParentDir);
+      const targetParentMeta = await this.loadMetaYamlAsync(targetParentDir);
       if (targetParentMeta === null) {
         return {
           success: false,
@@ -423,7 +334,7 @@ export class MetaYamlService {
       }
 
       // 移動元の親ディレクトリのメタデータを保存
-      const saveSourceResult = this.saveMetaYaml(sourceParentDir, sourceParentMeta);
+      const saveSourceResult = await this.saveMetaYamlAsync(sourceParentDir, sourceParentMeta);
       if (!saveSourceResult) {
         return {
           success: false,
@@ -432,11 +343,11 @@ export class MetaYamlService {
       }
 
       // 移動先の親ディレクトリのメタデータを保存
-      const saveTargetResult = this.saveMetaYaml(targetParentDir, targetParentMeta);
+      const saveTargetResult = await this.saveMetaYamlAsync(targetParentDir, targetParentMeta);
       if (!saveTargetResult) {
         // 移動元をロールバック
         sourceParentMeta.files.splice(dirIndex, 0, dirItem);
-        this.saveMetaYaml(sourceParentDir, sourceParentMeta);
+        await this.saveMetaYamlAsync(sourceParentDir, sourceParentMeta);
 
         return {
           success: false,
@@ -466,15 +377,15 @@ export class MetaYamlService {
   /**
    * ファイルをメタデータ内で移動する
    */
-  moveFileInMetadata(
+  async moveFileInMetadata(
     sourceDir: string,
     targetDir: string,
     fileName: string,
     newIndex?: number,
-  ): { success: boolean; message: string; updatedItems?: DialogoiTreeItem[] } {
+  ): Promise<{ success: boolean; message: string; updatedItems?: DialogoiTreeItem[] }> {
     try {
       // 移動元のメタデータを読み込み
-      const sourceMeta = this.loadMetaYaml(sourceDir);
+      const sourceMeta = await this.loadMetaYamlAsync(sourceDir);
       if (sourceMeta === null) {
         return {
           success: false,
@@ -483,7 +394,7 @@ export class MetaYamlService {
       }
 
       // 移動先のメタデータを読み込み
-      const targetMeta = this.loadMetaYaml(targetDir);
+      const targetMeta = await this.loadMetaYamlAsync(targetDir);
       if (targetMeta === null) {
         return {
           success: false,
@@ -534,7 +445,7 @@ export class MetaYamlService {
       }
 
       // 移動元のメタデータを保存
-      const saveSourceResult = this.saveMetaYaml(sourceDir, sourceMeta);
+      const saveSourceResult = await this.saveMetaYamlAsync(sourceDir, sourceMeta);
       if (!saveSourceResult) {
         return {
           success: false,
@@ -543,11 +454,11 @@ export class MetaYamlService {
       }
 
       // 移動先のメタデータを保存
-      const saveTargetResult = this.saveMetaYaml(targetDir, targetMeta);
+      const saveTargetResult = await this.saveMetaYamlAsync(targetDir, targetMeta);
       if (!saveTargetResult) {
         // 移動元をロールバック
         sourceMeta.files.splice(fileIndex, 0, fileItem);
-        this.saveMetaYaml(sourceDir, sourceMeta);
+        await this.saveMetaYamlAsync(sourceDir, sourceMeta);
 
         return {
           success: false,
@@ -577,8 +488,12 @@ export class MetaYamlService {
   /**
    * ファイルの参照関係を削除
    */
-  removeFileReference(dirAbsolutePath: string, fileName: string, reference: string): boolean {
-    const meta = this.loadMetaYaml(dirAbsolutePath);
+  async removeFileReference(
+    dirAbsolutePath: string,
+    fileName: string,
+    reference: string,
+  ): Promise<boolean> {
+    const meta = await this.loadMetaYamlAsync(dirAbsolutePath);
     if (!meta) {
       return false;
     }
@@ -597,14 +512,14 @@ export class MetaYamlService {
       fileItem.references = newReferences;
     }
 
-    return this.saveMetaYaml(dirAbsolutePath, meta);
+    return await this.saveMetaYamlAsync(dirAbsolutePath, meta);
   }
 
   /**
    * ファイルのキャラクター情報を削除
    */
-  removeFileCharacter(dirAbsolutePath: string, fileName: string): boolean {
-    const meta = this.loadMetaYaml(dirAbsolutePath);
+  async removeFileCharacter(dirAbsolutePath: string, fileName: string): Promise<boolean> {
+    const meta = await this.loadMetaYamlAsync(dirAbsolutePath);
     if (!meta) {
       return false;
     }
@@ -617,7 +532,7 @@ export class MetaYamlService {
     // キャラクター情報を削除
     delete fileItem.character;
 
-    return this.saveMetaYaml(dirAbsolutePath, meta);
+    return await this.saveMetaYamlAsync(dirAbsolutePath, meta);
   }
 
   /**
@@ -813,7 +728,7 @@ export class MetaYamlService {
       fileItem.references = newReferences;
     }
 
-    return this.saveMetaYamlAsync(dirAbsolutePath, meta);
+    return await this.saveMetaYamlAsync(dirAbsolutePath, meta);
   }
 
   /**
@@ -833,6 +748,6 @@ export class MetaYamlService {
     // キャラクター情報を削除
     delete fileItem.character;
 
-    return this.saveMetaYamlAsync(dirAbsolutePath, meta);
+    return await this.saveMetaYamlAsync(dirAbsolutePath, meta);
   }
 }

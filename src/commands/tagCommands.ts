@@ -37,7 +37,7 @@ export function registerTagCommands(
       }
 
       const dirPath = treeDataProvider.getDirectoryPath(item);
-      const result = treeDataProvider.addTag(dirPath, item.name, newTag);
+      const result = await treeDataProvider.addTag(dirPath, item.name, newTag);
 
       if (result.success) {
         vscode.window.showInformationMessage(result.message);
@@ -77,7 +77,7 @@ export function registerTagCommands(
       const tagName = tagToRemove.value;
 
       const dirPath = treeDataProvider.getDirectoryPath(item);
-      const result = treeDataProvider.removeTag(dirPath, item.name, tagName);
+      const result = await treeDataProvider.removeTag(dirPath, item.name, tagName);
 
       if (result.success) {
         vscode.window.showInformationMessage(result.message);
@@ -130,7 +130,7 @@ export function registerTagCommands(
               .filter((t) => t !== '');
 
       const dirPath = treeDataProvider.getDirectoryPath(item);
-      const result = treeDataProvider.setTags(dirPath, item.name, newTags);
+      const result = await treeDataProvider.setTags(dirPath, item.name, newTags);
 
       if (result.success) {
         vscode.window.showInformationMessage(result.message);

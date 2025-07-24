@@ -41,12 +41,13 @@ export class DialogoiTreeDataProvider
   constructor() {
     this.workspaceRoot = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath ?? '';
     this.fileChangeNotificationService = FileChangeNotificationService.getInstance();
-    this.findNovelRoot();
+    // 非同期初期化は別途呼び出す
+    void this.findNovelRoot();
   }
 
-  private findNovelRoot(): void {
+  private async findNovelRoot(): Promise<void> {
     const metaYamlService = ServiceContainer.getInstance().getMetaYamlService();
-    this.novelRoot = metaYamlService.findNovelRoot(this.workspaceRoot);
+    this.novelRoot = await metaYamlService.findNovelRootAsync(this.workspaceRoot);
     if (this.novelRoot !== null) {
       // コンテキストにノベルプロジェクトが存在することを設定
       vscode.commands.executeCommand('setContext', 'dialogoi:hasNovelProject', true);
@@ -55,7 +56,7 @@ export class DialogoiTreeDataProvider
       const referenceManager = ReferenceManager.getInstance();
       if (!referenceManager.isInitialized()) {
         const fileRepository = ServiceContainer.getInstance().getFileRepository();
-        referenceManager.initialize(this.novelRoot, fileRepository);
+        void referenceManager.initialize(this.novelRoot, fileRepository);
       }
     } else {
       // プロジェクトが見つからない場合は明示的にfalseに設定
@@ -64,7 +65,7 @@ export class DialogoiTreeDataProvider
   }
 
   refresh(): void {
-    this.findNovelRoot();
+    void this.findNovelRoot();
     this._onDidChangeTreeData.fire();
   }
 
@@ -433,11 +434,11 @@ export class DialogoiTreeDataProvider
     }
   }
 
-  reorderFiles(dirPath: string, fromIndex: number, toIndex: number): void {
+  async reorderFiles(dirPath: string, fromIndex: number, toIndex: number): Promise<void> {
     const fileOperationService = ServiceContainer.getInstance().getFileOperationService(
       this.novelRoot ?? undefined,
     );
-    const result = fileOperationService.reorderFiles(dirPath, fromIndex, toIndex);
+    const result = await fileOperationService.reorderFiles(dirPath, fromIndex, toIndex);
 
     if (result.success) {
       this.refresh();
@@ -596,11 +597,11 @@ export class DialogoiTreeDataProvider
   }
 
   // タグ操作メソッド
-  addTag(dirPath: string, fileName: string, tag: string): FileOperationResult {
+  async addTag(dirPath: string, fileName: string, tag: string): Promise<FileOperationResult> {
     const fileOperationService = ServiceContainer.getInstance().getFileOperationService(
       this.novelRoot ?? undefined,
     );
-    const result = fileOperationService.addTag(dirPath, fileName, tag);
+    const result = await fileOperationService.addTag(dirPath, fileName, tag);
 
     if (result.success) {
       this.refresh();
@@ -609,11 +610,11 @@ export class DialogoiTreeDataProvider
     return result;
   }
 
-  removeTag(dirPath: string, fileName: string, tag: string): FileOperationResult {
+  async removeTag(dirPath: string, fileName: string, tag: string): Promise<FileOperationResult> {
     const fileOperationService = ServiceContainer.getInstance().getFileOperationService(
       this.novelRoot ?? undefined,
     );
-    const result = fileOperationService.removeTag(dirPath, fileName, tag);
+    const result = await fileOperationService.removeTag(dirPath, fileName, tag);
 
     if (result.success) {
       this.refresh();
@@ -622,11 +623,11 @@ export class DialogoiTreeDataProvider
     return result;
   }
 
-  setTags(dirPath: string, fileName: string, tags: string[]): FileOperationResult {
+  async setTags(dirPath: string, fileName: string, tags: string[]): Promise<FileOperationResult> {
     const fileOperationService = ServiceContainer.getInstance().getFileOperationService(
       this.novelRoot ?? undefined,
     );
-    const result = fileOperationService.setTags(dirPath, fileName, tags);
+    const result = await fileOperationService.setTags(dirPath, fileName, tags);
 
     if (result.success) {
       this.refresh();
@@ -636,11 +637,15 @@ export class DialogoiTreeDataProvider
   }
 
   // 参照関係操作メソッド
-  addReference(dirPath: string, fileName: string, referencePath: string): FileOperationResult {
+  async addReference(
+    dirPath: string,
+    fileName: string,
+    referencePath: string,
+  ): Promise<FileOperationResult> {
     const fileOperationService = ServiceContainer.getInstance().getFileOperationService(
       this.novelRoot ?? undefined,
     );
-    const result = fileOperationService.addReference(dirPath, fileName, referencePath);
+    const result = await fileOperationService.addReference(dirPath, fileName, referencePath);
 
     if (result.success) {
       // ReferenceManagerを更新
@@ -663,11 +668,15 @@ export class DialogoiTreeDataProvider
     return result;
   }
 
-  removeReference(dirPath: string, fileName: string, referencePath: string): FileOperationResult {
+  async removeReference(
+    dirPath: string,
+    fileName: string,
+    referencePath: string,
+  ): Promise<FileOperationResult> {
     const fileOperationService = ServiceContainer.getInstance().getFileOperationService(
       this.novelRoot ?? undefined,
     );
-    const result = fileOperationService.removeReference(dirPath, fileName, referencePath);
+    const result = await fileOperationService.removeReference(dirPath, fileName, referencePath);
 
     if (result.success) {
       // ReferenceManagerを更新
@@ -690,11 +699,15 @@ export class DialogoiTreeDataProvider
     return result;
   }
 
-  setReferences(dirPath: string, fileName: string, references: string[]): FileOperationResult {
+  async setReferences(
+    dirPath: string,
+    fileName: string,
+    references: string[],
+  ): Promise<FileOperationResult> {
     const fileOperationService = ServiceContainer.getInstance().getFileOperationService(
       this.novelRoot ?? undefined,
     );
-    const result = fileOperationService.setReferences(dirPath, fileName, references);
+    const result = await fileOperationService.setReferences(dirPath, fileName, references);
 
     if (result.success) {
       // ReferenceManagerを更新
@@ -1021,7 +1034,7 @@ export class DialogoiTreeDataProvider
       }
 
       // 並び替え実行
-      this.reorderFiles(targetDir, fromIndex, toIndex);
+      void this.reorderFiles(targetDir, fromIndex, toIndex);
 
       // ファイル並び替えイベントを通知
       this.fileChangeNotificationService.notifyFileReordered(targetDir, {

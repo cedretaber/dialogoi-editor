@@ -23,7 +23,7 @@ suite('TreeViewFilterService テストスイート', () => {
     referenceManager = ReferenceManager.getInstance();
     referenceManager.clear();
     // プロジェクトルートを初期化（テスト用）
-    referenceManager.initialize('/test', mockFileRepository);
+    void referenceManager.initialize('/test', mockFileRepository);
 
     filterService = new TreeViewFilterService();
   });

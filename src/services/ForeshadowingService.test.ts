@@ -276,16 +276,16 @@ suite('ForeshadowingService', () => {
       mockFileRepository.addFile(metaYamlPath, metaYamlContent);
     });
 
-    test('addPlant - 植込み位置を正常に追加', () => {
+    test('addPlant - 植込み位置を正常に追加', async () => {
       const plant = { location: 'contents/chapter1.txt', comment: '最初のヒント' };
 
-      const result = foreshadowingService.addPlant(novelRootAbsolutePath, 'test.md', plant);
+      const result = await foreshadowingService.addPlant(novelRootAbsolutePath, 'test.md', plant);
 
       assert.strictEqual(result.success, true);
       assert.ok(result.message.includes('伏線の植込み位置を追加しました'));
 
       // meta.yamlの内容を確認
-      const meta = metaYamlService.loadMetaYaml(novelRootAbsolutePath);
+      const meta = await metaYamlService.loadMetaYamlAsync(novelRootAbsolutePath);
       assert.notStrictEqual(meta, null);
       if (meta === null) {
         return;
@@ -300,18 +300,18 @@ suite('ForeshadowingService', () => {
       assert.strictEqual(fileItem.foreshadowing?.plants[0]?.comment, '最初のヒント');
     });
 
-    test('removePlant - 植込み位置を正常に削除', () => {
+    test('removePlant - 植込み位置を正常に削除', async () => {
       // 先に植込み位置を追加
       const plant = { location: 'contents/chapter1.txt', comment: '削除予定' };
-      foreshadowingService.addPlant(novelRootAbsolutePath, 'test.md', plant);
+      await foreshadowingService.addPlant(novelRootAbsolutePath, 'test.md', plant);
 
-      const result = foreshadowingService.removePlant(novelRootAbsolutePath, 'test.md', 0);
+      const result = await foreshadowingService.removePlant(novelRootAbsolutePath, 'test.md', 0);
 
       assert.strictEqual(result.success, true);
       assert.ok(result.message.includes('伏線の植込み位置を削除しました'));
 
       // meta.yamlの内容を確認
-      const meta = metaYamlService.loadMetaYaml(novelRootAbsolutePath);
+      const meta = await metaYamlService.loadMetaYamlAsync(novelRootAbsolutePath);
       assert.notStrictEqual(meta, null);
       if (meta === null) {
         return;
@@ -320,13 +320,13 @@ suite('ForeshadowingService', () => {
       assert.strictEqual(fileItem?.foreshadowing?.plants.length, 0);
     });
 
-    test('updatePlant - 植込み位置を正常に更新', () => {
+    test('updatePlant - 植込み位置を正常に更新', async () => {
       // 先に植込み位置を追加
       const initialPlant = { location: 'contents/chapter1.txt', comment: '初期' };
-      foreshadowingService.addPlant(novelRootAbsolutePath, 'test.md', initialPlant);
+      await foreshadowingService.addPlant(novelRootAbsolutePath, 'test.md', initialPlant);
 
       const updatedPlant = { location: 'contents/chapter2.txt', comment: '更新後' };
-      const result = foreshadowingService.updatePlant(
+      const result = await foreshadowingService.updatePlant(
         novelRootAbsolutePath,
         'test.md',
         0,
@@ -337,7 +337,7 @@ suite('ForeshadowingService', () => {
       assert.ok(result.message.includes('伏線の植込み位置を更新しました'));
 
       // meta.yamlの内容を確認
-      const meta = metaYamlService.loadMetaYaml(novelRootAbsolutePath);
+      const meta = await metaYamlService.loadMetaYamlAsync(novelRootAbsolutePath);
       if (meta === null) {
         return;
       }
@@ -346,16 +346,16 @@ suite('ForeshadowingService', () => {
       assert.strictEqual(fileItem?.foreshadowing?.plants[0]?.comment, '更新後');
     });
 
-    test('setPayoff - 回収位置を正常に設定', () => {
+    test('setPayoff - 回収位置を正常に設定', async () => {
       const payoff = { location: 'contents/chapter5.txt', comment: '真相明示' };
 
-      const result = foreshadowingService.setPayoff(novelRootAbsolutePath, 'test.md', payoff);
+      const result = await foreshadowingService.setPayoff(novelRootAbsolutePath, 'test.md', payoff);
 
       assert.strictEqual(result.success, true);
       assert.ok(result.message.includes('伏線の回収位置を設定しました'));
 
       // meta.yamlの内容を確認
-      const meta = metaYamlService.loadMetaYaml(novelRootAbsolutePath);
+      const meta = await metaYamlService.loadMetaYamlAsync(novelRootAbsolutePath);
       if (meta === null) {
         return;
       }
@@ -364,18 +364,18 @@ suite('ForeshadowingService', () => {
       assert.strictEqual(fileItem?.foreshadowing?.payoff.comment, '真相明示');
     });
 
-    test('removePayoff - 回収位置を正常に削除', () => {
+    test('removePayoff - 回収位置を正常に削除', async () => {
       // 先に回収位置を設定
       const payoff = { location: 'contents/chapter5.txt', comment: '削除予定' };
-      foreshadowingService.setPayoff(novelRootAbsolutePath, 'test.md', payoff);
+      await foreshadowingService.setPayoff(novelRootAbsolutePath, 'test.md', payoff);
 
-      const result = foreshadowingService.removePayoff(novelRootAbsolutePath, 'test.md');
+      const result = await foreshadowingService.removePayoff(novelRootAbsolutePath, 'test.md');
 
       assert.strictEqual(result.success, true);
       assert.ok(result.message.includes('伏線の回収位置を削除しました'));
 
       // meta.yamlの内容を確認
-      const meta = metaYamlService.loadMetaYaml(novelRootAbsolutePath);
+      const meta = await metaYamlService.loadMetaYamlAsync(novelRootAbsolutePath);
       if (meta === null) {
         return;
       }
@@ -384,17 +384,21 @@ suite('ForeshadowingService', () => {
       assert.strictEqual(fileItem?.foreshadowing?.payoff.comment, '');
     });
 
-    test('エラーケース - 存在しないファイル', () => {
+    test('エラーケース - 存在しないファイル', async () => {
       const plant = { location: 'contents/chapter1.txt', comment: 'テスト' };
 
-      const result = foreshadowingService.addPlant(novelRootAbsolutePath, 'nonexistent.md', plant);
+      const result = await foreshadowingService.addPlant(
+        novelRootAbsolutePath,
+        'nonexistent.md',
+        plant,
+      );
 
       assert.strictEqual(result.success, false);
       assert.ok(result.message.includes('ファイル nonexistent.md が見つかりません'));
     });
 
-    test('エラーケース - 無効なインデックス', () => {
-      const result = foreshadowingService.removePlant(novelRootAbsolutePath, 'test.md', 999);
+    test('エラーケース - 無効なインデックス', async () => {
+      const result = await foreshadowingService.removePlant(novelRootAbsolutePath, 'test.md', 999);
 
       assert.strictEqual(result.success, false);
       assert.ok(result.message.includes('無効なインデックス'));
