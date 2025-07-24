@@ -194,7 +194,7 @@ async function addReviewHandler(reviewService: ReviewService, fileItem: FileItem
   const fileName = path.basename(fileItem.path);
   const { ServiceContainer } = await import('../di/ServiceContainer.js');
   const metaYamlService = ServiceContainer.getInstance().getMetaYamlService();
-  metaYamlService.updateReviewInfo(dirAbsolutePath, fileName, reviewSummary);
+  await metaYamlService.updateReviewInfoAsync(dirAbsolutePath, fileName, reviewSummary);
 
   vscode.window.showInformationMessage(`レビューを追加しました (ID: ${reviewIndex})`);
 }
@@ -321,7 +321,7 @@ async function updateReviewStatusHandler(
   const fileName = path.basename(fileItem.path);
   const { ServiceContainer } = await import('../di/ServiceContainer.js');
   const metaYamlService = ServiceContainer.getInstance().getMetaYamlService();
-  metaYamlService.updateReviewInfo(dirAbsolutePath, fileName, reviewSummary);
+  await metaYamlService.updateReviewInfoAsync(dirAbsolutePath, fileName, reviewSummary);
 
   vscode.window.showInformationMessage(`レビューステータスを更新しました`);
 }
@@ -393,7 +393,7 @@ async function deleteReviewHandler(
   const fileName = path.basename(fileItem.path);
   const { ServiceContainer } = await import('../di/ServiceContainer.js');
   const metaYamlService = ServiceContainer.getInstance().getMetaYamlService();
-  metaYamlService.updateReviewInfo(dirAbsolutePath, fileName, reviewSummary);
+  await metaYamlService.updateReviewInfoAsync(dirAbsolutePath, fileName, reviewSummary);
 
   vscode.window.showInformationMessage(`レビューを削除しました`);
 }

@@ -404,7 +404,7 @@ files:
         dismissed: 0,
       };
 
-      const result = service.updateReviewInfo(testDir, fileName, reviewSummary);
+      const result = await service.updateReviewInfoAsync(testDir, fileName, reviewSummary);
       assert.strictEqual(result, true);
 
       // 更新された.dialogoi-meta.yamlを確認
@@ -441,7 +441,7 @@ files:
       mockFileRepository.addDirectory(testDir);
       mockFileRepository.addFile(`${testDir}/.dialogoi-meta.yaml`, metaContent);
 
-      const result = service.updateReviewInfo(testDir, fileName, null);
+      const result = await service.updateReviewInfoAsync(testDir, fileName, null);
       assert.strictEqual(result, true);
 
       // 更新された.dialogoi-meta.yamlを確認
@@ -478,7 +478,7 @@ files:
         dismissed: 0,
       };
 
-      const result = service.updateReviewInfo(testDir, fileName, reviewSummary);
+      const result = await service.updateReviewInfoAsync(testDir, fileName, reviewSummary);
       assert.strictEqual(result, true);
 
       // 更新された.dialogoi-meta.yamlを確認
@@ -515,7 +515,7 @@ files:
         dismissed: 0,
       };
 
-      const result = service.updateReviewInfo(testDir, fileName, reviewSummary);
+      const result = await service.updateReviewInfoAsync(testDir, fileName, reviewSummary);
       assert.strictEqual(result, true);
 
       // 更新された.dialogoi-meta.yamlを確認
@@ -535,7 +535,7 @@ files:
       }
     });
 
-    test('.dialogoi-meta.yamlが存在しない場合falseを返す', () => {
+    test('.dialogoi-meta.yamlが存在しない場合falseを返す', async () => {
       const testDir = '/test/project';
       const fileName = 'chapter1.txt';
       mockFileRepository.addDirectory(testDir);
@@ -547,11 +547,11 @@ files:
         dismissed: 0,
       };
 
-      const result = service.updateReviewInfo(testDir, fileName, reviewSummary);
+      const result = await service.updateReviewInfoAsync(testDir, fileName, reviewSummary);
       assert.strictEqual(result, false);
     });
 
-    test('ファイルが存在しない場合falseを返す', () => {
+    test('ファイルが存在しない場合falseを返す', async () => {
       const testDir = '/test/project';
       const fileName = 'nonexistent.txt';
       const metaContent = `readme: README.md
@@ -570,11 +570,11 @@ files:
         dismissed: 0,
       };
 
-      const result = service.updateReviewInfo(testDir, fileName, reviewSummary);
+      const result = await service.updateReviewInfoAsync(testDir, fileName, reviewSummary);
       assert.strictEqual(result, false);
     });
 
-    test('不正な.dialogoi-meta.yamlの場合falseを返す', () => {
+    test('不正な.dialogoi-meta.yamlの場合falseを返す', async () => {
       const testDir = '/test/project';
       const fileName = 'chapter1.txt';
       const invalidMeta = `invalid: yaml: content`;
@@ -589,7 +589,7 @@ files:
         dismissed: 0,
       };
 
-      const result = service.updateReviewInfo(testDir, fileName, reviewSummary);
+      const result = await service.updateReviewInfoAsync(testDir, fileName, reviewSummary);
       assert.strictEqual(result, false);
     });
   });
@@ -611,7 +611,7 @@ files:
       mockFileRepository.addDirectory(testDir);
       mockFileRepository.addFile(`${testDir}/.dialogoi-meta.yaml`, metaContent);
 
-      const result = service.removeReviewInfo(testDir, fileName);
+      const result = await service.removeReviewInfoAsync(testDir, fileName);
       assert.strictEqual(result, true);
 
       // 更新された.dialogoi-meta.yamlを確認
@@ -641,7 +641,7 @@ files:
       mockFileRepository.addDirectory(testDir);
       mockFileRepository.addFile(`${testDir}/.dialogoi-meta.yaml`, metaContent);
 
-      const result = service.removeReviewInfo(testDir, fileName);
+      const result = await service.removeReviewInfoAsync(testDir, fileName);
       assert.strictEqual(result, true);
 
       // .dialogoi-meta.yamlに変更がないことを確認
@@ -740,7 +740,7 @@ files:
       };
 
       // レビュー情報を更新
-      const updateResult = service.updateReviewInfo(testDir, fileName, reviewSummary);
+      const updateResult = await service.updateReviewInfoAsync(testDir, fileName, reviewSummary);
       assert.strictEqual(updateResult, true);
 
       // 読み込んでレビュー情報を確認
@@ -761,7 +761,7 @@ files:
       }
 
       // レビュー情報を削除
-      const removeResult = service.removeReviewInfo(testDir, fileName);
+      const removeResult = await service.removeReviewInfoAsync(testDir, fileName);
       assert.strictEqual(removeResult, true);
 
       // 読み込んでレビュー情報が削除されていることを確認

@@ -40,64 +40,8 @@ export interface DirectoryEntry {
 export abstract class FileRepository {
   // === 基本的なファイル操作メソッド ===
 
-  /**
-   * ファイルまたはディレクトリが存在するかチェック
-   * @deprecated Use existsAsync instead for better VSCode integration
-   */
-  abstract existsSync(uri: Uri): boolean;
-
-  /**
-   * ファイルを読み込む
-   * @deprecated Use readFileAsync instead for better VSCode integration
-   */
-  abstract readFileSync(uri: Uri, encoding?: BufferEncoding): string;
-  abstract readFileSync(uri: Uri, encoding?: null): Buffer;
-  abstract readFileSync(uri: Uri, encoding?: BufferEncoding | null): string | Buffer;
-
-  /**
-   * ファイルに書き込む
-   * @deprecated Use writeFileAsync instead for better VSCode integration
-   */
-  abstract writeFileSync(uri: Uri, data: string | Buffer, encoding?: BufferEncoding): void;
-
-  /**
-   * ディレクトリを作成
-   * @deprecated Use createDirectoryAsync instead for better VSCode integration
-   */
-  abstract mkdirSync(uri: Uri): void;
-
-  /**
-   * ディレクトリを再帰的に作成
-   * @deprecated Use createDirectoryAsync instead for better VSCode integration
-   */
-  abstract createDirectorySync(uri: Uri): void;
-
-  /**
-   * ファイルを削除
-   * @deprecated Use unlinkAsync instead for better VSCode integration
-   */
-  abstract unlinkSync(uri: Uri): void;
-
-  /**
-   * ディレクトリを削除（再帰的）
-   * @deprecated Use rmAsync instead for better VSCode integration
-   */
-  abstract rmSync(uri: Uri, options?: { recursive?: boolean; force?: boolean }): void;
-
-  /**
-   * ディレクトリの内容を読み込む
-   * @deprecated Use readdirAsync instead for better VSCode integration
-   */
-  abstract readdirSync(
-    uri: Uri,
-    options?: { withFileTypes?: boolean },
-  ): string[] | DirectoryEntry[];
-
-  /**
-   * ファイルの統計情報を取得
-   * @deprecated Use statAsync instead for better VSCode integration
-   */
-  abstract statSync(uri: Uri): FileStats;
+  // === 同期メソッドは削除されました ===
+  // VSCode workspace.fs APIを使用するため、全て非同期メソッドのみサポートします
 
   /**
    * ファイル名を変更（非同期）

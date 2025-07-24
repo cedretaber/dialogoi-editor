@@ -166,119 +166,6 @@ export class MockFileRepository extends FileRepository {
 
   // === 基本的なファイル操作メソッド ===
 
-  existsSync(uri: Uri): boolean {
-    const path = uri.fsPath;
-    return this.files.has(path) || this.directories.has(path);
-  }
-
-  readFileSync(uri: Uri, encoding?: BufferEncoding): string;
-  readFileSync(uri: Uri, encoding?: null): Buffer;
-  readFileSync(uri: Uri, encoding?: BufferEncoding | null): string | Buffer;
-  readFileSync(uri: Uri, encoding?: BufferEncoding | null): string | Buffer {
-    const path = uri.fsPath;
-    const content = this.files.get(path);
-    if (content === undefined) {
-      throw new Error(`ファイルが見つかりません: ${path}`);
-    }
-
-    if (encoding === null) {
-      return Buffer.isBuffer(content) ? content : Buffer.from(content);
-    }
-
-    return Buffer.isBuffer(content) ? content.toString(encoding || 'utf8') : content;
-  }
-
-  writeFileSync(uri: Uri, data: string | Buffer, _encoding?: BufferEncoding): void {
-    const path = uri.fsPath;
-    this.files.set(path, data);
-
-    // 親ディレクトリも作成
-    const parentDir = path.substring(0, path.lastIndexOf('/'));
-    if (parentDir && !this.directories.has(parentDir)) {
-      this.directories.add(parentDir);
-    }
-  }
-
-  mkdirSync(uri: Uri): void {
-    const path = uri.fsPath;
-    this.directories.add(path);
-  }
-
-  createDirectorySync(uri: Uri): void {
-    const path = uri.fsPath;
-    this.directories.add(path);
-
-    // 親ディレクトリも作成
-    const parentPath = path.substring(0, path.lastIndexOf('/'));
-    if (parentPath && !this.directories.has(parentPath)) {
-      this.directories.add(parentPath);
-    }
-  }
-
-  unlinkSync(uri: Uri): void {
-    const path = uri.fsPath;
-    if (!this.files.has(path)) {
-      throw new Error(`ファイルが見つかりません: ${path}`);
-    }
-    this.files.delete(path);
-  }
-
-  rmSync(uri: Uri, options?: { recursive?: boolean; force?: boolean }): void {
-    const path = uri.fsPath;
-
-    if (this.directories.has(path)) {
-      if (options?.recursive === true) {
-        // 再帰的に削除
-        const toDelete = Array.from(this.directories).filter((dir) => dir.startsWith(path));
-        toDelete.forEach((dir) => this.directories.delete(dir));
-
-        const filesToDelete = Array.from(this.files.keys()).filter((file) => file.startsWith(path));
-        filesToDelete.forEach((file) => this.files.delete(file));
-      } else {
-        this.directories.delete(path);
-      }
-    } else if (this.files.has(path)) {
-      this.files.delete(path);
-    } else if (options?.force !== true) {
-      throw new Error(`ファイルまたはディレクトリが見つかりません: ${path}`);
-    }
-  }
-
-  readdirSync(uri: Uri, options?: { withFileTypes?: boolean }): string[] | DirectoryEntry[] {
-    const dirPath = uri.fsPath;
-
-    if (!this.directories.has(dirPath)) {
-      throw new Error(`ディレクトリが見つかりません: ${dirPath}`);
-    }
-
-    const entries: string[] = [];
-    const entryObjects: DirectoryEntry[] = [];
-
-    // サブディレクトリを検索
-    for (const dir of this.directories) {
-      if (dir.startsWith(dirPath + '/')) {
-        const relativePath = dir.substring(dirPath.length + 1);
-        if (!relativePath.includes('/')) {
-          entries.push(relativePath);
-          entryObjects.push(new MockDirectoryEntry(relativePath, false, true));
-        }
-      }
-    }
-
-    // ファイルを検索
-    for (const file of this.files.keys()) {
-      if (file.startsWith(dirPath + '/')) {
-        const relativePath = file.substring(dirPath.length + 1);
-        if (!relativePath.includes('/')) {
-          entries.push(relativePath);
-          entryObjects.push(new MockDirectoryEntry(relativePath, true, false));
-        }
-      }
-    }
-
-    return options?.withFileTypes === true ? entryObjects : entries;
-  }
-
   renameAsync(oldUri: Uri, newUri: Uri): Promise<void> {
     const oldPath = oldUri.fsPath;
     const newPath = newUri.fsPath;
@@ -301,71 +188,136 @@ export class MockFileRepository extends FileRepository {
   // === 非同期ファイル操作メソッド（モック実装） ===
 
   async existsAsync(uri: Uri): Promise<boolean> {
-    return await Promise.resolve(this.existsSync(uri));
+    const path = uri.fsPath;
+    return Promise.resolve(this.files.has(path) || this.directories.has(path));
   }
 
   async readFileAsync(uri: Uri, encoding?: BufferEncoding): Promise<string>;
   async readFileAsync(uri: Uri): Promise<Uint8Array>;
   async readFileAsync(uri: Uri, encoding?: BufferEncoding): Promise<string | Uint8Array> {
+    const path = uri.fsPath;
+    const content = this.files.get(path);
+    if (content === undefined) {
+      throw new Error(`ファイルが見つかりません: ${path}`);
+    }
+
     if (encoding !== undefined) {
-      return await Promise.resolve(this.readFileSync(uri, encoding));
+      const stringContent = Buffer.isBuffer(content) ? content.toString(encoding) : content;
+      return Promise.resolve(stringContent);
     } else {
       // エンコーディングが指定されない場合はUint8Arrayとして返す
-      const content = this.readFileSync(uri, null);
       if (Buffer.isBuffer(content)) {
-        return await Promise.resolve(new Uint8Array(content));
+        return Promise.resolve(new Uint8Array(content));
       }
-      return await Promise.resolve(new Uint8Array(Buffer.from(content)));
+      return Promise.resolve(new Uint8Array(Buffer.from(content)));
     }
   }
 
   async writeFileAsync(uri: Uri, data: string | Uint8Array): Promise<void> {
+    const path = uri.fsPath;
     // Uint8ArrayをstringまたはBufferに変換
     if (data instanceof Uint8Array) {
-      this.writeFileSync(uri, Buffer.from(data));
+      this.files.set(path, Buffer.from(data));
     } else {
-      this.writeFileSync(uri, data);
+      this.files.set(path, data);
     }
-    await Promise.resolve();
+
+    // 親ディレクトリも作成
+    const parentDir = path.substring(0, path.lastIndexOf('/'));
+    if (parentDir && !this.directories.has(parentDir)) {
+      this.directories.add(parentDir);
+    }
+    return Promise.resolve();
   }
 
   async createDirectoryAsync(uri: Uri): Promise<void> {
-    this.createDirectorySync(uri);
-    await Promise.resolve();
+    const path = uri.fsPath;
+    this.directories.add(path);
+
+    // 親ディレクトリも作成
+    const parentPath = path.substring(0, path.lastIndexOf('/'));
+    if (parentPath && !this.directories.has(parentPath)) {
+      this.directories.add(parentPath);
+    }
+    return Promise.resolve();
   }
 
   async unlinkAsync(uri: Uri): Promise<void> {
-    this.unlinkSync(uri);
-    await Promise.resolve();
+    const path = uri.fsPath;
+    if (!this.files.has(path)) {
+      throw new Error(`ファイルが見つかりません: ${path}`);
+    }
+    this.files.delete(path);
+    return Promise.resolve();
   }
 
   async rmAsync(uri: Uri, options?: { recursive?: boolean }): Promise<void> {
-    this.rmSync(uri, options);
-    await Promise.resolve();
+    const path = uri.fsPath;
+
+    if (this.directories.has(path)) {
+      if (options?.recursive === true) {
+        // 再帰的に削除
+        const toDelete = Array.from(this.directories).filter((dir) => dir.startsWith(path));
+        toDelete.forEach((dir) => this.directories.delete(dir));
+
+        const filesToDelete = Array.from(this.files.keys()).filter((file) => file.startsWith(path));
+        filesToDelete.forEach((file) => this.files.delete(file));
+      } else {
+        this.directories.delete(path);
+      }
+    } else if (this.files.has(path)) {
+      this.files.delete(path);
+    } else {
+      throw new Error(`ファイルまたはディレクトリが見つかりません: ${path}`);
+    }
+    return Promise.resolve();
   }
 
   async readdirAsync(uri: Uri): Promise<DirectoryEntry[]> {
-    const result = this.readdirSync(uri, { withFileTypes: true });
-    return await Promise.resolve(result as DirectoryEntry[]);
+    const dirPath = uri.fsPath;
+
+    if (!this.directories.has(dirPath)) {
+      throw new Error(`ディレクトリが見つかりません: ${dirPath}`);
+    }
+
+    const entryObjects: DirectoryEntry[] = [];
+
+    // サブディレクトリを検索
+    for (const dir of this.directories) {
+      if (dir.startsWith(dirPath + '/')) {
+        const relativePath = dir.substring(dirPath.length + 1);
+        if (!relativePath.includes('/')) {
+          entryObjects.push(new MockDirectoryEntry(relativePath, false, true));
+        }
+      }
+    }
+
+    // ファイルを検索
+    for (const file of this.files.keys()) {
+      if (file.startsWith(dirPath + '/')) {
+        const relativePath = file.substring(dirPath.length + 1);
+        if (!relativePath.includes('/')) {
+          entryObjects.push(new MockDirectoryEntry(relativePath, true, false));
+        }
+      }
+    }
+
+    return Promise.resolve(entryObjects);
   }
 
-  statSync(uri: Uri): FileStats {
+  async statAsync(uri: Uri): Promise<FileStats> {
     const path = uri.fsPath;
 
     if (this.files.has(path)) {
       const content = this.files.get(path);
       if (content !== undefined) {
         const size = Buffer.isBuffer(content) ? content.length : Buffer.byteLength(content);
-        return new MockFileStats(true, false, size);
+        return Promise.resolve(new MockFileStats(true, false, size));
       }
     } else if (this.directories.has(path)) {
-      return new MockFileStats(false, true);
+      return Promise.resolve(new MockFileStats(false, true));
     }
     throw new Error(`ファイルまたはディレクトリが見つかりません: ${path}`);
-  }
-
-  async statAsync(uri: Uri): Promise<FileStats> {
-    return Promise.resolve(this.statSync(uri));
   }
 
   // === Uriファクトリーメソッド ===

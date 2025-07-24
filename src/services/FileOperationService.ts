@@ -68,7 +68,7 @@ export class FileOperationService {
       const fileUri = this.fileRepository.createFileUri(filePath);
 
       // ファイルが既に存在する場合はエラー
-      if (this.fileRepository.existsSync(fileUri)) {
+      if (await this.fileRepository.existsAsync(fileUri)) {
         return {
           success: false,
           message: `ファイル ${fileName} は既に存在します。`,
@@ -77,18 +77,18 @@ export class FileOperationService {
 
       // ファイルを作成
       if (fileType === 'subdirectory') {
-        this.fileRepository.mkdirSync(fileUri);
+        await this.fileRepository.createDirectoryAsync(fileUri);
 
         // サブディレクトリにはデフォルトの.dialogoi-meta.yamlとREADME.mdを作成
         const defaultMeta = MetaYamlUtils.createMetaYaml('README.md');
         const defaultReadme = `# ${fileName}\n\n`;
 
         const metaYamlContent = MetaYamlUtils.stringifyMetaYaml(defaultMeta);
-        this.fileRepository.writeFileSync(
+        await this.fileRepository.writeFileAsync(
           this.fileRepository.joinPath(fileUri, '.dialogoi-meta.yaml'),
           metaYamlContent,
         );
-        this.fileRepository.writeFileSync(
+        await this.fileRepository.writeFileAsync(
           this.fileRepository.joinPath(fileUri, 'README.md'),
           defaultReadme,
         );
@@ -104,7 +104,7 @@ export class FileOperationService {
             content = `# ${baseName}\n\n`;
           }
         }
-        this.fileRepository.writeFileSync(fileUri, content);
+        await this.fileRepository.writeFileAsync(fileUri, content);
       }
 
       // .dialogoi-meta.yamlを更新
@@ -137,11 +137,11 @@ export class FileOperationService {
 
       if (!result.success) {
         // .dialogoi-meta.yaml更新に失敗した場合は作成したファイルを削除
-        if (this.fileRepository.existsSync(fileUri)) {
+        if (await this.fileRepository.existsAsync(fileUri)) {
           if (fileType === 'subdirectory') {
-            this.fileRepository.rmSync(fileUri, { recursive: true, force: true });
+            await this.fileRepository.rmAsync(fileUri, { recursive: true });
           } else {
-            this.fileRepository.unlinkSync(fileUri);
+            await this.fileRepository.unlinkAsync(fileUri);
           }
         }
         return result;
@@ -270,7 +270,7 @@ export class FileOperationService {
       const newUri = this.fileRepository.createFileUri(newPath);
 
       // 元ファイルが存在しない場合はエラー
-      if (!this.fileRepository.existsSync(oldUri)) {
+      if (!(await this.fileRepository.existsAsync(oldUri))) {
         return {
           success: false,
           message: `ファイル ${oldName} が見つかりません。`,
@@ -278,7 +278,7 @@ export class FileOperationService {
       }
 
       // 新しい名前のファイルが既に存在する場合はエラー
-      if (this.fileRepository.existsSync(newUri)) {
+      if (await this.fileRepository.existsAsync(newUri)) {
         return {
           success: false,
           message: `ファイル ${newName} は既に存在します。`,

@@ -41,7 +41,7 @@ export default [
       '@typescript-eslint/no-explicit-any': 'error',
       '@typescript-eslint/no-non-null-assertion': 'error',
       '@typescript-eslint/strict-boolean-expressions': 'error',
-      '@typescript-eslint/no-deprecated': 'off', // TODO: Phase 4完了後に'warn'に戻す
+      '@typescript-eslint/no-deprecated': 'warn', // Phase 4完了、同期メソッド削除完了
       'no-console': ['warn', { allow: ['warn', 'error'] }],
       'eqeqeq': 'error',
       'curly': 'error'
@@ -94,7 +94,7 @@ export default [
       '@typescript-eslint/explicit-function-return-type': 'error',
       '@typescript-eslint/no-explicit-any': 'error',
       '@typescript-eslint/no-non-null-assertion': 'error',
-      '@typescript-eslint/no-deprecated': 'off', // TODO: Phase 4完了後に'warn'に戻す
+      '@typescript-eslint/no-deprecated': 'warn', // Phase 4完了、同期メソッド削除完了
       
       // React関連
       'react/prop-types': 'off', // TypeScriptを使用するためprop-typesは不要

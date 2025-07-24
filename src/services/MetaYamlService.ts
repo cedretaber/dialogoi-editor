@@ -99,21 +99,22 @@ export class MetaYamlService {
   /**
    * .dialogoi-meta.yaml のファイルエントリにレビュー情報を設定
    */
-  updateReviewInfo(
+  async updateReviewInfo(
     dirAbsolutePath: string,
     fileName: string,
     reviewSummary: ReviewSummary | null,
-  ): boolean {
+  ): Promise<boolean> {
     const metaAbsolutePath = path.join(dirAbsolutePath, '.dialogoi-meta.yaml');
 
     try {
       const metaUri = this.fileRepository.createFileUri(metaAbsolutePath);
 
-      if (!this.fileRepository.existsSync(metaUri)) {
+      const exists = await this.fileRepository.existsAsync(metaUri);
+      if (!exists) {
         return false;
       }
 
-      const content = this.fileRepository.readFileSync(metaUri, 'utf-8');
+      const content = await this.fileRepository.readFileAsync(metaUri, 'utf-8');
       const meta = MetaYamlUtils.parseMetaYaml(content);
 
       if (!meta) {
@@ -153,7 +154,7 @@ export class MetaYamlService {
 
       // .dialogoi-meta.yaml を更新
       const updatedContent = MetaYamlUtils.stringifyMetaYaml(meta);
-      this.fileRepository.writeFileSync(metaUri, updatedContent, 'utf-8');
+      await this.fileRepository.writeFileAsync(metaUri, updatedContent);
 
       return true;
     } catch (error) {
@@ -165,7 +166,7 @@ export class MetaYamlService {
   /**
    * .dialogoi-meta.yaml からレビュー情報を削除
    */
-  removeReviewInfo(dirAbsolutePath: string, fileName: string): boolean {
+  async removeReviewInfo(dirAbsolutePath: string, fileName: string): Promise<boolean> {
     return this.updateReviewInfo(dirAbsolutePath, fileName, null);
   }
 
