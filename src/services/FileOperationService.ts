@@ -5,7 +5,7 @@ import { MetaYamlUtils, DialogoiTreeItem, MetaYaml } from '../utils/MetaYamlUtil
 import { ForeshadowingData } from './ForeshadowingService.js';
 import { ProjectLinkUpdateService } from './ProjectLinkUpdateService.js';
 import { ProjectPathNormalizationService } from './ProjectPathNormalizationService.js';
-import { ReferenceManager } from './ReferenceManager.js';
+// import { ReferenceManager } from './ReferenceManager.js';
 
 /**
  * ファイル操作の結果を表すインターフェイス
@@ -1387,7 +1387,7 @@ export class FileOperationService {
    * ファイルのハイパーリンク参照を更新
    * @param fileAbsolutePath 更新対象ファイルの絶対パス
    */
-  private updateHyperlinkReferences(fileAbsolutePath: string): void {
+  private updateHyperlinkReferences(_fileAbsolutePath: string): void {
     if (
       this.novelRootPath === undefined ||
       this.novelRootPath === null ||
@@ -1397,12 +1397,12 @@ export class FileOperationService {
     }
 
     try {
-      const referenceManager = ReferenceManager.getInstance();
-
+      // TODO: FileOperationServiceの@deprecated削除時に非同期化対応
+      // const referenceManager = ReferenceManager.getInstance();
       // .mdファイルの場合のみハイパーリンク参照を更新
-      if (fileAbsolutePath.endsWith('.md')) {
-        referenceManager.updateFileHyperlinkReferences(fileAbsolutePath);
-      }
+      // if (fileAbsolutePath.endsWith('.md')) {
+      //   referenceManager.updateFileHyperlinkReferences(fileAbsolutePath);
+      // }
     } catch (error) {
       // ハイパーリンク更新の失敗は主操作を妨げない
       console.warn(
@@ -1446,7 +1446,7 @@ export class FileOperationService {
    * @param fileAbsolutePath 更新対象ファイルの絶対パス
    * @param manualReferences 手動で設定された参照関係
    */
-  updateAllReferences(fileAbsolutePath: string, manualReferences: string[] = []): void {
+  updateAllReferences(_fileAbsolutePath: string, _manualReferences: string[] = []): void {
     if (
       this.novelRootPath === undefined ||
       this.novelRootPath === null ||
@@ -1456,8 +1456,9 @@ export class FileOperationService {
     }
 
     try {
-      const referenceManager = ReferenceManager.getInstance();
-      referenceManager.updateFileAllReferences(fileAbsolutePath, manualReferences);
+      // TODO: FileOperationServiceの@deprecated削除時に非同期化対応
+      // const referenceManager = ReferenceManager.getInstance();
+      // referenceManager.updateFileAllReferences(fileAbsolutePath, manualReferences);
     } catch (error) {
       // 参照関係更新の失敗は主操作を妨げない
       console.warn(

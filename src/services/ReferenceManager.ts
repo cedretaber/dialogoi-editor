@@ -75,26 +75,6 @@ export class ReferenceManager {
   }
 
   /**
-   * ファイルのハイパーリンク参照を更新
-   * @deprecated Use updateFileHyperlinkReferencesAsync instead for better VSCode integration
-   */
-  updateFileHyperlinkReferences(filePath: string): void {
-    if (this.novelRoot === null || this.hyperlinkExtractorService === null) {
-      return;
-    }
-
-    const relativePath = path.relative(this.novelRoot, filePath).replace(/\\/g, '/');
-
-    // 既存のハイパーリンク参照を削除
-    this.removeFileReferences(relativePath, 'hyperlink');
-
-    // 新しいハイパーリンク参照を抽出・追加
-    // TODO: ReferenceManagerの@deprecated削除時に対応
-    // const hyperlinkReferences = this.hyperlinkExtractorService.extractProjectLinks(filePath);
-    // this.addFileReferences(relativePath, hyperlinkReferences, 'hyperlink');
-  }
-
-  /**
    * ファイルのハイパーリンク参照を更新（非同期版）
    */
   async updateFileHyperlinkReferencesAsync(filePath: string): Promise<void> {
@@ -111,15 +91,6 @@ export class ReferenceManager {
     const hyperlinkReferences =
       await this.hyperlinkExtractorService.extractProjectLinksAsync(filePath);
     this.addFileReferences(relativePath, hyperlinkReferences, 'hyperlink');
-  }
-
-  /**
-   * ファイルの全参照関係を更新（手動+ハイパーリンク）
-   * @deprecated Use updateFileAllReferencesAsync instead for better VSCode integration
-   */
-  updateFileAllReferences(filePath: string, manualReferences: string[]): void {
-    this.updateFileReferences(filePath, manualReferences);
-    this.updateFileHyperlinkReferences(filePath);
   }
 
   /**
@@ -335,20 +306,6 @@ export class ReferenceManager {
   }
 
   /**
-   * 参照先ファイルが存在するかチェック
-   * @deprecated Use checkFileExistsAsync instead for better VSCode integration
-   */
-  checkFileExists(referencedFile: string): boolean {
-    if (this.novelRoot === null || this.fileRepository === null) {
-      return false;
-    }
-
-    const fullPath = path.join(this.novelRoot, referencedFile);
-    const fileUri = this.fileRepository.createFileUri(fullPath);
-    return this.fileRepository.existsSync(fileUri);
-  }
-
-  /**
    * 存在しない参照先ファイルを取得（非同期版）
    * TODO: Phase 3での利用を想定
    */
@@ -364,16 +321,5 @@ export class ReferenceManager {
     }
 
     return result;
-  }
-
-  /**
-   * 存在しない参照先ファイルを取得
-   * @deprecated Use getInvalidReferencesAsync instead for better VSCode integration
-   */
-  getInvalidReferences(filePath: string): string[] {
-    const references = this.getReferences(filePath);
-    return references.references
-      .map((ref) => ref.path)
-      .filter((refPath) => !this.checkFileExists(refPath));
   }
 }

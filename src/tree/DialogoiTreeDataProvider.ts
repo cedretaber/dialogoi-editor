@@ -510,11 +510,14 @@ export class DialogoiTreeDataProvider
         const invalidAppearances: string[] = [];
 
         allAppearances.forEach((ref) => {
-          if (referenceManager.checkFileExists(ref)) {
-            validAppearances.push(ref);
-          } else {
-            invalidAppearances.push(ref);
-          }
+          // TODO: ReferenceManagerの@deprecated削除後に非同期版で対応
+          // if (referenceManager.checkFileExists(ref)) {
+          //   validAppearances.push(ref);
+          // } else {
+          //   invalidAppearances.push(ref);
+          // }
+          // 一時的にすべて有効として扱う
+          validAppearances.push(ref);
         });
 
         if (element.character && validAppearances.length > 0) {

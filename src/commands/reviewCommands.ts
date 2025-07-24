@@ -53,9 +53,9 @@ export function registerReviewCommands(
   // レビューを表示するコマンド
   const showReviewsCommand = vscode.commands.registerCommand(
     'dialogoi.showReviews',
-    (fileItem: FileItem) => {
+    async (fileItem: FileItem) => {
       try {
-        showReviewsHandler(reviewService, fileItem);
+        await showReviewsHandler(reviewService, fileItem);
       } catch (error) {
         const errorMessage = error instanceof Error ? error.message : String(error);
         vscode.window.showErrorMessage(`レビューの表示に失敗しました: ${errorMessage}`);
@@ -186,10 +186,10 @@ async function addReviewHandler(reviewService: ReviewService, fileItem: FileItem
     content,
   };
 
-  const reviewIndex = reviewService.addReview(targetRelativeFilePath, reviewOptions);
+  const reviewIndex = await reviewService.addReviewAsync(targetRelativeFilePath, reviewOptions);
 
   // .dialogoi-meta.yaml を更新
-  const reviewSummary = reviewService.getReviewSummary(targetRelativeFilePath);
+  const reviewSummary = await reviewService.getReviewSummaryAsync(targetRelativeFilePath);
   const dirAbsolutePath = path.dirname(fileItem.path);
   const fileName = path.basename(fileItem.path);
   const { ServiceContainer } = await import('../di/ServiceContainer.js');
@@ -202,7 +202,7 @@ async function addReviewHandler(reviewService: ReviewService, fileItem: FileItem
 /**
  * レビュー表示のハンドラー
  */
-function showReviewsHandler(reviewService: ReviewService, fileItem: FileItem): void {
+async function showReviewsHandler(reviewService: ReviewService, fileItem: FileItem): Promise<void> {
   if (!fileItem?.path) {
     vscode.window.showErrorMessage('ファイルが選択されていません');
     return;
@@ -216,7 +216,7 @@ function showReviewsHandler(reviewService: ReviewService, fileItem: FileItem): v
   }
 
   const targetRelativeFilePath = path.relative(workspaceRoot, fileItem.path);
-  const reviewFile = reviewService.loadReviewFile(targetRelativeFilePath);
+  const reviewFile = await reviewService.loadReviewFileAsync(targetRelativeFilePath);
 
   if (!reviewFile || reviewFile.reviews.length === 0) {
     vscode.window.showInformationMessage('このファイルにはレビューがありません');
@@ -224,7 +224,7 @@ function showReviewsHandler(reviewService: ReviewService, fileItem: FileItem): v
   }
 
   // ファイルの変更をチェック
-  const isChanged = reviewService.isFileChanged(targetRelativeFilePath);
+  const isChanged = await reviewService.isFileChangedAsync(targetRelativeFilePath);
   let message = `📋 ${targetRelativeFilePath} のレビュー一覧\n\n`;
 
   if (isChanged) {
@@ -274,7 +274,7 @@ async function updateReviewStatusHandler(
   }
 
   const targetRelativeFilePath = path.relative(workspaceRoot, fileItem.path);
-  const reviewFile = reviewService.loadReviewFile(targetRelativeFilePath);
+  const reviewFile = await reviewService.loadReviewFileAsync(targetRelativeFilePath);
 
   if (!reviewFile || reviewFile.reviews.length === 0) {
     vscode.window.showInformationMessage('このファイルにはレビューがありません');
@@ -311,12 +311,12 @@ async function updateReviewStatusHandler(
     return;
   }
 
-  reviewService.updateReview(targetRelativeFilePath, selectedReview.value, {
+  await reviewService.updateReviewAsync(targetRelativeFilePath, selectedReview.value, {
     status: selectedStatus.value as 'open' | 'in_progress' | 'resolved' | 'dismissed',
   });
 
   // .dialogoi-meta.yaml を更新
-  const reviewSummary = reviewService.getReviewSummary(targetRelativeFilePath);
+  const reviewSummary = await reviewService.getReviewSummaryAsync(targetRelativeFilePath);
   const dirAbsolutePath = path.dirname(fileItem.path);
   const fileName = path.basename(fileItem.path);
   const { ServiceContainer } = await import('../di/ServiceContainer.js');
@@ -346,7 +346,7 @@ async function deleteReviewHandler(
   }
 
   const targetRelativeFilePath = path.relative(workspaceRoot, fileItem.path);
-  const reviewFile = reviewService.loadReviewFile(targetRelativeFilePath);
+  const reviewFile = await reviewService.loadReviewFileAsync(targetRelativeFilePath);
 
   if (!reviewFile || reviewFile.reviews.length === 0) {
     vscode.window.showInformationMessage('このファイルにはレビューがありません');
@@ -385,10 +385,10 @@ async function deleteReviewHandler(
     return;
   }
 
-  reviewService.deleteReview(targetRelativeFilePath, selectedReview.value);
+  await reviewService.deleteReviewAsync(targetRelativeFilePath, selectedReview.value);
 
   // .dialogoi-meta.yaml を更新
-  const reviewSummary = reviewService.getReviewSummary(targetRelativeFilePath);
+  const reviewSummary = await reviewService.getReviewSummaryAsync(targetRelativeFilePath);
   const dirAbsolutePath = path.dirname(fileItem.path);
   const fileName = path.basename(fileItem.path);
   const { ServiceContainer } = await import('../di/ServiceContainer.js');

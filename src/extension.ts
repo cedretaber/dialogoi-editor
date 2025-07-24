@@ -88,7 +88,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
       // .mdファイルが保存された場合にハイパーリンク参照を更新
       if (document.fileName.endsWith('.md')) {
         try {
-          referenceManager.updateFileHyperlinkReferences(document.fileName);
+          void referenceManager.updateFileHyperlinkReferencesAsync(document.fileName);
           // TreeViewを更新してUI反映
           treeDataProvider.refresh();
         } catch (error) {

@@ -6,7 +6,6 @@ import {
   ReviewSummary,
   CreateReviewOptions,
   UpdateReviewOptions,
-  AddCommentOptions,
 } from '../models/Review.js';
 import { FileRepository } from '../repositories/FileRepository.js';
 import { Uri } from '../interfaces/Uri.js';
@@ -20,7 +19,6 @@ export class ReviewService {
 
   constructor(
     private fileRepository: FileRepository,
-    // @ts-expect-error: TODO: @deprecated削除時に再度使用
     private hashService: HashService,
     workspaceRoot: Uri,
   ) {
@@ -52,29 +50,6 @@ export class ReviewService {
   }
 
   /**
-   * レビューファイルを読み込み
-   * @param targetRelativeFilePath 対象ファイルのパス（小説ルートからの相対パス）
-   * @returns レビューファイルの内容
-   * @deprecated Use loadReviewFileAsync instead for better VSCode integration
-   */
-  loadReviewFile(targetRelativeFilePath: string): ReviewFile | null {
-    const reviewFileUri = this.getReviewFileUri(targetRelativeFilePath);
-
-    try {
-      if (!this.fileRepository.existsSync(reviewFileUri)) {
-        return null;
-      }
-      const yamlContent = this.fileRepository.readFileSync(reviewFileUri, 'utf8');
-      const reviewData = yaml.load(yamlContent) as ReviewFile;
-
-      return reviewData;
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      throw new Error(`レビューファイルの読み込みに失敗しました: ${errorMessage}`);
-    }
-  }
-
-  /**
    * レビューファイルを読み込み（非同期版）
    * @param targetRelativeFilePath 対象ファイルのパス（小説ルートからの相対パス）
    * @returns レビューファイルの内容
@@ -93,32 +68,6 @@ export class ReviewService {
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
       throw new Error(`レビューファイルの読み込みに失敗しました: ${errorMessage}`);
-    }
-  }
-
-  /**
-   * レビューファイルを保存
-   * @param targetRelativeFilePath 対象ファイルのパス（小説ルートからの相対パス）
-   * @param reviewFile レビューファイルの内容
-   * @deprecated Use saveReviewFileAsync instead for better VSCode integration
-   */
-  saveReviewFile(targetRelativeFilePath: string, reviewFile: ReviewFile): void {
-    const reviewFileUri = this.getReviewFileUri(targetRelativeFilePath);
-
-    try {
-      // 対象ファイルと同じディレクトリに保存するため、そのディレクトリを作成
-      const reviewRelativeDirPath = path.dirname(this.getReviewFilePath(targetRelativeFilePath));
-      const reviewDir = this.fileRepository.joinPath(this.workspaceRoot, reviewRelativeDirPath);
-      if (!this.fileRepository.existsSync(reviewDir)) {
-        this.fileRepository.mkdirSync(reviewDir);
-      }
-
-      // YAML として保存
-      const yamlContent = yaml.dump(reviewFile, { indent: 2 });
-      this.fileRepository.writeFileSync(reviewFileUri, yamlContent, 'utf8');
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      throw new Error(`レビューファイルの保存に失敗しました: ${errorMessage}`);
     }
   }
 
@@ -148,19 +97,19 @@ export class ReviewService {
   }
 
   /**
-   * レビューを追加
+   * レビューを追加（非同期版）
    * @param targetRelativeFilePath 対象ファイルのパス（小説ルートからの相対パス）
    * @param options レビュー作成オプション
    * @returns 追加されたレビューのインデックス
-   * @deprecated Use async version for better VSCode integration
    */
-  addReview(targetRelativeFilePath: string, options: CreateReviewOptions): number {
-    // TODO: ReviewServiceの@deprecated削除時に対応
-    // const targetFileUri = this.fileRepository.joinPath(this.workspaceRoot, targetRelativeFilePath);
-    // const fileHash = this.hashService.calculateFileHash(targetFileUri);
-    const fileHash = 'sha256:temporary'; // 一時的なダミー値
+  async addReviewAsync(
+    targetRelativeFilePath: string,
+    options: CreateReviewOptions,
+  ): Promise<number> {
+    const targetFileUri = this.fileRepository.joinPath(this.workspaceRoot, targetRelativeFilePath);
+    const fileHash = await this.hashService.calculateFileHashAsync(targetFileUri);
 
-    let reviewFile = this.loadReviewFile(targetRelativeFilePath);
+    let reviewFile = await this.loadReviewFileAsync(targetRelativeFilePath);
 
     if (!reviewFile) {
       reviewFile = {
@@ -187,24 +136,23 @@ export class ReviewService {
 
     reviewFile.reviews.push(newReview);
 
-    this.saveReviewFile(targetRelativeFilePath, reviewFile);
+    await this.saveReviewFileAsync(targetRelativeFilePath, reviewFile);
 
     return reviewFile.reviews.length - 1;
   }
 
   /**
-   * レビューを更新
+   * レビューを更新（非同期版）
    * @param targetRelativeFilePath 対象ファイルのパス（小説ルートからの相対パス）
    * @param reviewIndex レビューのインデックス
    * @param options 更新オプション
-   * @deprecated Use async version for better VSCode integration
    */
-  updateReview(
+  async updateReviewAsync(
     targetRelativeFilePath: string,
     reviewIndex: number,
     options: UpdateReviewOptions,
-  ): void {
-    const reviewFile = this.loadReviewFile(targetRelativeFilePath);
+  ): Promise<void> {
+    const reviewFile = await this.loadReviewFileAsync(targetRelativeFilePath);
 
     if (!reviewFile) {
       throw new Error('レビューファイルが見つかりません');
@@ -225,61 +173,17 @@ export class ReviewService {
     if (options.content !== undefined) {
       review.content = options.content;
     }
-    if (options.severity !== undefined) {
-      review.severity = options.severity;
-    }
 
-    this.saveReviewFile(targetRelativeFilePath, reviewFile);
+    await this.saveReviewFileAsync(targetRelativeFilePath, reviewFile);
   }
 
   /**
-   * レビューにコメントを追加
+   * レビューを削除（非同期版）
    * @param targetRelativeFilePath 対象ファイルのパス（小説ルートからの相対パス）
    * @param reviewIndex レビューのインデックス
-   * @param options コメントオプション
-   * @deprecated Use async version for better VSCode integration
    */
-  addComment(
-    targetRelativeFilePath: string,
-    reviewIndex: number,
-    options: AddCommentOptions,
-  ): void {
-    const reviewFile = this.loadReviewFile(targetRelativeFilePath);
-
-    if (!reviewFile) {
-      throw new Error('レビューファイルが見つかりません');
-    }
-
-    if (reviewIndex < 0 || reviewIndex >= reviewFile.reviews.length) {
-      throw new Error('無効なレビューインデックスです');
-    }
-
-    const review = reviewFile.reviews[reviewIndex];
-    if (!review) {
-      throw new Error('レビューが見つかりません');
-    }
-
-    if (!review.thread) {
-      review.thread = [];
-    }
-
-    review.thread.push({
-      author: options.author,
-      content: options.content,
-      created_at: new Date().toISOString(),
-    });
-
-    this.saveReviewFile(targetRelativeFilePath, reviewFile);
-  }
-
-  /**
-   * レビューを削除
-   * @param targetRelativeFilePath 対象ファイルのパス（小説ルートからの相対パス）
-   * @param reviewIndex レビューのインデックス
-   * @deprecated Use async version for better VSCode integration
-   */
-  deleteReview(targetRelativeFilePath: string, reviewIndex: number): void {
-    const reviewFile = this.loadReviewFile(targetRelativeFilePath);
+  async deleteReviewAsync(targetRelativeFilePath: string, reviewIndex: number): Promise<void> {
+    const reviewFile = await this.loadReviewFileAsync(targetRelativeFilePath);
 
     if (!reviewFile) {
       throw new Error('レビューファイルが見つかりません');
@@ -294,37 +198,10 @@ export class ReviewService {
     if (reviewFile.reviews.length === 0) {
       // レビューがない場合はファイルを削除
       const reviewFileUri = this.getReviewFileUri(targetRelativeFilePath);
-      this.fileRepository.unlinkSync(reviewFileUri);
+      await this.fileRepository.unlinkAsync(reviewFileUri);
     } else {
-      this.saveReviewFile(targetRelativeFilePath, reviewFile);
+      await this.saveReviewFileAsync(targetRelativeFilePath, reviewFile);
     }
-  }
-
-  /**
-   * レビューサマリーを取得
-   * @param targetRelativeFilePath 対象ファイルのパス（小説ルートからの相対パス）
-   * @returns レビューサマリー
-   * @deprecated Use getReviewSummaryAsync instead for better VSCode integration
-   */
-  getReviewSummary(targetRelativeFilePath: string): ReviewSummary | null {
-    const reviewFile = this.loadReviewFile(targetRelativeFilePath);
-
-    if (!reviewFile || reviewFile.reviews.length === 0) {
-      return null;
-    }
-
-    const summary: ReviewSummary = {
-      open: 0,
-      in_progress: 0,
-      resolved: 0,
-      dismissed: 0,
-    };
-
-    for (const review of reviewFile.reviews) {
-      summary[review.status]++;
-    }
-
-    return summary;
   }
 
   /**
@@ -354,22 +231,19 @@ export class ReviewService {
   }
 
   /**
-   * ファイルハッシュの変更を検証
+   * ファイルハッシュの変更を検証（非同期版）
    * @param targetRelativeFilePath 対象ファイルのパス（小説ルートからの相対パス）
    * @returns ファイルが変更されているかどうか
-   * @deprecated Use async version for better VSCode integration
    */
-  isFileChanged(targetRelativeFilePath: string): boolean {
-    const reviewFile = this.loadReviewFile(targetRelativeFilePath);
+  async isFileChangedAsync(targetRelativeFilePath: string): Promise<boolean> {
+    const reviewFile = await this.loadReviewFileAsync(targetRelativeFilePath);
 
     if (!reviewFile) {
       return false;
     }
 
-    // TODO: ReviewServiceの@deprecated削除時に対応
-    // const targetFileUri = this.fileRepository.joinPath(this.workspaceRoot, targetRelativeFilePath);
-    // const currentHash = this.hashService.calculateFileHash(targetFileUri);
-    const currentHash = 'sha256:temporary'; // 一時的なダミー値
+    const targetFileUri = this.fileRepository.joinPath(this.workspaceRoot, targetRelativeFilePath);
+    const currentHash = await this.hashService.calculateFileHashAsync(targetFileUri);
 
     return currentHash !== reviewFile.file_hash;
   }

@@ -187,19 +187,19 @@ files:
     assert.deepStrictEqual(chapter1RefsAfter.referencedBy, []);
   });
 
-  test('ファイルの存在チェックが正しく動作する', () => {
+  test('ファイルの存在チェック（非同期版）が正しく動作する', async () => {
     refManager.initialize(testDir, mockFileRepository);
 
     // 存在するファイル
-    assert.strictEqual(refManager.checkFileExists('settings/world.md'), true);
-    assert.strictEqual(refManager.checkFileExists('contents/chapter1.txt'), true);
+    assert.strictEqual(await refManager.checkFileExistsAsync('settings/world.md'), true);
+    assert.strictEqual(await refManager.checkFileExistsAsync('contents/chapter1.txt'), true);
 
     // 存在しないファイル
-    assert.strictEqual(refManager.checkFileExists('non-existent.md'), false);
-    assert.strictEqual(refManager.checkFileExists('settings/non-existent.md'), false);
+    assert.strictEqual(await refManager.checkFileExistsAsync('non-existent.md'), false);
+    assert.strictEqual(await refManager.checkFileExistsAsync('settings/non-existent.md'), false);
   });
 
-  test('無効な参照先ファイルを取得できる', () => {
+  test('無効な参照先ファイルを取得（非同期版）できる', async () => {
     refManager.initialize(testDir, mockFileRepository);
 
     // chapter1.txtに存在しない参照を追加
@@ -212,7 +212,7 @@ files:
 
     refManager.updateFileReferences(filePath, referencesWithInvalid);
 
-    const invalidRefs = refManager.getInvalidReferences(filePath);
+    const invalidRefs = await refManager.getInvalidReferencesAsync(filePath);
     assert.deepStrictEqual(
       invalidRefs.sort(),
       ['settings/non-existent.md', 'invalid/path.md'].sort(),

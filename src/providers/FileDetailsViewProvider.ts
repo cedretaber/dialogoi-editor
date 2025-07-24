@@ -866,7 +866,7 @@ export class FileDetailsViewProvider implements vscode.WebviewViewProvider {
         const referenceManager = ReferenceManager.getInstance();
         if (referenceManager.isInitialized()) {
           // 参照元ファイルのハイパーリンク参照を再スキャン
-          referenceManager.updateFileHyperlinkReferences(referenceSourceAbsolutePath);
+          await referenceManager.updateFileHyperlinkReferencesAsync(referenceSourceAbsolutePath);
 
           // プロジェクト全体の参照関係を再スキャンして確実に更新
           const fileRepository = ServiceContainer.getInstance().getFileRepository();
