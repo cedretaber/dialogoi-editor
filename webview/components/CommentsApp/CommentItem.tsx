@@ -42,7 +42,6 @@ export const CommentItem: React.FC<CommentItemProps> = ({
   // 編集状態の管理
   const [isEditing, setIsEditing] = useState<boolean>(false);
   const [editContent, setEditContent] = useState<string>(comment.content);
-  const [showPreview, setShowPreview] = useState<boolean>(true);
   const [todoProgress, setTodoProgress] = useState<TodoProgress>({
     total: 0,
     completed: 0,
@@ -58,43 +57,37 @@ export const CommentItem: React.FC<CommentItemProps> = ({
   }, [comment.content]);
 
   /**
-   * 編集モードを開始
+   * プレビュークリックで編集モードを開始
    */
-  const handleStartEdit = (): void => {
+  const handlePreviewClick = (): void => {
     setEditContent(comment.content);
     setIsEditing(true);
-    setShowPreview(false);
   };
 
   /**
-   * 編集を保存
+   * フォーカスが外れた時の自動保存
    */
-  const handleSaveEdit = (): void => {
+  const handleBlur = (): void => {
     const trimmedContent = editContent.trim();
     if (trimmedContent && trimmedContent !== comment.content) {
       onEdit(index, trimmedContent);
     }
     setIsEditing(false);
-    setShowPreview(true);
   };
 
   /**
-   * 編集をキャンセル
+   * 編集をキャンセル（Escapeキー用）
    */
   const handleCancelEdit = (): void => {
     setEditContent(comment.content);
     setIsEditing(false);
-    setShowPreview(true);
   };
 
   /**
    * キーボードショートカットの処理
    */
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>): void => {
-    if (e.ctrlKey && e.key === 'Enter') {
-      e.preventDefault();
-      handleSaveEdit();
-    } else if (e.key === 'Escape') {
+    if (e.key === 'Escape') {
       e.preventDefault();
       handleCancelEdit();
     }
@@ -119,13 +112,6 @@ export const CommentItem: React.FC<CommentItemProps> = ({
    */
   const handleDelete = (): void => {
     onDelete(index);
-  };
-
-  /**
-   * プレビュー/ソース表示の切り替え
-   */
-  const togglePreview = (): void => {
-    setShowPreview(!showPreview);
   };
 
   // 編集モード時のフォーカス処理
@@ -186,45 +172,20 @@ export const CommentItem: React.FC<CommentItemProps> = ({
               value={editContent}
               onChange={(e) => setEditContent(e.target.value)}
               onKeyDown={handleKeyDown}
+              onBlur={handleBlur}
               rows={Math.max(3, editContent.split('\n').length)}
             />
-            <div className="edit-actions">
-              <button
-                className="save-button"
-                onClick={handleSaveEdit}
-                disabled={!editContent.trim()}
-                type="button"
-              >
-                保存
-              </button>
-              <button className="cancel-button" onClick={handleCancelEdit} type="button">
-                キャンセル
-              </button>
-              <span className="keyboard-hint">Ctrl+Enter: 保存 | Escape: キャンセル</span>
-            </div>
           </div>
         ) : (
-          // 表示モード
-          <div className="preview-mode">
-            {showPreview ? (
-              <MarkdownRenderer content={comment.content} className="markdown-content" />
-            ) : (
-              <pre className="raw-content">{comment.content}</pre>
-            )}
+          // 表示モード（クリックで編集モード）
+          <div className="preview-mode" onClick={handlePreviewClick}>
+            <MarkdownRenderer content={comment.content} className="markdown-content" />
           </div>
         )}
       </div>
 
       {/* コメントアクション */}
       <div className="comment-actions">
-        <button className="edit-button" onClick={handleStartEdit} type="button">
-          編集
-        </button>
-
-        <button className="preview-toggle" onClick={togglePreview} type="button">
-          {showPreview ? 'ソース' : 'プレビュー'}
-        </button>
-
         <button className="status-toggle" onClick={handleToggleStatus} type="button">
           {statusButtonText}
         </button>

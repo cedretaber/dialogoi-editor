@@ -365,8 +365,8 @@ suite('CommentItem コンポーネント', () => {
     });
   });
 
-  suite('編集機能', () => {
-    test('編集ボタンクリックで編集モードに切り替わる', () => {
+  suite('インライン編集機能', () => {
+    test('プレビュー部分をクリックすると編集モードに切り替わる', () => {
       const comment = createSampleComment();
 
       render(
@@ -380,17 +380,16 @@ suite('CommentItem コンポーネント', () => {
         />,
       );
 
-      const editButton = screen.getByText('編集');
-      fireEvent.click(editButton);
+      // プレビュー部分をクリック
+      const previewMode = document.querySelector('.preview-mode');
+      assert(previewMode);
+      fireEvent.click(previewMode);
 
-      // 編集モードのUI要素が表示される
+      // 編集モードのテキストエリアが表示される
       assert(screen.getByDisplayValue('これはテストコメントです'));
-      assert(screen.getByText('保存'));
-      assert(screen.getByText('キャンセル'));
-      assert(screen.getByText(/Ctrl\+Enter: 保存/));
     });
 
-    test('編集内容を保存するとコールバックが呼ばれる', async () => {
+    test('テキストエリアからフォーカスが外れると自動保存される', async () => {
       const comment = createSampleComment();
 
       render(
@@ -404,17 +403,17 @@ suite('CommentItem コンポーネント', () => {
         />,
       );
 
-      // 編集モードに切り替え
-      const editButton = screen.getByText('編集');
-      fireEvent.click(editButton);
+      // プレビュー部分をクリックして編集モードに切り替え
+      const previewMode = document.querySelector('.preview-mode');
+      assert(previewMode);
+      fireEvent.click(previewMode);
 
       // テキスト変更
       const textarea = screen.getByDisplayValue('これはテストコメントです');
       fireEvent.change(textarea, { target: { value: '編集されたコメント' } });
 
-      // 保存ボタンクリック
-      const saveButton = screen.getByText('保存');
-      fireEvent.click(saveButton);
+      // フォーカスを外す（onBlur）
+      fireEvent.blur(textarea);
 
       // コールバックが呼ばれることを確認
       await waitFor(() => {
@@ -426,7 +425,7 @@ suite('CommentItem コンポーネント', () => {
       });
     });
 
-    test('編集をキャンセルすると元の内容に戻る', () => {
+    test('Escapeキーで編集をキャンセルすると元の内容に戻る', () => {
       const comment = createSampleComment();
 
       render(
@@ -440,83 +439,16 @@ suite('CommentItem コンポーネント', () => {
         />,
       );
 
-      // 編集モードに切り替え
-      const editButton = screen.getByText('編集');
-      fireEvent.click(editButton);
+      // プレビュー部分をクリックして編集モードに切り替え
+      const previewMode = document.querySelector('.preview-mode');
+      assert(previewMode);
+      fireEvent.click(previewMode);
 
       // テキスト変更
       const textarea = screen.getByDisplayValue('これはテストコメントです');
       fireEvent.change(textarea, { target: { value: '変更されたテキスト' } });
 
-      // キャンセルボタンクリック
-      const cancelButton = screen.getByText('キャンセル');
-      fireEvent.click(cancelButton);
-
-      // 元の内容が表示されることを確認
-      assert(screen.getByText('これはテストコメントです'));
-
-      // コールバックが呼ばれていないことを確認
-      assert.strictEqual(callHistory.length, 0);
-    });
-
-    test('Ctrl+Enterで保存される', async () => {
-      const comment = createSampleComment();
-
-      render(
-        <CommentItem
-          comment={comment}
-          index={0}
-          onToggleStatus={mockOnToggleStatus}
-          onDelete={mockOnDelete}
-          onEdit={mockOnEdit}
-          onJumpToLine={mockOnJumpToLine}
-        />,
-      );
-
-      // 編集モードに切り替え
-      const editButton = screen.getByText('編集');
-      fireEvent.click(editButton);
-
-      // テキスト変更
-      const textarea = screen.getByDisplayValue('これはテストコメントです');
-      fireEvent.change(textarea, { target: { value: 'Ctrl+Enterで保存' } });
-
-      // Ctrl+Enter キー押下
-      fireEvent.keyDown(textarea, { key: 'Enter', ctrlKey: true });
-
-      // コールバックが呼ばれることを確認
-      await waitFor(() => {
-        assert.strictEqual(callHistory.length, 1);
-        assert.deepStrictEqual(callHistory[0], {
-          method: 'onEdit',
-          args: [0, 'Ctrl+Enterで保存'],
-        });
-      });
-    });
-
-    test('Escapeキーでキャンセルされる', () => {
-      const comment = createSampleComment();
-
-      render(
-        <CommentItem
-          comment={comment}
-          index={0}
-          onToggleStatus={mockOnToggleStatus}
-          onDelete={mockOnDelete}
-          onEdit={mockOnEdit}
-          onJumpToLine={mockOnJumpToLine}
-        />,
-      );
-
-      // 編集モードに切り替え
-      const editButton = screen.getByText('編集');
-      fireEvent.click(editButton);
-
-      // テキスト変更
-      const textarea = screen.getByDisplayValue('これはテストコメントです');
-      fireEvent.change(textarea, { target: { value: '変更されたテキスト' } });
-
-      // Escape キー押下
+      // Escapeキー押下
       fireEvent.keyDown(textarea, { key: 'Escape' });
 
       // 元の内容が表示されることを確認
@@ -525,48 +457,8 @@ suite('CommentItem コンポーネント', () => {
       // コールバックが呼ばれていないことを確認
       assert.strictEqual(callHistory.length, 0);
     });
-  });
 
-  suite('プレビュー・ソース切り替え', () => {
-    test('プレビュー・ソース切り替えボタンが機能する', () => {
-      const comment = createSampleComment({
-        content: '**太字**のテスト',
-      });
-
-      render(
-        <CommentItem
-          comment={comment}
-          index={0}
-          onToggleStatus={mockOnToggleStatus}
-          onDelete={mockOnDelete}
-          onEdit={mockOnEdit}
-          onJumpToLine={mockOnJumpToLine}
-        />,
-      );
-
-      // 初期状態はプレビューモード
-      assert(screen.getByText('ソース'));
-
-      // HTMLレンダリングされた内容が表示されている
-      const markdownContent = document.querySelector('.markdown-content');
-      assert(markdownContent);
-
-      // ソース表示に切り替え
-      const sourceButton = screen.getByText('ソース');
-      fireEvent.click(sourceButton);
-
-      // ボタンテキストが変わる
-      assert(screen.getByText('プレビュー'));
-
-      // 生テキストが表示される
-      const rawContent = document.querySelector('.raw-content');
-      assert(rawContent);
-      assert.strictEqual(rawContent.textContent, '**太字**のテスト');
-    });
-  });
-
-  suite('エッジケース', () => {
-    test('空の内容は保存されない', () => {
+    test('変更されていない内容では自動保存されない', () => {
       const comment = createSampleComment();
 
       render(
@@ -580,18 +472,49 @@ suite('CommentItem コンポーネント', () => {
         />,
       );
 
-      // 編集モードに切り替え
-      const editButton = screen.getByText('編集');
-      fireEvent.click(editButton);
+      // プレビュー部分をクリックして編集モードに切り替え
+      const previewMode = document.querySelector('.preview-mode');
+      assert(previewMode);
+      fireEvent.click(previewMode);
+
+      // テキストは変更せずにフォーカスを外す
+      const textarea = screen.getByDisplayValue('これはテストコメントです');
+      fireEvent.blur(textarea);
+
+      // コールバックが呼ばれていないことを確認
+      assert.strictEqual(callHistory.length, 0);
+    });
+  });
+
+  suite('エッジケース', () => {
+    test('空の内容はフォーカスアウト時に保存されない', () => {
+      const comment = createSampleComment();
+
+      render(
+        <CommentItem
+          comment={comment}
+          index={0}
+          onToggleStatus={mockOnToggleStatus}
+          onDelete={mockOnDelete}
+          onEdit={mockOnEdit}
+          onJumpToLine={mockOnJumpToLine}
+        />,
+      );
+
+      // プレビュー部分をクリックして編集モードに切り替え
+      const previewMode = document.querySelector('.preview-mode');
+      assert(previewMode);
+      fireEvent.click(previewMode);
 
       // テキストを空にする
       const textarea = screen.getByDisplayValue('これはテストコメントです');
       fireEvent.change(textarea, { target: { value: '   ' } }); // 空白のみ
 
-      // 保存ボタンが無効化されている
-      // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-assertion
-      const saveButton = screen.getByText('保存') as HTMLButtonElement;
-      assert.strictEqual(saveButton.disabled, true);
+      // フォーカスを外す
+      fireEvent.blur(textarea);
+
+      // コールバックが呼ばれていないことを確認（空のコンテンツは保存されない）
+      assert.strictEqual(callHistory.length, 0);
     });
 
     test('改行を含む長いコメントが正しく表示される', () => {
