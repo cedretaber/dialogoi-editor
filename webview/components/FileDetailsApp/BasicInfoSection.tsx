@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import type { FileDetailsData } from '../types/FileDetails';
+import type { FileDetailsData } from '../../types/FileDetails';
 
 interface BasicInfoSectionProps {
   fileData: FileDetailsData;

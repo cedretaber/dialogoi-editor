@@ -1,7 +1,7 @@
 import { suite, test, setup } from 'mocha';
-import { render, screen, fireEvent, waitFor } from '../test-utils';
+import { render, screen, fireEvent, waitFor } from '../../test-utils';
 import { CommentsApp } from './CommentsApp';
-import { resetGlobalReadyMessageSent } from '../hooks/useVSCodeApi';
+import { resetGlobalReadyMessageSent } from '../../hooks/useVSCodeApi';
 import assert from 'assert';
 
 // モックメッセージイベントを作成するヘルパー関数

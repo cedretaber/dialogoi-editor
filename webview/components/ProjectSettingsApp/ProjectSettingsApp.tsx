@@ -5,8 +5,8 @@ import type {
   ProjectSettingsMessage,
   ProjectSettingsWebViewMessage,
   ProjectSettingsValidationResult,
-} from '../types/ProjectSettings';
-import { useVSCodeApi } from '../hooks/useVSCodeApi';
+} from '../../types/ProjectSettings';
+import { useVSCodeApi } from '../../hooks/useVSCodeApi';
 
 // セマンティックバージョンの検証
 const isValidSemanticVersion = (version: string): boolean => {

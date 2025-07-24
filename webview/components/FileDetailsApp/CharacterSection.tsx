@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import type { CharacterInfo } from '../types/FileDetails';
+import type { CharacterInfo } from '../../types/FileDetails';
 
 interface CharacterSectionProps {
   character: CharacterInfo;

@@ -11,8 +11,8 @@ import { suite, test, beforeEach, afterEach } from 'mocha';
 import { strict as assert } from 'assert';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { FileDetailsApp } from './FileDetailsApp';
-import { resetGlobalReadyMessageSent } from '../hooks/useVSCodeApi';
-import type { FileDetailsData, UpdateFileMessage, WebViewMessage } from '../types/FileDetails';
+import { resetGlobalReadyMessageSent } from '../../hooks/useVSCodeApi';
+import type { FileDetailsData, UpdateFileMessage, WebViewMessage } from '../../types/FileDetails';
 
 suite('FileDetailsApp コンポーネント', () => {
   let mockPostMessage: (message: WebViewMessage) => void;

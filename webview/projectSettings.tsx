@@ -1,5 +1,5 @@
 import { createRoot } from 'react-dom/client';
-import { ProjectSettingsApp } from './components/ProjectSettingsApp';
+import { ProjectSettingsApp } from './components/ProjectSettingsApp/ProjectSettingsApp';
 
 // ルート要素を取得
 const container = document.getElementById('content');

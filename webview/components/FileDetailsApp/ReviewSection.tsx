@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import type { ReviewCount } from '../types/FileDetails';
+import type { ReviewCount } from '../../types/FileDetails';
 
 interface ReviewSectionProps {
   reviewCount: ReviewCount;

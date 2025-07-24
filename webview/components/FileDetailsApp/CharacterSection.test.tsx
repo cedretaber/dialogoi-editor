@@ -1,8 +1,8 @@
 import { suite, test, setup } from 'mocha';
-import { render, screen, fireEvent } from '../test-utils';
+import { render, screen, fireEvent } from '../../test-utils';
 import { CharacterSection } from './CharacterSection';
 import assert from 'assert';
-import type { CharacterInfo } from '../types/FileDetails';
+import type { CharacterInfo } from '../../types/FileDetails';
 
 suite('CharacterSection コンポーネント', () => {
   let mockCharacter: CharacterInfo;

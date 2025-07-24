@@ -2,14 +2,14 @@ import { suite, test, beforeEach, afterEach } from 'mocha';
 import { strict as assert } from 'assert';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { ProjectSettingsApp } from './ProjectSettingsApp';
-import { resetGlobalReadyMessageSent } from '../hooks/useVSCodeApi';
+import { resetGlobalReadyMessageSent } from '../../hooks/useVSCodeApi';
 import type {
   ProjectSettingsData,
   ProjectSettingsWebViewMessage,
   ProjectSettingsMessage,
   UpdateProjectSettingsMessage,
   SaveResultMessage,
-} from '../types/ProjectSettings';
+} from '../../types/ProjectSettings';
 
 suite('ProjectSettingsApp コンポーネント', () => {
   let mockPostMessage: (message: ProjectSettingsMessage) => void;

@@ -1,9 +1,9 @@
 import React from 'react';
 import { suite, test, setup } from 'mocha';
-import { render, screen, fireEvent } from '../test-utils';
+import { render, screen, fireEvent } from '../../test-utils';
 import { ForeshadowingSection } from './ForeshadowingSection';
 import assert from 'assert';
-import type { ForeshadowingData, ForeshadowingPoint } from '../types/FileDetails';
+import type { ForeshadowingData, ForeshadowingPoint } from '../../types/FileDetails';
 
 suite('ForeshadowingSection コンポーネント', () => {
   let mockOnPlantAdd: (plant: ForeshadowingPoint) => void;

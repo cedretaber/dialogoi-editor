@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import type { ForeshadowingData, ForeshadowingPoint } from '../types/FileDetails';
+import type { ForeshadowingData, ForeshadowingPoint } from '../../types/FileDetails';
 
 interface ForeshadowingSectionProps {
   foreshadowing?: ForeshadowingData;

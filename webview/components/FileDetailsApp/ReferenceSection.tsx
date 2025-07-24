@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import type { FileDetailsData, ReferenceEntry } from '../types/FileDetails';
+import type { FileDetailsData, ReferenceEntry } from '../../types/FileDetails';
 
 interface ReferenceSectionProps {
   fileData: FileDetailsData;

@@ -4,16 +4,16 @@ import type {
   UpdateFileMessage,
   ForeshadowingPoint,
   RenameFileResponseMessage,
-} from '../types/FileDetails';
+} from '../../types/FileDetails';
 import { TagSection } from './TagSection';
 import { CharacterSection } from './CharacterSection';
 import { ReferenceSection } from './ReferenceSection';
 import { ReviewSection } from './ReviewSection';
 import { BasicInfoSection } from './BasicInfoSection';
 import { ForeshadowingSection } from './ForeshadowingSection';
-import { useVSCodeApi } from '../hooks/useVSCodeApi';
+import { useVSCodeApi } from '../../hooks/useVSCodeApi';
 
-import type { WebViewMessage } from '../types/FileDetails';
+import type { WebViewMessage } from '../../types/FileDetails';
 
 export const FileDetailsApp: React.FC = () => {
   const [fileData, setFileData] = useState<FileDetailsData | null>(null);

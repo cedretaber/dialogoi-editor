@@ -1,8 +1,8 @@
 import { suite, test, setup } from 'mocha';
-import { render, screen, fireEvent } from '../test-utils';
+import { render, screen, fireEvent } from '../../test-utils';
 import { BasicInfoSection } from './BasicInfoSection';
 import assert from 'assert';
-import type { FileDetailsData } from '../types/FileDetails';
+import type { FileDetailsData } from '../../types/FileDetails';
 
 suite('BasicInfoSection コンポーネント', () => {
   let mockFileData: FileDetailsData;

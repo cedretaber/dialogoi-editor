@@ -1,5 +1,5 @@
 import { suite, test, setup } from 'mocha';
-import { render, screen, fireEvent, waitFor } from '../test-utils';
+import { render, screen, fireEvent, waitFor } from '../../test-utils';
 import { CommentItem } from './CommentItem';
 import assert from 'assert';
 

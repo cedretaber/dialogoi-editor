@@ -1,6 +1,6 @@
 import React from 'react';
 import { createRoot } from 'react-dom/client';
-import { CommentsApp } from './components/CommentsApp';
+import { CommentsApp } from './components/CommentsApp/CommentsApp';
 
 // ルート要素を取得
 const container = document.getElementById('content');

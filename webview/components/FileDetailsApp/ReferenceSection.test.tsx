@@ -1,9 +1,9 @@
 import React from 'react';
 import { suite, test, setup } from 'mocha';
-import { render, screen, fireEvent } from '../test-utils';
+import { render, screen, fireEvent } from '../../test-utils';
 import { ReferenceSection } from './ReferenceSection';
 import assert from 'assert';
-import type { FileDetailsData } from '../types/FileDetails';
+import type { FileDetailsData } from '../../types/FileDetails';
 
 suite('ReferenceSection コンポーネント', () => {
   let mockOnReferenceOpen: (reference: string) => void;

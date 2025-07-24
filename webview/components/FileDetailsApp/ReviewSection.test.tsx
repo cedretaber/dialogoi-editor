@@ -1,8 +1,8 @@
 import { suite, test, setup } from 'mocha';
-import { render, screen, fireEvent } from '../test-utils';
+import { render, screen, fireEvent } from '../../test-utils';
 import { ReviewSection } from './ReviewSection';
 import assert from 'assert';
-import type { ReviewCount } from '../types/FileDetails';
+import type { ReviewCount } from '../../types/FileDetails';
 
 suite('ReviewSection コンポーネント', () => {
   let mockReviewCount: ReviewCount;
