@@ -28,6 +28,16 @@ export class DialogoiTreeDataProvider
   readonly onDidChangeTreeData: vscode.Event<DialogoiTreeItem | undefined | null | void> =
     this._onDidChangeTreeData.event;
 
+  // 選択変更イベント
+  private _onDidChangeSelection: vscode.EventEmitter<DialogoiTreeItem[]> = new vscode.EventEmitter<
+    DialogoiTreeItem[]
+  >();
+  readonly onDidChangeSelection: vscode.Event<DialogoiTreeItem[]> =
+    this._onDidChangeSelection.event;
+
+  // 現在の選択状態を保持
+  private currentSelection: DialogoiTreeItem[] = [];
+
   // fire呼び出しを追跡するためのラッパー
   private fireTreeDataChange(): void {
     const stack = new Error().stack;
@@ -1071,5 +1081,22 @@ export class DialogoiTreeDataProvider
       this.logger.error('ドラッグ&ドロップエラー', error instanceof Error ? error : String(error));
       vscode.window.showErrorMessage('ファイルの並び替えに失敗しました。');
     }
+  }
+
+  /**
+   * 選択変更を通知
+   * extension.tsからTreeViewの選択変更時に呼び出される
+   */
+  public notifySelectionChanged(selectedItems: DialogoiTreeItem[]): void {
+    this.currentSelection = selectedItems;
+    this.logger.debug(`選択変更通知: ${selectedItems.length}個のアイテム`);
+    this._onDidChangeSelection.fire(selectedItems);
+  }
+
+  /**
+   * 現在の選択状態を取得
+   */
+  public getSelection(): DialogoiTreeItem[] {
+    return [...this.currentSelection];
   }
 }

@@ -47,6 +47,13 @@
           "name": "ファイル詳細",
           "when": "dialogoi:hasNovelProject",
           "icon": "$(info)"
+        },
+        {
+          "type": "webview",
+          "id": "dialogoi-comments",
+          "name": "コメント・TODO",
+          "when": "dialogoi:hasNovelProject",
+          "icon": "$(comment-discussion)"
         }
       ]
     },
@@ -381,9 +388,10 @@
     "format:check": "prettier --check \"src/**/*.ts\" \"webview/**/*.{ts,tsx}\"",
     "format:src": "prettier --write \"src/**/*.ts\"",
     "format:webview": "prettier --write \"webview/**/*.{ts,tsx}\"",
-    "webview:build": "npm run webview:build:fileDetails && npm run webview:build:projectSettings",
+    "webview:build": "npm run webview:build:fileDetails && npm run webview:build:projectSettings && npm run webview:build:comments",
     "webview:build:fileDetails": "esbuild webview/index.tsx --bundle --outfile=out/webviews/fileDetails/script.js --minify --target=es2020 --jsx=automatic --loader:.tsx=tsx",
     "webview:build:projectSettings": "esbuild webview/projectSettings.tsx --bundle --outfile=out/webviews/projectSettings/projectSettings.js --minify --target=es2020 --jsx=automatic --loader:.tsx=tsx",
+    "webview:build:comments": "esbuild webview/comments.tsx --bundle --outfile=out/webviews/comments/script.js --minify --target=es2020 --jsx=automatic --loader:.tsx=tsx",
     "webview:watch": "npm run webview:build -- --watch",
     "check-all": "npm run typecheck && npm run lint && npm run format:check && npm run test:all && npm run webview:build",
     "package": "npx vsce package"

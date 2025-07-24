@@ -5,6 +5,7 @@ import { ForeshadowingService } from '../services/ForeshadowingService.js';
 import { ReferenceManager } from '../services/ReferenceManager.js';
 import { HashService } from '../services/HashService.js';
 import { ReviewService } from '../services/ReviewService.js';
+import { CommentService } from '../services/CommentService.js';
 import { DialogoiYamlService } from '../services/DialogoiYamlService.js';
 import { DialogoiTemplateService } from '../services/DialogoiTemplateService.js';
 import { ProjectCreationService } from '../services/ProjectCreationService.js';
@@ -134,6 +135,13 @@ export class TestServiceContainer implements IServiceContainer {
       );
     }
     return this.reviewService;
+  }
+
+  /**
+   * CommentServiceを取得
+   */
+  getCommentService(workspaceRoot: Uri): CommentService {
+    return new CommentService(this.fileRepository, this.getHashService(), workspaceRoot);
   }
 
   /**

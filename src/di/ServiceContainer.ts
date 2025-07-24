@@ -5,6 +5,7 @@ import { ForeshadowingService } from '../services/ForeshadowingService.js';
 import { ReferenceManager } from '../services/ReferenceManager.js';
 import { HashService } from '../services/HashService.js';
 import { ReviewService } from '../services/ReviewService.js';
+import { CommentService } from '../services/CommentService.js';
 import { DialogoiYamlService } from '../services/DialogoiYamlService.js';
 import { DialogoiTemplateService } from '../services/DialogoiTemplateService.js';
 import { MetaYamlService } from '../services/MetaYamlService.js';
@@ -29,6 +30,7 @@ export interface IServiceContainer {
   getReferenceManager(): ReferenceManager;
   getHashService(): HashService;
   getReviewService(workspaceRoot: Uri): ReviewService;
+  getCommentService(workspaceRoot: Uri): CommentService;
   getDialogoiYamlService(): DialogoiYamlService;
   getDialogoiTemplateService(): DialogoiTemplateService;
   getMetaYamlService(): MetaYamlService;
@@ -175,6 +177,13 @@ export class ServiceContainer implements IServiceContainer {
       );
     }
     return this.reviewService;
+  }
+
+  /**
+   * CommentServiceを取得
+   */
+  getCommentService(workspaceRoot: Uri): CommentService {
+    return new CommentService(this.getFileRepository(), this.getHashService(), workspaceRoot);
   }
 
   /**

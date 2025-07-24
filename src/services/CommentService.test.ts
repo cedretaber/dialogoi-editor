@@ -1,0 +1,428 @@
+import { describe, it, beforeEach, afterEach } from 'mocha';
+import * as assert from 'assert';
+import * as path from 'path';
+import { CommentService } from './CommentService.js';
+import { CreateCommentOptions } from '../models/Comment.js';
+import { TestServiceContainer } from '../di/TestServiceContainer.js';
+import { MockFileRepository } from '../repositories/MockFileRepository.js';
+
+describe('CommentService テストスイート', () => {
+  let workspaceRootPath: string;
+  let commentService: CommentService;
+  let testRelativeFilePath: string;
+  let mockFileRepository: MockFileRepository;
+
+  beforeEach(() => {
+    // テスト用サービスコンテナを初期化
+    const container = TestServiceContainer.getInstance();
+    container.reset();
+
+    // モックファイルサービスを取得
+    mockFileRepository = container.getMockFileRepository();
+
+    // テスト用のワークスペースを設定
+    workspaceRootPath = '/workspace';
+    const workspaceRoot = mockFileRepository.createFileUri(workspaceRootPath);
+    commentService = container.getCommentService(workspaceRoot);
+    testRelativeFilePath = 'test.txt';
+
+    // テストファイルを作成
+    const fullTestAbsolutePath = path.join(workspaceRootPath, testRelativeFilePath);
+    mockFileRepository.addFile(fullTestAbsolutePath, 'Hello, World!\nThis is a test file.\n');
+  });
+
+  afterEach(() => {
+    // テスト用サービスコンテナをリセット
+    TestServiceContainer.getInstance().reset();
+  });
+
+  describe('addCommentAsync', () => {
+    it('新しいコメントを追加する', async () => {
+      const options: CreateCommentOptions = {
+        line: 1,
+        content: 'これはテストコメントです',
+      };
+
+      await commentService.addCommentAsync(testRelativeFilePath, options);
+
+      // コメントファイルが作成されているか確認
+      const commentFile = await commentService.loadCommentFileAsync(testRelativeFilePath);
+      assert.ok(commentFile !== null);
+      if (commentFile !== null) {
+        assert.strictEqual(commentFile.target_file, testRelativeFilePath);
+        assert.strictEqual(commentFile.comments.length, 1);
+        assert.strictEqual(commentFile.comments[0]?.content, 'これはテストコメントです');
+        assert.strictEqual(commentFile.comments[0]?.line, 1);
+        assert.strictEqual(commentFile.comments[0]?.status, 'open');
+        assert.ok(commentFile.comments[0]?.created_at);
+      }
+    });
+
+    it('複数行コメントを追加する', async () => {
+      const options: CreateCommentOptions = {
+        line: 1,
+        endLine: 3,
+        content: '複数行にわたるコメント',
+      };
+
+      await commentService.addCommentAsync(testRelativeFilePath, options);
+
+      const commentFile = await commentService.loadCommentFileAsync(testRelativeFilePath);
+      assert.ok(commentFile !== null);
+      if (commentFile !== null) {
+        assert.strictEqual(commentFile.comments[0]?.line, 1);
+        assert.strictEqual(commentFile.comments[0]?.endLine, 3);
+        assert.strictEqual(commentFile.comments[0]?.content, '複数行にわたるコメント');
+      }
+    });
+
+    it('既存のコメントファイルに追加する', async () => {
+      const options1: CreateCommentOptions = {
+        line: 1,
+        content: '最初のコメント',
+      };
+
+      const options2: CreateCommentOptions = {
+        line: 2,
+        content: '2番目のコメント',
+      };
+
+      await commentService.addCommentAsync(testRelativeFilePath, options1);
+      await commentService.addCommentAsync(testRelativeFilePath, options2);
+
+      const commentFile = await commentService.loadCommentFileAsync(testRelativeFilePath);
+      assert.ok(commentFile !== null);
+      if (commentFile !== null) {
+        assert.strictEqual(commentFile.comments.length, 2);
+        assert.strictEqual(commentFile.comments[0]?.content, '最初のコメント');
+        assert.strictEqual(commentFile.comments[1]?.content, '2番目のコメント');
+      }
+    });
+  });
+
+  describe('loadCommentFileAsync', () => {
+    it('存在しないコメントファイルを読み込む', async () => {
+      const commentFile = await commentService.loadCommentFileAsync('nonexistent.txt');
+      assert.strictEqual(commentFile, null);
+    });
+
+    it('コメントファイルを正しく読み込む', async () => {
+      const options: CreateCommentOptions = {
+        line: 1,
+        content: 'テストコメント',
+      };
+
+      await commentService.addCommentAsync(testRelativeFilePath, options);
+      const commentFile = await commentService.loadCommentFileAsync(testRelativeFilePath);
+
+      assert.ok(commentFile !== null);
+      if (commentFile !== null) {
+        assert.strictEqual(commentFile.target_file, testRelativeFilePath);
+        assert.strictEqual(commentFile.comments.length, 1);
+        assert.strictEqual(commentFile.comments[0]?.content, 'テストコメント');
+      }
+    });
+  });
+
+  describe('updateCommentAsync', () => {
+    it('コメントのステータスを更新する', async () => {
+      const options: CreateCommentOptions = {
+        line: 1,
+        content: 'テストコメント',
+      };
+
+      await commentService.addCommentAsync(testRelativeFilePath, options);
+      await commentService.updateCommentAsync(testRelativeFilePath, 0, { status: 'resolved' });
+
+      const commentFile = await commentService.loadCommentFileAsync(testRelativeFilePath);
+      assert.ok(commentFile !== null);
+      if (commentFile !== null) {
+        assert.strictEqual(commentFile.comments[0]?.status, 'resolved');
+        assert.ok(commentFile.comments[0]?.updated_at !== undefined);
+      }
+    });
+
+    it('コメントの内容を更新する', async () => {
+      const options: CreateCommentOptions = {
+        line: 1,
+        content: '元のコメント',
+      };
+
+      await commentService.addCommentAsync(testRelativeFilePath, options);
+      await commentService.updateCommentAsync(testRelativeFilePath, 0, {
+        content: '更新されたコメント',
+      });
+
+      const commentFile = await commentService.loadCommentFileAsync(testRelativeFilePath);
+      assert.ok(commentFile !== null);
+      if (commentFile !== null) {
+        assert.strictEqual(commentFile.comments[0]?.content, '更新されたコメント');
+        assert.ok(commentFile.comments[0]?.updated_at !== undefined);
+      }
+    });
+
+    it('ステータスとコンテンツを同時に更新する', async () => {
+      const options: CreateCommentOptions = {
+        line: 1,
+        content: '元のコメント',
+      };
+
+      await commentService.addCommentAsync(testRelativeFilePath, options);
+      await commentService.updateCommentAsync(testRelativeFilePath, 0, {
+        content: '更新されたコメント',
+        status: 'resolved',
+      });
+
+      const commentFile = await commentService.loadCommentFileAsync(testRelativeFilePath);
+      assert.ok(commentFile !== null);
+      if (commentFile !== null) {
+        assert.strictEqual(commentFile.comments[0]?.content, '更新されたコメント');
+        assert.strictEqual(commentFile.comments[0]?.status, 'resolved');
+      }
+    });
+
+    it('存在しないコメントファイルを更新しようとするとエラーが発生する', async () => {
+      try {
+        await commentService.updateCommentAsync('nonexistent.txt', 0, { status: 'resolved' });
+        assert.fail('エラーが発生すべきです');
+      } catch (error) {
+        assert.ok((error as Error).message.includes('更新対象のコメントが見つかりません'));
+      }
+    });
+
+    it('無効なコメントインデックスでエラーが発生する', async () => {
+      const options: CreateCommentOptions = {
+        line: 1,
+        content: 'テストコメント',
+      };
+
+      await commentService.addCommentAsync(testRelativeFilePath, options);
+
+      try {
+        await commentService.updateCommentAsync(testRelativeFilePath, 999, { status: 'resolved' });
+        assert.fail('エラーが発生すべきです');
+      } catch (error) {
+        assert.ok((error as Error).message.includes('更新対象のコメントが見つかりません'));
+      }
+    });
+  });
+
+  describe('deleteCommentAsync', () => {
+    it('コメントを削除する', async () => {
+      const options: CreateCommentOptions = {
+        line: 1,
+        content: '削除対象のコメント',
+      };
+
+      await commentService.addCommentAsync(testRelativeFilePath, options);
+      await commentService.deleteCommentAsync(testRelativeFilePath, 0);
+
+      const commentFile = await commentService.loadCommentFileAsync(testRelativeFilePath);
+      // コメントが全て削除された場合、ファイル自体が削除される
+      assert.strictEqual(commentFile, null);
+    });
+
+    it('複数のコメントのうち1つを削除する', async () => {
+      const options1: CreateCommentOptions = {
+        line: 1,
+        content: '最初のコメント',
+      };
+
+      const options2: CreateCommentOptions = {
+        line: 2,
+        content: '2番目のコメント',
+      };
+
+      await commentService.addCommentAsync(testRelativeFilePath, options1);
+      await commentService.addCommentAsync(testRelativeFilePath, options2);
+      await commentService.deleteCommentAsync(testRelativeFilePath, 0);
+
+      const commentFile = await commentService.loadCommentFileAsync(testRelativeFilePath);
+      assert.ok(commentFile !== null);
+      if (commentFile !== null) {
+        assert.strictEqual(commentFile.comments.length, 1);
+        assert.strictEqual(commentFile.comments[0]?.content, '2番目のコメント');
+        assert.strictEqual(commentFile.comments[0]?.line, 2);
+      }
+    });
+
+    it('存在しないコメントファイルからの削除でエラーが発生する', async () => {
+      try {
+        await commentService.deleteCommentAsync('nonexistent.txt', 0);
+        assert.fail('エラーが発生すべきです');
+      } catch (error) {
+        assert.ok((error as Error).message.includes('削除対象のコメントが見つかりません'));
+      }
+    });
+
+    it('無効なコメントインデックスでエラーが発生する', async () => {
+      const options: CreateCommentOptions = {
+        line: 1,
+        content: 'テストコメント',
+      };
+
+      await commentService.addCommentAsync(testRelativeFilePath, options);
+
+      try {
+        await commentService.deleteCommentAsync(testRelativeFilePath, 999);
+        assert.fail('エラーが発生すべきです');
+      } catch (error) {
+        assert.ok((error as Error).message.includes('削除対象のコメントが見つかりません'));
+      }
+    });
+  });
+
+  describe('isFileChangedAsync', () => {
+    it('ファイルが変更されていない場合はfalseを返す', async () => {
+      const options: CreateCommentOptions = {
+        line: 1,
+        content: 'テストコメント',
+      };
+
+      await commentService.addCommentAsync(testRelativeFilePath, options);
+      const isChanged = await commentService.isFileChangedAsync(testRelativeFilePath);
+      assert.strictEqual(isChanged, false);
+    });
+
+    it('ファイルが変更された場合はtrueを返す', async () => {
+      const options: CreateCommentOptions = {
+        line: 1,
+        content: 'テストコメント',
+      };
+
+      await commentService.addCommentAsync(testRelativeFilePath, options);
+
+      // ファイル内容を変更
+      const fullTestAbsolutePath = path.join(workspaceRootPath, testRelativeFilePath);
+      mockFileRepository.addFile(fullTestAbsolutePath, 'Changed content!\nThis is modified.\n');
+
+      const isChanged = await commentService.isFileChangedAsync(testRelativeFilePath);
+      assert.strictEqual(isChanged, true);
+    });
+
+    it('コメントファイルが存在しない場合はfalseを返す', async () => {
+      const isChanged = await commentService.isFileChangedAsync('nonexistent.txt');
+      assert.strictEqual(isChanged, false);
+    });
+  });
+
+  describe('updateFileHashAsync', () => {
+    it('ファイルハッシュを更新する', async () => {
+      const options: CreateCommentOptions = {
+        line: 1,
+        content: 'テストコメント',
+      };
+
+      await commentService.addCommentAsync(testRelativeFilePath, options);
+
+      // ファイル内容を変更
+      const fullTestAbsolutePath = path.join(workspaceRootPath, testRelativeFilePath);
+      mockFileRepository.addFile(fullTestAbsolutePath, 'Changed content!\n');
+
+      // 変更前は true
+      let isChanged = await commentService.isFileChangedAsync(testRelativeFilePath);
+      assert.strictEqual(isChanged, true);
+
+      // ハッシュを更新
+      await commentService.updateFileHashAsync(testRelativeFilePath);
+
+      // 更新後は false
+      isChanged = await commentService.isFileChangedAsync(testRelativeFilePath);
+      assert.strictEqual(isChanged, false);
+    });
+
+    it('コメントファイルが存在しない場合は何もしない', async () => {
+      // エラーが発生しないことを確認
+      await commentService.updateFileHashAsync('nonexistent.txt');
+      // エラーが発生しなければテスト成功
+    });
+  });
+
+  describe('getCommentSummaryAsync', () => {
+    it('コメントがない場合は空のサマリーを返す', async () => {
+      const summary = await commentService.getCommentSummaryAsync('nonexistent.txt');
+      assert.deepStrictEqual(summary, { open: 0 });
+    });
+
+    it('未完了コメントのみの場合', async () => {
+      const options1: CreateCommentOptions = {
+        line: 1,
+        content: '未完了コメント1',
+      };
+
+      const options2: CreateCommentOptions = {
+        line: 2,
+        content: '未完了コメント2',
+      };
+
+      await commentService.addCommentAsync(testRelativeFilePath, options1);
+      await commentService.addCommentAsync(testRelativeFilePath, options2);
+
+      const summary = await commentService.getCommentSummaryAsync(testRelativeFilePath);
+      assert.deepStrictEqual(summary, { open: 2 });
+    });
+
+    it('完了・未完了が混在する場合', async () => {
+      const options1: CreateCommentOptions = {
+        line: 1,
+        content: '未完了コメント',
+      };
+
+      const options2: CreateCommentOptions = {
+        line: 2,
+        content: '完了予定コメント',
+      };
+
+      await commentService.addCommentAsync(testRelativeFilePath, options1);
+      await commentService.addCommentAsync(testRelativeFilePath, options2);
+
+      // 1つを完了に変更
+      await commentService.updateCommentAsync(testRelativeFilePath, 1, { status: 'resolved' });
+
+      const summary = await commentService.getCommentSummaryAsync(testRelativeFilePath);
+      assert.deepStrictEqual(summary, { open: 1, resolved: 1 });
+    });
+
+    it('全てが完了している場合', async () => {
+      const options: CreateCommentOptions = {
+        line: 1,
+        content: '完了コメント',
+      };
+
+      await commentService.addCommentAsync(testRelativeFilePath, options);
+      await commentService.updateCommentAsync(testRelativeFilePath, 0, { status: 'resolved' });
+
+      const summary = await commentService.getCommentSummaryAsync(testRelativeFilePath);
+      assert.deepStrictEqual(summary, { open: 0, resolved: 1 });
+    });
+  });
+
+  describe('データ妥当性検証', () => {
+    it('不正なYAMLファイルをロードするとエラーが発生する', async () => {
+      const commentFilePath = path.join(workspaceRootPath, `${testRelativeFilePath}_comments.yaml`);
+      mockFileRepository.addFile(commentFilePath, 'invalid yaml content: [unclosed');
+
+      try {
+        await commentService.loadCommentFileAsync(testRelativeFilePath);
+        assert.fail('エラーが発生すべきです');
+      } catch (error) {
+        assert.ok((error as Error).message.includes('コメントファイル読み込みエラー'));
+      }
+    });
+
+    it('不正な形式のコメントファイルをロードするとエラーが発生する', async () => {
+      const commentFilePath = path.join(workspaceRootPath, `${testRelativeFilePath}_comments.yaml`);
+      mockFileRepository.addFile(
+        commentFilePath,
+        'target_file: test.txt\nfile_hash: "dummy"\ncomments:\n  - invalid_field: "no line field"',
+      );
+
+      try {
+        await commentService.loadCommentFileAsync(testRelativeFilePath);
+        assert.fail('エラーが発生すべきです');
+      } catch (error) {
+        assert.ok((error as Error).message.includes('コメントファイルの形式が正しくありません'));
+      }
+    });
+  });
+});

@@ -10,6 +10,7 @@ import { registerFilterCommands } from './commands/filterCommands.js';
 import { registerProjectCommands } from './commands/projectCommands.js';
 import { registerDropCommands } from './commands/dropCommands.js';
 import { FileDetailsViewProvider } from './providers/FileDetailsViewProvider.js';
+import { CommentsViewProvider } from './providers/CommentsViewProvider.js';
 import { VSCodeServiceContainer } from './di/VSCodeServiceContainer.js';
 import { ServiceContainer } from './di/ServiceContainer.js';
 import { Logger } from './utils/Logger.js';
@@ -66,6 +67,25 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     );
     logger.debug('FileDetailsViewProvider作成完了');
 
+    logger.debug('CommentsViewProvider作成を開始...');
+    // workspaceFoldersが存在することを確認
+    let commentsProvider: CommentsViewProvider | null = null;
+    if (vscode.workspace.workspaceFolders && vscode.workspace.workspaceFolders[0]) {
+      commentsProvider = new CommentsViewProvider(
+        context,
+        vscode.workspace.workspaceFolders[0].uri,
+      );
+      commentsProvider.setTreeDataProvider(treeDataProvider);
+      context.subscriptions.push(
+        vscode.window.registerWebviewViewProvider(CommentsViewProvider.viewType, commentsProvider),
+      );
+      logger.debug('CommentsViewProvider作成完了');
+    } else {
+      logger.warn(
+        'workspace.workspaceFoldersが見つからないため、CommentsViewProviderをスキップしました',
+      );
+    }
+
     // ReferenceManagerの初期化
     logger.debug('ReferenceManager初期化を開始...');
     const referenceManager = container.getReferenceManager();
@@ -103,6 +123,10 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
 
     // TreeView選択変更イベントをリスニング
     treeView.onDidChangeSelection((e) => {
+      // TreeDataProviderに選択変更を通知（新しいアーキテクチャ）
+      treeDataProvider.notifySelectionChanged([...e.selection]);
+
+      // 既存の処理も維持（段階的移行のため）
       if (e.selection.length > 0) {
         const selectedItem = e.selection[0];
         void fileDetailsProvider.updateFileDetails(selectedItem || null);
