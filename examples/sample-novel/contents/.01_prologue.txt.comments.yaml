@@ -1,22 +1,25 @@
 comments:
   - id: 1
-    target_file: "contents/01_prologue.txt#L12"
-    file_hash: "sha256:abcd1234example"
-    content: "この描写をもう少し詳しく書きたい"
-    posted_by: "author"
-    status: "open"
-    created_at: "2024-01-15T10:30:00Z"
+    target_file: contents/01_prologue.txt#L12
+    file_hash: sha256:abcd1234example
+    content: この描写をもう少し詳しく書きたい
+    posted_by: author
+    status: open
+    created_at: '2024-01-15T10:30:00Z'
   - id: 2
-    target_file: "contents/01_prologue.txt#L25-L27"
-    file_hash: "sha256:abcd1234example"
-    content: "- [ ] 表現を見直す\n- [x] 誤字チェック完了\n- [ ] キャラクター設定と整合性確認"
-    posted_by: "author"
-    status: "open"
-    created_at: "2024-01-16T14:20:00Z"
+    target_file: contents/01_prologue.txt#L25-L27
+    file_hash: sha256:abcd1234example
+    content: |-
+      - [ ] 表現を見直す
+      - [x] 誤字チェック完了
+      - [ ] キャラクター設定と整合性確認
+    posted_by: author
+    status: open
+    created_at: '2024-01-16T14:20:00Z'
   - id: 3
-    target_file: "contents/01_prologue.txt#L45"
-    file_hash: "sha256:abcd1234example"
-    content: "伏線の仕込みが完了しました"
-    posted_by: "author"
-    status: "resolved"
-    created_at: "2024-01-17T09:15:00Z"
+    target_file: contents/01_prologue.txt#L45
+    file_hash: sha256:abcd1234example
+    content: 伏線の仕込みが完了しました
+    posted_by: author
+    status: resolved
+    created_at: '2024-01-17T09:15:00Z'

@@ -1,16 +1,45 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { MarkdownRenderer, TodoProgress, calculateTodoProgress } from './MarkdownRenderer';
 
 /**
- * コメントアイテムの型定義
+ * コメントアイテムの型定義（新データ構造対応）
  */
 interface CommentItemData {
-  line: number;
-  endLine?: number;
+  id: number;
+  target_file: string; // "contents/chapter1.txt#L42" 形式
+  file_hash: string;
   content: string;
+  posted_by: string;
   status: 'open' | 'resolved';
   created_at: string;
-  updated_at?: string;
+  updated_at?: string; // オプショナルフィールド
+}
+
+/**
+ * target_fileから抽出された行番号情報
+ */
+interface ParsedLineInfo {
+  startLine?: number;
+  endLine?: number;
+}
+
+/**
+ * target_fileをパースして行番号を抽出
+ */
+function parseTargetFile(targetFile: string | undefined): ParsedLineInfo {
+  if (!targetFile) {
+    return {};
+  }
+
+  const match = targetFile.match(/^(.+?)(?:#L(\d+)(?:-L?(\d+))?)?$/);
+  if (!match) {
+    return {};
+  }
+
+  return {
+    startLine: match[2] ? parseInt(match[2], 10) : undefined,
+    endLine: match[3] ? parseInt(match[3], 10) : undefined,
+  };
 }
 
 /**
@@ -39,6 +68,9 @@ export const CommentItem: React.FC<CommentItemProps> = ({
   onEdit,
   onJumpToLine,
 }) => {
+  // target_fileから行番号情報を抽出
+  const lineInfo = useMemo(() => parseTargetFile(comment.target_file), [comment.target_file]);
+
   // 編集状態の管理
   const [isEditing, setIsEditing] = useState<boolean>(false);
   const [editContent, setEditContent] = useState<string>(comment.content);
@@ -97,7 +129,9 @@ export const CommentItem: React.FC<CommentItemProps> = ({
    * 行番号リンクのクリック処理
    */
   const handleLineClick = (): void => {
-    onJumpToLine(comment.line, comment.endLine);
+    if (lineInfo.startLine) {
+      onJumpToLine(lineInfo.startLine, lineInfo.endLine);
+    }
   };
 
   /**
@@ -122,7 +156,11 @@ export const CommentItem: React.FC<CommentItemProps> = ({
   }, [isEditing]);
 
   // 行番号表示のテキストを生成
-  const lineText = comment.endLine ? `行${comment.line}-${comment.endLine}` : `行${comment.line}`;
+  const lineText = lineInfo.startLine
+    ? lineInfo.endLine
+      ? `行${lineInfo.startLine}-${lineInfo.endLine}`
+      : `行${lineInfo.startLine}`
+    : 'ファイル全体';
 
   // ステータスアイコンとテキスト
   const statusIcon = comment.status === 'resolved' ? '✅' : '📝';
@@ -138,7 +176,12 @@ export const CommentItem: React.FC<CommentItemProps> = ({
     <div className={`comment-item ${comment.status}`}>
       {/* コメントヘッダー */}
       <div className="comment-header">
-        <button className="line-link" onClick={handleLineClick} type="button">
+        <button
+          className={`line-link ${lineInfo.startLine ? '' : 'disabled'}`}
+          onClick={handleLineClick}
+          type="button"
+          disabled={!lineInfo.startLine}
+        >
           {lineText}
         </button>
 

@@ -3,19 +3,24 @@ import { render, screen, fireEvent, waitFor } from '../../test-utils';
 import { CommentItem } from './CommentItem';
 import assert from 'assert';
 
-// テスト用のサンプルコメント
+// テスト用のサンプルコメント（新データ構造対応）
 const createSampleComment = (
   overrides = {},
 ): {
-  line: number;
+  id: number;
+  target_file: string;
+  file_hash: string;
   content: string;
+  posted_by: string;
   status: 'open' | 'resolved';
   created_at: string;
-  endLine?: number;
   updated_at?: string;
 } => ({
-  line: 42,
+  id: 1,
+  target_file: 'contents/test.txt#L42',
+  file_hash: 'sha256:testHashValue',
   content: 'これはテストコメントです',
+  posted_by: 'author',
   status: 'open' as const,
   created_at: '2025-01-24T10:00:00Z',
   ...overrides,
@@ -85,8 +90,7 @@ suite('CommentItem コンポーネント', () => {
 
     test('複数行コメントが正しく表示される', () => {
       const comment = createSampleComment({
-        line: 10,
-        endLine: 15,
+        target_file: 'contents/test.txt#L10-L15',
       });
 
       render(
@@ -293,7 +297,7 @@ suite('CommentItem コンポーネント', () => {
 
   suite('コールバック機能', () => {
     test('行ジャンプボタンクリックでコールバックが呼ばれる', () => {
-      const comment = createSampleComment({ line: 42, endLine: 45 });
+      const comment = createSampleComment({ target_file: 'contents/test.txt#L42-L45' });
 
       render(
         <CommentItem

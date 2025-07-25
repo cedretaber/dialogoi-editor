@@ -3,15 +3,17 @@ import { useVSCodeApi } from '../../hooks/useVSCodeApi';
 import { CommentItem } from './CommentItem';
 
 /**
- * コメントアイテムの型定義
+ * コメントアイテムの型定義（新データ構造対応）
  */
 interface CommentItemData {
-  line: number;
-  endLine?: number;
+  id: number;
+  target_file: string; // "contents/chapter1.txt#L42" 形式
+  file_hash: string;
   content: string;
+  posted_by: string;
   status: 'open' | 'resolved';
   created_at: string;
-  updated_at?: string;
+  updated_at?: string; // オプショナルフィールド
 }
 
 /**
