@@ -56,7 +56,7 @@
 │  ├─ CharacterService ✅ (キャラクター管理)      │
 │  ├─ ForeshadowingService ✅ (伏線管理)          │
 │  ├─ ReferenceManager ✅ (参照関係管理)          │
-│  ├─ ReviewService ✅ (レビュー管理)             │
+│  ├─ CommentService ✅ (コメント・TODO管理)      │
 │  ├─ HashService ✅ (ハッシュ計算)               │
 │  ├─ MetaYamlUtils ✅ (meta.yaml管理)            │
 │  ├─ DialogoiYamlService ✅ (dialogoi.yaml管理)  │
@@ -338,13 +338,14 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
 - アトミックなmeta.yaml更新（実装済み）
 - Repository パターンによるデータアクセス層の抽象化（実装済み）
 
-### 7. ReviewService ✅
+### 7. CommentService ✅
 
-- レビューファイルの作成・読み込み・保存（実装済み）
-- レビュー追加・更新・削除操作（実装済み）
-- レビューステータス管理（実装済み）
-- スレッド機能（コメント追加）（実装済み）
-- レビューサマリー生成（実装済み）
+- コメントファイルの作成・読み込み・保存（実装済み）
+- コメント追加・更新・削除操作（実装済み）
+- GitHub風行番号形式の対応（#L42, #L4-L7）（実装済み）
+- ステータス管理（open/resolved）（実装済み）
+- dialogoi.yamlからのposted_by自動取得（実装済み）
+- コメントサマリー生成（実装済み）
 
 ### 8. HashService ✅
 
@@ -383,7 +384,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
 - [x] タグシステムの実装
 - [x] 参照関係の管理
 - [x] ファイルハッシュ変更検知システム
-- [x] レビュー機能の基本実装
+- [x] コメント・TODO機能の基本実装
 - [x] dialogoi.yaml の仕様策定と実装
 - [x] プロジェクト新規作成機能の実装
 

@@ -100,10 +100,7 @@ files:            # ファイル・サブディレクトリのリスト（順序
     # 以下はオプション
     tags: ["タグ1", "タグ2"]
     references: ["パス1", "パス2"]  # 小説ルートからの相対パス
-    reviews: "ファイル名_reviews.yaml"  # レビューファイルへの参照
-    review_count:                    # レビュー数のサマリー
-      open: 3
-      resolved: 5
+    comments: ".ファイル名.comments.yaml"  # コメントファイルへの参照
     glossary: true                   # 用語集の場合
     character:                       # キャラクター設定の場合
       importance: main/sub/background
@@ -227,7 +224,7 @@ project_settings:
   - 📖 基本情報（ファイル名、種別、パス）
   - 🏷️ タグ管理（追加・削除・Enterキー対応）
   - 👥 登場人物（キャラクター数表示・詳細情報）
-  - 📝 レビュー（件数・ステータス別表示）
+  - 📝 コメント（専用パネル・GitHub風行番号形式）
   - 🔗 参照関係（手動・ハイパーリンク参照の統合表示）
   - 🔮 伏線管理（植込み・回収位置のCRUD操作・設定ファイルのみ）
 
@@ -248,60 +245,62 @@ project_settings:
 - 関連する伏線一覧
 - タグによるフィルタリング・検索
 
-## レビュー機能仕様
+## コメント機能仕様
 
 ### 概要
 
-編集者やAIからのフィードバックを本文・設定ファイルと紐付けて管理する機能。レビューは専用のYAMLファイルで管理される。
+執筆中のメモ・TODO・レビューコメントを本文・設定ファイルと紐付けて管理する機能。シンプルな行単位コメントとして統一管理され、専用のYAMLファイルで管理される。
 
-### レビューファイル形式
+### コメントファイル形式
 
 ```yaml
-# novel/contents/content1.txt_reviews.yaml
-target_file: "contents/content1.txt"
-file_hash: "sha256:abcd1234..."  # 対象ファイルのハッシュ（変更検知用）
-reviews:
-  - line: 42                      # 行番号
-    position: { start: 10, end: 25 }  # 行内の文字位置
-    reviewer: "編集者A"
-    type: "human"                 # human / ai / system
-    severity: "suggestion"        # error / warning / suggestion / info
+# novel/contents/.content1.txt.comments.yaml
+comments:
+  - id: 1
+    target_file: "contents/content1.txt#L42"  # GitHub風行番号形式
+    file_hash: "sha256:abcd1234..."
     content: "この表現は別の言い回しの方が..."
+    posted_by: "author"                       # dialogoi.yamlから自動取得
+    status: "open"                            # open / resolved
     created_at: "2024-01-15T10:30:00Z"
-    status: "open"                # open / in_progress / resolved / dismissed
-    thread:                       # コメントスレッド（オプション）
-      - author: "執筆者"
-        content: "確認しました。修正します"
-        created_at: "2024-01-15T11:00:00Z"
-      - author: "編集者A"
-        content: "ありがとうございます"
-        created_at: "2024-01-15T11:30:00Z"
+  - id: 2
+    target_file: "contents/content1.txt#L4-L7"  # 複数行対応
+    file_hash: "sha256:abcd1234..."
+    content: "この段落全体を見直し"
+    posted_by: "author"
+    status: "resolved"
+    created_at: "2024-01-16T10:30:00Z"
 ```
 
 ### ファイル配置規則
 
-- レビューファイルは対象ファイルと同じディレクトリに配置
-- ファイル名は `対象ファイル名_reviews.yaml` 形式
-- 例: `contents/chapter1/content1.txt` → `contents/chapter1/content1.txt_reviews.yaml`
+- コメントファイルは対象ファイルと同じディレクトリに配置
+- ファイル名は `.{対象ファイル名}.comments.yaml` 形式（隠しファイル）
+- 例: `contents/chapter1.txt` → `contents/.chapter1.txt.comments.yaml`
 
-### レビューのステータス
+### コメントのステータス
 
-- `open`: 未対応
-- `in_progress`: 対応中
-- `resolved`: 解決済み
-- `dismissed`: 却下
+- `open`: 未対応・TODO
+- `resolved`: 解決済み・完了
+
+### 行番号指定形式
+
+- **単一行**: `ファイルパス#L42` (42行目)
+- **複数行**: `ファイルパス#L4-L7` (4行目から7行目)
+- GitHub準拠の形式で将来的な拡張性を確保
 
 ### 変更検知
 
 - `file_hash` と現在のファイルハッシュが異なる場合、UIで警告表示
-- 「対象ファイルが変更されています。レビュー位置を確認してください」
+- 「対象ファイルが変更されています。コメント位置を確認してください」
 
 ### UI表示
 
-- 本文エディタ内でレビュー位置をマーカー表示
-- サイドパネルでレビュー一覧表示
-- フィルタリング機能（ステータス、レビュアー、重要度）
-- スレッド形式での議論が可能
+- **専用コメントパネル**: サイドバー内の独立パネル
+- **マークダウン対応**: リアルタイムプレビューとソース編集
+- **TODO機能統合**: `- [ ]` / `- [x]` チェックボックス対応
+- **インライン編集**: クリック→編集→自動保存
+- **行ジャンプ機能**: 行番号クリックで該当位置に移動
 
 ## プロジェクト新規作成機能
 
@@ -348,4 +347,4 @@ reviews:
 - インポート/エクスポート機能
 - 複数作品間の連携
 - Dialogoi MCP サーバとの統合
-- レビューの一括処理機能
+- コメント・TODOの一括処理機能
