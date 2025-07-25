@@ -4,7 +4,6 @@ import { CharacterService } from '../services/CharacterService.js';
 import { ForeshadowingService } from '../services/ForeshadowingService.js';
 import { ReferenceManager } from '../services/ReferenceManager.js';
 import { HashService } from '../services/HashService.js';
-import { ReviewService } from '../services/ReviewService.js';
 import { CommentService } from '../services/CommentService.js';
 import { DialogoiYamlService } from '../services/DialogoiYamlService.js';
 import { DialogoiTemplateService } from '../services/DialogoiTemplateService.js';
@@ -39,7 +38,6 @@ export class TestServiceContainer implements IServiceContainer {
   private foreshadowingService: ForeshadowingService | null = null;
   private referenceManager: ReferenceManager | null = null;
   private hashService: HashService | null = null;
-  private reviewService: ReviewService | null = null;
   private dialogoiYamlService: DialogoiYamlService | null = null;
   private dialogoiTemplateService: DialogoiTemplateService | null = null;
   private projectCreationService: ProjectCreationService | null = null;
@@ -123,19 +121,6 @@ export class TestServiceContainer implements IServiceContainer {
     return this.hashService;
   }
 
-  /**
-   * ReviewServiceを取得
-   */
-  getReviewService(workspaceRoot: Uri): ReviewService {
-    if (!this.reviewService) {
-      this.reviewService = new ReviewService(
-        this.fileRepository,
-        this.getHashService(),
-        workspaceRoot,
-      );
-    }
-    return this.reviewService;
-  }
 
   /**
    * CommentServiceを取得
@@ -261,7 +246,6 @@ export class TestServiceContainer implements IServiceContainer {
     this.foreshadowingService = null;
     this.referenceManager = null;
     this.hashService = null;
-    this.reviewService = null;
     this.dialogoiYamlService = null;
     this.dialogoiTemplateService = null;
     this.projectCreationService = null;

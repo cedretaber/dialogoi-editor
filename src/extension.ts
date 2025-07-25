@@ -1,6 +1,5 @@
 import * as vscode from 'vscode';
 import { DialogoiTreeDataProvider } from './tree/DialogoiTreeDataProvider.js';
-import { registerReviewCommands } from './commands/reviewCommands.js';
 import { registerCharacterCommands } from './commands/characterCommands.js';
 import { registerForeshadowingCommands } from './commands/foreshadowingCommands.js';
 import { registerFileCommands } from './commands/fileCommands.js';
@@ -161,9 +160,6 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     registerReferenceCommands(context, treeDataProvider);
     registerFilterCommands(context, treeDataProvider);
     registerProjectCommands(context, treeDataProvider);
-    if (vscode.workspace.workspaceFolders && vscode.workspace.workspaceFolders[0]) {
-      registerReviewCommands(context, vscode.workspace.workspaceFolders[0].uri);
-    }
 
     registerCharacterCommands(context, treeDataProvider);
     registerForeshadowingCommands(context, treeDataProvider);

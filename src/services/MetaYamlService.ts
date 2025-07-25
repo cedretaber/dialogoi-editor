@@ -1,5 +1,4 @@
 import * as path from 'path';
-import { ReviewSummary } from '../models/Review.js';
 import { FileRepository } from '../repositories/FileRepository.js';
 import { MetaYamlUtils, MetaYaml, DialogoiTreeItem } from '../utils/MetaYamlUtils.js';
 

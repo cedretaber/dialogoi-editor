@@ -1,7 +1,6 @@
 import * as assert from 'assert';
 import { MetaYamlService } from './MetaYamlService.js';
 import { MetaYaml } from '../utils/MetaYamlUtils.js';
-import { ReviewSummary } from '../models/Review.js';
 import { TestServiceContainer } from '../di/TestServiceContainer.js';
 import { MockFileRepository } from '../repositories/MockFileRepository.js';
 

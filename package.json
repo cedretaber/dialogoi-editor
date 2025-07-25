@@ -121,26 +121,6 @@
         "icon": "$(edit)"
       },
       {
-        "command": "dialogoi.addReview",
-        "title": "レビューを追加",
-        "icon": "$(comment)"
-      },
-      {
-        "command": "dialogoi.showReviews",
-        "title": "レビューを表示",
-        "icon": "$(comment-discussion)"
-      },
-      {
-        "command": "dialogoi.updateReviewStatus",
-        "title": "レビューステータスを更新",
-        "icon": "$(checklist)"
-      },
-      {
-        "command": "dialogoi.deleteReview",
-        "title": "レビューを削除",
-        "icon": "$(trash)"
-      },
-      {
         "command": "dialogoi.editCharacterImportance",
         "title": "キャラクター重要度を編集",
         "icon": "$(star)"
@@ -280,26 +260,6 @@
           "command": "dialogoi.editReferences",
           "when": "view == dialogoi-explorer && viewItem =~ /^dialogoi-file/",
           "group": "5_references"
-        },
-        {
-          "command": "dialogoi.addReview",
-          "when": "view == dialogoi-explorer && viewItem =~ /^dialogoi-file/",
-          "group": "6_reviews"
-        },
-        {
-          "command": "dialogoi.showReviews",
-          "when": "view == dialogoi-explorer && viewItem =~ /^dialogoi-file/",
-          "group": "6_reviews"
-        },
-        {
-          "command": "dialogoi.updateReviewStatus",
-          "when": "view == dialogoi-explorer && viewItem =~ /^dialogoi-file/",
-          "group": "6_reviews"
-        },
-        {
-          "command": "dialogoi.deleteReview",
-          "when": "view == dialogoi-explorer && viewItem =~ /^dialogoi-file/",
-          "group": "6_reviews"
         },
         {
           "command": "dialogoi.editCharacterImportance",

@@ -8,7 +8,6 @@ import type {
 import { TagSection } from './TagSection';
 import { CharacterSection } from './CharacterSection';
 import { ReferenceSection } from './ReferenceSection';
-import { ReviewSection } from './ReviewSection';
 import { BasicInfoSection } from './BasicInfoSection';
 import { ForeshadowingSection } from './ForeshadowingSection';
 import { useVSCodeApi } from '../../hooks/useVSCodeApi';
@@ -338,9 +337,6 @@ export const FileDetailsApp: React.FC = () => {
         />
       )}
 
-      {fileData.review_count && Object.keys(fileData.review_count).length > 0 && (
-        <ReviewSection reviewCount={fileData.review_count} />
-      )}
     </div>
   );
 };
