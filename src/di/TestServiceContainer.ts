@@ -121,7 +121,6 @@ export class TestServiceContainer implements IServiceContainer {
     return this.hashService;
   }
 
-
   /**
    * CommentServiceを取得
    */

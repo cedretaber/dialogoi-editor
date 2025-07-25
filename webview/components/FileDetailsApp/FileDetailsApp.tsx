@@ -336,7 +336,6 @@ export const FileDetailsApp: React.FC = () => {
           onPayoffRemove={handleForeshadowingPayoffRemove}
         />
       )}
-
     </div>
   );
 };

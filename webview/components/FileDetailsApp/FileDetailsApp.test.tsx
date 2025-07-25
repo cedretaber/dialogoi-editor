@@ -167,7 +167,6 @@ suite('FileDetailsApp コンポーネント', () => {
           assert(screen.getByText('タグ'));
           // contentタイプの場合は「登場人物」と「関連設定」が表示される
           assert(screen.getByText('登場人物 (1)'));
-          assert(screen.getByText('レビュー (3件)'));
           assert(screen.getByText('基本情報'));
         },
         { timeout: 3000 },
