@@ -88,8 +88,11 @@ suite('CommentsApp コンポーネント', () => {
           filePath: '/path/to/test.md',
           comments: [
             {
-              line: 1,
+              id: 1,
+              target_file: 'test.md#L1',
+              file_hash: 'sha256:abc123',
               content: 'テストコメント',
+              posted_by: 'test-user',
               status: 'open' as const,
               created_at: '2025-01-22T10:00:00Z',
             },
@@ -144,9 +147,11 @@ suite('CommentsApp コンポーネント', () => {
           filePath: '/path/to/test.md',
           comments: [
             {
-              line: 5,
-              endLine: 8,
+              id: 1,
+              target_file: 'test.md#L5-L8',
+              file_hash: 'sha256:abc123',
               content: '複数行コメント',
+              posted_by: 'test-user',
               status: 'open' as const,
               created_at: '2025-01-22T10:00:00Z',
             },
@@ -173,8 +178,11 @@ suite('CommentsApp コンポーネント', () => {
           filePath: '/path/to/test.md',
           comments: [
             {
-              line: 1,
+              id: 1,
+              target_file: 'test.md#L1',
+              file_hash: 'sha256:abc123',
               content: '解決済みコメント',
+              posted_by: 'test-user',
               status: 'resolved' as const,
               created_at: '2025-01-22T10:00:00Z',
             },
@@ -332,14 +340,20 @@ suite('CommentsApp コンポーネント', () => {
           filePath: '/path/to/test.md',
           comments: [
             {
-              line: 1,
+              id: 1,
+              target_file: 'test.md#L1',
+              file_hash: 'sha256:abc123',
               content: '最初のコメント',
+              posted_by: 'test-user',
               status: 'open' as const,
               created_at: '2025-01-22T10:00:00Z',
             },
             {
-              line: 5,
+              id: 2,
+              target_file: 'test.md#L5',
+              file_hash: 'sha256:abc123',
               content: '2番目のコメント',
+              posted_by: 'test-user',
               status: 'resolved' as const,
               created_at: '2025-01-22T11:00:00Z',
             },
@@ -421,8 +435,11 @@ suite('CommentsApp コンポーネント', () => {
           filePath: '/path/to/test.md',
           comments: [
             {
-              line: 1,
+              id: 1,
+              target_file: 'test.md#L1',
+              file_hash: 'sha256:abc123',
               content: '日付テスト',
+              posted_by: 'test-user',
               status: 'open' as const,
               created_at: '2025-01-22T10:00:00Z',
             },
