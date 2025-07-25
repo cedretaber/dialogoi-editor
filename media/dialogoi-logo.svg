@@ -1,0 +1,77 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="320" height="110" viewBox="0 0 320 110" aria-label="Dialogoi digital transition logo">
+ <defs>
+   <style>
+     .book-classic { fill: #f8f9fa; stroke: #2d3748; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+     .book-digital { fill: #4c7af7; stroke: #2d3748; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
+     .text-line { fill: none; stroke: #2d3748; stroke-width: 1; stroke-linecap: round; opacity: 0.7; }
+     .digital-block { fill: #4c7af7; stroke: #3056d3; stroke-width: 1; }
+     .digital-accent { fill: #60a5fa; }
+     .transition-gradient { fill: url(#transitionGradient); }
+     .wordmark { font-family: 'Georgia', 'Times New Roman', serif; font-size: 38px; font-weight: 700; fill: #2d3748; }
+   </style>
+   
+   <defs>
+     <linearGradient id="transitionGradient" x1="0%" y1="100%" x2="100%" y2="0%">
+       <stop offset="0%" style="stop-color:#4c7af7;stop-opacity:0.8" />
+       <stop offset="50%" style="stop-color:#60a5fa;stop-opacity:0.6" />
+       <stop offset="100%" style="stop-color:#f8f9fa;stop-opacity:0.2" />
+     </linearGradient>
+   </defs>
+ </defs>
+
+ <g transform="translate(15, 20)">
+   <!-- 古典的な本の部分（右上部分） -->
+   <g>
+     <!-- 右ページ（古典的） -->
+     <path class="book-classic" d="M40 15 L40 55 Q60 50 80 55 L80 15 Q60 20 40 15 Z" />
+     
+     <!-- 左ページ上部（古典的） -->
+     <path class="book-classic" d="M10 15 L10 35 L40 35 L40 15 Q25 20 10 15 Z" />
+     
+     <!-- 古典的な部分のテキスト線 -->
+     <line class="text-line" x1="15" y1="25" x2="35" y2="25" />
+     <line class="text-line" x1="15" y1="30" x2="32" y2="30" />
+     <line class="text-line" x1="45" y1="25" x2="70" y2="25" />
+     <line class="text-line" x1="45" y1="30" x2="65" y2="30" />
+     <line class="text-line" x1="45" y1="35" x2="68" y2="35" />
+   </g>
+
+   <!-- デジタル化の遷移エリア -->
+   <rect class="transition-gradient" x="10" y="35" width="30" height="20" />
+
+   <!-- デジタルブロック部分（左下） - 重なり合いながら小さくなる -->
+   <g>
+     <!-- レイヤー1: 最大サイズ -->
+     <rect class="digital-block" x="8" y="42" width="10" height="8" rx="1" opacity="0.9" />
+     <rect class="digital-block" x="15" y="45" width="8" height="6" rx="0.8" opacity="0.8" />
+     <rect class="digital-block" x="20" y="47" width="6" height="5" rx="0.6" opacity="0.7" />
+     
+     <!-- レイヤー2: 中サイズ（一部重なり） -->
+     <rect class="digital-accent" x="6" y="45" width="7" height="6" rx="0.5" opacity="0.8" />
+     <rect class="digital-accent" x="12" y="48" width="5" height="4" rx="0.4" opacity="0.7" />
+     <rect class="digital-accent" x="16" y="50" width="4" height="3" rx="0.3" opacity="0.6" />
+     <rect class="digital-accent" x="19" y="52" width="3" height="2.5" rx="0.2" opacity="0.5" />
+     
+     <!-- レイヤー3: 小サイズ（さらに重なり） -->
+     <rect class="digital-accent" x="4" y="48" width="4" height="3" opacity="0.7" />
+     <rect class="digital-accent" x="7" y="50" width="3" height="2.5" opacity="0.6" />
+     <rect class="digital-accent" x="9" y="52" width="2.5" height="2" opacity="0.5" />
+     <rect class="digital-accent" x="11" y="53" width="2" height="1.5" opacity="0.4" />
+     <rect class="digital-accent" x="12.5" y="54" width="1.5" height="1.2" opacity="0.4" />
+     
+     <!-- レイヤー4: 最小ピクセル（散らばり効果） -->
+     <rect class="digital-accent" x="2" y="51" width="1.5" height="1.5" opacity="0.6" />
+     <rect class="digital-accent" x="3.5" y="53" width="1.2" height="1.2" opacity="0.5" />
+     <rect class="digital-accent" x="5" y="54.5" width="1" height="1" opacity="0.4" />
+     <rect class="digital-accent" x="6" y="55.5" width="0.8" height="0.8" opacity="0.4" />
+     <rect class="digital-accent" x="7" y="56" width="0.6" height="0.6" opacity="0.3" />
+   </g>
+
+   <!-- 中央の綴じ部分（グラデーション効果） -->
+   <line x1="40" y1="15" x2="40" y2="40" stroke="#2d3748" stroke-width="2" />
+   <line x1="40" y1="40" x2="40" y2="55" stroke="#4c7af7" stroke-width="2" stroke-dasharray="2,2" />
+
+   <!-- ワードマーク -->
+   <text class="wordmark" x="105" y="52">Dialogoi</text>
+ </g>
+</svg>

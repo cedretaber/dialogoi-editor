@@ -1,11 +1,58 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none">
-  <!-- 本のアイコン（小説執筆をイメージ） -->
-  <path stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" 
-        d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
-  <path stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" 
-        d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
-  <!-- ページの線 -->
-  <path stroke="currentColor" stroke-width="1" stroke-linecap="round" 
-        d="M9 7h7M9 11h7M9 15h5"/>
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128" aria-label="Dialogoi simple icon">
+ <defs>
+   <style>
+     .book-outline { fill: none; stroke: currentColor; stroke-width: 4; stroke-linecap: round; stroke-linejoin: round; }
+     .text-line { fill: none; stroke: currentColor; stroke-width: 2.5; stroke-linecap: round; opacity: 0.7; }
+     .pixel-block { fill: currentColor; opacity: 0.6; }
+     .pixel-outline { fill: none; stroke: currentColor; stroke-width: 3; }
+   </style>
+ </defs>
+ 
+ <g transform="translate(8, 4)">
+   <!-- 正方形に近い本（縦方向拡大版） -->
+   <g>
+     <!-- 右ページ -->
+     <rect class="book-outline" x="56" y="4" width="56" height="84" rx="4" />
+     
+     <!-- 左ページ上部 -->
+     <rect class="book-outline" x="0" y="4" width="56" height="50" rx="4" />
+     
+     <!-- テキスト線（縦方向も拡大） -->
+     <line class="text-line" x1="10" y1="18" x2="46" y2="18" />
+     <line class="text-line" x1="10" y1="28" x2="42" y2="28" />
+     <line class="text-line" x1="10" y1="38" x2="44" y2="38" />
+     <line class="text-line" x1="66" y1="18" x2="102" y2="18" />
+     <line class="text-line" x1="66" y1="28" x2="98" y2="28" />
+     <line class="text-line" x1="66" y1="38" x2="100" y2="38" />
+     <line class="text-line" x1="66" y1="48" x2="96" y2="48" />
+     <line class="text-line" x1="66" y1="58" x2="98" y2="58" />
+     <line class="text-line" x1="66" y1="68" x2="94" y2="68" />
+   </g>
+
+   <!-- デジタルブロック（縦方向拡大版） -->
+   <g>
+     <!-- 大きなブロック -->
+     <rect class="pixel-block" x="0" y="54" width="30" height="24" />
+     <rect class="pixel-outline" x="0" y="54" width="30" height="24" rx="2" />
+     
+     <!-- 中ブロック -->
+     <rect class="pixel-block" x="14" y="66" width="24" height="20" />
+     <rect class="pixel-outline" x="14" y="66" width="24" height="20" rx="1.5" />
+     
+     <!-- 小ブロック -->
+     <rect class="pixel-block" x="26" y="76" width="18" height="14" />
+     <rect class="pixel-outline" x="26" y="76" width="18" height="14" rx="1" />
+     
+     <!-- 最小ブロック -->
+     <rect class="pixel-block" x="36" y="84" width="12" height="8" />
+     <rect class="pixel-outline" x="36" y="84" width="12" height="8" rx="0.5" />
+     
+     <!-- 追加の小ブロック（縦余白活用） -->
+     <rect class="pixel-block" x="44" y="90" width="8" height="6" />
+     <rect class="pixel-outline" x="44" y="90" width="8" height="6" rx="0.5" />
+   </g>
+
+   <!-- 中央の綴じ部分 -->
+   <line x1="56" y1="4" x2="56" y2="96" stroke="currentColor" stroke-width="4" />
+ </g>
 </svg>
