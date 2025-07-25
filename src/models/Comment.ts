@@ -4,25 +4,22 @@
 export type CommentStatus = 'open' | 'resolved';
 
 /**
- * 行単位コメントアイテム
+ * 行単位コメントアイテム（新データ構造）
  */
 export interface CommentItem {
-  line: number;
-  endLine?: number; // 複数行対応
+  id: number;
+  target_file: string; // "contents/chapter1.txt#L42" 形式
+  file_hash: string;
   content: string;
+  posted_by: string;
   status: CommentStatus;
   created_at: string;
-  updated_at?: string;
-  // reviewer: 'user' (固定値として内部処理)
-  // type: 'user' (固定値として内部処理)
 }
 
 /**
- * コメントファイルの構造
+ * コメントファイルの構造（新データ構造）
  */
 export interface CommentFile {
-  target_file: string;
-  file_hash: string;
   comments: CommentItem[];
 }
 
@@ -35,16 +32,16 @@ export interface CommentSummary {
 }
 
 /**
- * コメント作成オプション
+ * コメント作成オプション（新データ構造）
  */
 export interface CreateCommentOptions {
-  line: number;
+  line?: number;
   endLine?: number; // 複数行の場合
   content: string;
 }
 
 /**
- * コメント更新オプション
+ * コメント更新オプション（新データ構造）
  */
 export interface UpdateCommentOptions {
   status?: CommentStatus;

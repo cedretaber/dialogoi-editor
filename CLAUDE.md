@@ -495,3 +495,54 @@ class FileOperationService {
 - MockFileRepository での非同期メソッド実装
 - Promise.resolve() による適切な型対応
 - ESLint require-await ルール準拠
+
+### コメントシステムリファクタリング完了 ✅ **2025-01-25完了**
+
+**シンプルで保守しやすいコメントシステムへの完全移行を実現**
+
+#### 技術的成果
+- **新データ構造**: `.{filename}.comments.yaml` 形式 + 連番ID管理
+- **GitHub互換行番号**: `#L42`, `#L4-L7` 形式対応
+- **汎用URLパーサー**: `FileLineUrlParser` - 将来的にマークダウンリンクでも利用可能
+- **meta.yaml構造変更**: `comments`フィールドでコメントファイル参照
+
+#### アーキテクチャ改善
+```typescript
+// 新コメントデータ構造
+interface CommentItem {
+  id: number;                           // 連番ID (1, 2, 3...)
+  target_file: string;                  // "contents/chapter1.txt#L42"
+  file_hash: string;                    // ファイル変更検知
+  content: string;                      // マークダウン対応コメント
+  posted_by: string;                    // 投稿者識別
+  status: 'open' | 'resolved';         // シンプル2状態
+  created_at: string;                   // ISO 8601形式
+}
+
+// 汎用的な行番号URLパーサー
+export function parseFileLineUrl(url: string): ParsedFileLineUrl;
+export function formatFileLineUrl(filePath: string, startLine?: number, endLine?: number): string;
+```
+
+#### 品質指標
+- **テストカバレッジ**: CommentService 25テスト + FileLineUrlParser 15テスト
+- **型安全性**: TypeScript strict mode + ESLint max-warnings 0
+- **後方互換性**: エイリアス関数で既存コード継続動作
+- **実用性**: examples/sample-novel でサンプルデータ提供
+
+#### meta.yaml新構造
+```yaml
+# 旧構造（廃止）
+files:
+  - name: "chapter1.txt"
+    reviews: "chapter1.txt_reviews.yaml"  # 廃止
+    review_count: { open: 3, resolved: 5 }  # 廃止
+
+# 新構造（実装完了）
+files:
+  - name: "chapter1.txt"
+    type: "content"
+    comments: ".chapter1.txt.comments.yaml"  # 新規
+```
+
+この実装により、協業前提の複雑なレビューシステムから、一人作業でも有用なシンプルなコメント・TODO管理システムへの移行が完了しました。

@@ -10,6 +10,7 @@ import {
 import { FileRepository } from '../repositories/FileRepository.js';
 import { Uri } from '../interfaces/Uri.js';
 import { HashService } from './HashService.js';
+import { formatTargetFile } from '../utils/FileLineUrlParser.js';
 
 /**
  * コメント管理サービス
@@ -27,14 +28,14 @@ export class CommentService {
   }
 
   /**
-   * コメントファイルのパスを取得
+   * コメントファイルのパスを取得（新形式）
    * @param targetRelativeFilePath 対象ファイルのパス（小説ルートからの相対パス）
-   * @returns コメントファイルのパス
+   * @returns コメントファイルのパス (.{filename}.comments.yaml 形式)
    */
   private getCommentFilePath(targetRelativeFilePath: string): string {
     const fileName = path.basename(targetRelativeFilePath);
     const relativeDirName = path.dirname(targetRelativeFilePath);
-    const commentFileName = `${fileName}_comments.yaml`;
+    const commentFileName = `.${fileName}.comments.yaml`;
 
     // 対象ファイルと同じディレクトリに配置
     return path.join(relativeDirName, commentFileName);
@@ -104,7 +105,7 @@ export class CommentService {
   }
 
   /**
-   * コメントを追加
+   * コメントを追加（新データ構造）
    * @param targetRelativeFilePath 対象ファイルのパス（小説ルートからの相対パス）
    * @param options コメント作成オプション
    */
@@ -122,17 +123,27 @@ export class CommentService {
     if (!commentFile) {
       // 新しいコメントファイルを作成
       commentFile = {
-        target_file: targetRelativeFilePath,
-        file_hash: fileHash,
         comments: [],
       };
     }
 
+    // 新しいIDを生成（最大値+1）
+    const newId =
+      commentFile.comments.length > 0 ? Math.max(...commentFile.comments.map((c) => c.id)) + 1 : 1;
+
+    // target_file文字列を生成
+    const targetFile = formatTargetFile(targetRelativeFilePath, options.line, options.endLine);
+
+    // posted_byを取得
+    const postedBy = this.getPostedBy();
+
     // 新しいコメントアイテムを作成
     const newComment: CommentItem = {
-      line: options.line,
-      endLine: options.endLine,
+      id: newId,
+      target_file: targetFile,
+      file_hash: fileHash,
       content: options.content,
+      posted_by: postedBy,
       status: 'open',
       created_at: new Date().toISOString(),
     };
@@ -141,10 +152,13 @@ export class CommentService {
 
     // ファイルを保存
     await this.saveCommentFileAsync(targetRelativeFilePath, commentFile);
+
+    // メタデータを更新
+    this.updateMetaYamlAsync(targetRelativeFilePath);
   }
 
   /**
-   * コメントを更新
+   * コメントを更新（新データ構造）
    * @param targetRelativeFilePath 対象ファイルのパス（小説ルートからの相対パス）
    * @param commentIndex コメントのインデックス
    * @param options 更新オプション
@@ -169,7 +183,7 @@ export class CommentService {
       comment.status = options.status;
     }
 
-    comment.updated_at = new Date().toISOString();
+    // updated_atフィールドは新データ構造では不要
 
     await this.saveCommentFileAsync(targetRelativeFilePath, commentFile);
   }
@@ -198,25 +212,26 @@ export class CommentService {
   }
 
   /**
-   * ファイルが変更されているかチェック
+   * ファイルが変更されているかチェック（新データ構造）
    * @param targetRelativeFilePath 対象ファイルのパス（小説ルートからの相対パス）
    * @returns ファイルが変更されている場合はtrue
    */
   async isFileChangedAsync(targetRelativeFilePath: string): Promise<boolean> {
     const commentFile = await this.loadCommentFileAsync(targetRelativeFilePath);
 
-    if (!commentFile) {
+    if (!commentFile || commentFile.comments.length === 0) {
       return false;
     }
 
     const targetFileUri = this.fileRepository.joinPath(this.workspaceRoot, targetRelativeFilePath);
     const currentHash = await this.hashService.calculateFileHashAsync(targetFileUri);
 
-    return commentFile.file_hash !== currentHash;
+    // 各コメントのfile_hashと比較
+    return commentFile.comments.some((comment) => comment.file_hash !== currentHash);
   }
 
   /**
-   * ファイルハッシュを更新
+   * ファイルハッシュを更新（新データ構造）
    * @param targetRelativeFilePath 対象ファイルのパス（小説ルートからの相対パス）
    */
   async updateFileHashAsync(targetRelativeFilePath: string): Promise<void> {
@@ -229,7 +244,10 @@ export class CommentService {
     const targetFileUri = this.fileRepository.joinPath(this.workspaceRoot, targetRelativeFilePath);
     const newHash = await this.hashService.calculateFileHashAsync(targetFileUri);
 
-    commentFile.file_hash = newHash;
+    // 各コメントのfile_hashを更新
+    for (const comment of commentFile.comments) {
+      comment.file_hash = newHash;
+    }
 
     await this.saveCommentFileAsync(targetRelativeFilePath, commentFile);
   }
@@ -259,7 +277,24 @@ export class CommentService {
   }
 
   /**
-   * コメントファイルの妥当性検証
+   * posted_byの取得
+   */
+  private getPostedBy(): string {
+    // TODO: DialogoiYamlServiceからauthor情報を取得
+    // 暫定的にデフォルト値を返す
+    return 'author';
+  }
+
+  /**
+   * メタデータYAMLの更新
+   */
+  private updateMetaYamlAsync(_targetRelativeFilePath: string): void {
+    // TODO: MetaYamlServiceとの連携を実装
+    // 暫定的に何もしない
+  }
+
+  /**
+   * コメントファイルの妥当性検証（新データ構造）
    * @param data パース済みデータ
    * @returns 妥当な場合はtrue
    */
@@ -270,10 +305,6 @@ export class CommentService {
 
     const dataObj = data as Record<string, unknown>;
 
-    if (typeof dataObj['target_file'] !== 'string' || typeof dataObj['file_hash'] !== 'string') {
-      return false;
-    }
-
     if (!Array.isArray(dataObj['comments'])) {
       return false;
     }
@@ -282,7 +313,7 @@ export class CommentService {
   }
 
   /**
-   * コメントアイテムの妥当性検証
+   * コメントアイテムの妥当性検証（新データ構造）
    * @param data パース済みデータ
    * @returns 妥当な場合はtrue
    */
@@ -293,7 +324,13 @@ export class CommentService {
 
     const dataObj = data as Record<string, unknown>;
 
-    if (typeof dataObj['line'] !== 'number' || typeof dataObj['content'] !== 'string') {
+    if (
+      typeof dataObj['id'] !== 'number' ||
+      typeof dataObj['target_file'] !== 'string' ||
+      typeof dataObj['file_hash'] !== 'string' ||
+      typeof dataObj['content'] !== 'string' ||
+      typeof dataObj['posted_by'] !== 'string'
+    ) {
       return false;
     }
 

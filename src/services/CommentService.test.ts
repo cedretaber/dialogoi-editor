@@ -49,12 +49,14 @@ describe('CommentService テストスイート', () => {
       const commentFile = await commentService.loadCommentFileAsync(testRelativeFilePath);
       assert.ok(commentFile !== null);
       if (commentFile !== null) {
-        assert.strictEqual(commentFile.target_file, testRelativeFilePath);
         assert.strictEqual(commentFile.comments.length, 1);
+        assert.strictEqual(commentFile.comments[0]?.id, 1);
+        assert.strictEqual(commentFile.comments[0]?.target_file, 'test.txt#L1');
         assert.strictEqual(commentFile.comments[0]?.content, 'これはテストコメントです');
-        assert.strictEqual(commentFile.comments[0]?.line, 1);
         assert.strictEqual(commentFile.comments[0]?.status, 'open');
+        assert.strictEqual(commentFile.comments[0]?.posted_by, 'author');
         assert.ok(commentFile.comments[0]?.created_at);
+        assert.ok(commentFile.comments[0]?.file_hash);
       }
     });
 
@@ -70,8 +72,8 @@ describe('CommentService テストスイート', () => {
       const commentFile = await commentService.loadCommentFileAsync(testRelativeFilePath);
       assert.ok(commentFile !== null);
       if (commentFile !== null) {
-        assert.strictEqual(commentFile.comments[0]?.line, 1);
-        assert.strictEqual(commentFile.comments[0]?.endLine, 3);
+        assert.strictEqual(commentFile.comments[0]?.id, 1);
+        assert.strictEqual(commentFile.comments[0]?.target_file, 'test.txt#L1-L3');
         assert.strictEqual(commentFile.comments[0]?.content, '複数行にわたるコメント');
       }
     });
@@ -117,7 +119,6 @@ describe('CommentService テストスイート', () => {
 
       assert.ok(commentFile !== null);
       if (commentFile !== null) {
-        assert.strictEqual(commentFile.target_file, testRelativeFilePath);
         assert.strictEqual(commentFile.comments.length, 1);
         assert.strictEqual(commentFile.comments[0]?.content, 'テストコメント');
       }
@@ -138,7 +139,6 @@ describe('CommentService テストスイート', () => {
       assert.ok(commentFile !== null);
       if (commentFile !== null) {
         assert.strictEqual(commentFile.comments[0]?.status, 'resolved');
-        assert.ok(commentFile.comments[0]?.updated_at !== undefined);
       }
     });
 
@@ -157,7 +157,6 @@ describe('CommentService テストスイート', () => {
       assert.ok(commentFile !== null);
       if (commentFile !== null) {
         assert.strictEqual(commentFile.comments[0]?.content, '更新されたコメント');
-        assert.ok(commentFile.comments[0]?.updated_at !== undefined);
       }
     });
 
@@ -242,7 +241,7 @@ describe('CommentService テストスイート', () => {
       if (commentFile !== null) {
         assert.strictEqual(commentFile.comments.length, 1);
         assert.strictEqual(commentFile.comments[0]?.content, '2番目のコメント');
-        assert.strictEqual(commentFile.comments[0]?.line, 2);
+        assert.strictEqual(commentFile.comments[0]?.id, 2);
       }
     });
 
@@ -399,7 +398,10 @@ describe('CommentService テストスイート', () => {
 
   describe('データ妥当性検証', () => {
     it('不正なYAMLファイルをロードするとエラーが発生する', async () => {
-      const commentFilePath = path.join(workspaceRootPath, `${testRelativeFilePath}_comments.yaml`);
+      const commentFilePath = path.join(
+        workspaceRootPath,
+        `.${testRelativeFilePath}.comments.yaml`,
+      );
       mockFileRepository.addFile(commentFilePath, 'invalid yaml content: [unclosed');
 
       try {
@@ -411,10 +413,13 @@ describe('CommentService テストスイート', () => {
     });
 
     it('不正な形式のコメントファイルをロードするとエラーが発生する', async () => {
-      const commentFilePath = path.join(workspaceRootPath, `${testRelativeFilePath}_comments.yaml`);
+      const commentFilePath = path.join(
+        workspaceRootPath,
+        `.${testRelativeFilePath}.comments.yaml`,
+      );
       mockFileRepository.addFile(
         commentFilePath,
-        'target_file: test.txt\nfile_hash: "dummy"\ncomments:\n  - invalid_field: "no line field"',
+        'comments:\n  - invalid_field: "no required fields"',
       );
 
       try {
