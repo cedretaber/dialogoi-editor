@@ -125,7 +125,12 @@ export class TestServiceContainer implements IServiceContainer {
    * CommentServiceを取得
    */
   getCommentService(workspaceRoot: Uri): CommentService {
-    return new CommentService(this.fileRepository, this.getHashService(), workspaceRoot);
+    return new CommentService(
+      this.fileRepository,
+      this.getHashService(),
+      this.getDialogoiYamlService(),
+      workspaceRoot,
+    );
   }
 
   /**

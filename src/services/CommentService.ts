@@ -10,6 +10,7 @@ import {
 import { FileRepository } from '../repositories/FileRepository.js';
 import { Uri } from '../interfaces/Uri.js';
 import { HashService } from './HashService.js';
+import { DialogoiYamlService } from './DialogoiYamlService.js';
 import { formatTargetFile } from '../utils/FileLineUrlParser.js';
 
 /**
@@ -22,6 +23,7 @@ export class CommentService {
   constructor(
     private fileRepository: FileRepository,
     private hashService: HashService,
+    private dialogoiYamlService: DialogoiYamlService,
     workspaceRoot: Uri,
   ) {
     this.workspaceRoot = workspaceRoot;
@@ -135,7 +137,7 @@ export class CommentService {
     const targetFile = formatTargetFile(targetRelativeFilePath, options.line, options.endLine);
 
     // posted_byを取得
-    const postedBy = this.getPostedBy();
+    const postedBy = await this.getPostedByAsync();
 
     // 新しいコメントアイテムを作成
     const newComment: CommentItem = {
@@ -279,9 +281,18 @@ export class CommentService {
   /**
    * posted_byの取得
    */
-  private getPostedBy(): string {
-    // TODO: DialogoiYamlServiceからauthor情報を取得
-    // 暫定的にデフォルト値を返す
+  private async getPostedByAsync(): Promise<string> {
+    try {
+      const dialogoiYaml = await this.dialogoiYamlService.loadDialogoiYamlAsync(
+        this.workspaceRoot.fsPath,
+      );
+      if (dialogoiYaml?.author !== undefined && dialogoiYaml.author !== '') {
+        return dialogoiYaml.author;
+      }
+    } catch {
+      // エラーの場合はデフォルト値を使用
+    }
+    // デフォルト値
     return 'author';
   }
 

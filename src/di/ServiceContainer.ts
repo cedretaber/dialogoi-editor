@@ -165,7 +165,12 @@ export class ServiceContainer implements IServiceContainer {
    * CommentServiceを取得
    */
   getCommentService(workspaceRoot: Uri): CommentService {
-    return new CommentService(this.getFileRepository(), this.getHashService(), workspaceRoot);
+    return new CommentService(
+      this.getFileRepository(),
+      this.getHashService(),
+      this.getDialogoiYamlService(),
+      workspaceRoot,
+    );
   }
 
   /**

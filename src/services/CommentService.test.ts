@@ -100,6 +100,55 @@ describe('CommentService テストスイート', () => {
         assert.strictEqual(commentFile.comments[1]?.content, '2番目のコメント');
       }
     });
+
+    it('dialogoi.yamlからauthor情報を取得してposted_byに設定する', async () => {
+      // テスト用のdialogoi.yamlを作成
+      const dialogoiYamlContent = `title: テスト小説
+author: テスト著者
+version: 1.0.0
+created_at: '2024-01-01T00:00:00Z'`;
+
+      const dialogoiYamlUri = mockFileRepository.createFileUri(
+        `${workspaceRootPath}/dialogoi.yaml`,
+      );
+      await mockFileRepository.writeFileAsync(dialogoiYamlUri, dialogoiYamlContent);
+
+      const options: CreateCommentOptions = {
+        line: 10,
+        content: 'author情報テスト',
+      };
+
+      await commentService.addCommentAsync(testRelativeFilePath, options);
+
+      // コメントファイルを読み込み、posted_byを確認
+      const commentFile = await commentService.loadCommentFileAsync(testRelativeFilePath);
+      assert.ok(commentFile !== null);
+      if (commentFile !== null) {
+        assert.strictEqual(commentFile.comments.length, 1);
+        assert.strictEqual(commentFile.comments[0]?.posted_by, 'テスト著者');
+      }
+    });
+
+    it('dialogoi.yamlが存在しない場合はデフォルト値が使用される', async () => {
+      // テスト用ファイルを作成
+      const anotherFilePath = path.join(workspaceRootPath, 'another.txt');
+      mockFileRepository.addFile(anotherFilePath, 'Another test file content.');
+
+      const options: CreateCommentOptions = {
+        line: 5,
+        content: 'デフォルト値テスト',
+      };
+
+      await commentService.addCommentAsync('another.txt', options);
+
+      // コメントファイルを読み込み、posted_byがデフォルト値になっているか確認
+      const commentFile = await commentService.loadCommentFileAsync('another.txt');
+      assert.ok(commentFile !== null);
+      if (commentFile !== null) {
+        assert.strictEqual(commentFile.comments.length, 1);
+        assert.strictEqual(commentFile.comments[0]?.posted_by, 'author');
+      }
+    });
   });
 
   describe('loadCommentFileAsync', () => {
