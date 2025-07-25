@@ -2,8 +2,8 @@
   "name": "dialogoi-editor",
   "displayName": "Dialogoi Editor",
   "description": "小説執筆支援ツール - 設定・キャラクター・用語集・伏線を統合管理",
-  "version": "0.0.1",
-  "publisher": "cedretaber",
+  "version": "1.0.0",
+  "publisher": "dialogoi",
   "type": "module",
   "engines": {
     "vscode": "^1.102.0",

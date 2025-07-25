@@ -1,3 +1,7 @@
+<div align="center">
+  <img src="media/dialogoi-logo.svg" alt="Dialogoi" width="400" />
+</div>
+
 # Dialogoi Editor
 
 [![CI](https://github.com/cedretaber/dialogoi-editor/actions/workflows/ci.yml/badge.svg)](https://github.com/cedretaber/dialogoi-editor/actions/workflows/ci.yml)
