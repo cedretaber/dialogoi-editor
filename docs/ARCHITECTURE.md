@@ -21,21 +21,19 @@
 
 ### コア技術
 
-- **TypeScript** - 型安全性を確保した開発
+- **TypeScript** - 型安全性を確保した開発（strict mode）
 - **VSCode Extension API** - Extension の基盤
 - **Node.js** - 実行環境（VSCode内蔵）
 
 ### 主要ライブラリ
 
-- **js-yaml** ✅ - YAMLファイルの読み書き（実装済み）
-- **mocha + tsx** ✅ - テストフレームワーク（サーバーサイド・実装済み）
-- **crypto (Node.js標準)** ✅ - SHA-256ハッシュ計算（実装済み）
-- **micromatch** ✅ - glob パターンマッチング（実装済み）
-- **React** ✅ - WebView UI構築（実装済み）
-- **@testing-library/react** ✅ - Reactコンポーネントテスト（実装済み）
-- **happy-dom** ✅ - テスト用DOM環境（実装済み）
-- **ajv** (予定) - YAMLスキーマのバリデーション
-- **青空文庫パーサー** (予定) - 将来的な実装予定
+- **js-yaml** - YAMLファイルの読み書き
+- **mocha + tsx** - テストフレームワーク（サーバーサイド）
+- **crypto (Node.js標準)** - SHA-256ハッシュ計算
+- **micromatch** - glob パターンマッチング
+- **React** - WebView UI構築
+- **@testing-library/react** - Reactコンポーネントテスト
+- **happy-dom** - テスト用DOM環境
 
 ## アーキテクチャ概要
 
@@ -44,42 +42,62 @@
 │                  VSCode Extension                │
 ├─────────────────────────────────────────────────┤
 │  Presentation Layer                             │
-│  ├─ TreeDataProvider (左サイドバー)             │
-│  │   └─ TreeDragAndDropController ✅ (D&D対応)  │
-│  ├─ WebView UI ✅ (React実装・完全テスト済み)   │
-│  │   ├─ FileDetailsViewProvider (詳細画面)      │
-│  │   ├─ ProjectSettingsWebviewPanel (設定画面)  │
-│  │   └─ Reactコンポーネント群 (8コンポーネント) │
-│  └─ Commands (コマンドパレット)                 │
+│  ├─ TreeDataProvider                            │
+│  │   └─ TreeDragAndDropController               │
+│  ├─ WebView UI (React実装)                     │
+│  │   ├─ FileDetailsViewProvider                 │
+│  │   ├─ CommentsViewProvider                    │
+│  │   ├─ ProjectSettingsWebviewPanel             │
+│  │   └─ Reactコンポーネント群                  │
+│  │       ├─ FileDetailsApp                      │
+│  │       ├─ CommentsApp                         │
+│  │       └─ ProjectSettingsApp                  │
+│  └─ Commands                                    │
+│      ├─ dialogoiCommands                        │
+│      ├─ editorCommentCommands                   │
+│      └─ dropCommands                            │
 ├─────────────────────────────────────────────────┤
 │  Business Logic Layer                           │
-│  ├─ CharacterService ✅ (キャラクター管理)      │
-│  ├─ ForeshadowingService ✅ (伏線管理)          │
-│  ├─ ReferenceManager ✅ (参照関係管理)          │
-│  ├─ CommentService ✅ (コメント・TODO管理)      │
-│  ├─ HashService ✅ (ハッシュ計算)               │
-│  ├─ MetaYamlUtils ✅ (meta.yaml管理)            │
-│  ├─ DialogoiYamlService ✅ (dialogoi.yaml管理)  │
-│  ├─ ProjectCreationService ✅ (プロジェクト作成) │
-│  ├─ File Watcher (予定) (ファイル監視)          │
-│  └─ Validation Service (バリデーション)         │
+│  ├─ CharacterService                            │
+│  ├─ CommentService                              │
+│  ├─ DialogoiSettingsService                     │
+│  ├─ DialogoiTemplateService                     │
+│  ├─ DialogoiYamlService                         │
+│  ├─ DropHandlerService                          │
+│  ├─ FileChangeNotificationService               │
+│  ├─ FileOperationService                        │
+│  ├─ FilePathMapService                          │
+│  ├─ ForeshadowingService                        │
+│  ├─ HashService                                 │
+│  ├─ HyperlinkExtractorService                   │
+│  ├─ MetaYamlService                             │
+│  ├─ ProjectCreationService                      │
+│  ├─ ProjectLinkUpdateService                    │
+│  ├─ ProjectPathNormalizationService             │
+│  ├─ ProjectSettingsService                      │
+│  ├─ ReferenceManager                            │
+│  └─ TreeViewFilterService                       │
 ├─────────────────────────────────────────────────┤
-│  Abstraction Layer ✅ (DI Container)            │
-│  ├─ ServiceContainer (DI管理)                  │
-│  ├─ VSCodeServiceContainer (本番環境)          │
-│  └─ TestServiceContainer (テスト環境)          │
+│  Abstraction Layer (DI Container)               │
+│  ├─ ServiceContainer                            │
+│  ├─ VSCodeServiceContainer                      │
+│  └─ TestServiceContainer                        │
 ├─────────────────────────────────────────────────┤
-│  Data Access Layer ✅ (Repository Pattern)     │
-│  ├─ FileRepository ✅ (抽象基底クラス)         │
-│  ├─ VSCodeFileRepository ✅ (本番実装)         │
-│  ├─ MockFileRepository ✅ (テスト実装)         │
-│  ├─ Uri Interface                               │
-│  ├─ YAML Parser/Writer                          │
-│  └─ Cache Manager                               │
+│  Data Access Layer (Repository Pattern)        │
+│  ├─ FileRepository (抽象基底クラス)             │
+│  │   ├─ VSCodeFileRepository (本番実装)        │
+│  │   └─ MockFileRepository (テスト実装)        │
+│  ├─ SettingsRepository                          │
+│  │   ├─ VSCodeSettingsRepository                │
+│  │   └─ MockSettingsRepository                  │
+│  ├─ EventEmitterRepository                      │
+│  │   ├─ VSCodeEventEmitterRepository            │
+│  │   └─ MockEventEmitterRepository              │
+│  └─ Uri Interface                               │
 └─────────────────────────────────────────────────┘
 ```
 
-## 依存関係注入（DI）アーキテクチャ ✅
+## 依存関係注入（DI）アーキテクチャ
 
 ### 設計思想
 
@@ -98,26 +116,12 @@
 - **ユーザーインターフェース制御**
 - **サービス層のビジネスロジックを利用**
 
-#### プロバイダー層（/src/providers/ または /src/tree/）の責務
+#### プロバイダー層（/src/providers/、/src/views/）の責務
 - **VSCode Extension API の具象実装**
 - **TreeDataProvider、WebViewProvider等の実装**
 - **UI表示ロジックとイベント処理**
 
 ### 実装例とパターン
-
-#### ❌ 悪い例：services/でVSCode APIを使用
-```typescript
-// services/BadDropService.ts
-import * as vscode from 'vscode';
-
-export class BadDropService {
-  handleDrop(): void {
-    const editor = vscode.window.activeTextEditor; // VSCode依存
-    const edit = new vscode.WorkspaceEdit(); // VSCode依存
-    // ...
-  }
-}
-```
 
 #### ✅ 良い例：services/はビジネスロジックのみ
 ```typescript
@@ -138,46 +142,20 @@ export class DropHandlerService {
 
 #### ✅ 良い例：commands/でVSCodeとサービスを連携
 ```typescript
-// commands/dropCommands.ts
-import * as vscode from 'vscode';
-
-export function registerDropCommands(context: vscode.ExtensionContext) {
-  const dropHandlerService = ServiceContainer.getInstance().getDropHandlerService();
+// commands/editorCommentCommands.ts
+export function registerEditorCommentCommands(context: vscode.ExtensionContext) {
+  const commentService = ServiceContainer.getInstance().getCommentService();
   
-  // DocumentDropEditProvider実装
-  const dropProvider = new DocumentDropProvider(dropHandlerService);
-  
-  context.subscriptions.push(
-    vscode.languages.registerDocumentDropEditProvider(
-      { scheme: 'file' },
-      dropProvider
-    )
-  );
-}
-
-class DocumentDropProvider implements vscode.DocumentDropEditProvider {
-  constructor(private dropHandlerService: DropHandlerService) {}
-  
-  async provideDocumentDropEdits(
-    document: vscode.TextDocument,
-    position: vscode.Position,
-    dataTransfer: vscode.DataTransfer
-  ): Promise<vscode.DocumentDropEdit | undefined> {
-    // VSCode API使用はここで
-    const targetPath = document.uri.fsPath;
-    
-    // ビジネスロジックはサービス層に委譲
-    const result = await this.dropHandlerService.handleDrop(targetPath, droppedData);
-    
-    // 結果をVSCode APIで反映
-    if (result.success && result.insertText) {
-      const edit = new vscode.WorkspaceEdit();
-      edit.replace(document.uri, new vscode.Range(position, position), result.insertText);
-      return new vscode.DocumentDropEdit(edit);
+  const addCommentCommand = vscode.commands.registerCommand(
+    'dialogoi.addCommentFromSelection',
+    async () => {
+      const editor = vscode.window.activeTextEditor; // VSCode API使用
+      // ビジネスロジックはサービス層に委譲
+      await commentService.addCommentAsync(relativePath, options);
     }
-    
-    return undefined;
-  }
+  );
+  
+  context.subscriptions.push(addCommentCommand);
 }
 ```
 
@@ -186,10 +164,16 @@ class DocumentDropProvider implements vscode.DocumentDropEditProvider {
 #### 1. FileRepository (抽象基底クラス)
 ```typescript
 export abstract class FileRepository {
-  abstract existsSync(uri: Uri): boolean;
-  abstract readFileSync(uri: Uri, encoding?: BufferEncoding): string;
-  abstract writeFileSync(uri: Uri, data: string | Buffer, encoding?: BufferEncoding): void;
-  // ... その他のファイル操作メソッド
+  abstract existsAsync(uri: Uri): Promise<boolean>;
+  abstract readFileAsync(uri: Uri, encoding?: BufferEncoding): Promise<string>;
+  abstract writeFileAsync(uri: Uri, data: string | Buffer, encoding?: BufferEncoding): Promise<void>;
+  abstract renameAsync(oldUri: Uri, newUri: Uri): Promise<void>;
+  abstract deleteAsync(uri: Uri): Promise<void>;
+  abstract createDirectoryAsync(uri: Uri): Promise<void>;
+  abstract readDirectoryAsync(uri: Uri): Promise<DirectoryEntry[]>;
+  abstract statAsync(uri: Uri): Promise<FileStats>;
+  abstract createFileUri(path: string): Uri;
+  abstract readExtensionResource(relativePath: string): string;
 }
 ```
 
@@ -208,211 +192,225 @@ export interface Uri {
 ### 具象実装
 
 #### 1. VSCodeFileRepository (本番環境)
-- `vscode.workspace.fs` およびNode.js `fs` モジュールを使用
+- `vscode.workspace.fs` APIを使用した完全非同期実装
 - 実際のファイルシステムとの相互作用を担当
 - VSCode環境でのみ動作
 
 #### 2. MockFileRepository (テスト環境)
 - インメモリでファイルシステムを模擬
-- 単体テストでの高速実行を実現
+- 単体テストでの高速実行を実現（615テスト）
 - VSCode環境に依存しない
 
 ### DI Container
 
 #### ServiceContainer
+シングルトンパターンによる依存関係の一元管理：
+
 ```typescript
 export class ServiceContainer {
   private static instance: ServiceContainer;
   
-  getFileRepository(): FileRepository { ... }
-  getCharacterService(): CharacterService { ... }
-  getForeshadowingService(): ForeshadowingService { ... }
+  getFileRepository(): FileRepository
+  getCharacterService(): CharacterService
+  getCommentService(): CommentService
+  getDialogoiYamlService(): DialogoiYamlService
+  getForeshadowingService(): ForeshadowingService
+  getHashService(): HashService
+  getMetaYamlService(): MetaYamlService
+  getReferenceManager(): ReferenceManager
   // ... その他のサービス取得メソッド
 }
 ```
 
-#### VSCodeServiceContainer (本番環境初期化)
-```typescript
-export class VSCodeServiceContainer {
-  static async initialize(): Promise<ServiceContainer> {
-    const container = ServiceContainer.getInstance();
-    const fileRepository = new VSCodeFileRepository();
-    container.setFileRepository(fileRepository);
-    return container;
-  }
-}
-```
+## 主要サービスの概要
 
-#### TestServiceContainer (テスト環境初期化)
-```typescript
-export class TestServiceContainer {
-  static create(): ServiceContainer {
-    const container = new ServiceContainer();
-    const mockFileRepository = new MockFileRepository();
-    container.setFileRepository(mockFileRepository);
-    return container;
-  }
-}
-```
+### 1. FileOperationService
+ファイル・ディレクトリの基本操作を提供：
+- 作成・削除・名前変更・移動
+- タグ・参照の操作
+- メタデータとの同期管理
 
-### 利点
+### 2. MetaYamlService
+`.dialogoi-meta.yaml`ファイルの管理：
+- 読み込み・保存・バリデーション
+- ファイル情報の追加・削除・更新
+- タグ・参照関係の管理
 
-1. **テスト可能性**: MockFileRepositoryにより、ファイルシステムに依存しない高速なテストが可能
-2. **VSCode依存の局所化**: ビジネスロジックからVSCode固有のコードを分離
-3. **保守性**: インターフェースを変更せずに実装を差し替え可能
-4. **型安全性**: TypeScriptの型システムを活用した安全なコード
-5. **Repository パターン**: データアクセスロジックを抽象化する標準的なパターン
+### 3. CommentService
+コメント・TODO機能の管理：
+- GitHub風行番号形式（#L42, #L4-L7）対応
+- マークダウン対応コメントの作成・編集・削除
+- ステータス管理（open/resolved）
+- ファイルハッシュによる変更検知
 
-### 使用方法
+### 4. DialogoiYamlService
+プロジェクト設定（`dialogoi.yaml`）の管理：
+- プロジェクト作成・読み込み・保存
+- プロジェクトルート検索
+- バリデーション
 
-#### サービスクラスでの使用
-```typescript
-export class CharacterService {
-  constructor(private fileRepository: FileRepository) {}
-  
-  extractDisplayName(fileAbsolutePath: string): string {
-    const uri = this.fileRepository.createFileUri(fileAbsolutePath);
-    if (this.fileRepository.existsSync(uri)) {
-      const content = this.fileRepository.readFileSync(uri, 'utf8');
-      // ... 処理
-    }
-    return fileName;
-  }
-}
-```
+### 5. ReferenceManager
+参照関係の一元管理：
+- 手動参照とハイパーリンク参照の統合
+- 双方向参照の自動追跡
+- 存在チェック機能
 
-#### 拡張機能での初期化
-```typescript
-export async function activate(context: vscode.ExtensionContext): Promise<void> {
-  // VSCode環境でServiceContainerを初期化
-  await VSCodeServiceContainer.initialize();
-  
-  // 以降、ServiceContainerから各サービスを取得して使用
-  const treeDataProvider = new DialogoiTreeDataProvider();
-  // ...
-}
-```
+### 6. ForeshadowingService
+伏線管理機能：
+- 複数の「張る」位置と「回収」位置の管理
+- 伏線状態の追跡（planned/partially_planted/fully_planted/resolved/error）
+- ファイル存在確認
 
-## 主要コンポーネント
+### 7. HashService
+ファイル変更検知：
+- SHA-256ハッシュ計算
+- ファイル内容の変更検知
+- コメント・参照の整合性保持
 
-### 1. TreeDataProvider ✅
+## WebView UI アーキテクチャ
 
-- 小説の階層構造をツリー表示（実装済み）
-- `meta.yaml` に基づいた順序制御（実装済み）
-- アイコンによる視覚的な種別表示（実装済み）
-- ツールチップによる詳細情報表示（実装済み）
-- ドラッグ&ドロップによる並び替え（予定）
+### React統合
+- **TypeScript完全対応**: 型安全なメッセージング
+- **モジュラー設計**: アプリ別コンポーネント分離
+- **包括的テスト**: 242のReactコンポーネントテスト
 
-### 2. WebView Provider
+### WebViewアプリケーション
 
-- ファイル詳細情報の表示・編集
-- タグ管理UI
-- 参照関係の可視化
-- 将来的にはプレビュー機能も実装
+#### 1. FileDetailsApp
+ファイル詳細情報の表示・編集：
+- BasicInfoSection: ファイル基本情報
+- TagSection: タグ管理UI
+- ReferenceSection: 参照関係表示
+- CharacterSection: キャラクター設定
+- ForeshadowingSection: 伏線管理
 
-### 3. File System Watcher
+#### 2. CommentsApp
+コメント・TODO管理：
+- CommentItem: 個別コメント表示・編集
+- MarkdownRenderer: マークダウンレンダリング
+- インライン編集とプレビュー機能
 
-- ファイルの変更を監視
-- `meta.yaml` との同期を維持
-- 外部エディタでの変更にも対応
-
-### 4. Metadata Manager ✅
-
-- `meta.yaml` の読み書き（実装済み）
-- 基本的なバリデーション（実装済み）
-- 参照整合性チェック（実装済み）
-- 高度なスキーマバリデーション（予定）
-
-### 5. ReferenceManager ✅
-
-- シングルトンパターンによる参照関係の一元管理（実装済み）
-- 双方向参照の自動追跡（実装済み）
-- ファイル存在チェック機能（実装済み）
-- Map構造による高速な参照関係検索（実装済み）
-
-### 6. FileRepository ✅ (旧 FileOperationService)
-
-- ファイル・ディレクトリの作成・削除・名前変更（実装済み）
-- タグ操作（追加・削除・一括設定）（実装済み）
-- 参照操作（追加・削除・一括設定）（実装済み）
-- アトミックなmeta.yaml更新（実装済み）
-- Repository パターンによるデータアクセス層の抽象化（実装済み）
-
-### 7. CommentService ✅
-
-- コメントファイルの作成・読み込み・保存（実装済み）
-- コメント追加・更新・削除操作（実装済み）
-- GitHub風行番号形式の対応（#L42, #L4-L7）（実装済み）
-- ステータス管理（open/resolved）（実装済み）
-- dialogoi.yamlからのposted_by自動取得（実装済み）
-- コメントサマリー生成（実装済み）
-
-### 8. HashService ✅
-
-- SHA-256ハッシュ計算（実装済み）
-- ファイル内容の変更検知（実装済み）
-- ハッシュ値の解析・比較（実装済み）
+#### 3. ProjectSettingsApp
+プロジェクト設定管理：
+- ビジュアル設定編集
+- リアルタイムバリデーション
+- 自動保存機能
 
 ## データフロー
 
-1. **初期化**
-   - Extension 起動時に小説ルートディレクトリを検索
-   - `dialogoi.yaml` の存在確認とプロジェクトルート特定
-   - `meta.yaml` を再帰的に読み込み
+### 1. 初期化フロー
+```
+Extension起動
+  ↓
+VSCodeServiceContainer.initialize()
+  ↓
+DialogoiYamlService.findProjectRootAsync()
+  ↓
+MetaYamlService.loadMetaYamlAsync() (再帰的)
+  ↓
+TreeDataProvider初期化
+  ↓
+WebView Provider登録
+```
 
-2. **表示**
-   - TreeDataProvider がメタデータを元にツリー構築
-   - ユーザーがノードを選択
-   - WebView または標準エディタで内容表示
+### 2. ファイル操作フロー
+```
+ユーザー操作 (TreeView/WebView)
+  ↓
+Command実行
+  ↓
+Service層でビジネスロジック処理
+  ↓
+FileRepository経由でファイル操作
+  ↓
+MetaYamlService.saveMetaYamlAsync()
+  ↓
+FileChangeNotificationService.notify()
+  ↓
+UI更新（TreeView/WebView）
+```
 
-3. **更新**
-   - ユーザーが変更を加える
-   - Metadata Manager が `meta.yaml` を更新
-   - File Watcher が変更を検知してUIを更新
+### 3. コメント追加フロー
+```
+エディタ選択範囲 → 右クリック
+  ↓
+editorCommentCommands.addCommentFromSelection
+  ↓
+CommentService.addCommentAsync()
+  ↓
+ファイルハッシュ計算・posted_by取得
+  ↓
+コメントファイル保存
+  ↓
+CommentsViewProvider.updateView()
+  ↓
+React WebView更新・編集モード開始
+```
 
-## 開発計画
+## テスト戦略
 
-### Phase 1: 基本機能実装 (MVP) ✅ **完了**
-- [x] Extension の基本構造構築
-- [x] TreeView による階層表示
-- [x] `meta.yaml` の読み書き
-- [x] 基本的なファイル操作（作成、削除、並び替え）
-- [x] ファイル名変更機能
-- [x] 包括的なテストスイート
+### 1. 単体テスト（373テスト）
+- 全サービスクラスの完全テストカバレッジ
+- MockFileRepository使用による高速実行
+- TypeScript strict mode準拠
 
-### Phase 2: メタデータ管理 ✅ **完了**
-- [x] タグシステムの実装
-- [x] 参照関係の管理
-- [x] ファイルハッシュ変更検知システム
-- [x] コメント・TODO機能の基本実装
-- [x] dialogoi.yaml の仕様策定と実装
-- [x] プロジェクト新規作成機能の実装
+### 2. Reactコンポーネントテスト（242テスト）
+- React Testing Library + Happy-DOM
+- VSCode APIモック実装
+- ユーザー操作シミュレーション
 
-### Phase 3: 高度な機能
-- [ ] WebView による詳細画面
-- [ ] 伏線管理の可視化
-- [ ] 検索・フィルタリング機能
-
-### Phase 4: 外部連携
-- [ ] Dialogoi MCP サーバとの連携
-- [ ] エクスポート機能
-- [ ] プレビュー機能
-
-## セキュリティ考慮事項
-
-- ファイルアクセスは指定されたディレクトリ内に制限
-- YAMLパース時のインジェクション対策
-- WebView でのXSS対策
+### 3. 統合テスト
+- ServiceContainer経由の実際のワークフロー
+- WebView ↔ Extension間の通信テスト
+- エラーハンドリングと復旧処理
 
 ## パフォーマンス考慮事項
 
-- 大規模な小説（数百話）への対応
-- `meta.yaml` のキャッシング
-- 遅延読み込みの実装
-- ファイル監視の最適化
+### 1. ファイル操作
+- 非同期処理による応答性確保
+- バッチ処理によるメタデータ更新最適化
+- ファイル監視の効率化
 
-## 拡張性
+### 2. UI表示
+- 仮想化による大量データ表示対応
+- 遅延読み込みとキャッシング
+- リアルタイム更新の最適化
 
-- プラグインアーキテクチャの検討
-- カスタムメタデータフィールドの追加
-- 外部ツールとの連携API
+### 3. メモリ管理
+- WeakMapによる循環参照回避
+- 適切なリスナー削除とクリーンアップ
+- MockRepositoryによるテスト時メモリ効率
+
+## セキュリティ考慮事項
+
+### 1. ファイルアクセス制御
+- プロジェクトルート配下への制限
+- パストラバーサル攻撃対策
+- 適切な権限チェック
+
+### 2. データバリデーション
+- YAMLパース時のインジェクション対策
+- 入力値の適切なサニタイゼーション
+- スキーマベースバリデーション
+
+### 3. WebView セキュリティ
+- Content Security Policy (CSP) 設定
+- XSS攻撃対策
+- 安全なHTMLエスケープ処理
+
+## 拡張性とメンテナンス
+
+### 1. モジュラー設計
+- 明確な責務分離
+- インターフェースベースの設計
+- プラグイン対応の検討
+
+### 2. コード品質
+- ESLint strict設定（max-warnings: 0）
+- Prettier自動フォーマット
+- 包括的型チェック
+
+### 3. ドキュメント
+- コード内ドキュメント
+- APIドキュメント自動生成
+- アーキテクチャ決定記録（ADR）
