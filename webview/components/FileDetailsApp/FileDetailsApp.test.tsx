@@ -294,11 +294,11 @@ suite('FileDetailsApp コンポーネント', () => {
       render(<FileDetailsApp />);
       sendMessage({ type: 'updateFile', data: mockFileData });
 
-      // 状態更新を待つ
+      // タグが表示されるまで待つ
       await waitFor(
         () => {
-          // ファイル名が表示されることを直接確認しない（特定の要素が複数あるため）
-          // 代わりにコンポーネントが正しくレンダリングされているかを確認
+          // タグが表示されていることを確認
+          assert(screen.getByText('#タグ1'));
         },
         { timeout: 3000 },
       );
