@@ -61,7 +61,7 @@ async function handleAddCommentFromSelection(
   const startLine = selection.start.line + 1; // 0-based → 1-based
   const endLine = selection.end.line + 1;
   const isMultiLine = startLine !== endLine;
-  
+
   // 選択されたテキストを取得
   const selectedText = document.getText(selection);
 
@@ -84,11 +84,11 @@ async function handleAddCommentFromSelection(
   // 選択されたテキストを引用形式でコメント本文に含める
   const quotedText = selectedText
     .split('\n')
-    .map(line => `> ${line}`)
+    .map((line) => `> ${line}`)
     .join('\n');
-  
+
   const initialContent = quotedText + '\n\n';
-  
+
   const commentOptions: CreateCommentOptions = {
     line: startLine,
     endLine: isMultiLine ? endLine : undefined,
@@ -128,7 +128,9 @@ async function handleAddCommentFromSelection(
  * @param absoluteFilePath 絶対ファイルパス
  * @returns プロジェクトルートと相対パス（見つからない場合はnull）
  */
-async function getRelativePathFromProject(absoluteFilePath: string): Promise<{projectRoot: string, relativePath: string} | null> {
+async function getRelativePathFromProject(
+  absoluteFilePath: string,
+): Promise<{ projectRoot: string; relativePath: string } | null> {
   const logger = Logger.getInstance();
 
   try {
@@ -137,7 +139,7 @@ async function getRelativePathFromProject(absoluteFilePath: string): Promise<{pr
     const dialogoiYamlService = container.getDialogoiYamlService();
 
     logger.debug(`検索開始パス: ${absoluteFilePath}`);
-    
+
     // プロジェクトルートを検索（上向き検索）
     const projectRoot = await dialogoiYamlService.findProjectRootAsync(absoluteFilePath);
     logger.debug(`プロジェクトルート検索結果: ${projectRoot}`);
@@ -157,10 +159,10 @@ async function getRelativePathFromProject(absoluteFilePath: string): Promise<{pr
 
     // パス区切り文字をスラッシュに統一（Windows対応）
     const normalizedRelativePath = relativePath.replace(/\\/g, '/');
-    
+
     return {
       projectRoot,
-      relativePath: normalizedRelativePath
+      relativePath: normalizedRelativePath,
     };
   } catch (error) {
     logger.warn(`相対パス計算エラー: ${error instanceof Error ? error.message : String(error)}`);

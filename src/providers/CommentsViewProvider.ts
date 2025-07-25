@@ -21,6 +21,7 @@ interface WebViewMessage {
     | 'toggleCommentStatus'
     | 'jumpToLine'
     | 'startEditingComment'
+    | 'showWarning'
     | 'ready';
   payload?: {
     line?: number;
@@ -31,6 +32,8 @@ interface WebViewMessage {
     // エディタジャンプ用
     filePath?: string;
     responseId?: string;
+    // 警告メッセージ用
+    message?: string;
   };
 }
 
@@ -174,7 +177,7 @@ export class CommentsViewProvider implements vscode.WebviewViewProvider {
     this.currentFilePath = filePath;
     await this.loadCommentsForCurrentFile();
     this.updateWebView();
-    
+
     // 最後に追加されたコメントの編集を開始
     if (this.comments.length > 0) {
       this.startEditingLastComment();
@@ -291,6 +294,9 @@ export class CommentsViewProvider implements vscode.WebviewViewProvider {
           break;
         case 'jumpToLine':
           await this.handleJumpToLine(message.payload);
+          break;
+        case 'showWarning':
+          this.handleShowWarning(message.payload);
           break;
         default:
           this.logger.warn(`未知のメッセージタイプ: ${String(message.type)}`);
@@ -599,6 +605,18 @@ export class CommentsViewProvider implements vscode.WebviewViewProvider {
       text += possible.charAt(Math.floor(Math.random() * possible.length));
     }
     return text;
+  }
+
+  /**
+   * 警告メッセージの表示
+   */
+  private handleShowWarning(payload: { message?: string } | undefined): void {
+    if (!payload || typeof payload.message !== 'string') {
+      this.logger.warn('handleShowWarning: 不正なペイロード');
+      return;
+    }
+
+    vscode.window.showWarningMessage(payload.message);
   }
 
   /**

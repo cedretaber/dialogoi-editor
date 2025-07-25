@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { MarkdownRenderer, TodoProgress, calculateTodoProgress } from './MarkdownRenderer';
+import { useVSCodeApi } from '../../hooks/useVSCodeApi';
 
 /**
  * コメントアイテムの型定義（新データ構造対応）
@@ -70,6 +71,7 @@ export const CommentItem: React.FC<CommentItemProps> = ({
   onJumpToLine,
   shouldStartEditing = false,
 }) => {
+  const vscode = useVSCodeApi();
   // target_fileから行番号情報を抽出
   const lineInfo = useMemo(() => parseTargetFile(comment.target_file), [comment.target_file]);
 
@@ -125,7 +127,12 @@ export const CommentItem: React.FC<CommentItemProps> = ({
     const trimmedContent = editContent.trim();
     if (trimmedContent === '') {
       // 空のコンテンツの場合は警告を表示して編集モードを継続
-      alert('コメント内容を入力してください。引用部分以外にもコメントを追加できます。');
+      vscode.postMessage({
+        type: 'showWarning',
+        payload: {
+          message: 'コメント内容を入力してください。引用部分以外にもコメントを追加できます。',
+        },
+      });
       // 編集モードを継続
       return;
     }

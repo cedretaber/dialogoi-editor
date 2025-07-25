@@ -36,23 +36,45 @@
 .comment-item {
   background-color: var(--vscode-editor-background);
   border: 1px solid var(--vscode-input-border);
-  border-radius: 4px;
-  margin-bottom: 8px;
-  padding: 12px;
-  transition: border-color 0.2s ease;
+  border-radius: 6px;
+  margin-bottom: 16px;
+  padding: 16px;
+  transition: all 0.2s ease;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  position: relative;
 }
 
 .comment-item.open {
-  border-left: 3px solid var(--vscode-notificationsInfoIcon-foreground);
+  border-left: 4px solid var(--vscode-notificationsInfoIcon-foreground);
 }
 
 .comment-item.resolved {
-  border-left: 3px solid var(--vscode-testing-iconPassed);
+  border-left: 4px solid var(--vscode-testing-iconPassed);
   opacity: 0.8;
 }
 
 .comment-item:hover {
   border-color: var(--vscode-focusBorder);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  transform: translateY(-1px);
+}
+
+/* コメント間の視覚的区切り */
+.comment-item:not(:last-child)::after {
+  content: '';
+  position: absolute;
+  bottom: -8px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 80%;
+  height: 1px;
+  background: linear-gradient(to right, 
+    transparent, 
+    var(--vscode-panel-border) 20%, 
+    var(--vscode-panel-border) 80%, 
+    transparent
+  );
+  opacity: 0.3;
 }
 
 /* コメントヘッダー */
@@ -125,7 +147,8 @@
 
 /* コメント内容 */
 .comment-content {
-  margin-bottom: 8px;
+  margin: 12px 0;
+  padding: 8px 0;
 }
 
 /* マークダウンコンテンツ */
