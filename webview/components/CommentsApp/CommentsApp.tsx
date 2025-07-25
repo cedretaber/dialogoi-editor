@@ -34,7 +34,14 @@ interface ErrorMessage {
   message: string;
 }
 
-type VSCodeMessage = UpdateCommentsMessage | ErrorMessage;
+interface StartEditingCommentMessage {
+  type: 'startEditingComment';
+  data: {
+    commentIndex: number;
+  };
+}
+
+type VSCodeMessage = UpdateCommentsMessage | ErrorMessage | StartEditingCommentMessage;
 
 /**
  * コメント・TODOアプリコンポーネント
@@ -52,6 +59,9 @@ export const CommentsApp: React.FC = () => {
   const [newCommentLine, setNewCommentLine] = useState<string>('');
   const [newCommentContent, setNewCommentContent] = useState<string>('');
 
+  // 編集中のコメントトラッキング用state
+  const [editingCommentIndex, setEditingCommentIndex] = useState<number | null>(null);
+
   // VSCodeからのメッセージを監視
   useEffect((): (() => void) => {
     const handleMessage = (event: MessageEvent<VSCodeMessage>): void => {
@@ -67,6 +77,10 @@ export const CommentsApp: React.FC = () => {
           break;
         case 'error':
           setError(message.message);
+          break;
+        case 'startEditingComment':
+          // 指定されたコメントの編集を開始
+          setEditingCommentIndex(message.data.commentIndex);
           break;
       }
     };
@@ -195,6 +209,7 @@ export const CommentsApp: React.FC = () => {
                 onDelete={handleDeleteComment}
                 onEdit={handleEditComment}
                 onJumpToLine={handleJumpToLine}
+                shouldStartEditing={editingCommentIndex === index}
               />
             ))}
           </div>

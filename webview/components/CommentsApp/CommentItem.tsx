@@ -52,6 +52,7 @@ interface CommentItemProps {
   onDelete: (index: number) => void;
   onEdit: (index: number, content: string) => void;
   onJumpToLine: (line: number, endLine?: number) => void;
+  shouldStartEditing?: boolean; // 自動編集開始フラグ
 }
 
 /**
@@ -67,6 +68,7 @@ export const CommentItem: React.FC<CommentItemProps> = ({
   onDelete,
   onEdit,
   onJumpToLine,
+  shouldStartEditing = false,
 }) => {
   // target_fileから行番号情報を抽出
   const lineInfo = useMemo(() => parseTargetFile(comment.target_file), [comment.target_file]);
@@ -88,6 +90,26 @@ export const CommentItem: React.FC<CommentItemProps> = ({
     setTodoProgress(progress);
   }, [comment.content]);
 
+  // 自動編集開始処理
+  useEffect(() => {
+    if (shouldStartEditing) {
+      setEditContent(comment.content);
+      setIsEditing(true);
+
+      // textareaにフォーカスを設定（少し遅延させる）
+      setTimeout(() => {
+        if (textAreaRef.current) {
+          textAreaRef.current.focus();
+          // カーソルを末尾に移動
+          textAreaRef.current.setSelectionRange(
+            textAreaRef.current.value.length,
+            textAreaRef.current.value.length,
+          );
+        }
+      }, 100);
+    }
+  }, [shouldStartEditing, comment.content]);
+
   /**
    * プレビュークリックで編集モードを開始
    */
@@ -101,7 +123,13 @@ export const CommentItem: React.FC<CommentItemProps> = ({
    */
   const handleBlur = (): void => {
     const trimmedContent = editContent.trim();
-    if (trimmedContent && trimmedContent !== comment.content) {
+    if (trimmedContent === '') {
+      // 空のコンテンツの場合は警告を表示して編集モードを継続
+      alert('コメント内容を入力してください。引用部分以外にもコメントを追加できます。');
+      // 編集モードを継続
+      return;
+    }
+    if (trimmedContent !== comment.content) {
       onEdit(index, trimmedContent);
     }
     setIsEditing(false);

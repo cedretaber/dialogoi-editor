@@ -20,6 +20,7 @@ interface WebViewMessage {
     | 'deleteComment'
     | 'toggleCommentStatus'
     | 'jumpToLine'
+    | 'startEditingComment'
     | 'ready';
   payload?: {
     line?: number;
@@ -162,6 +163,42 @@ export class CommentsViewProvider implements vscode.WebviewViewProvider {
     this.currentFilePath = filePath;
     await this.loadCommentsForCurrentFile();
     this.updateWebView();
+  }
+
+  /**
+   * コメント追加後に該当ファイルの表示を更新し、最後のコメントの編集を開始
+   * @param filePath ファイルの絶対パス
+   */
+  public async addCommentAndStartEditing(filePath: string): Promise<void> {
+    // コメント追加後は同じファイルでも強制的に再読み込み
+    this.currentFilePath = filePath;
+    await this.loadCommentsForCurrentFile();
+    this.updateWebView();
+    
+    // 最後に追加されたコメントの編集を開始
+    if (this.comments.length > 0) {
+      this.startEditingLastComment();
+    }
+  }
+
+  /**
+   * 最後に追加されたコメントの編集を開始
+   */
+  private startEditingLastComment(): void {
+    if (this.webview === null) {
+      return;
+    }
+
+    const lastCommentIndex = this.comments.length - 1;
+
+    this.webview.webview.postMessage({
+      type: 'startEditingComment',
+      payload: {
+        commentIndex: lastCommentIndex,
+      },
+    });
+
+    this.logger.debug(`最後のコメント（インデックス: ${lastCommentIndex}）の編集を開始`);
   }
 
   /**

@@ -185,6 +185,12 @@
         "title": "Dialogoi: 小説プロジェクトの設定",
         "icon": "$(gear)",
         "category": "Dialogoi"
+      },
+      {
+        "command": "dialogoi.addCommentFromSelection",
+        "title": "ここにコメントを追加",
+        "icon": "$(comment)",
+        "category": "Dialogoi"
       }
     ],
     "menus": {
@@ -305,6 +311,13 @@
           "command": "dialogoi.editProjectSettings",
           "when": "dialogoi:hasNovelProject",
           "group": "1_settings"
+        }
+      ],
+      "editor/context": [
+        {
+          "command": "dialogoi.addCommentFromSelection",
+          "when": "editorHasSelection && dialogoi:hasNovelProject",
+          "group": "dialogoi@1"
         }
       ]
     },
