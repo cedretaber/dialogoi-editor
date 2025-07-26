@@ -5,7 +5,6 @@
 export interface ProjectSettingsData {
   title: string;
   author: string;
-  version: string;
   tags?: string[];
   project_settings?: {
     readme_filename?: string;
@@ -18,7 +17,6 @@ export interface ProjectSettingsData {
 export interface ProjectSettingsUpdateData {
   title: string;
   author: string;
-  version: string;
   tags?: string[];
   project_settings?: {
     readme_filename?: string;
@@ -32,7 +30,7 @@ export interface ProjectSettingsValidationResult {
 }
 
 export interface ProjectSettingsMessage {
-  command: 'saveSettings' | 'validateField' | 'openYamlEditor' | 'ready';
+  command: 'saveSettings' | 'validateField' | 'openYamlEditor' | 'ready' | 'closePanel';
   data?: ProjectSettingsUpdateData | { field: string; value: string };
 }
 

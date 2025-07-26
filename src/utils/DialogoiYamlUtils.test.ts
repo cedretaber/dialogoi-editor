@@ -7,7 +7,6 @@ suite('DialogoiYamlUtils テストスイート', () => {
     test('正常なYAMLを正しく解析する', () => {
       const yamlContent = `title: "テスト小説"
 author: "テスト著者"
-version: "1.0.0"
 created_at: "2024-01-01T00:00:00Z"
 tags: ["ファンタジー", "冒険"]`;
 
@@ -16,7 +15,6 @@ tags: ["ファンタジー", "冒険"]`;
       assert.notStrictEqual(result, null);
       assert.strictEqual(result?.title, 'テスト小説');
       assert.strictEqual(result?.author, 'テスト著者');
-      assert.strictEqual(result?.version, '1.0.0');
       assert.strictEqual(result?.created_at, '2024-01-01T00:00:00Z');
       assert.deepStrictEqual(result?.tags, ['ファンタジー', '冒険']);
     });
@@ -24,7 +22,6 @@ tags: ["ファンタジー", "冒険"]`;
     test('最小構成のYAMLを正しく解析する', () => {
       const yamlContent = `title: "最小テスト"
 author: "著者"
-version: "1.0.0"
 created_at: "2024-01-01T00:00:00Z"`;
 
       const result = DialogoiYamlUtils.parseDialogoiYaml(yamlContent);
@@ -32,7 +29,6 @@ created_at: "2024-01-01T00:00:00Z"`;
       assert.notStrictEqual(result, null);
       assert.strictEqual(result?.title, '最小テスト');
       assert.strictEqual(result?.author, '著者');
-      assert.strictEqual(result?.version, '1.0.0');
       assert.strictEqual(result?.created_at, '2024-01-01T00:00:00Z');
       assert.strictEqual(result?.tags, undefined);
     });
@@ -48,8 +44,7 @@ author: "テスト著者"`;
 
     test('不正なYAML形式の場合nullを返す', () => {
       const yamlContent = `title: "テスト小説"
-  author: "テスト著者"
- version: "1.0.0"`;
+  author: "テスト著者"`;
 
       const result = DialogoiYamlUtils.parseDialogoiYaml(yamlContent);
 
@@ -68,7 +63,6 @@ author: "テスト著者"`;
       const data: DialogoiYaml = {
         title: 'テスト小説',
         author: 'テスト著者',
-        version: '1.0.0',
         created_at: '2024-01-01T00:00:00Z',
         tags: ['ファンタジー', '冒険'],
       };
@@ -77,7 +71,6 @@ author: "テスト著者"`;
 
       assert.ok(result.includes('title: テスト小説'));
       assert.ok(result.includes('author: テスト著者'));
-      assert.ok(result.includes('version: 1.0.0'));
       assert.ok(
         result.includes("created_at: '2024-01-01T00:00:00Z'") ||
           result.includes('created_at: 2024-01-01T00:00:00Z'),
@@ -91,7 +84,6 @@ author: "テスト著者"`;
       const data: DialogoiYaml = {
         title: 'テスト小説',
         author: 'テスト著者',
-        version: '1.0.0',
         created_at: '2024-01-01T00:00:00Z',
       };
 
@@ -99,7 +91,6 @@ author: "テスト著者"`;
 
       assert.ok(result.includes('title: テスト小説'));
       assert.ok(result.includes('author: テスト著者'));
-      assert.ok(result.includes('version: 1.0.0'));
       assert.ok(
         result.includes("created_at: '2024-01-01T00:00:00Z'") ||
           result.includes('created_at: 2024-01-01T00:00:00Z'),
@@ -113,7 +104,6 @@ author: "テスト著者"`;
       const data: DialogoiYaml = {
         title: 'テスト小説',
         author: 'テスト著者',
-        version: '1.0.0',
         created_at: '2024-01-01T00:00:00Z',
         tags: ['ファンタジー'],
       };
@@ -128,7 +118,6 @@ author: "テスト著者"`;
       const data = {
         title: '',
         author: 'テスト著者',
-        version: '1.0.0',
         created_at: '2024-01-01T00:00:00Z',
       } as DialogoiYaml;
 
@@ -138,25 +127,10 @@ author: "テスト著者"`;
       assert.ok(result.errors.some((error) => error.includes('title')));
     });
 
-    test('不正なバージョン形式の場合エラーを返す', () => {
-      const data: DialogoiYaml = {
-        title: 'テスト小説',
-        author: 'テスト著者',
-        version: '1.0',
-        created_at: '2024-01-01T00:00:00Z',
-      };
-
-      const result = DialogoiYamlUtils.validateDialogoiYaml(data);
-
-      assert.strictEqual(result.isValid, false);
-      assert.ok(result.errors.some((error) => error.includes('version')));
-    });
-
     test('不正な日付形式の場合エラーを返す', () => {
       const data: DialogoiYaml = {
         title: 'テスト小説',
         author: 'テスト著者',
-        version: '1.0.0',
         created_at: '2024-01-01',
       };
 
@@ -170,7 +144,6 @@ author: "テスト著者"`;
       const data = {
         title: 'テスト小説',
         author: 'テスト著者',
-        version: '1.0.0',
         created_at: '2024-01-01T00:00:00Z',
         tags: 'ファンタジー' as unknown as string[],
       };
@@ -185,7 +158,6 @@ author: "テスト著者"`;
       const data = {
         title: '',
         author: '',
-        version: 'invalid',
         created_at: 'invalid-date',
         tags: 'not-array' as unknown as string[],
       };
@@ -193,7 +165,7 @@ author: "テスト著者"`;
       const result = DialogoiYamlUtils.validateDialogoiYaml(data);
 
       assert.strictEqual(result.isValid, false);
-      assert.ok(result.errors.length >= 5);
+      assert.ok(result.errors.length >= 4);
     });
   });
 
@@ -203,7 +175,6 @@ author: "テスト著者"`;
 
       assert.strictEqual(result.title, '新しい小説');
       assert.strictEqual(result.author, '新しい著者');
-      assert.strictEqual(result.version, '1.0.0');
       assert.ok(result.created_at);
       assert.ok(!isNaN(new Date(result.created_at).getTime()));
       assert.deepStrictEqual(result.tags, []);
@@ -215,7 +186,6 @@ author: "テスト著者"`;
 
       assert.strictEqual(result.title, '新しい小説');
       assert.strictEqual(result.author, '新しい著者');
-      assert.strictEqual(result.version, '1.0.0');
       assert.ok(result.created_at);
       assert.deepStrictEqual(result.tags, tags);
     });

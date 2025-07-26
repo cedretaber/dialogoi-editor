@@ -97,7 +97,6 @@ suite('ProjectSettingsApp コンポーネント', () => {
   const mockSettingsData: ProjectSettingsData = {
     title: 'テスト小説',
     author: 'テスト作者',
-    version: '1.0.0',
     created_at: '2025-01-01T00:00:00Z',
     updated_at: '2025-01-02T00:00:00Z',
     tags: ['ファンタジー', 'アクション'],
@@ -260,16 +259,23 @@ suite('ProjectSettingsApp コンポーネント', () => {
       assert(screen.getByText('✨ プロジェクトを作成'));
     });
 
-    test('デフォルト値が設定される', () => {
-      // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-assertion
-      const versionInput = screen.getByLabelText('バージョン *') as HTMLInputElement;
-      assert.strictEqual(versionInput.value, '1.0.0');
-    });
-
     test('必須フィールドのバリデーション', () => {
       const createButton = screen.getByText('✨ プロジェクトを作成');
-      fireEvent.click(createButton);
 
+      // 最初はボタンがdisabledになっている
+      assert((createButton as HTMLButtonElement).disabled);
+
+      // タイトルフィールドをフォーカスアウトしてバリデーションをトリガー
+      const titleInput = screen.getByLabelText('タイトル *');
+      fireEvent.focus(titleInput);
+      fireEvent.blur(titleInput);
+
+      // 著者フィールドをフォーカスアウトしてバリデーションをトリガー
+      const authorInput = screen.getByLabelText('著者 *');
+      fireEvent.focus(authorInput);
+      fireEvent.blur(authorInput);
+
+      // エラーメッセージが表示されることを確認
       assert(screen.getByText('タイトルは必須です'));
       assert(screen.getByText('著者は必須です'));
     });
@@ -291,7 +297,6 @@ suite('ProjectSettingsApp コンポーネント', () => {
           data: {
             title: '新しい小説',
             author: '新しい作者',
-            version: '1.0.0',
             tags: undefined,
             project_settings: undefined,
           },
@@ -334,7 +339,6 @@ suite('ProjectSettingsApp コンポーネント', () => {
           data: {
             title: '更新された小説',
             author: 'テスト作者',
-            version: '1.0.0',
             tags: ['ファンタジー', 'アクション'],
             project_settings: {
               readme_filename: 'README.md',
@@ -356,22 +360,6 @@ suite('ProjectSettingsApp コンポーネント', () => {
       // saveSettingsコマンドが呼ばれていないことを確認
       const savesCalls = spy.getCalls().filter((call) => call.command === 'saveSettings');
       assert.strictEqual(savesCalls.length, 0);
-    });
-
-    test('セマンティックバージョンのバリデーション', () => {
-      const versionInput = screen.getByLabelText('バージョン *');
-
-      // 無効なバージョン
-      fireEvent.change(versionInput, { target: { value: '1.0' } });
-      fireEvent.blur(versionInput);
-      assert(screen.getByText('セマンティックバージョニング形式で入力してください（例: 1.0.0）'));
-
-      // 有効なバージョン
-      fireEvent.change(versionInput, { target: { value: '2.0.0' } });
-      fireEvent.blur(versionInput);
-      assert(
-        !screen.queryByText('セマンティックバージョニング形式で入力してください（例: 1.0.0）'),
-      );
     });
   });
 
@@ -411,7 +399,6 @@ suite('ProjectSettingsApp コンポーネント', () => {
               data: {
                 title: 'テスト小説',
                 author: 'テスト作者',
-                version: '1.0.0',
                 tags: ['ファンタジー', 'アクション', 'ロマンス'],
                 project_settings: {
                   readme_filename: 'README.md',
@@ -799,7 +786,6 @@ suite('ProjectSettingsApp コンポーネント', () => {
       const newSettings: ProjectSettingsData = {
         title: '新規小説',
         author: '新規作者',
-        version: '1.0.0',
         created_at: '2025-01-01T00:00:00Z',
       };
 

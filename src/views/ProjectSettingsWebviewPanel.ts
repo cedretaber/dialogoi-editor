@@ -8,7 +8,7 @@ import { DialogoiYaml } from '../utils/DialogoiYamlUtils.js';
 import { Logger } from '../utils/Logger.js';
 
 interface ProjectSettingsMessage {
-  command: 'saveSettings' | 'validateField' | 'openYamlEditor' | 'ready';
+  command: 'saveSettings' | 'validateField' | 'openYamlEditor' | 'ready' | 'closePanel';
   data?: ProjectSettingsUpdateData | { field: string; value: string };
 }
 
@@ -209,6 +209,10 @@ export class ProjectSettingsWebviewPanel {
         this.handleOpenYamlEditor();
         break;
 
+      case 'closePanel':
+        this.handleClosePanel();
+        break;
+
       default:
         this.logger.warn(`Unknown project settings command: ${message.command}`);
     }
@@ -316,6 +320,21 @@ export class ProjectSettingsWebviewPanel {
       );
       void vscode.window.showErrorMessage(
         `YAML編集画面の起動中にエラーが発生しました: ${error instanceof Error ? error.message : String(error)}`,
+      );
+    }
+  }
+
+  /**
+   * パネルを閉じる
+   */
+  private handleClosePanel(): void {
+    try {
+      this.logger.debug('Closing project settings panel');
+      this.dispose();
+    } catch (error) {
+      this.logger.error(
+        'Error closing panel',
+        error instanceof Error ? error : String(error),
       );
     }
   }

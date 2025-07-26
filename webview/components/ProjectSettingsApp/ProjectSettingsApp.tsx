@@ -8,13 +8,6 @@ import type {
 } from '../../types/ProjectSettings';
 import { useVSCodeApi } from '../../hooks/useVSCodeApi';
 
-// セマンティックバージョンの検証
-const isValidSemanticVersion = (version: string): boolean => {
-  const semverRegex =
-    /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$/;
-  return semverRegex.test(version);
-};
-
 export const ProjectSettingsApp: React.FC = () => {
   const [settings, setSettings] = useState<ProjectSettingsData | null>(null);
   const [isDialogoiProject, setIsDialogoiProject] = useState(false);
@@ -22,7 +15,6 @@ export const ProjectSettingsApp: React.FC = () => {
   const [formData, setFormData] = useState<ProjectSettingsUpdateData>({
     title: '',
     author: '',
-    version: '1.0.0',
     tags: [],
     project_settings: {
       readme_filename: '',
@@ -56,7 +48,6 @@ export const ProjectSettingsApp: React.FC = () => {
             setFormData({
               title: message.data.settings.title,
               author: message.data.settings.author,
-              version: message.data.settings.version,
               tags: message.data.settings.tags || [],
               project_settings: {
                 readme_filename: message.data.settings.project_settings?.readme_filename || '',
@@ -66,17 +57,38 @@ export const ProjectSettingsApp: React.FC = () => {
             setExcludePatternsText(excludePatterns.join('\n'));
           } else if (message.data.isNewProject) {
             // 新規プロジェクトの場合はデフォルト値を設定
+            // 新規プロジェクトのデフォルト値
+            const defaultExcludePatterns = [
+              '.*',                 // 隠しファイル・ディレクトリ
+              '.DS_Store',          // macOS システムファイル
+              'Thumbs.db',          // Windows システムファイル
+              'desktop.ini',        // Windows システムファイル
+              '$RECYCLE.BIN',       // Windows ゴミ箱
+              '.Trash',             // macOS ゴミ箱
+              '.git',               // Git リポジトリ
+              '.gitignore',         // Git 設定
+              '.hg',                // Mercurial
+              '.svn',               // Subversion
+              '*.tmp',              // 一時ファイル
+              '*.temp',             // 一時ファイル
+              '*.log',              // ログファイル
+              '*.bak',              // バックアップファイル
+              '*.old',              // 古いファイル
+              'node_modules',       // Node.js 依存関係
+              'dist',               // ビルド成果物
+              'build',              // ビルド成果物
+            ];
+            
             setFormData({
               title: '',
               author: '',
-              version: '1.0.0',
               tags: [],
               project_settings: {
-                readme_filename: '',
-                exclude_patterns: [],
+                readme_filename: 'README.md',
+                exclude_patterns: defaultExcludePatterns,
               },
             });
-            setExcludePatternsText('');
+            setExcludePatternsText(defaultExcludePatterns.join('\n'));
           }
           setIsInitialLoad(false);
         }
@@ -84,16 +96,18 @@ export const ProjectSettingsApp: React.FC = () => {
         // 保存完了時にフラグをリセット
         setIsSaving(false);
 
-        // 新規プロジェクト作成成功時は、次回設定を読み込めるように初期読み込みフラグをリセット
+        // 新規プロジェクト作成成功時は、パネルを閉じる
         if (message.data.success && isNewProject) {
           setIsInitialLoad(true);
+          // プロジェクト作成成功後、パネルを閉じる
+          postMessage({ command: 'closePanel' });
         }
       }
     };
 
     window.addEventListener('message', handleMessage);
     return (): void => window.removeEventListener('message', handleMessage);
-  }, [isInitialLoad, isSaving, isNewProject]);
+  }, [isInitialLoad, isSaving, isNewProject, postMessage]);
 
   // バリデーション
   const validateForm = (tagsOverride?: string[]): ProjectSettingsValidationResult => {
@@ -105,12 +119,6 @@ export const ProjectSettingsApp: React.FC = () => {
 
     if (!formData.author.trim()) {
       errors.author = '著者は必須です';
-    }
-
-    if (!formData.version.trim()) {
-      errors.version = 'バージョンは必須です';
-    } else if (!isValidSemanticVersion(formData.version)) {
-      errors.version = 'セマンティックバージョニング形式で入力してください（例: 1.0.0）';
     }
 
     // 重複チェック（パラメータで上書きされた場合はそれを使用）
@@ -185,14 +193,14 @@ export const ProjectSettingsApp: React.FC = () => {
     postMessage({ command: 'openYamlEditor' });
   };
 
-  // 各フィールドのフォーカスアウト時に自動保存
+  // 各フィールドのフォーカスアウト時にバリデーションのみ実行（新規プロジェクトでは自動保存しない）
   const handleFieldBlur = (): void => {
     // バリデーション実行
     const validationResult = validateForm();
     setValidation(validationResult);
 
-    // エラーがない場合のみ自動保存
-    if (validationResult.isValid) {
+    // 新規プロジェクトでは自動保存せず、既存プロジェクトのみ自動保存
+    if (validationResult.isValid && !isNewProject) {
       autoSave();
     }
   };
@@ -209,13 +217,14 @@ export const ProjectSettingsApp: React.FC = () => {
       setFormData(updatedFormData);
       setNewTag('');
 
-      // タグ追加後、即座に自動保存（更新されたデータを使用）
+      // タグ追加後、バリデーション実行（新規プロジェクトでは自動保存しない）
       setTimeout(() => {
-        // 更新されたタグ配列を使ってバリデーションと保存を実行
+        // 更新されたタグ配列を使ってバリデーション実行
         const validationResult = validateForm(updatedTags);
         setValidation(validationResult);
 
-        if (validationResult.isValid) {
+        // 既存プロジェクトのみ自動保存
+        if (validationResult.isValid && !isNewProject) {
           setIsSaving(true);
 
           const excludePatterns = excludePatternsText
@@ -259,13 +268,14 @@ export const ProjectSettingsApp: React.FC = () => {
     };
     setFormData(updatedFormData);
 
-    // タグ削除後、即座に自動保存（更新されたデータを使用）
+    // タグ削除後、バリデーション実行（新規プロジェクトでは自動保存しない）
     setTimeout(() => {
-      // 更新されたタグ配列を使ってバリデーションと保存を実行
+      // 更新されたタグ配列を使ってバリデーション実行
       const validationResult = validateForm(updatedTags);
       setValidation(validationResult);
 
-      if (validationResult.isValid) {
+      // 既存プロジェクトのみ自動保存
+      if (validationResult.isValid && !isNewProject) {
         setIsSaving(true);
 
         const excludePatterns = excludePatternsText
@@ -384,22 +394,6 @@ export const ProjectSettingsApp: React.FC = () => {
             <span className="error-message">{validation.errors.author}</span>
           )}
         </div>
-
-        <div className="form-group">
-          <label htmlFor="version">バージョン *</label>
-          <input
-            type="text"
-            id="version"
-            value={formData.version}
-            onChange={(e) => setFormData((prev) => ({ ...prev, version: e.target.value }))}
-            onBlur={handleFieldBlur}
-            placeholder="1.0.0"
-          />
-          {validation.errors.version && (
-            <span className="error-message">{validation.errors.version}</span>
-          )}
-          <span className="help-text">セマンティックバージョニング形式（例: 1.0.0）</span>
-        </div>
       </div>
 
       {/* タグ管理セクション */}
@@ -487,9 +481,18 @@ export const ProjectSettingsApp: React.FC = () => {
       {/* 新規プロジェクト作成時のみ操作ボタン表示 */}
       {isNewProject && (
         <div className="actions">
-          <button className="primary" onClick={autoSave}>
+          <button
+            className="primary"
+            onClick={autoSave}
+            disabled={!validation.isValid || !formData.title.trim() || !formData.author.trim()}
+          >
             ✨ プロジェクトを作成
           </button>
+          {!validation.isValid && (
+            <div className="error-message">
+              入力エラーがあります。修正してからプロジェクトを作成してください。
+            </div>
+          )}
         </div>
       )}
 

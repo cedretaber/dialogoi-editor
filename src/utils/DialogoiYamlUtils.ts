@@ -3,7 +3,6 @@ import * as yaml from 'js-yaml';
 export interface DialogoiYaml {
   title: string;
   author: string;
-  version: string;
   created_at: string;
   tags?: string[];
   updated_at?: string;
@@ -27,7 +26,7 @@ export class DialogoiYamlUtils {
       }
 
       // 必須フィールドの検証
-      if (!parsed.title || !parsed.author || !parsed.version || !parsed.created_at) {
+      if (!parsed.title || !parsed.author || !parsed.created_at) {
         console.error('dialogoi.yaml: 必須フィールドが不足しています');
         return null;
       }
@@ -68,16 +67,8 @@ export class DialogoiYamlUtils {
     if (!data.author || data.author.trim() === '') {
       errors.push('author は必須フィールドです');
     }
-    if (!data.version || data.version.trim() === '') {
-      errors.push('version は必須フィールドです');
-    }
     if (!data.created_at || data.created_at.trim() === '') {
       errors.push('created_at は必須フィールドです');
-    }
-
-    // バージョン形式のチェック（セマンティックバージョニング）
-    if (data.version && !this.isValidSemanticVersion(data.version)) {
-      errors.push('version はセマンティックバージョニング形式である必要があります（例: 1.0.0）');
     }
 
     // 日付形式のチェック（ISO 8601）
@@ -97,17 +88,6 @@ export class DialogoiYamlUtils {
       isValid: errors.length === 0,
       errors,
     };
-  }
-
-  /**
-   * セマンティックバージョニング形式の検証
-   * @param version バージョン文字列
-   * @returns 有効かどうか
-   */
-  private static isValidSemanticVersion(version: string): boolean {
-    const semverRegex =
-      /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$/;
-    return semverRegex.test(version);
   }
 
   /**
@@ -138,7 +118,6 @@ export class DialogoiYamlUtils {
     return {
       title,
       author,
-      version: '1.0.0',
       created_at: now,
       tags: tags || [],
     };

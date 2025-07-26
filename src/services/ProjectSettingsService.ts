@@ -10,7 +10,6 @@ export interface ProjectSettingsValidationResult {
 export interface ProjectSettingsUpdateData {
   title: string;
   author: string;
-  version: string;
   tags?: string[];
   project_settings?: {
     readme_filename?: string;
@@ -74,12 +73,6 @@ export class ProjectSettingsService {
       errors['author'] = '著者は必須です';
     }
 
-    if (data['version'] === undefined || data['version'].trim() === '') {
-      errors['version'] = 'バージョンは必須です';
-    } else if (!this.isValidSemanticVersion(data['version'])) {
-      errors['version'] = 'セマンティックバージョニング形式で入力してください（例: 1.0.0）';
-    }
-
     // タグの検証
     if (data['tags'] !== undefined) {
       if (!Array.isArray(data['tags'])) {
@@ -140,7 +133,6 @@ export class ProjectSettingsService {
         ...currentSettings,
         title: updateData.title.trim(),
         author: updateData.author.trim(),
-        version: updateData.version.trim(),
         tags:
           updateData.tags?.length !== undefined && updateData.tags.length > 0
             ? updateData.tags
@@ -189,17 +181,6 @@ export class ProjectSettingsService {
    */
   getDialogoiYamlPath(projectRootAbsolutePath: string): string {
     return this.dialogoiYamlService.getDialogoiYamlPath(projectRootAbsolutePath);
-  }
-
-  /**
-   * セマンティックバージョニング形式の検証
-   * @param version バージョン文字列
-   * @returns 有効かどうか
-   */
-  private isValidSemanticVersion(version: string): boolean {
-    const semverRegex =
-      /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$/;
-    return semverRegex.test(version);
   }
 
   /**
@@ -264,7 +245,6 @@ export class ProjectSettingsService {
       const newSettings: DialogoiYaml = {
         title: settingsData.title.trim(),
         author: settingsData.author.trim(),
-        version: settingsData.version.trim(),
         tags:
           settingsData.tags?.length !== undefined && settingsData.tags.length > 0
             ? settingsData.tags
@@ -283,10 +263,8 @@ export class ProjectSettingsService {
       );
 
       if (success) {
-        // プロジェクト設定を更新（versionとproject_settingsを追加）
-        const updates: Partial<DialogoiYaml> = {
-          version: newSettings.version,
-        };
+        // プロジェクト設定を更新（project_settingsを追加）
+        const updates: Partial<DialogoiYaml> = {};
         if (newSettings.project_settings !== undefined) {
           updates.project_settings = newSettings.project_settings;
         }

@@ -10,7 +10,6 @@ suite('DialogoiTemplateService テストスイート', () => {
 
   const testTemplate = `title: "テストテンプレート"
 author: "テスト著者"
-version: "1.0.0"
 created_at: "2024-01-01T00:00:00Z"
 tags: []
 
@@ -39,7 +38,6 @@ project_settings:
       assert.notStrictEqual(result, null);
       assert.strictEqual(result?.title, 'テストテンプレート');
       assert.strictEqual(result?.author, 'テスト著者');
-      assert.strictEqual(result?.version, '1.0.0');
       assert.strictEqual(result?.created_at, '2024-01-01T00:00:00Z');
       assert.deepStrictEqual(result?.tags, []);
       assert.strictEqual(result?.project_settings?.readme_filename, 'README.md');
@@ -68,7 +66,6 @@ project_settings:
       assert.notStrictEqual(result, null);
       assert.strictEqual(result?.title, '新しい小説');
       assert.strictEqual(result?.author, '新しい著者');
-      assert.strictEqual(result?.version, '1.0.0');
       assert.deepStrictEqual(result?.tags, ['ファンタジー', '冒険']);
       assert.ok(result?.created_at);
       assert.ok(new Date(result.created_at).getTime() > 0);
@@ -128,7 +125,6 @@ project_settings:
     test('テンプレートにexclude_patternsがない場合空配列を返す', async () => {
       const simpleTemplate = `title: "シンプル"
 author: "著者"
-version: "1.0.0"
 created_at: "2024-01-01T00:00:00Z"`;
 
       mockFileRepository.setExtensionResource('templates/default-dialogoi.yaml', simpleTemplate);
@@ -147,7 +143,6 @@ created_at: "2024-01-01T00:00:00Z"`;
     test('テンプレートにreadme_filenameがない場合デフォルト値を返す', async () => {
       const simpleTemplate = `title: "シンプル"
 author: "著者"
-version: "1.0.0"
 created_at: "2024-01-01T00:00:00Z"`;
 
       mockFileRepository.setExtensionResource('templates/default-dialogoi.yaml', simpleTemplate);

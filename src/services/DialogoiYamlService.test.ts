@@ -52,7 +52,6 @@ suite('DialogoiYamlService テストスイート', () => {
       const dialogoiYamlPath = path.join(projectRoot, 'dialogoi.yaml');
       const yamlContent = `title: "テスト小説"
 author: "テスト著者"
-version: "1.0.0"
 created_at: "2024-01-01T00:00:00Z"
 tags: ["ファンタジー"]`;
 
@@ -63,7 +62,6 @@ tags: ["ファンタジー"]`;
       assert.notStrictEqual(result, null);
       assert.strictEqual(result?.title, 'テスト小説');
       assert.strictEqual(result?.author, 'テスト著者');
-      assert.strictEqual(result?.version, '1.0.0');
       assert.strictEqual(result?.created_at, '2024-01-01T00:00:00Z');
       assert.deepStrictEqual(result?.tags, ['ファンタジー']);
     });
@@ -93,7 +91,6 @@ tags: ["ファンタジー"]`;
       const data = {
         title: 'テスト小説',
         author: 'テスト著者',
-        version: '1.0.0',
         created_at: '2024-01-01T00:00:00Z',
         tags: ['ファンタジー'],
       };
@@ -119,7 +116,6 @@ tags: ["ファンタジー"]`;
       const data = {
         title: '',
         author: 'テスト著者',
-        version: '1.0.0',
         created_at: '2024-01-01T00:00:00Z',
       };
 
@@ -133,7 +129,6 @@ tags: ["ファンタジー"]`;
       const data = {
         title: 'テスト小説',
         author: 'テスト著者',
-        version: '1.0.0',
         created_at: '2024-01-01T00:00:00Z',
       };
 
@@ -217,7 +212,6 @@ tags: ["ファンタジー"]`;
       const dialogoiYamlPath = path.join(projectRoot, 'dialogoi.yaml');
       const originalContent = `title: "元のタイトル"
 author: "元の著者"
-version: "1.0.0"
 created_at: "2024-01-01T00:00:00Z"`;
 
       mockFileRepository.createFileForTest(dialogoiYamlPath, originalContent);

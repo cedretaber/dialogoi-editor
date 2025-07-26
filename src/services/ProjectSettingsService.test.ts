@@ -27,7 +27,6 @@ suite('ProjectSettingsService テストスイート', () => {
       const dialogoiYaml: DialogoiYaml = {
         title: 'テスト小説',
         author: 'テスト著者',
-        version: '1.0.0',
         created_at: '2024-01-01T00:00:00Z',
         tags: ['ファンタジー', '冒険'],
         project_settings: {
@@ -41,7 +40,6 @@ suite('ProjectSettingsService テストスイート', () => {
         mockFileRepository.createFileUri(`${projectRoot}/dialogoi.yaml`),
         `title: "${dialogoiYaml.title}"
 author: "${dialogoiYaml.author}"
-version: "${dialogoiYaml.version}"
 created_at: "${dialogoiYaml.created_at}"
 tags:
   - "${dialogoiYaml.tags?.[0]}"
@@ -91,7 +89,6 @@ project_settings:
       const updateData: ProjectSettingsUpdateData = {
         title: 'テスト小説',
         author: 'テスト著者',
-        version: '1.0.0',
         tags: ['ファンタジー', '冒険'],
         project_settings: {
           readme_filename: 'README.md',
@@ -108,51 +105,18 @@ project_settings:
       const updateData: ProjectSettingsUpdateData = {
         title: '',
         author: '',
-        version: '',
       };
 
       const validation = service.validateUpdateData(updateData);
       assert.strictEqual(validation.isValid, false);
       assert.strictEqual(validation.errors['title'], 'タイトルは必須です');
       assert.strictEqual(validation.errors['author'], '著者は必須です');
-      assert.strictEqual(validation.errors['version'], 'バージョンは必須です');
-    });
-
-    test('不正なセマンティックバージョンはエラーになる', () => {
-      const updateData: ProjectSettingsUpdateData = {
-        title: 'テスト小説',
-        author: 'テスト著者',
-        version: 'invalid-version',
-      };
-
-      const validation = service.validateUpdateData(updateData);
-      assert.strictEqual(validation.isValid, false);
-      assert.strictEqual(
-        validation.errors['version'],
-        'セマンティックバージョニング形式で入力してください（例: 1.0.0）',
-      );
-    });
-
-    test('有効なセマンティックバージョンは通過する', () => {
-      const validVersions = ['1.0.0', '0.1.0', '10.20.30', '1.1.2-alpha', '1.0.0+20130313144700'];
-
-      validVersions.forEach((version) => {
-        const updateData: ProjectSettingsUpdateData = {
-          title: 'テスト小説',
-          author: 'テスト著者',
-          version,
-        };
-
-        const validation = service.validateUpdateData(updateData);
-        assert.strictEqual(validation.isValid, true, `Version ${version} should be valid`);
-      });
     });
 
     test('重複するタグはエラーになる', () => {
       const updateData: ProjectSettingsUpdateData = {
         title: 'テスト小説',
         author: 'テスト著者',
-        version: '1.0.0',
         tags: ['ファンタジー', '冒険', 'ファンタジー'],
       };
 
@@ -166,7 +130,6 @@ project_settings:
       const updateData: ProjectSettingsUpdateData = {
         title: 'テスト小説',
         author: 'テスト著者',
-        version: '1.0.0',
         project_settings: {
           exclude_patterns: ['*.tmp', '.*', '*.tmp'],
         },
@@ -189,7 +152,6 @@ project_settings:
       const existingSettings: DialogoiYaml = {
         title: '元のタイトル',
         author: '元の著者',
-        version: '1.0.0',
         created_at: '2024-01-01T00:00:00Z',
         tags: ['元のタグ'],
       };
@@ -198,7 +160,6 @@ project_settings:
         mockFileRepository.createFileUri(`${projectRoot}/dialogoi.yaml`),
         `title: "${existingSettings.title}"
 author: "${existingSettings.author}"
-version: "${existingSettings.version}"
 created_at: "${existingSettings.created_at}"
 tags:
   - "${existingSettings.tags?.[0]}"`,
@@ -208,7 +169,6 @@ tags:
       const updateData: ProjectSettingsUpdateData = {
         title: '新しいタイトル',
         author: '新しい著者',
-        version: '2.0.0',
         tags: ['新しいタグ', '冒険'],
         project_settings: {
           readme_filename: 'README.md',
@@ -225,7 +185,6 @@ tags:
       assert.notStrictEqual(updatedSettings, null);
       assert.strictEqual(updatedSettings?.['title'], updateData['title']);
       assert.strictEqual(updatedSettings?.['author'], updateData['author']);
-      assert.strictEqual(updatedSettings?.['version'], updateData['version']);
       assert.deepStrictEqual(updatedSettings?.tags, updateData['tags']);
       assert.strictEqual(
         updatedSettings?.project_settings?.readme_filename,
@@ -247,7 +206,6 @@ tags:
       const existingSettings: DialogoiYaml = {
         title: '元のタイトル',
         author: '元の著者',
-        version: '1.0.0',
         created_at: '2024-01-01T00:00:00Z',
       };
 
@@ -255,7 +213,6 @@ tags:
         mockFileRepository.createFileUri(`${projectRoot}/dialogoi.yaml`),
         `title: "${existingSettings.title}"
 author: "${existingSettings.author}"
-version: "${existingSettings.version}"
 created_at: "${existingSettings.created_at}"`,
       );
 
@@ -263,7 +220,6 @@ created_at: "${existingSettings.created_at}"`,
       const updateData: ProjectSettingsUpdateData = {
         title: '',
         author: '',
-        version: 'invalid',
       };
 
       // 更新実行
@@ -275,7 +231,6 @@ created_at: "${existingSettings.created_at}"`,
       assert.notStrictEqual(unchangedSettings, null);
       assert.strictEqual(unchangedSettings?.['title'], existingSettings['title']);
       assert.strictEqual(unchangedSettings?.['author'], existingSettings['author']);
-      assert.strictEqual(unchangedSettings?.['version'], existingSettings['version']);
     });
 
     test('プロジェクトが存在しない場合は更新が失敗する', async () => {
@@ -284,7 +239,6 @@ created_at: "${existingSettings.created_at}"`,
       const updateData: ProjectSettingsUpdateData = {
         title: 'テスト小説',
         author: 'テスト著者',
-        version: '1.0.0',
       };
 
       const success = await service.updateProjectSettings(projectRoot, updateData);
@@ -298,7 +252,6 @@ created_at: "${existingSettings.created_at}"`,
       const existingSettings: DialogoiYaml = {
         title: '元のタイトル',
         author: '元の著者',
-        version: '1.0.0',
         created_at: '2024-01-01T00:00:00Z',
         tags: ['元のタグ'],
         project_settings: {
@@ -311,7 +264,6 @@ created_at: "${existingSettings.created_at}"`,
         mockFileRepository.createFileUri(`${projectRoot}/dialogoi.yaml`),
         `title: "${existingSettings.title}"
 author: "${existingSettings.author}"
-version: "${existingSettings.version}"
 created_at: "${existingSettings.created_at}"
 tags:
   - "${existingSettings.tags?.[0]}"
@@ -325,7 +277,6 @@ project_settings:
       const updateData: ProjectSettingsUpdateData = {
         title: '新しいタイトル',
         author: '新しい著者',
-        version: '2.0.0',
         tags: [],
         project_settings: {
           readme_filename: '',

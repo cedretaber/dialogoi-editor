@@ -9,6 +9,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - CHANGELOG.mdを追加（バージョン履歴管理）
 - docs/DEVELOPMENT_WORKFLOW.mdを追加（開発ガイドライン）
+- プロジェクト作成時のデフォルト値設定（README.md、除外パターン）
+
+### Changed
+- プロジェクト作成後に設定画面を自動的に閉じるように変更
+
+### Fixed
+- 新規プロジェクト作成時に著者名入力だけでdialogoi.yamlが作成されるバグを修正
+
+### Removed
+- セマンティックバージョニング（versionフィールド）を削除（updated_atで管理）
 
 ## [1.0.1] - 2025-01-26
 ### Fixed
