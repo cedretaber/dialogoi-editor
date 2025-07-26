@@ -31,3 +31,5 @@ node_modules/.bin/**
 Thumbs.db
 *.log
 *.tmp
+.env
+.env.*
