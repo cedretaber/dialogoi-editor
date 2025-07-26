@@ -517,12 +517,26 @@ export class FileDetailsViewProvider implements vscode.WebviewViewProvider {
         }
       }
 
+      // プロジェクトルートからの相対パスを取得
+      let relativePath: string | undefined;
+      if (item?.path !== undefined && item.path !== null && item.path !== '') {
+        const projectRoot = await this.dialogoiYamlService?.findProjectRootAsync(item.path);
+        if (projectRoot !== undefined && projectRoot !== null && projectRoot !== '') {
+          // パスを相対パスに変換
+          const relPath = path.relative(projectRoot, item.path);
+          // プロジェクト外の場合は使用しない
+          if (!relPath.startsWith('..')) {
+            relativePath = relPath;
+          }
+        }
+      }
+
       // WebView用のデータ形式に変換
       const fileDetailsData = item
         ? {
             name: item.name,
             type: item.type,
-            path: item.path,
+            path: relativePath ?? item.path, // 相対パスが取得できない場合は絶対パスを使用
             tags: item.tags,
             character: item.character,
             referenceData: referenceData,

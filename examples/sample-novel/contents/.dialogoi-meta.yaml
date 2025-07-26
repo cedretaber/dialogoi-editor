@@ -2,7 +2,7 @@ readme: README.md
 files:
   - name: 01_prologue.txt
     type: content
-    comments: ".01_prologue.txt.comments.yaml"
+    comments: .01_prologue.txt.comments.yaml
     tags:
       - プロローグ
       - 導入
