@@ -48,9 +48,23 @@ Dialogoi Editorは、小説作品の執筆を体系的に支援するVSCode拡�
 
 ## インストール
 
-現在開発中です。以下の方法で開発版をテストできます：
+### VSCode Marketplaceからインストール
 
-### 開発版テスト
+1. VSCodeの拡張機能ビューを開く（`Ctrl+Shift+X` / `Cmd+Shift+X`）
+2. 「Dialogoi」で検索
+3. 「Install」をクリック
+
+または、[VSCode Marketplace](https://marketplace.visualstudio.com/items?itemName=dialogoi.dialogoi-editor)から直接インストールできます。
+
+### コマンドラインからインストール
+
+```bash
+code --install-extension dialogoi.dialogoi-editor
+```
+
+### 開発版のインストール
+
+最新の開発版を試したい場合：
 
 ```bash
 # リポジトリをクローン
