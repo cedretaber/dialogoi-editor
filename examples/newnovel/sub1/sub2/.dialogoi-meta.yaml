@@ -1,5 +1,0 @@
-readme: README.md
-files:
-  - name: text1.txt
-    type: content
-    path: /home/cedretaber/src/ts/dialogoi-editor/examples/newnovel/sub1/sub2/text1.txt

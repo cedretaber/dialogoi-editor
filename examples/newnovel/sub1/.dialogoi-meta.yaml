@@ -1,8 +1,0 @@
-readme: README.md
-files:
-  - name: sub2
-    type: subdirectory
-    path: /home/cedretaber/src/ts/dialogoi-editor/examples/newnovel/sub1/sub2
-  - name: sub3
-    type: subdirectory
-    path: /home/cedretaber/src/ts/dialogoi-editor/examples/newnovel/sub1/sub3
