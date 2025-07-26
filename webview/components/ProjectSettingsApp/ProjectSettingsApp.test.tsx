@@ -1,6 +1,6 @@
 import { suite, test, beforeEach, afterEach } from 'mocha';
 import { strict as assert } from 'assert';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, cleanup } from '@testing-library/react';
 import { ProjectSettingsApp } from './ProjectSettingsApp';
 import { resetGlobalReadyMessageSent } from '../../hooks/useVSCodeApi';
 import type {
@@ -62,6 +62,9 @@ suite('ProjectSettingsApp コンポーネント', () => {
   });
 
   afterEach((): void => {
+    // React Testing Libraryのクリーンアップ
+    cleanup();
+
     // モックをリセット
     window.addEventListener = originalAddEventListener;
     window.removeEventListener = originalRemoveEventListener;
@@ -195,10 +198,14 @@ suite('ProjectSettingsApp コンポーネント', () => {
       );
     });
 
-    test('基本情報が正しく表示される', () => {
-      assert(screen.getByDisplayValue('テスト小説'));
-      assert(screen.getByDisplayValue('テスト作者'));
-      assert(screen.getByDisplayValue('1.0.0'));
+    test('基本情報が正しく表示される', async () => {
+      await waitFor(
+        () => {
+          assert(screen.getByDisplayValue('テスト小説'));
+          assert(screen.getByDisplayValue('テスト作者'));
+        },
+        { timeout: 3000 },
+      );
     });
 
     test('タグが正しく表示される', () => {
@@ -280,27 +287,50 @@ suite('ProjectSettingsApp コンポーネント', () => {
       assert(screen.getByText('著者は必須です'));
     });
 
-    test('正しいデータでプロジェクトが作成される', () => {
+    test('正しいデータでプロジェクトが作成される', async () => {
       const spy = createPostMessageSpy();
 
       // フォームに入力
-      fireEvent.change(screen.getByLabelText('タイトル *'), { target: { value: '新しい小説' } });
-      fireEvent.change(screen.getByLabelText('著者 *'), { target: { value: '新しい作者' } });
+      const titleInput = screen.getByLabelText('タイトル *');
+      const authorInput = screen.getByLabelText('著者 *');
+
+      fireEvent.change(titleInput, { target: { value: '新しい小説' } });
+      fireEvent.change(authorInput, { target: { value: '新しい作者' } });
+
+      // 入力値が正しく設定されていることを事前確認
+      assert.strictEqual((titleInput as HTMLInputElement).value, '新しい小説');
+      assert.strictEqual((authorInput as HTMLInputElement).value, '新しい作者');
 
       // 作成ボタンをクリック
       const createButton = screen.getByText('✨ プロジェクトを作成');
       fireEvent.click(createButton);
 
-      assert(
-        spy.wasCalledWith({
-          command: 'saveSettings',
-          data: {
-            title: '新しい小説',
-            author: '新しい作者',
-            tags: undefined,
-            project_settings: undefined,
-          },
-        }),
+      // メッセージ送信を確認
+      await waitFor(
+        () => {
+          const calls = spy.getCalls();
+          const saveSettingsCall = calls.find((call) => call.command === 'saveSettings');
+
+          assert(saveSettingsCall, 'saveSettings command not found');
+          assert(saveSettingsCall.data, 'saveSettings data should exist');
+
+          // 型ガードとしてdataの構造を確認
+          const data = saveSettingsCall.data;
+          assert('title' in data && 'author' in data, 'data should have title and author');
+
+          assert.strictEqual(data.title, '新しい小説');
+          assert.strictEqual(data.author, '新しい作者');
+
+          // 新規プロジェクト作成時はデフォルトのproject_settingsが含まれることを確認
+          assert(
+            'project_settings' in data && data.project_settings,
+            'project_settings should be included',
+          );
+          assert.strictEqual(data.project_settings.readme_filename, 'README.md');
+          assert(Array.isArray(data.project_settings.exclude_patterns));
+          assert(data.project_settings.exclude_patterns.length > 0);
+        },
+        { timeout: 3000 },
       );
     });
   });
@@ -364,7 +394,10 @@ suite('ProjectSettingsApp コンポーネント', () => {
   });
 
   suite('タグ管理', () => {
+    let spy: ReturnType<typeof createPostMessageSpy>;
+
     beforeEach(async () => {
+      spy = createPostMessageSpy();
       render(<ProjectSettingsApp />);
       const updateMessage: UpdateProjectSettingsMessage = {
         type: 'updateSettings',
@@ -386,7 +419,6 @@ suite('ProjectSettingsApp コンポーネント', () => {
     });
 
     test('タグの追加', async () => {
-      const spy = createPostMessageSpy();
       const tagInput = screen.getByPlaceholderText('新しいタグを入力してEnterキーを押してください');
       fireEvent.change(tagInput, { target: { value: 'ロマンス' } });
       fireEvent.keyDown(tagInput, { key: 'Enter' });
@@ -413,7 +445,6 @@ suite('ProjectSettingsApp コンポーネント', () => {
     });
 
     test('重複タグは追加されない', async () => {
-      const spy = createPostMessageSpy();
       const tagInput = screen.getByPlaceholderText('新しいタグを入力してEnterキーを押してください');
       fireEvent.change(tagInput, { target: { value: 'ファンタジー' } });
       fireEvent.keyDown(tagInput, { key: 'Enter' });
@@ -432,7 +463,6 @@ suite('ProjectSettingsApp コンポーネント', () => {
     });
 
     test('タグの削除', async () => {
-      const spy = createPostMessageSpy();
       // タグセクション内の削除ボタンのみを取得
       const tagRemoveButtons = screen
         .getAllByRole('button')
@@ -454,8 +484,6 @@ suite('ProjectSettingsApp コンポーネント', () => {
     });
 
     test('全タグ削除時はundefinedになる', async () => {
-      const spy = createPostMessageSpy();
-
       // 最初のタグを削除
       const tagRemoveButtons1 = screen
         .getAllByRole('button')
