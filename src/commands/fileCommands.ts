@@ -2,6 +2,7 @@ import * as vscode from 'vscode';
 import * as path from 'path';
 import { DialogoiTreeDataProvider } from '../tree/DialogoiTreeDataProvider.js';
 import { DialogoiTreeItem } from '../utils/MetaYamlUtils.js';
+import { ServiceContainer } from '../di/ServiceContainer.js';
 
 /**
  * ファイル関連のコマンドを登録
@@ -129,12 +130,126 @@ export function registerFileCommands(
     },
   );
 
+  // ファイル管理コマンド
+  const addFileToManagementCommand = vscode.commands.registerCommand(
+    'dialogoi.addFileToManagement',
+    async (treeItem: DialogoiTreeItem) => {
+      if (
+        treeItem === null ||
+        treeItem === undefined ||
+        treeItem.path === undefined ||
+        treeItem.path === ''
+      ) {
+        vscode.window.showErrorMessage('ファイルが選択されていません。');
+        return;
+      }
+
+      // ファイル種別を選択
+      const fileType = await vscode.window.showQuickPick(
+        [
+          { label: 'content', description: '本文ファイル（.txt）' },
+          { label: 'setting', description: '設定ファイル（.md）' },
+        ],
+        {
+          placeHolder: 'ファイル種別を選択してください',
+        },
+      );
+
+      if (!fileType) {
+        return; // ユーザーがキャンセル
+      }
+
+      const fileManagementService = ServiceContainer.getInstance().getFileManagementService();
+      const result = await fileManagementService.addFileToManagement(
+        treeItem.path,
+        fileType.label as 'content' | 'setting',
+      );
+
+      if (result.success) {
+        vscode.window.showInformationMessage(result.message);
+        treeDataProvider.refresh();
+      } else {
+        vscode.window.showErrorMessage(result.message);
+      }
+    },
+  );
+
+  const createMissingFileCommand = vscode.commands.registerCommand(
+    'dialogoi.createMissingFile',
+    async (treeItem: DialogoiTreeItem) => {
+      if (
+        treeItem === null ||
+        treeItem === undefined ||
+        treeItem.path === undefined ||
+        treeItem.path === ''
+      ) {
+        vscode.window.showErrorMessage('ファイルが選択されていません。');
+        return;
+      }
+
+      const fileManagementService = ServiceContainer.getInstance().getFileManagementService();
+      const result = await fileManagementService.createMissingFile(treeItem.path);
+
+      if (result.success) {
+        vscode.window.showInformationMessage(result.message);
+        treeDataProvider.refresh();
+
+        // 作成したファイルを開く
+        const document = await vscode.workspace.openTextDocument(treeItem.path);
+        await vscode.window.showTextDocument(document);
+      } else {
+        vscode.window.showErrorMessage(result.message);
+      }
+    },
+  );
+
+  const removeMissingFileCommand = vscode.commands.registerCommand(
+    'dialogoi.removeMissingFile',
+    async (treeItem: DialogoiTreeItem) => {
+      if (
+        treeItem === null ||
+        treeItem === undefined ||
+        treeItem.path === undefined ||
+        treeItem.path === ''
+      ) {
+        vscode.window.showErrorMessage('ファイルが選択されていません。');
+        return;
+      }
+
+      // 確認ダイアログ
+      const fileName = path.basename(treeItem.path);
+      const answer = await vscode.window.showWarningMessage(
+        `ファイル "${fileName}" を管理対象から削除しますか？\n（ファイル自体は削除されません）`,
+        { modal: true },
+        '削除',
+        'キャンセル',
+      );
+
+      if (answer !== '削除') {
+        return;
+      }
+
+      const fileManagementService = ServiceContainer.getInstance().getFileManagementService();
+      const result = await fileManagementService.removeFileFromManagement(treeItem.path);
+
+      if (result.success) {
+        vscode.window.showInformationMessage(result.message);
+        treeDataProvider.refresh();
+      } else {
+        vscode.window.showErrorMessage(result.message);
+      }
+    },
+  );
+
   context.subscriptions.push(
     createFileCommand,
     createFileInDirectoryCommand,
     deleteFileCommand,
     renameFileCommand,
     deleteDirectoryCommand,
+    addFileToManagementCommand,
+    createMissingFileCommand,
+    removeMissingFileCommand,
   );
 }
 

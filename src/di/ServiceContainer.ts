@@ -16,6 +16,8 @@ import { DropHandlerService } from '../services/DropHandlerService.js';
 import { SettingsRepository } from '../repositories/SettingsRepository.js';
 import { DialogoiSettingsService } from '../services/DialogoiSettingsService.js';
 import { ProjectSettingsService } from '../services/ProjectSettingsService.js';
+import { FileStatusService } from '../services/FileStatusService.js';
+import { FileManagementService } from '../services/FileManagementService.js';
 import { Logger } from '../utils/Logger.js';
 import { Uri } from '../interfaces/Uri.js';
 
@@ -41,6 +43,8 @@ export interface IServiceContainer {
   setSettingsRepository(repository: SettingsRepository): void;
   getDialogoiSettingsService(): DialogoiSettingsService;
   getProjectSettingsService(): ProjectSettingsService;
+  getFileStatusService(): FileStatusService;
+  getFileManagementService(): FileManagementService;
   reset(): void;
 }
 
@@ -67,6 +71,8 @@ export class ServiceContainer implements IServiceContainer {
   private settingsRepository: SettingsRepository | null = null;
   private dialogoiSettingsService: DialogoiSettingsService | null = null;
   private projectSettingsService: ProjectSettingsService | null = null;
+  private fileStatusService: FileStatusService | null = null;
+  private fileManagementService: FileManagementService | null = null;
 
   protected constructor() {}
 
@@ -101,6 +107,7 @@ export class ServiceContainer implements IServiceContainer {
     this.projectPathNormalizationService = null;
     this.dropHandlerService = null;
     this.projectSettingsService = null;
+    this.fileStatusService = null;
   }
 
   /**
@@ -295,6 +302,7 @@ export class ServiceContainer implements IServiceContainer {
     this.dropHandlerService = null;
     this.settingsRepository = null;
     this.dialogoiSettingsService = null;
+    this.fileStatusService = null;
   }
 
   getSettingsRepository(): SettingsRepository {
@@ -323,6 +331,24 @@ export class ServiceContainer implements IServiceContainer {
       this.projectSettingsService = new ProjectSettingsService(dialogoiYamlService, logger);
     }
     return this.projectSettingsService;
+  }
+
+  getFileStatusService(): FileStatusService {
+    if (!this.fileStatusService) {
+      const fileRepository = this.getFileRepository();
+      const metaYamlService = this.getMetaYamlService();
+      this.fileStatusService = new FileStatusService(fileRepository, metaYamlService);
+    }
+    return this.fileStatusService;
+  }
+
+  getFileManagementService(): FileManagementService {
+    if (!this.fileManagementService) {
+      const fileRepository = this.getFileRepository();
+      const metaYamlService = this.getMetaYamlService();
+      this.fileManagementService = new FileManagementService(fileRepository, metaYamlService);
+    }
+    return this.fileManagementService;
   }
 
   /**

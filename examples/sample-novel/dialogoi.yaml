@@ -9,6 +9,7 @@ tags:
 updated_at: '2025-07-21T10:02:27.278Z'
 project_settings:
   exclude_patterns:
+    - '.*'
     - '*.tmp'
     - '*.temp'
     - node_modules/

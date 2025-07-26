@@ -191,6 +191,21 @@
         "title": "ここにコメントを追加",
         "icon": "$(comment)",
         "category": "Dialogoi"
+      },
+      {
+        "command": "dialogoi.addFileToManagement",
+        "title": "Dialogoi管理対象に追加",
+        "icon": "$(add)"
+      },
+      {
+        "command": "dialogoi.createMissingFile",
+        "title": "ファイルを作成",
+        "icon": "$(new-file)"
+      },
+      {
+        "command": "dialogoi.removeMissingFile",
+        "title": "管理対象から削除",
+        "icon": "$(trash)"
       }
     ],
     "menus": {
@@ -291,6 +306,21 @@
           "command": "dialogoi.deleteDirectory",
           "when": "view == dialogoi-explorer && viewItem == dialogoi-directory",
           "group": "9_directory"
+        },
+        {
+          "command": "dialogoi.addFileToManagement",
+          "when": "view == dialogoi-explorer && viewItem == dialogoi-file-untracked",
+          "group": "10_management"
+        },
+        {
+          "command": "dialogoi.createMissingFile",
+          "when": "view == dialogoi-explorer && viewItem == dialogoi-file-missing",
+          "group": "10_management"
+        },
+        {
+          "command": "dialogoi.removeMissingFile",
+          "when": "view == dialogoi-explorer && viewItem == dialogoi-file-missing",
+          "group": "10_management"
         }
       ],
       "commandPalette": [

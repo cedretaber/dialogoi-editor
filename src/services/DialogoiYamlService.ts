@@ -97,6 +97,16 @@ export class DialogoiYamlService {
   }
 
   /**
+   * プロジェクトの除外パターンを取得（非同期版）
+   * @param projectRootAbsolutePath プロジェクトルートの絶対パス
+   * @returns 除外パターンの配列、取得できない場合は空配列
+   */
+  async getExcludePatternsAsync(projectRootAbsolutePath: string): Promise<string[]> {
+    const dialogoiYaml = await this.loadDialogoiYamlAsync(projectRootAbsolutePath);
+    return dialogoiYaml?.project_settings?.exclude_patterns || [];
+  }
+
+  /**
    * 新しいDialogoiプロジェクトを作成（非同期版）
    * @param projectRootAbsolutePath プロジェクトルートの絶対パス
    * @param title 作品タイトル

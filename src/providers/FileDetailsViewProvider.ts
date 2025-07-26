@@ -305,7 +305,6 @@ export class FileDetailsViewProvider implements vscode.WebviewViewProvider {
               tags: fileItem.tags || [],
               references: fileItem.references || [],
               character: fileItem.character,
-              review_count: fileItem.review_count,
             };
           }
         }
@@ -540,7 +539,6 @@ export class FileDetailsViewProvider implements vscode.WebviewViewProvider {
             tags: item.tags,
             character: item.character,
             referenceData: referenceData,
-            review_count: item.review_count,
             foreshadowing: item.foreshadowing,
           }
         : null;

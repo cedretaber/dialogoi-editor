@@ -25,12 +25,7 @@ files:
       payoff:
         location: "chapter10.txt"
         comment: "伏線回収"
-    reviews: "chapter1.txt_reviews.yaml"
-    review_count:
-      open: 2
-      in_progress: 1
-      resolved: 3
-      dismissed: 0
+    comments: ".chapter1.txt.comments.yaml"
     glossary: true
     hash: "abc123"
   - name: settings
@@ -52,11 +47,7 @@ files:
       assert.strictEqual(file1?.character?.display_name, '主人公');
       assert.strictEqual(file1?.foreshadowing?.plants?.[0]?.location, 'chapter1.txt');
       assert.strictEqual(file1?.foreshadowing?.payoff?.location, 'chapter10.txt');
-      assert.strictEqual(file1?.reviews, 'chapter1.txt_reviews.yaml');
-      assert.strictEqual(file1?.review_count?.open, 2);
-      assert.strictEqual(file1?.review_count?.in_progress, 1);
-      assert.strictEqual(file1?.review_count?.resolved, 3);
-      assert.strictEqual(file1?.review_count?.dismissed, 0);
+      assert.strictEqual(file1?.comments, '.chapter1.txt.comments.yaml');
       assert.strictEqual(file1?.glossary, true);
       assert.strictEqual(file1?.hash, 'abc123');
     });
@@ -137,13 +128,7 @@ files:
               plants: [{ location: 'chapter1.txt', comment: '伏線設置' }],
               payoff: { location: 'chapter10.txt', comment: '伏線回収' },
             },
-            reviews: 'chapter1.txt_reviews.yaml',
-            review_count: {
-              open: 2,
-              in_progress: 1,
-              resolved: 3,
-              dismissed: 0,
-            },
+            comments: '.chapter1.txt.comments.yaml',
             glossary: true,
             hash: 'abc123',
           },
@@ -168,7 +153,7 @@ files:
       assert.ok(result.includes('display_name: 主人公'));
       assert.ok(result.includes('location: chapter1.txt'));
       assert.ok(result.includes('location: chapter10.txt'));
-      assert.ok(result.includes('open: 2'));
+      assert.ok(result.includes('comments: .chapter1.txt.comments.yaml'));
       assert.ok(result.includes('glossary: true'));
       assert.ok(result.includes('hash: abc123'));
     });
@@ -223,13 +208,7 @@ files:
           plants: [{ location: 'chapter1.txt', comment: '伏線設置' }],
           payoff: { location: 'chapter10.txt', comment: '伏線回収' },
         },
-        reviews: 'test.txt_reviews.yaml',
-        review_count: {
-          open: 1,
-          in_progress: 0,
-          resolved: 2,
-          dismissed: 0,
-        },
+        comments: '.test.txt.comments.yaml',
         glossary: true,
         hash: 'abc123',
       };
@@ -463,38 +442,6 @@ files:
     });
   });
 
-  suite('generateReviewFilePath', () => {
-    test('通常のファイルパスからレビューファイルパスを生成する', () => {
-      const targetPath = 'contents/chapter1.txt';
-      const result = MetaYamlUtils.generateReviewFilePath(targetPath);
-      assert.strictEqual(result, 'contents/chapter1.txt_reviews.yaml');
-    });
-
-    test('ルートディレクトリのファイルからレビューファイルパスを生成する', () => {
-      const targetPath = 'test.txt';
-      const result = MetaYamlUtils.generateReviewFilePath(targetPath);
-      assert.strictEqual(result, 'test.txt_reviews.yaml');
-    });
-
-    test('深いディレクトリパスからレビューファイルパスを生成する', () => {
-      const targetPath = 'project/contents/chapter/part1/section1.txt';
-      const result = MetaYamlUtils.generateReviewFilePath(targetPath);
-      assert.strictEqual(result, 'project/contents/chapter/part1/section1.txt_reviews.yaml');
-    });
-
-    test('拡張子がないファイルからレビューファイルパスを生成する', () => {
-      const targetPath = 'contents/chapter1';
-      const result = MetaYamlUtils.generateReviewFilePath(targetPath);
-      assert.strictEqual(result, 'contents/chapter1_reviews.yaml');
-    });
-
-    test('現在ディレクトリのファイルからレビューファイルパスを生成する', () => {
-      const targetPath = './test.txt';
-      const result = MetaYamlUtils.generateReviewFilePath(targetPath);
-      assert.strictEqual(result, 'test.txt_reviews.yaml');
-    });
-  });
-
   suite('createMetaYaml', () => {
     test('readmeファイル名を指定して新しいMetaYamlを作成する', () => {
       const result = MetaYamlUtils.createMetaYaml('README.md');
@@ -544,13 +491,7 @@ files:
               plants: [{ location: 'chapter1.txt', comment: '伏線設置' }],
               payoff: { location: 'chapter10.txt', comment: '伏線回収' },
             },
-            reviews: 'chapter1.txt_reviews.yaml',
-            review_count: {
-              open: 2,
-              in_progress: 1,
-              resolved: 3,
-              dismissed: 0,
-            },
+            comments: '.chapter1.txt.comments.yaml',
             glossary: true,
             hash: 'abc123',
           },

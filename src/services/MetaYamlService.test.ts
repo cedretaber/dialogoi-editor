@@ -118,13 +118,7 @@ files:
               plants: [{ location: 'chapter1.txt', comment: '伏線の設置' }],
               payoff: { location: 'chapter10.txt', comment: '伏線の回収' },
             },
-            reviews: 'chapter1.txt_reviews.yaml',
-            review_count: {
-              open: 2,
-              in_progress: 1,
-              resolved: 3,
-              dismissed: 0,
-            },
+            comments: '.chapter1.txt.comments.yaml',
             glossary: true,
             hash: 'abc123',
           },
@@ -153,7 +147,7 @@ files:
       assert.ok(savedContent.includes('display_name: 主人公'));
       assert.ok(savedContent.includes('location: chapter1.txt'));
       assert.ok(savedContent.includes('location: chapter10.txt'));
-      assert.ok(savedContent.includes('open: 2'));
+      assert.ok(savedContent.includes('comments: .chapter1.txt.comments.yaml'));
       assert.ok(savedContent.includes('glossary: true'));
       assert.ok(savedContent.includes('hash: abc123'));
     });
@@ -404,13 +398,7 @@ files: []`;
               plants: [{ location: 'chapter1.txt', comment: '伏線の設置' }],
               payoff: { location: 'chapter10.txt', comment: '伏線の回収' },
             },
-            reviews: 'chapter1.txt_reviews.yaml',
-            review_count: {
-              open: 2,
-              in_progress: 1,
-              resolved: 3,
-              dismissed: 0,
-            },
+            comments: '.chapter1.txt.comments.yaml',
             glossary: true,
             hash: 'abc123',
           },

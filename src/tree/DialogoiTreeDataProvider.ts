@@ -7,6 +7,7 @@ import { TreeViewFilterService, FilterState } from '../services/TreeViewFilterSe
 import { Logger } from '../utils/Logger.js';
 import { FileOperationResult } from '../services/FileOperationService.js';
 import { FileChangeNotificationService } from '../services/FileChangeNotificationService.js';
+import { FileStatus } from '../services/FileStatusService.js';
 
 /**
  * TreeViewのデータプロバイダー
@@ -256,35 +257,54 @@ export class DialogoiTreeDataProvider
 
     const item = new vscode.TreeItem(displayName, collapsibleState);
 
-    // アイコンの設定（ディレクトリはアイコンなし）
-    if (element.type === 'content') {
-      item.iconPath = new vscode.ThemeIcon('file-text');
-    } else if (element.type === 'setting') {
-      if (element.glossary === true) {
-        item.iconPath = new vscode.ThemeIcon('book');
-      } else if (element.character !== undefined) {
-        // 重要度に応じたアイコン
-        if (element.character.importance === 'main') {
-          item.iconPath = new vscode.ThemeIcon('star');
+    // ファイル状態に基づく視覚表現の設定
+    if (element.isMissing === true) {
+      // 欠損ファイル: 赤字、取り消し線、エラーアイコン
+      item.iconPath = new vscode.ThemeIcon('error', new vscode.ThemeColor('errorForeground'));
+      item.label = `${displayName}`;
+      item.description = '(存在しません)';
+      // 取り消し線はVSCodeのMarkdownStringで実現
+      item.tooltip = `⚠️ ファイルが存在しません: ${element.path}`;
+    } else if (element.isUntracked === true) {
+      // 未追跡ファイル: グレーアウト、専用アイコン
+      item.iconPath = new vscode.ThemeIcon(
+        'file-submodule',
+        new vscode.ThemeColor('disabledForeground'),
+      );
+      item.description = '(管理対象外)';
+      item.tooltip = `管理対象外ファイル: ${element.path}`;
+    } else {
+      // アイコンの設定（通常のファイル・ディレクトリ）
+      if (element.type === 'content') {
+        item.iconPath = new vscode.ThemeIcon('file-text');
+      } else if (element.type === 'setting') {
+        if (element.glossary === true) {
+          item.iconPath = new vscode.ThemeIcon('book');
+        } else if (element.character !== undefined) {
+          // 重要度に応じたアイコン
+          if (element.character.importance === 'main') {
+            item.iconPath = new vscode.ThemeIcon('star');
+          } else {
+            item.iconPath = new vscode.ThemeIcon('person');
+          }
+        } else if (element.foreshadowing !== undefined) {
+          item.iconPath = new vscode.ThemeIcon('eye');
         } else {
-          item.iconPath = new vscode.ThemeIcon('person');
+          item.iconPath = new vscode.ThemeIcon('gear');
         }
-      } else if (element.foreshadowing !== undefined) {
-        item.iconPath = new vscode.ThemeIcon('eye');
-      } else {
-        item.iconPath = new vscode.ThemeIcon('gear');
       }
+      // subdirectory の場合はアイコンを設定しない（VSCodeのデフォルト展開アイコンを使用）
     }
-    // subdirectory の場合はアイコンを設定しない（VSCodeのデフォルト展開アイコンを使用）
 
     // ファイルの場合はクリックで開く、ディレクトリの場合はREADME.mdを開く
-    if (!isDirectory) {
+    // ただし、欠損ファイルは開くことができない
+    if (!isDirectory && element.isMissing !== true) {
       item.command = {
         command: 'vscode.open',
         title: 'Open',
         arguments: [vscode.Uri.file(element.path)],
       };
-    } else {
+    } else if (isDirectory && element.isMissing !== true) {
       // ディレクトリの場合は.dialogoi-meta.yamlで指定されたreadmeファイルを開く
       const readmeFilePath = await this.getReadmeFilePath(element.path);
       if (readmeFilePath !== null) {
@@ -296,23 +316,20 @@ export class DialogoiTreeDataProvider
       }
     }
 
-    // タグとレビュー数の表示
-    const descriptionParts: string[] = [];
+    // タグとレビュー数の表示（ファイル状態表示がない場合のみ）
+    if (element.isMissing !== true && element.isUntracked !== true) {
+      const descriptionParts: string[] = [];
 
-    // タグの表示
-    if (element.tags !== undefined && element.tags.length > 0) {
-      const tagString = element.tags.map((tag) => `#${tag}`).join(' ');
-      descriptionParts.push(tagString);
-    }
+      // タグの表示
+      if (element.tags !== undefined && element.tags.length > 0) {
+        const tagString = element.tags.map((tag) => `#${tag}`).join(' ');
+        descriptionParts.push(tagString);
+      }
 
-    // レビュー数の表示
-    if (element.review_count?.open !== undefined && element.review_count.open > 0) {
-      descriptionParts.push(`(${element.review_count.open} レビュー)`);
-    }
-
-    // descriptionを設定
-    if (descriptionParts.length > 0) {
-      item.description = descriptionParts.join(' ');
+      // descriptionを設定
+      if (descriptionParts.length > 0) {
+        item.description = descriptionParts.join(' ');
+      }
     }
 
     // tooltipの設定（タグと参照関係）
@@ -368,28 +385,47 @@ export class DialogoiTreeDataProvider
       return cached;
     }
 
-    const metaYamlService = ServiceContainer.getInstance().getMetaYamlService();
-    const meta = await metaYamlService.loadMetaYamlAsync(dirPath);
+    // FileStatusServiceを使用して3状態のファイルを取得
+    const fileStatusService = ServiceContainer.getInstance().getFileStatusService();
+    const dialogoiYamlService = ServiceContainer.getInstance().getDialogoiYamlService();
 
-    if (meta === null) {
-      this.logger.warn(`loadMetaYaml: ${dirPath} のメタデータが見つかりません`);
-      return [];
+    // プロジェクトルートから除外パターンを取得
+    let excludePatterns: string[] = [];
+    if (this.novelRoot !== null && this.novelRoot !== undefined && this.novelRoot !== '') {
+      excludePatterns = await dialogoiYamlService.getExcludePatternsAsync(this.novelRoot);
     }
 
-    // ファイルの絶対パスを設定
-    const result = meta.files.map((file) => ({
-      ...file,
-      path: path.join(dirPath, file.name),
-    }));
+    try {
+      const statusList = await fileStatusService.getFileStatusList(dirPath);
 
-    // キャッシュに保存
-    this.loadMetaYamlCache.set(cacheKey, result);
-    this.cacheExpiry.set(cacheKey, now + this.CACHE_DURATION);
+      // 除外パターンにマッチするファイルをフィルタリング（選択肢A: 表示しない）
+      const filteredStatusList = statusList.filter((statusInfo) => {
+        return !fileStatusService.isExcluded(statusInfo.name, excludePatterns);
+      });
 
-    this.logger.info(
-      `${dirPath} から ${result.length}個のアイテムを読み込みました（キャッシュに保存）`,
-    );
-    return result;
+      // FileStatusInfoをDialogoiTreeItemに変換
+      const result = filteredStatusList.map((statusInfo) => {
+        const treeItem = fileStatusService.statusInfoToTreeItem(statusInfo);
+        // 絶対パスを設定（statusInfoToTreeItemで既に設定されているが念のため）
+        treeItem.path = statusInfo.absolutePath;
+        return treeItem;
+      });
+
+      // キャッシュに保存
+      this.loadMetaYamlCache.set(cacheKey, result);
+      this.cacheExpiry.set(cacheKey, now + this.CACHE_DURATION);
+
+      this.logger.info(
+        `${dirPath} から ${result.length}個のアイテムを読み込みました（管理対象: ${filteredStatusList.filter((s) => s.status === FileStatus.Managed).length}, 未追跡: ${filteredStatusList.filter((s) => s.status === FileStatus.Untracked).length}, 欠損: ${filteredStatusList.filter((s) => s.status === FileStatus.Missing).length}）`,
+      );
+      return result;
+    } catch (error) {
+      this.logger.error(
+        `loadMetaYaml: ${dirPath} の読み込みエラー`,
+        error instanceof Error ? error : String(error),
+      );
+      return [];
+    }
   }
 
   private async getReadmeFilePath(dirPath: string): Promise<string | null> {
@@ -599,31 +635,6 @@ export class DialogoiTreeDataProvider
       tooltipParts.push('• 詳細はPhase 3で実装予定');
     }
 
-    // レビュー情報
-    if (element.review_count) {
-      const reviewSummary: string[] = [];
-      if (element.review_count.open > 0) {
-        reviewSummary.push(`未対応: ${element.review_count.open}`);
-      }
-      if (element.review_count.in_progress !== undefined && element.review_count.in_progress > 0) {
-        reviewSummary.push(`対応中: ${element.review_count.in_progress}`);
-      }
-      if (element.review_count.resolved !== undefined && element.review_count.resolved > 0) {
-        reviewSummary.push(`解決済み: ${element.review_count.resolved}`);
-      }
-      if (element.review_count.dismissed !== undefined && element.review_count.dismissed > 0) {
-        reviewSummary.push(`却下: ${element.review_count.dismissed}`);
-      }
-
-      if (reviewSummary.length > 0) {
-        tooltipParts.push('');
-        tooltipParts.push('レビュー:');
-        reviewSummary.forEach((summary) => {
-          tooltipParts.push(`• ${summary}`);
-        });
-      }
-    }
-
     // tooltipを設定
     if (tooltipParts.length > 0) {
       item.tooltip = tooltipParts.join('\n');
@@ -759,6 +770,17 @@ export class DialogoiTreeDataProvider
 
   private getContextValue(element: DialogoiTreeItem): string {
     const baseValue = element.type === 'subdirectory' ? 'dialogoi-directory' : 'dialogoi-file';
+
+    // ファイル状態に基づくコンテキスト値の設定
+    if (element.isMissing === true) {
+      return element.type === 'subdirectory'
+        ? 'dialogoi-directory-missing'
+        : 'dialogoi-file-missing';
+    } else if (element.isUntracked === true) {
+      return element.type === 'subdirectory'
+        ? 'dialogoi-directory-untracked'
+        : 'dialogoi-file-untracked';
+    }
 
     if (element.type === 'subdirectory') {
       return baseValue;

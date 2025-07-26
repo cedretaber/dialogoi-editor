@@ -332,10 +332,7 @@ export class ProjectSettingsWebviewPanel {
       this.logger.debug('Closing project settings panel');
       this.dispose();
     } catch (error) {
-      this.logger.error(
-        'Error closing panel',
-        error instanceof Error ? error : String(error),
-      );
+      this.logger.error('Error closing panel', error instanceof Error ? error : String(error));
     }
   }
 

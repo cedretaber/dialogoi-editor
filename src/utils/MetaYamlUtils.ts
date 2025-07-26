@@ -1,4 +1,3 @@
-import * as path from 'path';
 import * as yaml from 'js-yaml';
 
 export interface ForeshadowingPoint {
@@ -13,13 +12,7 @@ export interface DialogoiTreeItem {
   hash?: string;
   tags?: string[];
   references?: string[];
-  reviews?: string;
-  review_count?: {
-    open: number;
-    in_progress?: number;
-    resolved?: number;
-    dismissed?: number;
-  };
+  comments?: string; // コメントファイルのパス
   glossary?: boolean;
   character?: {
     importance: 'main' | 'sub' | 'background';
@@ -30,6 +23,9 @@ export interface DialogoiTreeItem {
     plants: ForeshadowingPoint[];
     payoff: ForeshadowingPoint;
   };
+  // ファイル状態フラグ（FileStatusServiceとの連携用）
+  isUntracked?: boolean; // 未追跡ファイル
+  isMissing?: boolean; // 欠損ファイル
 }
 
 export interface MetaYaml {
@@ -133,18 +129,6 @@ export class MetaYamlUtils {
     }
 
     return errors;
-  }
-
-  /**
-   * レビューファイルのパスを生成
-   */
-  static generateReviewFilePath(targetRelativeFilePath: string): string {
-    const fileName = path.basename(targetRelativeFilePath);
-    const dirName = path.dirname(targetRelativeFilePath);
-    const reviewFileName = `${fileName}_reviews.yaml`;
-
-    // 対象ファイルと同じディレクトリに配置
-    return path.join(dirName, reviewFileName);
   }
 
   /**

@@ -59,26 +59,26 @@ export const ProjectSettingsApp: React.FC = () => {
             // 新規プロジェクトの場合はデフォルト値を設定
             // 新規プロジェクトのデフォルト値
             const defaultExcludePatterns = [
-              '.*',                 // 隠しファイル・ディレクトリ
-              '.DS_Store',          // macOS システムファイル
-              'Thumbs.db',          // Windows システムファイル
-              'desktop.ini',        // Windows システムファイル
-              '$RECYCLE.BIN',       // Windows ゴミ箱
-              '.Trash',             // macOS ゴミ箱
-              '.git',               // Git リポジトリ
-              '.gitignore',         // Git 設定
-              '.hg',                // Mercurial
-              '.svn',               // Subversion
-              '*.tmp',              // 一時ファイル
-              '*.temp',             // 一時ファイル
-              '*.log',              // ログファイル
-              '*.bak',              // バックアップファイル
-              '*.old',              // 古いファイル
-              'node_modules',       // Node.js 依存関係
-              'dist',               // ビルド成果物
-              'build',              // ビルド成果物
+              '.*', // 隠しファイル・ディレクトリ
+              '.DS_Store', // macOS システムファイル
+              'Thumbs.db', // Windows システムファイル
+              'desktop.ini', // Windows システムファイル
+              '$RECYCLE.BIN', // Windows ゴミ箱
+              '.Trash', // macOS ゴミ箱
+              '.git', // Git リポジトリ
+              '.gitignore', // Git 設定
+              '.hg', // Mercurial
+              '.svn', // Subversion
+              '*.tmp', // 一時ファイル
+              '*.temp', // 一時ファイル
+              '*.log', // ログファイル
+              '*.bak', // バックアップファイル
+              '*.old', // 古いファイル
+              'node_modules', // Node.js 依存関係
+              'dist', // ビルド成果物
+              'build', // ビルド成果物
             ];
-            
+
             setFormData({
               title: '',
               author: '',

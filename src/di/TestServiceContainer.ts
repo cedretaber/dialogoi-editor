@@ -25,6 +25,8 @@ import { IServiceContainer } from './ServiceContainer.js';
 import { SettingsRepository } from '../repositories/SettingsRepository.js';
 import { DialogoiSettingsService } from '../services/DialogoiSettingsService.js';
 import { ProjectSettingsService } from '../services/ProjectSettingsService.js';
+import { FileStatusService } from '../services/FileStatusService.js';
+import { FileManagementService } from '../services/FileManagementService.js';
 import { Logger } from '../utils/Logger.js';
 
 /**
@@ -50,6 +52,8 @@ export class TestServiceContainer implements IServiceContainer {
   private settingsRepository: SettingsRepository | null = null;
   private dialogoiSettingsService: DialogoiSettingsService | null = null;
   private projectSettingsService: ProjectSettingsService | null = null;
+  private fileStatusService: FileStatusService | null = null;
+  private fileManagementService: FileManagementService | null = null;
 
   private constructor() {
     // テスト環境では常にMockFileRepositoryを使用
@@ -289,6 +293,24 @@ export class TestServiceContainer implements IServiceContainer {
       this.projectSettingsService = new ProjectSettingsService(dialogoiYamlService, logger);
     }
     return this.projectSettingsService;
+  }
+
+  getFileStatusService(): FileStatusService {
+    if (!this.fileStatusService) {
+      const fileRepository = this.getFileRepository();
+      const metaYamlService = this.getMetaYamlService();
+      this.fileStatusService = new FileStatusService(fileRepository, metaYamlService);
+    }
+    return this.fileStatusService;
+  }
+
+  getFileManagementService(): FileManagementService {
+    if (!this.fileManagementService) {
+      const fileRepository = this.getFileRepository();
+      const metaYamlService = this.getMetaYamlService();
+      this.fileManagementService = new FileManagementService(fileRepository, metaYamlService);
+    }
+    return this.fileManagementService;
   }
 
   /**
