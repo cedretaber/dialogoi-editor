@@ -9,6 +9,7 @@ import { registerFilterCommands } from './commands/filterCommands.js';
 import { registerProjectCommands } from './commands/projectCommands.js';
 import { registerDropCommands } from './commands/dropCommands.js';
 import { registerEditorCommentCommands } from './commands/editorCommentCommands.js';
+import { registerFileTypeConversionCommands } from './commands/fileTypeConversionCommands.js';
 import { FileDetailsViewProvider } from './providers/FileDetailsViewProvider.js';
 import { CommentsViewProvider } from './providers/CommentsViewProvider.js';
 import { VSCodeServiceContainer } from './di/VSCodeServiceContainer.js';
@@ -166,6 +167,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     registerForeshadowingCommands(context, treeDataProvider);
     registerDropCommands(context);
     registerEditorCommentCommands(context, commentsProvider);
+    registerFileTypeConversionCommands(context);
 
     context.subscriptions.push(treeView, refreshCommand);
   } catch (error) {

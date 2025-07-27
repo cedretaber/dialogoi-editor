@@ -302,9 +302,12 @@ export class FileDetailsViewProvider implements vscode.WebviewViewProvider {
             // 現在のアイテムを最新データで更新
             return {
               ...this.currentItem,
+              type: fileItem.type, // 重要：種別変更を反映
               tags: fileItem.tags || [],
               references: fileItem.references || [],
               character: fileItem.character,
+              glossary: fileItem.glossary,
+              foreshadowing: fileItem.foreshadowing,
             };
           }
         }
@@ -544,10 +547,15 @@ export class FileDetailsViewProvider implements vscode.WebviewViewProvider {
         : null;
 
       if (this._view !== undefined && this._view.webview !== undefined) {
+        this.logger.debug(
+          `WebViewにupdateFileメッセージ送信: ${item?.name ?? 'null'} (type: ${item?.type ?? 'null'})`,
+        );
         this._view.webview.postMessage({
           type: 'updateFile',
           data: fileDetailsData,
         });
+      } else {
+        this.logger.warn('WebViewが利用できないためupdateFileメッセージを送信できません');
       }
     }
   }

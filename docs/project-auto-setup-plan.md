@@ -106,31 +106,52 @@ interface FileRegistrationOptions {
 }
 ```
 
-### Phase 3: 個別ファイル種別変更機能の実装
+### ✅ Phase 3: 個別ファイル種別変更機能の実装（完了）
 
-#### 3.1 右クリックメニューに種別変更機能追加
+#### ✅ 3.1 右クリックメニューに種別変更機能追加（実装完了）
 ```typescript
-// 新規コマンド
+// 実装済みコマンド
 - dialogoi.convertFileType    // ファイル種別変更（content ↔ setting）
 ```
 
-#### 3.2 種別変換機能の実装
+**実装内容:**
+- `src/commands/fileTypeConversionCommands.ts` - コマンドハンドラ実装
+- `package.json` - コンテキストメニュー統合
+- TreeViewの管理対象ファイルで右クリックメニュー表示
+
+#### ✅ 3.2 種別変換機能の実装（実装完了）
 ```typescript
+// 実装済み: src/services/FileTypeConversionService.ts
 interface FileTypeConversionService {
   /**
    * ファイルの種別を変更（content ↔ setting）
    */
   convertFileType(filePath: string, newType: 'content' | 'setting'): Promise<ConversionResult>;
+  
+  /**
+   * ファイルの現在の種別を取得
+   */
+  getCurrentFileType(filePath: string): Promise<'content' | 'setting' | null>;
+  
+  /**
+   * ファイルが種別変更可能かチェック
+   */
+  isFileTypeConvertible(filePath: string): Promise<boolean>;
 }
 ```
 
-#### 3.3 種別変更UI
-- **対象**: 管理対象ファイル（通常の状態のファイル）
+**技術実装:**
+- meta.yamlファイルの更新処理
+- プロジェクト内ファイル検索機能
+- 再帰的なディレクトリ検索
+- ファイル変更通知システム連携
+
+#### ✅ 3.3 種別変更UI（実装完了）
+- **対象**: 管理対象ファイル（content または setting）
 - **操作**: 右クリック → 「種別を変更」
-- **選択肢**: 
-  - content → setting
-  - setting → content
+- **動作**: 自動で逆の種別に変更（content → setting / setting → content）
 - **確認**: 変更内容の確認ダイアログ表示
+- **更新**: TreeViewとファイル詳細パネルの即座更新
 
 ### ✅ Phase 4: プロジェクト作成フローの統合（完了）
 
@@ -184,17 +205,18 @@ interface ProjectSetupOptions {
 
 ## 実装状況サマリー
 
-### ✅ 完了済み機能（Sprint 1-2）
+### ✅ 完了済み機能（Sprint 1-3）
 1. **ディレクトリ一括追加機能の完全削除** - 複雑なWebView UIを排除
 2. **ProjectAutoSetupService実装** - 自動プロジェクト構造セットアップ
 3. **ProjectSetupService実装** - 高レベル統合オーケストレーター
-4. **循環依存解決** - アーキテクチャの最適化
-5. **包括的テストカバレッジ** - 464個のサーバサイドテスト + 223個のReactテスト
+4. **FileTypeConversionService実装** - 個別ファイル種別変更機能（content ↔ setting）
+5. **循環依存解決** - アーキテクチャの最適化
+6. **包括的テストカバレッジ** - 517個のサーバサイドテスト + 223個のReactテスト
 
-### 🔄 次期実装予定（Sprint 3-4）
-1. **FileTypeConversionService** - 個別ファイル種別変更機能
-2. **プログレス表示機能** - 長時間処理の可視化
-3. **エラーハンドリング強化** - より親切なエラーメッセージ
+### 🔄 次期実装予定（Sprint 4-5）
+1. **プログレス表示機能** - 長時間処理の可視化
+2. **エラーハンドリング強化** - より親切なエラーメッセージ
+3. **C2-基本機能** - ディレクトリ管理ファイル自動生成（上書きなし）
 
 ### 📊 品質指標
 - **型安全性**: TypeScript strict mode 完全準拠
@@ -396,15 +418,18 @@ await vscode.window.withProgress({
    - [ ] プログレス表示の実装
    - [ ] エラーハンドリングの実装
 
-### Sprint 3: 種別変換機能の実装（優先度: 中）
+### Sprint 3: 種別変換機能の実装（優先度: 中）✅ **完了**
 1. **FileTypeConversionServiceの実装**
-   - [ ] content ↔ setting 変換機能
-   - [ ] 単体テストの作成
+   - [x] content ↔ setting 変換機能
+   - [x] 単体テストの作成（15テスト）
+   - [x] プロジェクト内ファイル検索機能
+   - [x] 再帰的ディレクトリ検索
    
 2. **UI統合**
-   - [ ] 右クリックメニューに種別変更追加
-   - [ ] コマンドハンドラの実装
-   - [ ] TreeView自動更新
+   - [x] 右クリックメニューに種別変更追加
+   - [x] コマンドハンドラの実装
+   - [x] TreeView自動更新
+   - [x] ファイル詳細パネル即座更新
 
 ### Sprint 4: 品質保証と最適化（優先度: 低）
 1. **テスト作成**
@@ -419,18 +444,18 @@ await vscode.window.withProgress({
 ## 成功指標
 
 ### 機能面
-- [ ] プロジェクト作成時に全ファイルが自動登録される
-- [ ] ファイル種別が適切に自動判定される
-- [ ] ファイル種別の手動変更が可能
-- [ ] 除外パターンが正しく適用される
+- [x] プロジェクト作成時に全ファイルが自動登録される
+- [x] ファイル種別が適切に自動判定される
+- [x] ファイル種別の手動変更が可能
+- [x] 除外パターンが正しく適用される
 
 ### パフォーマンス面
 - [ ] 100ファイル以下: 3秒以内でセットアップ完了
 - [ ] 1000ファイル以下: 10秒以内でセットアップ完了
 
 ### UX面
-- [ ] プロジェクト作成後すぐに執筆開始可能
-- [ ] 種別変更が直感的に操作可能
+- [x] プロジェクト作成後すぐに執筆開始可能
+- [x] 種別変更が直感的に操作可能
 - [ ] エラー発生時の適切な情報表示
 
 ## リスク管理

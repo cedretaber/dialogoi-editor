@@ -19,6 +19,8 @@ import { ProjectSettingsService } from '../services/ProjectSettingsService.js';
 import { FileStatusService } from '../services/FileStatusService.js';
 import { FileManagementService } from '../services/FileManagementService.js';
 import { FileTypeDetectionService } from '../services/FileTypeDetectionService.js';
+import { FileTypeConversionService } from '../services/FileTypeConversionService.js';
+import { ProjectPathService } from '../services/ProjectPathService.js';
 import { ProjectAutoSetupService } from '../services/ProjectAutoSetupService.js';
 import { ProjectSetupService } from '../services/ProjectSetupService.js';
 import { Logger } from '../utils/Logger.js';
@@ -49,8 +51,10 @@ export interface IServiceContainer {
   getFileStatusService(): FileStatusService;
   getFileManagementService(): FileManagementService;
   getFileTypeDetectionService(): FileTypeDetectionService;
+  getFileTypeConversionService(): FileTypeConversionService;
   getProjectAutoSetupService(): ProjectAutoSetupService;
   getProjectSetupService(): ProjectSetupService;
+  getProjectPathService(): ProjectPathService;
   reset(): void;
 }
 
@@ -80,8 +84,10 @@ export class ServiceContainer implements IServiceContainer {
   private fileStatusService: FileStatusService | null = null;
   private fileManagementService: FileManagementService | null = null;
   private fileTypeDetectionService: FileTypeDetectionService | null = null;
+  private fileTypeConversionService: FileTypeConversionService | null = null;
   private projectAutoSetupService: ProjectAutoSetupService | null = null;
   private projectSetupService: ProjectSetupService | null = null;
+  private projectPathService: ProjectPathService | null = null;
 
   protected constructor() {}
 
@@ -314,8 +320,10 @@ export class ServiceContainer implements IServiceContainer {
     this.fileStatusService = null;
     this.fileManagementService = null;
     this.fileTypeDetectionService = null;
+    this.fileTypeConversionService = null;
     this.projectAutoSetupService = null;
     this.projectSetupService = null;
+    this.projectPathService = null;
   }
 
   getSettingsRepository(): SettingsRepository {
@@ -371,6 +379,18 @@ export class ServiceContainer implements IServiceContainer {
     return this.fileTypeDetectionService;
   }
 
+  getFileTypeConversionService(): FileTypeConversionService {
+    if (!this.fileTypeConversionService) {
+      const fileRepository = this.getFileRepository();
+      const metaYamlService = this.getMetaYamlService();
+      this.fileTypeConversionService = new FileTypeConversionService(
+        fileRepository,
+        metaYamlService,
+      );
+    }
+    return this.fileTypeConversionService;
+  }
+
   getProjectAutoSetupService(): ProjectAutoSetupService {
     if (!this.projectAutoSetupService) {
       const fileRepository = this.getFileRepository();
@@ -397,6 +417,14 @@ export class ServiceContainer implements IServiceContainer {
       );
     }
     return this.projectSetupService;
+  }
+
+  getProjectPathService(): ProjectPathService {
+    if (!this.projectPathService) {
+      const dialogoiYamlService = this.getDialogoiYamlService();
+      this.projectPathService = new ProjectPathService(dialogoiYamlService);
+    }
+    return this.projectPathService;
   }
 
   /**

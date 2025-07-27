@@ -35,7 +35,9 @@ export const FileDetailsApp: React.FC = () => {
     };
 
     window.addEventListener('message', handleMessage);
-    return (): void => window.removeEventListener('message', handleMessage);
+    return (): void => {
+      window.removeEventListener('message', handleMessage);
+    };
   }, []);
 
   // ファイルデータが変更されたら編集状態をリセット

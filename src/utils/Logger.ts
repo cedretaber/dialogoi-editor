@@ -7,9 +7,10 @@ export class Logger {
   private debugMode: boolean;
 
   private constructor() {
-    // NODE_ENVでデバッグモードを判定
-    this.debugMode =
-      process.env['NODE_ENV'] === 'development' || process.env['NODE_ENV'] === 'test';
+    // NODE_ENVでデバッグモードを判定（一時的にデバッグを強制有効化）
+    this.debugMode = true;
+    // this.debugMode =
+    //   process.env['NODE_ENV'] === 'development' || process.env['NODE_ENV'] === 'test';
   }
 
   /**

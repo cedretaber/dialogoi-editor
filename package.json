@@ -187,6 +187,11 @@
         "category": "Dialogoi"
       },
       {
+        "command": "dialogoi.convertFileType",
+        "title": "ファイル種別を変更",
+        "icon": "$(symbol-property)"
+      },
+      {
         "command": "dialogoi.addCommentFromSelection",
         "title": "ここにコメントを追加",
         "icon": "$(comment)",
@@ -281,6 +286,11 @@
           "command": "dialogoi.editReferences",
           "when": "view == dialogoi-explorer && viewItem =~ /^dialogoi-file/",
           "group": "5_references"
+        },
+        {
+          "command": "dialogoi.convertFileType",
+          "when": "view == dialogoi-explorer && (viewItem =~ /^dialogoi-file-(content|setting)($|-)/ && viewItem != dialogoi-file-missing && viewItem != dialogoi-file-untracked)",
+          "group": "6_filetype"
         },
         {
           "command": "dialogoi.editCharacterImportance",

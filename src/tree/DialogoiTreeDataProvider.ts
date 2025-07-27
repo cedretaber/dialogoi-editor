@@ -299,20 +299,34 @@ export class DialogoiTreeDataProvider
     // ファイルの場合はクリックで開く、ディレクトリの場合はREADME.mdを開く
     // ただし、欠損ファイルは開くことができない
     if (!isDirectory && element.isMissing !== true) {
+      // 相対パスを絶対パスに変換
+      const absolutePath = path.isAbsolute(element.path)
+        ? element.path
+        : path.join(this.workspaceRoot, element.path);
+      const fileUri = vscode.Uri.file(absolutePath);
       item.command = {
         command: 'vscode.open',
         title: 'Open',
-        arguments: [vscode.Uri.file(element.path)],
+        arguments: [fileUri],
       };
+      // コンテキストメニューで使用するためのresourceUriを設定
+      item.resourceUri = fileUri;
     } else if (isDirectory && element.isMissing !== true) {
       // ディレクトリの場合は.dialogoi-meta.yamlで指定されたreadmeファイルを開く
       const readmeFilePath = await this.getReadmeFilePath(element.path);
       if (readmeFilePath !== null) {
+        // readmeFilePathも絶対パスに変換
+        const absoluteReadmePath = path.isAbsolute(readmeFilePath)
+          ? readmeFilePath
+          : path.join(this.workspaceRoot, readmeFilePath);
+        const readmeUri = vscode.Uri.file(absoluteReadmePath);
         item.command = {
           command: 'vscode.open',
           title: 'Open README',
-          arguments: [vscode.Uri.file(readmeFilePath)],
+          arguments: [readmeUri],
         };
+        // ディレクトリの場合もresourceUriを設定（readmeファイルのパス）
+        item.resourceUri = readmeUri;
       }
     }
 

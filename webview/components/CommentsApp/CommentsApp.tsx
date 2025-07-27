@@ -1,53 +1,18 @@
 import React, { useState, useEffect } from 'react';
 import { useVSCodeApi } from '../../hooks/useVSCodeApi';
 import { CommentItem } from './CommentItem';
-
-/**
- * コメントアイテムの型定義（新データ構造対応）
- */
-interface CommentItemData {
-  id: number;
-  target_file: string; // "contents/chapter1.txt#L42" 形式
-  file_hash: string;
-  content: string;
-  posted_by: string;
-  status: 'open' | 'resolved';
-  created_at: string;
-  updated_at?: string; // オプショナルフィールド
-}
-
-/**
- * VSCodeからのメッセージの型定義
- */
-interface UpdateCommentsMessage {
-  type: 'updateComments';
-  data: {
-    fileName: string;
-    filePath: string | null;
-    comments: CommentItemData[];
-    isFileChanged: boolean;
-  };
-}
-
-interface ErrorMessage {
-  type: 'error';
-  message: string;
-}
-
-interface StartEditingCommentMessage {
-  type: 'startEditingComment';
-  data: {
-    commentIndex: number;
-  };
-}
-
-type VSCodeMessage = UpdateCommentsMessage | ErrorMessage | StartEditingCommentMessage;
+import type {
+  CommentItemData,
+  VSCodeToWebViewMessage,
+  WebViewToVSCodeMessage,
+} from '../../types/Comments';
 
 /**
  * コメント・TODOアプリコンポーネント
  */
 export const CommentsApp: React.FC = () => {
-  const vscode = useVSCodeApi();
+  // useVSCodeApiフックでready messageを自動送信するように設定
+  const { postMessage } = useVSCodeApi<WebViewToVSCodeMessage>({ type: 'ready' });
   const [fileName, setFileName] = useState<string>('');
   const [filePath, setFilePath] = useState<string | null>(null);
   const [comments, setComments] = useState<CommentItemData[]>([]);
@@ -64,7 +29,7 @@ export const CommentsApp: React.FC = () => {
 
   // VSCodeからのメッセージを監視
   useEffect((): (() => void) => {
-    const handleMessage = (event: MessageEvent<VSCodeMessage>): void => {
+    const handleMessage = (event: MessageEvent<VSCodeToWebViewMessage>): void => {
       const message = event.data;
 
       switch (message.type) {
@@ -88,11 +53,6 @@ export const CommentsApp: React.FC = () => {
     window.addEventListener('message', handleMessage);
     return () => window.removeEventListener('message', handleMessage);
   }, []);
-
-  // コンポーネントマウント時にreadyメッセージを送信
-  useEffect(() => {
-    vscode.postMessage({ type: 'ready' });
-  }, [vscode]);
 
   /**
    * コメント追加フォームを表示
@@ -128,7 +88,7 @@ export const CommentsApp: React.FC = () => {
       return;
     }
 
-    vscode.postMessage({
+    postMessage({
       type: 'addComment',
       payload: { line, content: newCommentContent.trim() },
     });
@@ -144,7 +104,7 @@ export const CommentsApp: React.FC = () => {
    * 行ジャンプ
    */
   const handleJumpToLine = (line: number, endLine?: number): void => {
-    vscode.postMessage({
+    postMessage({
       type: 'jumpToLine',
       payload: { line, endLine },
     });
@@ -154,7 +114,7 @@ export const CommentsApp: React.FC = () => {
    * コメントステータス切り替え
    */
   const handleToggleStatus = (commentIndex: number): void => {
-    vscode.postMessage({
+    postMessage({
       type: 'toggleCommentStatus',
       payload: { commentIndex },
     });
@@ -164,7 +124,7 @@ export const CommentsApp: React.FC = () => {
    * コメント削除
    */
   const handleDeleteComment = (commentIndex: number): void => {
-    vscode.postMessage({
+    postMessage({
       type: 'deleteComment',
       payload: { commentIndex },
     });
@@ -174,7 +134,7 @@ export const CommentsApp: React.FC = () => {
    * コメント編集
    */
   const handleEditComment = (commentIndex: number, content: string): void => {
-    vscode.postMessage({
+    postMessage({
       type: 'updateComment',
       payload: { commentIndex, content },
     });

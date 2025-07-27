@@ -1,5 +1,4 @@
 import * as vscode from 'vscode';
-import * as path from 'path';
 import { CommentsViewProvider } from '../providers/CommentsViewProvider.js';
 import { ServiceContainer } from '../di/ServiceContainer.js';
 import { Logger } from '../utils/Logger.js';
@@ -71,7 +70,9 @@ async function handleAddCommentFromSelection(
   const absoluteFilePath = document.uri.fsPath;
 
   // プロジェクトルートからの相対パスを計算
-  const pathResult = await getRelativePathFromProject(absoluteFilePath);
+  const container = ServiceContainer.getInstance();
+  const projectPathService = container.getProjectPathService();
+  const pathResult = await projectPathService.getRelativePathFromProject(absoluteFilePath);
   if (pathResult === null || pathResult.relativePath === null || pathResult.relativePath === '') {
     vscode.window.showWarningMessage('このファイルはDialogoiプロジェクト内にありません');
     return;
@@ -96,7 +97,6 @@ async function handleAddCommentFromSelection(
   };
 
   // 6. CommentServiceでコメント追加
-  const container = ServiceContainer.getInstance();
   const projectRootUri = container.getFileRepository().createFileUri(projectRoot);
   const commentService = container.getCommentService(projectRootUri);
 
@@ -120,52 +120,5 @@ async function handleAddCommentFromSelection(
       error instanceof Error ? error : String(error),
     );
     throw error;
-  }
-}
-
-/**
- * 絶対ファイルパスからプロジェクトルートと相対パスを取得
- * @param absoluteFilePath 絶対ファイルパス
- * @returns プロジェクトルートと相対パス（見つからない場合はnull）
- */
-async function getRelativePathFromProject(
-  absoluteFilePath: string,
-): Promise<{ projectRoot: string; relativePath: string } | null> {
-  const logger = Logger.getInstance();
-
-  try {
-    // ServiceContainerからDialogoiYamlServiceを取得
-    const container = ServiceContainer.getInstance();
-    const dialogoiYamlService = container.getDialogoiYamlService();
-
-    logger.debug(`検索開始パス: ${absoluteFilePath}`);
-
-    // プロジェクトルートを検索（上向き検索）
-    const projectRoot = await dialogoiYamlService.findProjectRootAsync(absoluteFilePath);
-    logger.debug(`プロジェクトルート検索結果: ${projectRoot}`);
-    if (projectRoot === null || projectRoot === '') {
-      logger.debug(`プロジェクトルートが見つかりません: ${absoluteFilePath}`);
-      return null;
-    }
-
-    // 相対パスを計算
-    const relativePath = path.relative(projectRoot, absoluteFilePath);
-
-    // パスが上位ディレクトリを参照している場合（../が含まれる場合）は無効
-    if (relativePath.startsWith('..')) {
-      logger.debug(`ファイルがプロジェクト外にあります: ${absoluteFilePath}`);
-      return null;
-    }
-
-    // パス区切り文字をスラッシュに統一（Windows対応）
-    const normalizedRelativePath = relativePath.replace(/\\/g, '/');
-
-    return {
-      projectRoot,
-      relativePath: normalizedRelativePath,
-    };
-  } catch (error) {
-    logger.warn(`相対パス計算エラー: ${error instanceof Error ? error.message : String(error)}`);
-    return null;
   }
 }
