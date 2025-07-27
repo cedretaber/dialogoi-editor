@@ -759,4 +759,100 @@ files: []`;
       assert.strictEqual(removeResult, true); // タグがない場合は成功とする仕様
     });
   });
+
+  suite('moveFileInMetadata', () => {
+    test('同じディレクトリ内でのファイル並び替え', async () => {
+      const testDir = '/test/project';
+      const meta: MetaYaml = {
+        readme: 'README.md',
+        files: [
+          { name: 'file1.txt', type: 'content', path: `${testDir}/file1.txt` },
+          { name: 'file2.txt', type: 'content', path: `${testDir}/file2.txt` },
+          { name: 'file3.txt', type: 'content', path: `${testDir}/file3.txt` },
+        ],
+      };
+
+      mockFileRepository.addDirectory(testDir);
+      await service.saveMetaYamlAsync(testDir, meta);
+
+      // file1.txt（インデックス0）をインデックス2に移動
+      const result = await service.moveFileInMetadata(testDir, testDir, 'file1.txt', 2);
+
+      assert.strictEqual(result.success, true);
+
+      // メタデータを再読み込みして順序を確認
+      const updatedMeta = await service.loadMetaYamlAsync(testDir);
+      assert.notStrictEqual(updatedMeta, null);
+
+      if (updatedMeta !== null) {
+        assert.strictEqual(updatedMeta.files.length, 3);
+        assert.strictEqual(updatedMeta.files[0]?.name, 'file2.txt');
+        assert.strictEqual(updatedMeta.files[1]?.name, 'file3.txt');
+        assert.strictEqual(updatedMeta.files[2]?.name, 'file1.txt');
+      }
+    });
+
+    test('異なるディレクトリ間でのファイル移動', async () => {
+      const sourceDir = '/test/source';
+      const targetDir = '/test/target';
+
+      const sourceMeta: MetaYaml = {
+        readme: 'README.md',
+        files: [
+          { name: 'file1.txt', type: 'content', path: `${sourceDir}/file1.txt` },
+          { name: 'file2.txt', type: 'content', path: `${sourceDir}/file2.txt` },
+        ],
+      };
+
+      const targetMeta: MetaYaml = {
+        readme: 'README.md',
+        files: [{ name: 'file3.txt', type: 'content', path: `${targetDir}/file3.txt` }],
+      };
+
+      mockFileRepository.addDirectory(sourceDir);
+      mockFileRepository.addDirectory(targetDir);
+      await service.saveMetaYamlAsync(sourceDir, sourceMeta);
+      await service.saveMetaYamlAsync(targetDir, targetMeta);
+
+      // file1.txtを移動
+      const result = await service.moveFileInMetadata(sourceDir, targetDir, 'file1.txt', 0);
+
+      assert.strictEqual(result.success, true);
+
+      // 移動元を確認
+      const updatedSourceMeta = await service.loadMetaYamlAsync(sourceDir);
+      assert.notStrictEqual(updatedSourceMeta, null);
+      if (updatedSourceMeta !== null) {
+        assert.strictEqual(updatedSourceMeta.files.length, 1);
+        assert.strictEqual(updatedSourceMeta.files[0]?.name, 'file2.txt');
+      }
+
+      // 移動先を確認
+      const updatedTargetMeta = await service.loadMetaYamlAsync(targetDir);
+      assert.notStrictEqual(updatedTargetMeta, null);
+      if (updatedTargetMeta !== null) {
+        assert.strictEqual(updatedTargetMeta.files.length, 2);
+        assert.strictEqual(updatedTargetMeta.files[0]?.name, 'file1.txt');
+        assert.strictEqual(updatedTargetMeta.files[1]?.name, 'file3.txt');
+        // パスが更新されていることを確認
+        assert.strictEqual(updatedTargetMeta.files[0]?.path, `${targetDir}/file1.txt`);
+      }
+    });
+
+    test('同じディレクトリ内で重複ファイル移動を試行（エラーにならない）', async () => {
+      const testDir = '/test/project';
+      const meta: MetaYaml = {
+        readme: 'README.md',
+        files: [{ name: 'file1.txt', type: 'content', path: `${testDir}/file1.txt` }],
+      };
+
+      mockFileRepository.addDirectory(testDir);
+      await service.saveMetaYamlAsync(testDir, meta);
+
+      // 同じディレクトリ内で同名ファイルを移動（重複だがエラーにならない）
+      const result = await service.moveFileInMetadata(testDir, testDir, 'file1.txt', 0);
+
+      assert.strictEqual(result.success, true);
+    });
+  });
 });

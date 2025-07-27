@@ -53,6 +53,28 @@ export class FileOperationService {
   }
 
   /**
+   * パスを絶対パスに変換
+   * @param inputPath 相対パスまたは絶対パス
+   * @returns 絶対パス
+   */
+  private ensureAbsolutePath(inputPath: string): string {
+    if (path.isAbsolute(inputPath)) {
+      return inputPath;
+    }
+
+    if (
+      this.novelRootPath !== undefined &&
+      this.novelRootPath !== null &&
+      this.novelRootPath !== ''
+    ) {
+      return path.resolve(this.novelRootPath, inputPath);
+    }
+
+    // ノベルルートが設定されていない場合は、現在のディレクトリからの絶対パスとして扱う
+    return path.resolve(inputPath);
+  }
+
+  /**
    * 新しいファイルを作成し、.dialogoi-meta.yamlに追加する（同期版）
    */
   async createFile(
@@ -1095,10 +1117,16 @@ export class FileOperationService {
     newIndex?: number,
   ): Promise<FileOperationResult> {
     try {
-      const sourceFilePath = path.join(sourceDir, fileName);
-      const targetFilePath = path.join(targetDir, fileName);
+      // パスを絶対パスに正規化
+      const absoluteSourceDir = path.normalize(this.ensureAbsolutePath(sourceDir));
+      const absoluteTargetDir = path.normalize(this.ensureAbsolutePath(targetDir));
+
+      const sourceFilePath = path.join(absoluteSourceDir, fileName);
+      const targetFilePath = path.join(absoluteTargetDir, fileName);
       const sourceUri = this.fileRepository.createFileUri(sourceFilePath);
       const targetUri = this.fileRepository.createFileUri(targetFilePath);
+
+      const isReorderingInSameDirectory = absoluteSourceDir === absoluteTargetDir;
 
       // 移動元ファイルが存在しない場合はエラー
       if (!(await this.fileRepository.existsAsync(sourceUri))) {
@@ -1109,7 +1137,9 @@ export class FileOperationService {
       }
 
       // 移動先に同名ファイルが既に存在する場合はエラー
-      if (await this.fileRepository.existsAsync(targetUri)) {
+      // ただし、同じディレクトリ内での並び替えの場合は除く
+      const targetExists = await this.fileRepository.existsAsync(targetUri);
+      if (targetExists && !isReorderingInSameDirectory) {
         return {
           success: false,
           message: `移動先に同名ファイル ${fileName} が既に存在します。`,
@@ -1117,7 +1147,7 @@ export class FileOperationService {
       }
 
       // 移動元のメタデータからアイテムを取得
-      const sourceMeta = await this.metaYamlService.loadMetaYamlAsync(sourceDir);
+      const sourceMeta = await this.metaYamlService.loadMetaYamlAsync(absoluteSourceDir);
       if (sourceMeta === null) {
         return {
           success: false,
@@ -1142,7 +1172,7 @@ export class FileOperationService {
       }
 
       // 移動先ディレクトリのメタデータを取得
-      const targetMeta = await this.metaYamlService.loadMetaYamlAsync(targetDir);
+      const targetMeta = await this.metaYamlService.loadMetaYamlAsync(absoluteTargetDir);
       if (targetMeta === null) {
         return {
           success: false,
@@ -1153,8 +1183,8 @@ export class FileOperationService {
       // メタデータの更新（ロールバック対応のため、まずメタデータを更新）
       // TODO: Phase 4完了後にmoveFileInMetadataAsyncに変更
       const moveFileResult = await this.metaYamlService.moveFileInMetadata(
-        sourceDir,
-        targetDir,
+        absoluteSourceDir,
+        absoluteTargetDir,
         fileName,
         newIndex,
       );
@@ -1163,11 +1193,20 @@ export class FileOperationService {
       }
 
       try {
-        // 物理ファイルの移動
-        await this.fileRepository.renameAsync(sourceUri, targetUri);
+        // 物理ファイルの移動（同じディレクトリ内での並び替えの場合はスキップ）
+        if (!isReorderingInSameDirectory) {
+          await this.fileRepository.renameAsync(sourceUri, targetUri);
 
-        // プロジェクトルート相対パスでのリンク更新
-        if (this.linkUpdateService && this.pathNormalizationService) {
+          // コメントファイルも一緒に移動
+          await this.moveCommentFileIfExists(fileItem, absoluteSourceDir, absoluteTargetDir);
+        }
+
+        // プロジェクトルート相対パスでのリンク更新（異なるディレクトリ間での移動の場合のみ）
+        if (
+          this.linkUpdateService &&
+          this.pathNormalizationService &&
+          !isReorderingInSameDirectory
+        ) {
           const oldProjectPath =
             this.pathNormalizationService.getProjectRelativePath(sourceFilePath);
           const newProjectPath =
@@ -1625,5 +1664,51 @@ export class FileOperationService {
   async existsAsync(filePath: string): Promise<boolean> {
     const fileUri = this.fileRepository.createFileUri(filePath);
     return await this.fileRepository.existsAsync(fileUri);
+  }
+
+  /**
+   * ファイルにコメントファイルが関連付けられている場合、それも一緒に移動する
+   */
+  private async moveCommentFileIfExists(
+    fileItem: DialogoiTreeItem,
+    sourceDir: string,
+    targetDir: string,
+  ): Promise<void> {
+    // fileItemにcommentsプロパティが設定されているかチェック
+    if (
+      fileItem.comments === undefined ||
+      fileItem.comments === null ||
+      fileItem.comments.trim() === ''
+    ) {
+      return; // コメントファイルが設定されていない場合は何もしない
+    }
+
+    const commentFileName = fileItem.comments;
+    const sourceCommentPath = path.join(sourceDir, commentFileName);
+    const targetCommentPath = path.join(targetDir, commentFileName);
+
+    const sourceCommentUri = this.fileRepository.createFileUri(sourceCommentPath);
+    const targetCommentUri = this.fileRepository.createFileUri(targetCommentPath);
+
+    try {
+      // コメントファイルが実際に存在するかチェック
+      if (await this.fileRepository.existsAsync(sourceCommentUri)) {
+        // 移動先に同名のコメントファイルが既に存在するかチェック
+        if (await this.fileRepository.existsAsync(targetCommentUri)) {
+          console.warn(
+            `移動先に同名のコメントファイル ${commentFileName} が既に存在します。移動をスキップします。`,
+          );
+          return;
+        }
+
+        // コメントファイルを移動
+        await this.fileRepository.renameAsync(sourceCommentUri, targetCommentUri);
+      }
+    } catch (error) {
+      // コメントファイルの移動に失敗しても、メインファイルの移動は成功とする
+      console.warn(
+        `コメントファイル ${commentFileName} の移動に失敗しました: ${error instanceof Error ? error.message : String(error)}`,
+      );
+    }
   }
 }

@@ -277,5 +277,367 @@ suite('FileOperationService テストスイート', () => {
         assert.strictEqual(exists, true);
       });
     });
+
+    suite('moveFileAsync', () => {
+      test('ファイルを異なるディレクトリに移動する', async () => {
+        // 準備
+        const sourceDir = path.join(testDir, 'source');
+        const targetDir = path.join(testDir, 'target');
+        const fileName = 'test-file.txt';
+
+        // ディレクトリを作成
+        const sourceDirUri = mockFileRepository.createDirectoryUri(sourceDir);
+        const targetDirUri = mockFileRepository.createDirectoryUri(targetDir);
+        await mockFileRepository.createDirectoryAsync(sourceDirUri);
+        await mockFileRepository.createDirectoryAsync(targetDirUri);
+
+        // 移動元・移動先にmeta.yamlを作成
+        const sourceMeta = {
+          readme: 'README.md',
+          files: [{ name: fileName, type: 'content' as const }],
+        };
+        const targetMeta = {
+          readme: 'README.md',
+          files: [],
+        };
+
+        const sourceMetaUri = mockFileRepository.createFileUri(
+          path.join(sourceDir, '.dialogoi-meta.yaml'),
+        );
+        const targetMetaUri = mockFileRepository.createFileUri(
+          path.join(targetDir, '.dialogoi-meta.yaml'),
+        );
+        await mockFileRepository.writeFileAsync(sourceMetaUri, JSON.stringify(sourceMeta));
+        await mockFileRepository.writeFileAsync(targetMetaUri, JSON.stringify(targetMeta));
+
+        // 移動元ファイルを作成
+        const sourceFilePath = path.join(sourceDir, fileName);
+        const sourceFileUri = mockFileRepository.createFileUri(sourceFilePath);
+        await mockFileRepository.writeFileAsync(sourceFileUri, 'テスト内容');
+
+        // 実行
+        const result = await service.moveFileAsync(sourceDir, fileName, targetDir);
+
+        // 検証
+        assert.strictEqual(result.success, true);
+        assert.strictEqual(
+          result.message,
+          `${fileName} を ${sourceDir} から ${targetDir} に移動しました。`,
+        );
+
+        // ファイルが移動されていることを確認
+        const targetFilePath = path.join(targetDir, fileName);
+        const targetFileUri = mockFileRepository.createFileUri(targetFilePath);
+        const targetExists = await mockFileRepository.existsAsync(targetFileUri);
+        const sourceExists = await mockFileRepository.existsAsync(sourceFileUri);
+        assert.strictEqual(targetExists, true);
+        assert.strictEqual(sourceExists, false);
+      });
+
+      test('移動元ファイルが存在しない場合はエラーになる', async () => {
+        // 準備
+        const sourceDir = path.join(testDir, 'source');
+        const targetDir = path.join(testDir, 'target');
+        const fileName = 'nonexistent.txt';
+
+        const sourceDirUri = mockFileRepository.createDirectoryUri(sourceDir);
+        const targetDirUri = mockFileRepository.createDirectoryUri(targetDir);
+        await mockFileRepository.createDirectoryAsync(sourceDirUri);
+        await mockFileRepository.createDirectoryAsync(targetDirUri);
+
+        // 実行
+        const result = await service.moveFileAsync(sourceDir, fileName, targetDir);
+
+        // 検証
+        assert.strictEqual(result.success, false);
+        assert.strictEqual(result.message, `移動元ファイル ${fileName} が見つかりません。`);
+      });
+
+      test('相対パスでも正しく処理される', async () => {
+        // 準備: ノベルルート設定のサービスを作成
+        const serviceWithRoot = new FileOperationService(
+          mockFileRepository,
+          metaYamlService,
+          testDir,
+        );
+
+        const sourceDir = 'source'; // 相対パス
+        const targetDir = 'target'; // 相対パス
+        const fileName = 'relative-test.txt';
+
+        const absoluteSourceDir = path.join(testDir, sourceDir);
+        const absoluteTargetDir = path.join(testDir, targetDir);
+
+        const absoluteSourceDirUri = mockFileRepository.createDirectoryUri(absoluteSourceDir);
+        const absoluteTargetDirUri = mockFileRepository.createDirectoryUri(absoluteTargetDir);
+        await mockFileRepository.createDirectoryAsync(absoluteSourceDirUri);
+        await mockFileRepository.createDirectoryAsync(absoluteTargetDirUri);
+
+        // meta.yamlファイルを作成
+        const sourceMeta = {
+          readme: 'README.md',
+          files: [{ name: fileName, type: 'content' as const }],
+        };
+        const targetMeta = {
+          readme: 'README.md',
+          files: [],
+        };
+
+        const sourceMetaUri = mockFileRepository.createFileUri(
+          path.join(absoluteSourceDir, '.dialogoi-meta.yaml'),
+        );
+        const targetMetaUri = mockFileRepository.createFileUri(
+          path.join(absoluteTargetDir, '.dialogoi-meta.yaml'),
+        );
+        await mockFileRepository.writeFileAsync(sourceMetaUri, JSON.stringify(sourceMeta));
+        await mockFileRepository.writeFileAsync(targetMetaUri, JSON.stringify(targetMeta));
+
+        // 移動元ファイルを作成
+        const sourceFileUri = mockFileRepository.createFileUri(
+          path.join(absoluteSourceDir, fileName),
+        );
+        await mockFileRepository.writeFileAsync(sourceFileUri, 'テスト内容');
+
+        // 実行（相対パスで指定）
+        const result = await serviceWithRoot.moveFileAsync(sourceDir, fileName, targetDir);
+
+        // 検証
+        assert.strictEqual(result.success, true);
+
+        // ファイルが移動されていることを確認
+        const targetFileUri = mockFileRepository.createFileUri(
+          path.join(absoluteTargetDir, fileName),
+        );
+        const targetExists = await mockFileRepository.existsAsync(targetFileUri);
+        const sourceExists = await mockFileRepository.existsAsync(sourceFileUri);
+        assert.strictEqual(targetExists, true);
+        assert.strictEqual(sourceExists, false);
+      });
+
+      test('同じディレクトリ内での並び替え（ファイル移動なし）', async () => {
+        // 準備: ノベルルート設定のサービスを作成
+        const serviceWithRoot = new FileOperationService(
+          mockFileRepository,
+          metaYamlService,
+          testDir,
+        );
+
+        const dirPath = 'contents'; // 相対パス
+        const fileName = 'reorder-test.txt';
+
+        const absoluteDirPath = path.join(testDir, dirPath);
+        const absoluteDirUri = mockFileRepository.createDirectoryUri(absoluteDirPath);
+        await mockFileRepository.createDirectoryAsync(absoluteDirUri);
+
+        // meta.yamlファイルを作成
+        const meta = {
+          readme: 'README.md',
+          files: [
+            { name: fileName, type: 'content' as const },
+            { name: 'other.txt', type: 'content' as const },
+          ],
+        };
+
+        const metaUri = mockFileRepository.createFileUri(
+          path.join(absoluteDirPath, '.dialogoi-meta.yaml'),
+        );
+        await mockFileRepository.writeFileAsync(metaUri, JSON.stringify(meta));
+
+        // ファイルを作成
+        const fileUri = mockFileRepository.createFileUri(path.join(absoluteDirPath, fileName));
+        await mockFileRepository.writeFileAsync(fileUri, 'テスト内容');
+
+        const otherFileUri = mockFileRepository.createFileUri(
+          path.join(absoluteDirPath, 'other.txt'),
+        );
+        await mockFileRepository.writeFileAsync(otherFileUri, 'その他の内容');
+
+        // 実行（同じディレクトリ内での移動 = 並び替え）
+        const result = await serviceWithRoot.moveFileAsync(dirPath, fileName, dirPath, 1);
+
+        // 検証
+        assert.strictEqual(result.success, true, `操作が失敗しました: ${result.message}`);
+
+        // ファイルは物理的に移動されていないことを確認
+        const fileExists = await mockFileRepository.existsAsync(fileUri);
+        assert.strictEqual(fileExists, true);
+      });
+
+      test('コメントファイルも一緒に移動される', async () => {
+        // テストディレクトリ構造を作成
+        const sourceDir = '/test/project/source';
+        const targetDir = '/test/project/target';
+
+        const sourceDirUri = mockFileRepository.createDirectoryUri(sourceDir);
+        const targetDirUri = mockFileRepository.createDirectoryUri(targetDir);
+        await mockFileRepository.createDirectoryAsync(sourceDirUri);
+        await mockFileRepository.createDirectoryAsync(targetDirUri);
+
+        const fileName = 'test-file.txt';
+        const commentFileName = '.test-file.txt.comments.yaml';
+
+        // 移動元のmeta.yamlを作成（コメントファイル付き）
+        const sourceMeta = {
+          readme: 'README.md',
+          files: [
+            {
+              name: fileName,
+              type: 'content' as const,
+              path: path.join(sourceDir, fileName),
+              comments: commentFileName,
+            },
+          ],
+        };
+
+        const sourceMetaUri = mockFileRepository.createFileUri(
+          path.join(sourceDir, '.dialogoi-meta.yaml'),
+        );
+        await mockFileRepository.writeFileAsync(
+          sourceMetaUri,
+          MetaYamlUtils.stringifyMetaYaml(sourceMeta),
+        );
+
+        // 移動先のmeta.yamlを作成
+        const targetMeta = {
+          readme: 'README.md',
+          files: [] as Array<{
+            name: string;
+            type: 'content' | 'setting' | 'subdirectory';
+            path: string;
+            comments?: string;
+          }>,
+        };
+
+        const targetMetaUri = mockFileRepository.createFileUri(
+          path.join(targetDir, '.dialogoi-meta.yaml'),
+        );
+        await mockFileRepository.writeFileAsync(
+          targetMetaUri,
+          MetaYamlUtils.stringifyMetaYaml(targetMeta),
+        );
+
+        // 移動元にファイルとコメントファイルを作成
+        const sourceFileUri = mockFileRepository.createFileUri(path.join(sourceDir, fileName));
+        await mockFileRepository.writeFileAsync(sourceFileUri, 'テスト内容');
+
+        const sourceCommentUri = mockFileRepository.createFileUri(
+          path.join(sourceDir, commentFileName),
+        );
+        await mockFileRepository.writeFileAsync(
+          sourceCommentUri,
+          'comments:\n  - id: 1\n    content: テストコメント',
+        );
+
+        // 移動実行
+        const result = await service.moveFileAsync(sourceDir, fileName, targetDir);
+
+        // 検証
+        assert.strictEqual(result.success, true, `移動が失敗しました: ${result.message}`);
+
+        // メインファイルが移動されたことを確認
+        const sourceFileExists = await mockFileRepository.existsAsync(sourceFileUri);
+        assert.strictEqual(sourceFileExists, false, '移動元のファイルが削除されていません');
+
+        const targetFileUri = mockFileRepository.createFileUri(path.join(targetDir, fileName));
+        const targetFileExists = await mockFileRepository.existsAsync(targetFileUri);
+        assert.strictEqual(targetFileExists, true, '移動先にファイルが作成されていません');
+
+        // コメントファイルも移動されたことを確認
+        const sourceCommentExists = await mockFileRepository.existsAsync(sourceCommentUri);
+        assert.strictEqual(
+          sourceCommentExists,
+          false,
+          '移動元のコメントファイルが削除されていません',
+        );
+
+        const targetCommentUri = mockFileRepository.createFileUri(
+          path.join(targetDir, commentFileName),
+        );
+        const targetCommentExists = await mockFileRepository.existsAsync(targetCommentUri);
+        assert.strictEqual(
+          targetCommentExists,
+          true,
+          '移動先にコメントファイルが作成されていません',
+        );
+
+        // コメントファイルの内容が保持されていることを確認
+        const commentContent = await mockFileRepository.readFileAsync(targetCommentUri, 'utf8');
+        assert.strictEqual(
+          commentContent.includes('テストコメント'),
+          true,
+          'コメントファイルの内容が保持されていません',
+        );
+      });
+
+      test('コメントファイルが設定されていない場合は通常の移動のみ実行される', async () => {
+        // テストディレクトリ構造を作成
+        const sourceDir = '/test/project/source';
+        const targetDir = '/test/project/target';
+
+        const sourceDirUri = mockFileRepository.createDirectoryUri(sourceDir);
+        const targetDirUri = mockFileRepository.createDirectoryUri(targetDir);
+        await mockFileRepository.createDirectoryAsync(sourceDirUri);
+        await mockFileRepository.createDirectoryAsync(targetDirUri);
+
+        const fileName = 'test-file.txt';
+
+        // 移動元のmeta.yamlを作成（コメントファイルなし）
+        const sourceMeta = {
+          readme: 'README.md',
+          files: [
+            {
+              name: fileName,
+              type: 'content' as const,
+              path: path.join(sourceDir, fileName),
+              // commentsプロパティなし
+            },
+          ],
+        };
+
+        const sourceMetaUri = mockFileRepository.createFileUri(
+          path.join(sourceDir, '.dialogoi-meta.yaml'),
+        );
+        await mockFileRepository.writeFileAsync(
+          sourceMetaUri,
+          MetaYamlUtils.stringifyMetaYaml(sourceMeta),
+        );
+
+        // 移動先のmeta.yamlを作成
+        const targetMeta = {
+          readme: 'README.md',
+          files: [] as Array<{
+            name: string;
+            type: 'content' | 'setting' | 'subdirectory';
+            path: string;
+          }>,
+        };
+
+        const targetMetaUri = mockFileRepository.createFileUri(
+          path.join(targetDir, '.dialogoi-meta.yaml'),
+        );
+        await mockFileRepository.writeFileAsync(
+          targetMetaUri,
+          MetaYamlUtils.stringifyMetaYaml(targetMeta),
+        );
+
+        // 移動元にファイルを作成
+        const sourceFileUri = mockFileRepository.createFileUri(path.join(sourceDir, fileName));
+        await mockFileRepository.writeFileAsync(sourceFileUri, 'テスト内容');
+
+        // 移動実行
+        const result = await service.moveFileAsync(sourceDir, fileName, targetDir);
+
+        // 検証
+        assert.strictEqual(result.success, true, `移動が失敗しました: ${result.message}`);
+
+        // メインファイルが移動されたことを確認
+        const sourceFileExists = await mockFileRepository.existsAsync(sourceFileUri);
+        assert.strictEqual(sourceFileExists, false, '移動元のファイルが削除されていません');
+
+        const targetFileUri = mockFileRepository.createFileUri(path.join(targetDir, fileName));
+        const targetFileExists = await mockFileRepository.existsAsync(targetFileUri);
+        assert.strictEqual(targetFileExists, true, '移動先にファイルが作成されていません');
+      });
+    });
   });
 });

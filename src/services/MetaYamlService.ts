@@ -346,56 +346,81 @@ export class MetaYamlService {
       }
 
       // 移動先に同名ファイルが既に存在する場合はエラー
+      // ただし、同じディレクトリ内での並び替えの場合は除く
+      const isReorderingInSameDirectory = path.normalize(sourceDir) === path.normalize(targetDir);
+
       const existingFile = targetMeta.files.find((file) => file.name === fileName);
-      if (existingFile) {
+      if (existingFile && !isReorderingInSameDirectory) {
         return {
           success: false,
           message: `移動先に同名ファイル ${fileName} が既に存在します。`,
         };
       }
 
-      // ファイルアイテムのパスを更新
-      const updatedFileItem = {
-        ...fileItem,
-        path: path.join(targetDir, fileName),
-      };
+      if (isReorderingInSameDirectory) {
+        // 同じディレクトリ内での並び替え
+        if (newIndex !== undefined && newIndex >= 0 && newIndex < sourceMeta.files.length) {
+          // 現在の位置から削除
+          sourceMeta.files.splice(fileIndex, 1);
+          // 新しい位置に挿入
+          sourceMeta.files.splice(newIndex, 0, fileItem);
+        }
+        // パスの更新は不要（同じディレクトリなので）
 
-      // 移動元から削除
-      sourceMeta.files.splice(fileIndex, 1);
-
-      // 移動先に追加
-      if (newIndex !== undefined && newIndex >= 0 && newIndex < targetMeta.files.length) {
-        targetMeta.files.splice(newIndex, 0, updatedFileItem);
+        // メタデータを保存
+        const saveResult = await this.saveMetaYamlAsync(sourceDir, sourceMeta);
+        if (!saveResult) {
+          return {
+            success: false,
+            message: 'メタデータの保存に失敗しました。',
+          };
+        }
       } else {
-        targetMeta.files.push(updatedFileItem);
-      }
-
-      // 移動元のメタデータを保存
-      const saveSourceResult = await this.saveMetaYamlAsync(sourceDir, sourceMeta);
-      if (!saveSourceResult) {
-        return {
-          success: false,
-          message: '移動元の.dialogoi-meta.yamlの保存に失敗しました。',
+        // 異なるディレクトリ間での移動
+        const updatedFileItem = {
+          ...fileItem,
+          path: path.join(targetDir, fileName),
         };
-      }
 
-      // 移動先のメタデータを保存
-      const saveTargetResult = await this.saveMetaYamlAsync(targetDir, targetMeta);
-      if (!saveTargetResult) {
-        // 移動元をロールバック
-        sourceMeta.files.splice(fileIndex, 0, fileItem);
-        await this.saveMetaYamlAsync(sourceDir, sourceMeta);
+        // 移動元から削除
+        sourceMeta.files.splice(fileIndex, 1);
 
-        return {
-          success: false,
-          message: '移動先の.dialogoi-meta.yamlの保存に失敗しました。',
-        };
+        // 移動先に追加
+        if (newIndex !== undefined && newIndex >= 0 && newIndex < targetMeta.files.length) {
+          targetMeta.files.splice(newIndex, 0, updatedFileItem);
+        } else {
+          targetMeta.files.push(updatedFileItem);
+        }
+
+        // 移動元のメタデータを保存
+        const saveSourceResult = await this.saveMetaYamlAsync(sourceDir, sourceMeta);
+        if (!saveSourceResult) {
+          return {
+            success: false,
+            message: '移動元の.dialogoi-meta.yamlの保存に失敗しました。',
+          };
+        }
+
+        // 移動先のメタデータを保存
+        const saveTargetResult = await this.saveMetaYamlAsync(targetDir, targetMeta);
+        if (!saveTargetResult) {
+          // 移動元をロールバック
+          sourceMeta.files.splice(fileIndex, 0, fileItem);
+          await this.saveMetaYamlAsync(sourceDir, sourceMeta);
+
+          return {
+            success: false,
+            message: '移動先の.dialogoi-meta.yamlの保存に失敗しました。',
+          };
+        }
       }
 
       // 更新されたアイテムを返す
-      const updatedItems = targetMeta.files.map((file) => ({
+      const finalMeta = isReorderingInSameDirectory ? sourceMeta : targetMeta;
+      const finalDir = isReorderingInSameDirectory ? sourceDir : targetDir;
+      const updatedItems = finalMeta.files.map((file) => ({
         ...file,
-        path: path.join(targetDir, file.name),
+        path: path.join(finalDir, file.name),
       }));
 
       return {

@@ -133,8 +133,18 @@ export class FileStatusService {
       }
     }
 
-    // 4. 名前順でソート（ディレクトリを先頭、ファイルを後に）
-    return Array.from(statusMap.values()).sort((a, b) => {
+    // 4. meta.yamlの順序を保持してソート（ディレクトリを先頭、ファイルはmeta.yaml順）
+    const result = Array.from(statusMap.values());
+
+    // meta.yamlのファイル順序インデックスマップを作成
+    const metaOrderMap = new Map<string, number>();
+    if (metaYaml) {
+      metaYaml.files.forEach((fileEntry, index) => {
+        metaOrderMap.set(fileEntry.name, index);
+      });
+    }
+
+    return result.sort((a, b) => {
       // ディレクトリを先頭に
       if (a.isDirectory !== b.isDirectory) {
         if (a.isDirectory === true) {
@@ -144,7 +154,18 @@ export class FileStatusService {
           return 1;
         }
       }
-      // 同じ種類なら名前順
+
+      // 両方ともファイルの場合、meta.yamlの順序に従う
+      if (a.isDirectory === false && b.isDirectory === false) {
+        const aIndex = metaOrderMap.get(a.name) ?? Number.MAX_SAFE_INTEGER;
+        const bIndex = metaOrderMap.get(b.name) ?? Number.MAX_SAFE_INTEGER;
+
+        if (aIndex !== bIndex) {
+          return aIndex - bIndex;
+        }
+      }
+
+      // meta.yamlに含まれていないファイル、または両方ともディレクトリの場合は名前順
       return a.name.localeCompare(b.name);
     });
   }

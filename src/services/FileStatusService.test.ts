@@ -223,7 +223,7 @@ files:
       assert.strictEqual(result.length, 0);
     });
 
-    test('結果がディレクトリ優先、名前順でソートされる', async () => {
+    test('結果がディレクトリ優先、ファイルはmeta.yaml順でソートされる', async () => {
       const directoryPath = '/test/sorting';
       mockFileRepository.createDirectoryForTest(directoryPath);
 
@@ -231,25 +231,31 @@ files:
   - name: z-file.txt
     type: content
     path: /test/sorting/z-file.txt
-  - name: a-dir
+  - name: a-file.txt
+    type: content
+    path: /test/sorting/a-file.txt
+  - name: m-dir
     type: subdirectory
-    path: /test/sorting/a-dir`;
+    path: /test/sorting/m-dir`;
 
       mockFileRepository.createFileForTest('/test/sorting/.dialogoi-meta.yaml', metaContent);
       mockFileRepository.createFileForTest('/test/sorting/z-file.txt', 'z content');
-      mockFileRepository.createDirectoryForTest('/test/sorting/a-dir');
+      mockFileRepository.createFileForTest('/test/sorting/a-file.txt', 'a content');
+      mockFileRepository.createDirectoryForTest('/test/sorting/m-dir');
       mockFileRepository.createFileForTest('/test/sorting/b-untracked.txt', 'untracked content');
 
       const result = await fileStatusService.getFileStatusList(directoryPath);
-      assert.strictEqual(result.length, 3);
+      assert.strictEqual(result.length, 4);
 
-      // ディレクトリが最初、その後ファイルが名前順
-      assert.strictEqual(result[0]?.name, 'a-dir');
+      // ディレクトリが最初、その後ファイルがmeta.yaml順（meta.yamlに含まれていないファイルは名前順で末尾）
+      assert.strictEqual(result[0]?.name, 'm-dir');
       assert.strictEqual(result[0]?.isDirectory, true);
-      assert.strictEqual(result[1]?.name, 'b-untracked.txt');
+      assert.strictEqual(result[1]?.name, 'z-file.txt'); // meta.yamlの最初
       assert.strictEqual(result[1]?.isDirectory, false);
-      assert.strictEqual(result[2]?.name, 'z-file.txt');
+      assert.strictEqual(result[2]?.name, 'a-file.txt'); // meta.yamlの2番目
       assert.strictEqual(result[2]?.isDirectory, false);
+      assert.strictEqual(result[3]?.name, 'b-untracked.txt'); // meta.yamlに含まれていない
+      assert.strictEqual(result[3]?.isDirectory, false);
     });
   });
 

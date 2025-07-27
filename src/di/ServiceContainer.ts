@@ -229,11 +229,25 @@ export class ServiceContainer implements IServiceContainer {
    * FileOperationServiceを取得
    */
   getFileOperationService(novelRootAbsolutePath?: string): FileOperationService {
+    // novelRootAbsolutePathが指定された場合は、常に新しいインスタンスを作成
+    if (
+      novelRootAbsolutePath !== undefined &&
+      novelRootAbsolutePath !== null &&
+      novelRootAbsolutePath !== ''
+    ) {
+      return new FileOperationService(
+        this.getFileRepository(),
+        this.getMetaYamlService(),
+        novelRootAbsolutePath,
+      );
+    }
+
+    // novelRootAbsolutePathが指定されていない場合は、キャッシュされたインスタンスを使用
     if (!this.fileOperationService) {
       this.fileOperationService = new FileOperationService(
         this.getFileRepository(),
         this.getMetaYamlService(),
-        novelRootAbsolutePath,
+        undefined,
       );
     }
     return this.fileOperationService;
