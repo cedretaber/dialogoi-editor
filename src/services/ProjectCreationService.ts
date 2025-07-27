@@ -1,6 +1,7 @@
 import { FileRepository } from '../repositories/FileRepository.js';
 import { DialogoiYamlService } from './DialogoiYamlService.js';
 import { DialogoiTemplateService } from './DialogoiTemplateService.js';
+import { FileTypeDetectionService } from './FileTypeDetectionService.js';
 import { MetaYaml } from '../utils/MetaYamlUtils.js';
 import * as path from 'path';
 import * as yaml from 'js-yaml';
@@ -38,6 +39,7 @@ export class ProjectCreationService {
     private fileRepository: FileRepository,
     private dialogoiYamlService: DialogoiYamlService,
     private templateService: DialogoiTemplateService,
+    private fileTypeDetectionService: FileTypeDetectionService,
   ) {}
 
   /**
@@ -238,7 +240,7 @@ export class ProjectCreationService {
 
     // 除外パターンをチェック
     const relativePath = path.relative(projectRootAbsolutePath, currentAbsolutePath);
-    if (this.isExcluded(relativePath, excludePatterns)) {
+    if (this.fileTypeDetectionService.isExcluded(relativePath, excludePatterns)) {
       result.skippedFiles?.push(currentAbsolutePath);
       return;
     }
@@ -254,7 +256,7 @@ export class ProjectCreationService {
       const entryRelativePath = path.relative(projectRootAbsolutePath, entryAbsolutePath);
 
       // 除外パターンをチェック
-      if (this.isExcluded(entryRelativePath, excludePatterns)) {
+      if (this.fileTypeDetectionService.isExcluded(entryRelativePath, excludePatterns)) {
         result.skippedFiles?.push(entryAbsolutePath);
         continue;
       }
@@ -327,7 +329,7 @@ export class ProjectCreationService {
       }
 
       // ファイル種別の自動判定
-      const fileType = this.determineFileType(fileName);
+      const fileType = this.fileTypeDetectionService.detectFileType(fileName);
       const relativeFilePath = fileName; // 同じディレクトリ内なのでファイル名のみ
 
       metaYaml.files.push({
@@ -349,64 +351,5 @@ export class ProjectCreationService {
     }
 
     return metaYaml;
-  }
-
-  /**
-   * ファイル種別の自動判定
-   * 本文ファイル（.md）→ content、設定ファイル（.txt）→ setting
-   */
-  private determineFileType(fileName: string): 'content' | 'setting' | 'subdirectory' {
-    const extension = path.extname(fileName).toLowerCase();
-
-    if (extension === '.md') {
-      return 'content';
-    } else if (extension === '.txt') {
-      return 'setting';
-    } else {
-      // デフォルトは setting として扱う
-      return 'setting';
-    }
-  }
-
-  /**
-   * 除外パターンにマッチするかチェック
-   */
-  private isExcluded(relativePath: string, excludePatterns: string[]): boolean {
-    const fileName = path.basename(relativePath);
-
-    for (const pattern of excludePatterns) {
-      // 単純なパターンマッチング実装
-      const fileNameMatch = this.matchesPattern(fileName, pattern);
-      const relativePathMatch = this.matchesPattern(relativePath, pattern);
-
-      if (fileNameMatch || relativePathMatch) {
-        return true;
-      }
-    }
-
-    return false;
-  }
-
-  /**
-   * 単純なパターンマッチング
-   */
-  private matchesPattern(text: string, pattern: string): boolean {
-    // ドットで始まるファイル/ディレクトリ（特別パターン）
-    if (pattern === '.*') {
-      return text.startsWith('.');
-    }
-
-    // 完全一致
-    if (text === pattern) {
-      return true;
-    }
-
-    // ワイルドカードマッチング（簡単な実装）
-    if (pattern.includes('*')) {
-      const regex = new RegExp('^' + pattern.replace(/\*/g, '.*') + '$');
-      return regex.test(text);
-    }
-
-    return false;
   }
 }

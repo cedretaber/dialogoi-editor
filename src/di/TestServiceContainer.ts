@@ -27,6 +27,7 @@ import { DialogoiSettingsService } from '../services/DialogoiSettingsService.js'
 import { ProjectSettingsService } from '../services/ProjectSettingsService.js';
 import { FileStatusService } from '../services/FileStatusService.js';
 import { FileManagementService } from '../services/FileManagementService.js';
+import { FileTypeDetectionService } from '../services/FileTypeDetectionService.js';
 import { Logger } from '../utils/Logger.js';
 
 /**
@@ -54,6 +55,7 @@ export class TestServiceContainer implements IServiceContainer {
   private projectSettingsService: ProjectSettingsService | null = null;
   private fileStatusService: FileStatusService | null = null;
   private fileManagementService: FileManagementService | null = null;
+  private fileTypeDetectionService: FileTypeDetectionService | null = null;
 
   private constructor() {
     // テスト環境では常にMockFileRepositoryを使用
@@ -166,6 +168,7 @@ export class TestServiceContainer implements IServiceContainer {
         this.fileRepository,
         this.getDialogoiYamlService(),
         this.getDialogoiTemplateService(),
+        this.getFileTypeDetectionService(),
       );
     }
     return this.projectCreationService;
@@ -311,6 +314,13 @@ export class TestServiceContainer implements IServiceContainer {
       this.fileManagementService = new FileManagementService(fileRepository, metaYamlService);
     }
     return this.fileManagementService;
+  }
+
+  getFileTypeDetectionService(): FileTypeDetectionService {
+    if (!this.fileTypeDetectionService) {
+      this.fileTypeDetectionService = new FileTypeDetectionService();
+    }
+    return this.fileTypeDetectionService;
   }
 
   /**

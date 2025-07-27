@@ -486,21 +486,68 @@ interface DirectoryAutoSetupOptions {
   - 管理対象外ディレクトリ内ファイルの追加: エラー（親ディレクトリ未管理のため）
   - 手動回避手順の文書化完了
 
+### ✅ Phase C: 新方針 - プロジェクト自動セットアップ機能（2025-01-27決定）
+
+**重要な方針変更**:
+- **ディレクトリ一括追加機能を廃止**: WebViewベースの複雑なUIは削除
+- **プロジェクト作成時の自動セットアップ**: 全ファイルを自動的に管理対象に登録
+- **個別調整**: その後の種別変更等で細かいカスタマイズに対応
+
+詳細は `docs/project-auto-setup-plan.md` を参照してください。
+
+#### ✅ 完了済み: Sprint 1 - クリーンアップと準備（2025-01-27完了）
+**ディレクトリ一括追加機能を完全に削除**:
+- ✅ BulkAddDirectoryProvider.ts、bulkAddDirectoryCommands.ts削除
+- ✅ BulkAddDirectoryAppコンポーネント削除
+- ✅ BulkAddDirectory.tsインターフェース削除  
+- ✅ extension.tsからインポート・登録削除
+- ✅ package.jsonからコマンド定義・ビルドスクリプト削除
+- ✅ FileManagementService.bulkAddDirectoryメソッド削除
+- ✅ FileManagementService.test.tsからBulkAddテストスイート（287-576行）削除
+- ✅ 依存関係整理（FileTypeDetectionServiceとの分離）
+- ✅ FileTypeDetectionServiceは保持（新方針で活用予定）
+
+#### 📋 新しい実装計画
+**Sprint 2: 自動セットアップ機能**
+- [ ] ProjectAutoSetupServiceの実装
+- [ ] プロジェクト作成時の全ファイル自動登録
+
+**Sprint 3: 種別変換機能**
+- [ ] FileTypeConversionServiceの実装
+- [ ] content ↔ setting の変換機能
+
+### 📋 Phase C技術実装詳細（新方針）
+
+詳細な技術実装は `docs/project-auto-setup-plan.md` を参照してください。
+
+#### 新規コマンド（実装予定）
+```typescript
+- dialogoi.convertFileType          // ファイル種別変換（content ↔ setting）
+```
+
+#### 新規サービス（実装予定）
+```typescript
+// プロジェクト自動セットアップ
+class ProjectAutoSetupService {
+  setupProjectStructure(projectRoot: string): Promise<SetupResult>
+  registerAllFiles(projectRoot: string): Promise<RegistrationResult>
+}
+
+// ファイル種別変換
+class FileTypeConversionService {
+  convertFileType(filePath: string, newType: 'content' | 'setting'): Promise<ConversionResult>
+}
+```
+
+#### 既存サービスの活用
+```typescript
+// FileTypeDetectionService（既に実装済み、新方針でも活用）
+class FileTypeDetectionService {
+  detectFileType(filePath: string): 'content' | 'setting'
+}
+```
+
 ### 🔄 次のステップ（Phase C: 高度な機能）
-
-#### C1: ディレクトリ一括追加
-**目標**: ディレクトリ内ファイルの一括管理
-- [ ] ディレクトリ右クリック「内容を一括追加」
-- [ ] ファイル種別の一括指定UI
-- [ ] プレビュー機能（追加されるファイル一覧）
-- [ ] 除外パターン適用
-
-#### C2: ディレクトリ管理ファイル自動生成
-**目標**: Dialogoi管理要件の自動満足
-- [ ] 親の`.dialogoi-meta.yaml`に追加時、子ディレクトリの管理ファイル生成
-- [ ] `.dialogoi-meta.yaml`のテンプレート生成
-- [ ] `README.md`の自動生成
-- [ ] 既存ファイル上書き確認
 
 ### 📋 Phase B技術実装詳細（完了済み）
 

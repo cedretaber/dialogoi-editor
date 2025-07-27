@@ -1,0 +1,26 @@
+title: テスト小説
+author: テスト作者
+created_at: '2025-07-26T23:14:06.033Z'
+tags: []
+updated_at: '2025-07-26T23:14:06.054Z'
+project_settings:
+  readme_filename: README.md
+  exclude_patterns:
+    - .*
+    - .DS_Store
+    - Thumbs.db
+    - desktop.ini
+    - $RECYCLE.BIN
+    - .Trash
+    - .git
+    - .gitignore
+    - .hg
+    - .svn
+    - '*.tmp'
+    - '*.temp'
+    - '*.log'
+    - '*.bak'
+    - '*.old'
+    - node_modules
+    - dist
+    - build

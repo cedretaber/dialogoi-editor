@@ -18,6 +18,7 @@ import { DialogoiSettingsService } from '../services/DialogoiSettingsService.js'
 import { ProjectSettingsService } from '../services/ProjectSettingsService.js';
 import { FileStatusService } from '../services/FileStatusService.js';
 import { FileManagementService } from '../services/FileManagementService.js';
+import { FileTypeDetectionService } from '../services/FileTypeDetectionService.js';
 import { Logger } from '../utils/Logger.js';
 import { Uri } from '../interfaces/Uri.js';
 
@@ -45,6 +46,7 @@ export interface IServiceContainer {
   getProjectSettingsService(): ProjectSettingsService;
   getFileStatusService(): FileStatusService;
   getFileManagementService(): FileManagementService;
+  getFileTypeDetectionService(): FileTypeDetectionService;
   reset(): void;
 }
 
@@ -73,6 +75,7 @@ export class ServiceContainer implements IServiceContainer {
   private projectSettingsService: ProjectSettingsService | null = null;
   private fileStatusService: FileStatusService | null = null;
   private fileManagementService: FileManagementService | null = null;
+  private fileTypeDetectionService: FileTypeDetectionService | null = null;
 
   protected constructor() {}
 
@@ -349,6 +352,13 @@ export class ServiceContainer implements IServiceContainer {
       this.fileManagementService = new FileManagementService(fileRepository, metaYamlService);
     }
     return this.fileManagementService;
+  }
+
+  getFileTypeDetectionService(): FileTypeDetectionService {
+    if (!this.fileTypeDetectionService) {
+      this.fileTypeDetectionService = new FileTypeDetectionService();
+    }
+    return this.fileTypeDetectionService;
   }
 
   /**
