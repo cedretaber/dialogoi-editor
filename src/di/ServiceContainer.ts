@@ -19,6 +19,7 @@ import { ProjectSettingsService } from '../services/ProjectSettingsService.js';
 import { FileStatusService } from '../services/FileStatusService.js';
 import { FileManagementService } from '../services/FileManagementService.js';
 import { FileTypeDetectionService } from '../services/FileTypeDetectionService.js';
+import { ProjectAutoSetupService } from '../services/ProjectAutoSetupService.js';
 import { Logger } from '../utils/Logger.js';
 import { Uri } from '../interfaces/Uri.js';
 
@@ -47,6 +48,7 @@ export interface IServiceContainer {
   getFileStatusService(): FileStatusService;
   getFileManagementService(): FileManagementService;
   getFileTypeDetectionService(): FileTypeDetectionService;
+  getProjectAutoSetupService(): ProjectAutoSetupService;
   reset(): void;
 }
 
@@ -76,6 +78,7 @@ export class ServiceContainer implements IServiceContainer {
   private fileStatusService: FileStatusService | null = null;
   private fileManagementService: FileManagementService | null = null;
   private fileTypeDetectionService: FileTypeDetectionService | null = null;
+  private projectAutoSetupService: ProjectAutoSetupService | null = null;
 
   protected constructor() {}
 
@@ -306,6 +309,9 @@ export class ServiceContainer implements IServiceContainer {
     this.settingsRepository = null;
     this.dialogoiSettingsService = null;
     this.fileStatusService = null;
+    this.fileManagementService = null;
+    this.fileTypeDetectionService = null;
+    this.projectAutoSetupService = null;
   }
 
   getSettingsRepository(): SettingsRepository {
@@ -359,6 +365,22 @@ export class ServiceContainer implements IServiceContainer {
       this.fileTypeDetectionService = new FileTypeDetectionService();
     }
     return this.fileTypeDetectionService;
+  }
+
+  getProjectAutoSetupService(): ProjectAutoSetupService {
+    if (!this.projectAutoSetupService) {
+      const fileRepository = this.getFileRepository();
+      const metaYamlService = this.getMetaYamlService();
+      const dialogoiYamlService = this.getDialogoiYamlService();
+      const fileTypeDetectionService = this.getFileTypeDetectionService();
+      this.projectAutoSetupService = new ProjectAutoSetupService(
+        fileRepository,
+        metaYamlService,
+        dialogoiYamlService,
+        fileTypeDetectionService,
+      );
+    }
+    return this.projectAutoSetupService;
   }
 
   /**

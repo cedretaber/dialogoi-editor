@@ -315,26 +315,27 @@ await vscode.window.withProgress({
 
 ## 実装順序
 
-### Sprint 1: クリーンアップと準備（優先度: 高）
+### Sprint 1: クリーンアップと準備（優先度: 高）✅ **完了**
 1. **既存ディレクトリ一括追加機能の削除**
-   - [ ] BulkAddDirectoryProvider等の削除
-   - [ ] package.jsonからコマンド・メニュー削除
-   - [ ] WebViewファイルの削除
-   - [ ] 関連テストの削除
+   - [x] BulkAddDirectoryProvider等の削除
+   - [x] package.jsonからコマンド・メニュー削除
+   - [x] WebViewファイルの削除
+   - [x] 関連テストの削除
    
 2. **FileTypeDetectionServiceの実装**
-   - [ ] ProjectCreationServiceから自動判定ロジックを抽出
-   - [ ] 単体テストの作成
-   - [ ] ServiceContainerへの統合
+   - [x] ProjectCreationServiceから自動判定ロジックを抽出
+   - [x] 単体テストの作成
+   - [x] ServiceContainerへの統合
 
-### Sprint 2: 自動セットアップ機能の実装（優先度: 高）
+### Sprint 2: 自動セットアップ機能の実装（優先度: 高）✅ **完了**
 1. **ProjectAutoSetupServiceの実装**
-   - [ ] 再帰的ディレクトリスキャン
-   - [ ] .dialogoi-meta.yamlの自動生成
-   - [ ] READMEファイルの自動生成
-   - [ ] 全ファイル自動登録機能
+   - [x] 再帰的ディレクトリスキャン
+   - [x] .dialogoi-meta.yamlの自動生成
+   - [x] READMEファイルの自動生成
+   - [x] 全ファイル自動登録機能
+   - [x] 包括的なテストスイート作成（11テスト）
    
-2. **プロジェクト作成フローの統合**
+2. **プロジェクト作成フローの統合** 🔄 **次のタスク**
    - [ ] DialogoiYamlService.createDialogoiProjectAsyncの拡張
    - [ ] プログレス表示の実装
    - [ ] エラーハンドリングの実装
