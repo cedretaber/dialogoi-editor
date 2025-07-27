@@ -174,6 +174,21 @@ export class ProjectAutoSetupService {
   }
 
   /**
+   * READMEファイル名を取得
+   */
+  private async getReadmeFilename(projectRoot: string): Promise<string> {
+    try {
+      const dialogoiYaml = await this.dialogoiYamlService.loadDialogoiYamlAsync(projectRoot);
+      const readmeFilename = dialogoiYaml?.project_settings?.readme_filename;
+      return readmeFilename !== null && readmeFilename !== undefined && readmeFilename !== ''
+        ? readmeFilename
+        : 'README.md';
+    } catch {
+      return 'README.md';
+    }
+  }
+
+  /**
    * 除外パターンを取得
    */
   private async getExcludePatterns(projectRoot: string): Promise<string[]> {
@@ -223,7 +238,8 @@ export class ProjectAutoSetupService {
           // 既存ファイルがある場合はスキップ
         } else {
           // 新しい.dialogoi-meta.yamlを作成
-          const metaYaml = MetaYamlUtils.createMetaYaml();
+          const readmeFilename = await this.getReadmeFilename(projectRoot);
+          const metaYaml = MetaYamlUtils.createMetaYaml(readmeFilename);
           if (await this.metaYamlService.saveMetaYamlAsync(currentDir, metaYaml)) {
             createdFiles++;
           }
@@ -315,7 +331,7 @@ export class ProjectAutoSetupService {
 
           // 除外チェック（除外パターンを先に確認）
           const isExcludedByPattern = this.isExcluded(fileName, excludePatterns);
-          const isManagementFile = this.isManagementFile(fileName);
+          const isManagementFile = await this.isManagementFile(fileName, projectRoot);
 
           if (isExcludedByPattern || isManagementFile) {
             skippedFiles++;
@@ -343,16 +359,38 @@ export class ProjectAutoSetupService {
           registeredFiles++;
           hasChanges = true;
         } else if (item.isDirectory()) {
-          // サブディレクトリを再帰的に処理
-          const subDirPath = path.join(currentDir, item.name);
-          const subResult = await this.registerFilesRecursive(
-            subDirPath,
-            projectRoot,
-            excludePatterns,
-            options,
-          );
-          registeredFiles += subResult.registeredFiles;
-          skippedFiles += subResult.skippedFiles;
+          const dirName = item.name;
+          const subDirPath = path.join(currentDir, dirName);
+
+          // 除外チェック（ディレクトリに対して）
+          const isDirExcluded = this.isExcluded(dirName, excludePatterns);
+
+          if (!isDirExcluded) {
+            // サブディレクトリを親ディレクトリのfilesに登録
+            const existingDirEntry = metaYaml.files.find((f) => f.name === dirName);
+            if (!existingDirEntry) {
+              const newDirEntry: DialogoiTreeItem = {
+                name: dirName,
+                type: 'subdirectory',
+                path: subDirPath,
+              };
+
+              metaYaml.files.push(newDirEntry);
+              hasChanges = true;
+            }
+
+            // サブディレクトリを再帰的に処理
+            const subResult = await this.registerFilesRecursive(
+              subDirPath,
+              projectRoot,
+              excludePatterns,
+              options,
+            );
+            registeredFiles += subResult.registeredFiles;
+            skippedFiles += subResult.skippedFiles;
+          } else {
+            skippedFiles++;
+          }
         }
       }
 
@@ -451,11 +489,51 @@ export class ProjectAutoSetupService {
   /**
    * 管理ファイルかどうかをチェック
    */
-  private isManagementFile(fileName: string): boolean {
+  private async isManagementFile(fileName: string, projectRoot: string): Promise<boolean> {
+    const isReadme = await this.isReadmeFile(fileName, projectRoot);
     return (
       fileName === '.dialogoi-meta.yaml' ||
       fileName === 'dialogoi.yaml' ||
-      fileName.endsWith('.comments.yaml')
+      fileName.endsWith('.comments.yaml') ||
+      isReadme
     );
+  }
+
+  /**
+   * READMEファイルかどうかを判定
+   */
+  private async isReadmeFile(fileName: string, projectRoot: string): Promise<boolean> {
+    try {
+      // dialogoi.yamlからREADMEファイル名設定を取得
+      const dialogoiYaml = await this.dialogoiYamlService.loadDialogoiYamlAsync(projectRoot);
+      const configuredReadmeFilename = dialogoiYaml?.project_settings?.readme_filename;
+
+      if (
+        configuredReadmeFilename !== null &&
+        configuredReadmeFilename !== undefined &&
+        configuredReadmeFilename !== ''
+      ) {
+        // 設定されたREADMEファイル名と完全一致するかチェック
+        return fileName === configuredReadmeFilename;
+      }
+
+      // 設定がない場合はデフォルトのREADMEパターンで判定
+      const lowerFileName = fileName.toLowerCase();
+      return (
+        lowerFileName === 'readme.md' ||
+        lowerFileName === 'readme.txt' ||
+        lowerFileName === 'readme' ||
+        lowerFileName.startsWith('readme.')
+      );
+    } catch {
+      // エラーの場合はデフォルトパターンで判定
+      const lowerFileName = fileName.toLowerCase();
+      return (
+        lowerFileName === 'readme.md' ||
+        lowerFileName === 'readme.txt' ||
+        lowerFileName === 'readme' ||
+        lowerFileName.startsWith('readme.')
+      );
+    }
   }
 }

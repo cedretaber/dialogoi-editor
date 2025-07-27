@@ -1,4 +1,5 @@
 import { DialogoiYamlService } from './DialogoiYamlService.js';
+import { ProjectSetupService } from './ProjectSetupService.js';
 import { DialogoiYaml } from '../utils/DialogoiYamlUtils.js';
 import { Logger } from '../utils/Logger.js';
 
@@ -24,6 +25,7 @@ export interface ProjectSettingsUpdateData {
 export class ProjectSettingsService {
   constructor(
     private dialogoiYamlService: DialogoiYamlService,
+    private projectSetupService: ProjectSetupService,
     private logger: Logger,
   ) {}
 
@@ -254,13 +256,14 @@ export class ProjectSettingsService {
         updated_at: new Date().toISOString(),
       };
 
-      // プロジェクトを作成
-      const success = await this.dialogoiYamlService.createDialogoiProjectAsync(
+      // プロジェクトを自動セットアップ付きで作成
+      const result = await this.projectSetupService.createDialogoiProjectWithSetup(
         projectRootAbsolutePath,
         newSettings.title,
         newSettings.author,
         newSettings.tags,
       );
+      const success = result.success;
 
       if (success) {
         // プロジェクト設定を更新（project_settingsを追加）

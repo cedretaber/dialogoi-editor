@@ -191,14 +191,14 @@ project_settings:
       const result = await projectAutoSetupService.registerAllFiles(projectRoot);
 
       assert.strictEqual(result.success, true);
-      assert.strictEqual(result.registeredFiles, 4); // chapter1.txt, setting.md, chapter2.txt, README.md
-      // skippedFiles: .gitignore, temp.tmp, .dialogoi-meta.yaml(2つ), dialogoi.yaml = 5ファイル
-      assert.strictEqual(result.skippedFiles, 5); // 管理ファイルと除外ファイル
+      assert.strictEqual(result.registeredFiles, 3); // chapter1.txt, setting.md, chapter2.txt (README.mdは除外)
+      // skippedFiles: .gitignore, temp.tmp, .dialogoi-meta.yaml(2つ), dialogoi.yaml, README.md = 6ファイル
+      assert.strictEqual(result.skippedFiles, 6); // 管理ファイルと除外ファイル
 
       // meta.yamlが更新されていることを確認
       const updatedMeta = await metaYamlService.loadMetaYamlAsync(projectRoot);
       assert.notStrictEqual(updatedMeta, null);
-      assert.strictEqual(updatedMeta?.files.length, 3); // chapter1.txt, setting.md, README.md
+      assert.strictEqual(updatedMeta?.files.length, 3); // chapter1.txt, setting.md, subdirectory'contents'
 
       const chapter1Entry = updatedMeta?.files.find((f) => f.name === 'chapter1.txt');
       assert.notStrictEqual(chapter1Entry, undefined);
@@ -253,8 +253,15 @@ updated_at: 2024-01-01T00:00:00.000Z
 
       // プロジェクトルートのmeta.yamlが更新されていることを確認
       const updatedMeta = await metaYamlService.loadMetaYamlAsync(projectRoot);
-      assert.strictEqual(updatedMeta?.files.length, 1);
-      assert.strictEqual(updatedMeta?.files[0]?.name, 'root.txt');
+      assert.strictEqual(updatedMeta?.files.length, 2); // root.txt と nometa subdirectory
+      // root.txtとnometaが登録されていることを確認
+      const rootTxtEntry = updatedMeta?.files.find((f) => f.name === 'root.txt');
+      assert.notStrictEqual(rootTxtEntry, undefined);
+      assert.strictEqual(rootTxtEntry?.type, 'content');
+
+      const nometaDirEntry = updatedMeta?.files.find((f) => f.name === 'nometa');
+      assert.notStrictEqual(nometaDirEntry, undefined);
+      assert.strictEqual(nometaDirEntry?.type, 'subdirectory');
     });
 
     test('既に管理対象のファイルはスキップされる', async () => {
@@ -321,9 +328,9 @@ updated_at: 2024-01-01T00:00:00.000Z
       });
 
       assert.strictEqual(result.success, true);
-      assert.strictEqual(result.registeredFiles, 2); // test.txt + 自動作成されたREADME.mdが登録される
-      // skippedFiles: dialogoi.yaml + .dialogoi-meta.yaml = 2ファイル
-      assert.strictEqual(result.skippedFiles, 2);
+      assert.strictEqual(result.registeredFiles, 1); // test.txtのみ（README.mdは作成されるが除外される）
+      // skippedFiles: dialogoi.yaml + .dialogoi-meta.yaml + README.md = 3ファイル
+      assert.strictEqual(result.skippedFiles, 3);
 
       // README.mdが自動作成されていることを確認
       const readmeUri = mockFileRepository.createFileUri(`${projectRoot}/README.md`);

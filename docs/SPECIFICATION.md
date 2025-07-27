@@ -140,54 +140,60 @@ files:            # ファイル・サブディレクトリのリスト（順序
 ```yaml
 title: "作品タイトル"
 author: "著者名"
-version: "1.0.0"
 created_at: "2024-01-01T00:00:00Z"
+updated_at: "2024-01-01T00:00:00Z"
 tags: ["ファンタジー", "青春", "学園"]
+project_settings:
+  readme_filename: "README.md"
+  exclude_patterns:
+    - ".*"
+    - ".DS_Store"
+    - "*.tmp"
 ```
 
 ### 必須フィールド
 
 - `title` (string): 作品タイトル
 - `author` (string): 著者名
-- `version` (string): プロジェクトバージョン（セマンティックバージョニング形式）
 - `created_at` (string): 作品作成日時（ISO 8601形式）
+- `updated_at` (string): 最終更新日時（ISO 8601形式、自動更新）
+- `project_settings` (object): プロジェクト固有の設定（必須）
+  - `readme_filename` (string): READMEファイル名（デフォルト: "README.md"）
+  - `exclude_patterns` (array): 除外パターン（glob形式）
 
 ### オプションフィールド
 
 - `tags` (array): 作品のタグ（ジャンル、テーマなど）
 
-### 自動更新
-
-- `updated_at` (string): ファイル変更時に自動更新（将来実装予定）
-
-### プロジェクト設定
-
-- `project_settings` (object): プロジェクト固有の設定
-  - `readme_filename` (string): READMEファイル名（デフォルト: "README.md"）
-  - `exclude_patterns` (array): 除外パターン（glob形式）
-
-### 例（プロジェクト設定付き）
+### 例（完全仕様）
 
 ```yaml
 title: "新しい小説"
 author: "著者名"
-version: "1.0.0"
 created_at: "2024-01-01T00:00:00Z"
+updated_at: "2024-01-15T14:30:00Z"
 tags: ["ファンタジー", "青春"]
-
 project_settings:
   readme_filename: "README.md"
   exclude_patterns:
-    - ".*"                    # 隠しファイル
+    - ".*"                    # 隠しファイル・ディレクトリ
     - ".DS_Store"             # macOS システムファイル
     - "Thumbs.db"             # Windows システムファイル
+    - "desktop.ini"           # Windows システムファイル
     - "*.tmp"                 # 一時ファイル
+    - "*.temp"                # 一時ファイル
     - "*.bak"                 # バックアップファイル
-    - "node_modules/"         # Node.js 依存関係
-    - ".git/"                 # Git リポジトリ
-    - ".vscode/"              # VSCode 設定
     - "*.log"                 # ログファイル
-    - ".dialogoi-cache/"      # Dialogoi キャッシュ
+    - "node_modules"          # Node.js 依存関係
+    - "dist"                  # ビルド成果物
+    - "build"                 # ビルド成果物
+    - ".git"                  # Git リポジトリ
+    - ".gitignore"            # Git設定ファイル
+    - ".svn"                  # Subversion
+    - ".hg"                   # Mercurial
+    - ".vscode"               # VSCode 設定
+    - ".idea"                 # IntelliJ IDEA 設定
+    - ".dialogoi-cache"       # Dialogoi キャッシュ
 ```
 
 ## ファイル管理ルール

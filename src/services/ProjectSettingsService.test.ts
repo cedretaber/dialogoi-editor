@@ -14,7 +14,11 @@ suite('ProjectSettingsService テストスイート', () => {
     const container = TestServiceContainer.create();
     mockFileRepository = container.getFileRepository() as MockFileRepository;
     logger = Logger.getInstance();
-    service = new ProjectSettingsService(container.getDialogoiYamlService(), logger);
+    service = new ProjectSettingsService(
+      container.getDialogoiYamlService(),
+      container.getProjectSetupService(),
+      logger,
+    );
   });
 
   teardown(() => {

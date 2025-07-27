@@ -120,6 +120,30 @@ export class DialogoiYamlUtils {
       author,
       created_at: now,
       tags: tags || [],
+      updated_at: now,
+      project_settings: {
+        readme_filename: 'README.md',
+        exclude_patterns: [
+          '.*', // 隠しファイル・ディレクトリ
+          '.DS_Store', // macOS
+          'Thumbs.db', // Windows
+          'desktop.ini', // Windows
+          '$RECYCLE.BIN', // Windows
+          '.Trash', // macOS
+          '.git', // Git管理ファイル
+          '.gitignore', // Git設定ファイル
+          '.hg', // Mercurial
+          '.svn', // Subversion
+          '*.tmp', // 一時ファイル
+          '*.temp',
+          '*.log', // ログファイル
+          '*.bak', // バックアップファイル
+          '*.old',
+          'node_modules', // Node.js依存関係
+          'dist', // ビルド出力
+          'build', // ビルド出力
+        ],
+      },
     };
   }
 }

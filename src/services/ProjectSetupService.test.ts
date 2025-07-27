@@ -43,8 +43,8 @@ suite('ProjectSetupService テストスイート', () => {
       assert.strictEqual(result.projectRootPath, projectRoot);
       assert.strictEqual(result.processedDirectories, 3); // root + contents + settings
       assert.strictEqual(result.createdFiles, 6); // 各ディレクトリに.dialogoi-meta.yaml + README.md
-      assert.strictEqual(result.registeredFiles, 5); // chapter1.txt + character.md + README.md(3つ)
-      assert.strictEqual(result.skippedFiles, 4); // dialogoi.yaml + .dialogoi-meta.yaml(3つ)
+      assert.strictEqual(result.registeredFiles, 2); // chapter1.txt + character.md (READMEは除外)
+      assert.strictEqual(result.skippedFiles, 7); // dialogoi.yaml + .dialogoi-meta.yaml(3つ) + README.md(3つ)
 
       // dialogoi.yamlが作成されていることを確認
       const dialogoiYamlUri = mockFileRepository.createFileUri(`${projectRoot}/dialogoi.yaml`);
@@ -218,8 +218,8 @@ project_settings:
       assert.strictEqual(result.projectRootPath, projectRoot);
       assert.strictEqual(result.processedDirectories, 2); // root + chapters
       assert.strictEqual(result.createdFiles, 4); // 各ディレクトリに.dialogoi-meta.yaml + README.md
-      assert.strictEqual(result.registeredFiles, 4); // intro.txt + ch1.txt + README.md(2つ)
-      assert.strictEqual(result.skippedFiles, 3); // dialogoi.yaml + .dialogoi-meta.yaml(2つ)
+      assert.strictEqual(result.registeredFiles, 2); // intro.txt + ch1.txt (READMEは除外)
+      assert.strictEqual(result.skippedFiles, 5); // dialogoi.yaml + .dialogoi-meta.yaml(2つ) + README.md(2つ)
 
       // セットアップ後のファイルが存在することを確認
       const metaYamlUri = mockFileRepository.createFileUri(`${projectRoot}/.dialogoi-meta.yaml`);

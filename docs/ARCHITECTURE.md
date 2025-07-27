@@ -69,16 +69,18 @@
 │  ├─ FileOperationService                        │
 │  ├─ FilePathMapService                          │
 │  ├─ FileStatusService                           │
+│  ├─ FileTypeConversionService (NEW)             │
 │  ├─ FileTypeDetectionService                    │
 │  ├─ ForeshadowingService                        │
 │  ├─ HashService                                 │
 │  ├─ HyperlinkExtractorService                   │
 │  ├─ MetaYamlService                             │
-│  ├─ ProjectAutoSetupService (NEW)               │
+│  ├─ ProjectAutoSetupService                     │
 │  ├─ ProjectCreationService (DEPRECATED)         │
 │  ├─ ProjectLinkUpdateService                    │
 │  ├─ ProjectPathNormalizationService             │
-│  ├─ ProjectSetupService (NEW)                   │
+│  ├─ ProjectPathService                          │
+│  ├─ ProjectSetupService                         │
 │  ├─ ProjectSettingsService                      │
 │  ├─ ReferenceManager                            │
 │  └─ TreeViewFilterService                       │
@@ -203,7 +205,7 @@ export interface Uri {
 
 #### 2. MockFileRepository (テスト環境)
 - インメモリでファイルシステムを模擬
-- 単体テストでの高速実行を実現（615テスト）
+- 単体テストでの高速実行を実現（517テスト）
 - VSCode環境に依存しない
 
 ### DI Container
@@ -248,7 +250,7 @@ export class ServiceContainer {
 - ステータス管理（open/resolved）
 - ファイルハッシュによる変更検知
 
-### 4. ProjectAutoSetupService (NEW)
+### 4. ProjectAutoSetupService ✅ 実装完了
 プロジェクト自動セットアップ機能：
 - 再帰的ディレクトリスキャン
 - .dialogoi-meta.yaml自動生成
@@ -256,7 +258,7 @@ export class ServiceContainer {
 - 全ファイル自動登録（除外パターン対応）
 - ファイル種別自動判定
 
-### 5. ProjectSetupService (NEW)
+### 5. ProjectSetupService ✅ 実装完了
 高レベルプロジェクト作成オーケストレーター：
 - DialogoiYamlService + ProjectAutoSetupServiceの統合
 - 循環依存を回避した適切なアーキテクチャ
@@ -264,32 +266,45 @@ export class ServiceContainer {
 - 既存プロジェクトへの自動セットアップ適用
 - 詳細な進行状況レポート
 
-### 6. FileTypeDetectionService (NEW)
+### 6. FileTypeDetectionService ✅ 実装完了
 ファイル種別自動判定：
 - 拡張子ベース判定（.txt→content, .md→setting）
 - ディレクトリベース判定（contents/→content系）
 - 除外パターン処理（glob対応）
 - ProjectCreationServiceから機能抽出・改良
 
-### 7. DialogoiYamlService
+### 7. FileTypeConversionService ✅ 実装完了
+ファイル種別変更機能：
+- content ↔ setting間の変更
+- プロジェクト内ファイル検索・更新
+- meta.yamlファイルの安全な更新
+- TreeView・WebView即座更新
+
+### 8. ProjectPathService ✅ 実装完了
+プロジェクトパス管理：
+- プロジェクトルート検索・検証
+- 相対パス・絶対パス変換
+- PathUtilsの単一責任化リファクタリング
+
+### 9. DialogoiYamlService
 プロジェクト設定（`dialogoi.yaml`）の管理：
 - プロジェクト作成・読み込み・保存
 - プロジェクトルート検索
 - バリデーション
 
-### 8. ReferenceManager
+### 10. ReferenceManager
 参照関係の一元管理：
 - 手動参照とハイパーリンク参照の統合
 - 双方向参照の自動追跡
 - 存在チェック機能
 
-### 9. ForeshadowingService
+### 11. ForeshadowingService
 伏線管理機能：
 - 複数の「張る」位置と「回収」位置の管理
 - 伏線状態の追跡（planned/partially_planted/fully_planted/resolved/error）
 - ファイル存在確認
 
-### 10. HashService
+### 12. HashService
 ファイル変更検知：
 - SHA-256ハッシュ計算
 - ファイル内容の変更検知
@@ -377,12 +392,12 @@ React WebView更新・編集モード開始
 
 ## テスト戦略
 
-### 1. 単体テスト（373テスト）
+### 1. サーバーサイドテスト（517テスト）
 - 全サービスクラスの完全テストカバレッジ
 - MockFileRepository使用による高速実行
 - TypeScript strict mode準拠
 
-### 2. Reactコンポーネントテスト（242テスト）
+### 2. Reactコンポーネントテスト（223テスト）
 - React Testing Library + Happy-DOM
 - VSCode APIモック実装
 - ユーザー操作シミュレーション

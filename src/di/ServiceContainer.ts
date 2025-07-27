@@ -348,8 +348,13 @@ export class ServiceContainer implements IServiceContainer {
   getProjectSettingsService(): ProjectSettingsService {
     if (!this.projectSettingsService) {
       const dialogoiYamlService = this.getDialogoiYamlService();
+      const projectSetupService = this.getProjectSetupService();
       const logger = Logger.getInstance();
-      this.projectSettingsService = new ProjectSettingsService(dialogoiYamlService, logger);
+      this.projectSettingsService = new ProjectSettingsService(
+        dialogoiYamlService,
+        projectSetupService,
+        logger,
+      );
     }
     return this.projectSettingsService;
   }
