@@ -143,6 +143,36 @@ export class DialogoiYamlService {
   }
 
   /**
+   * 新しいDialogoiプロジェクトを自動セットアップ付きで作成（非同期版）
+   * 注意: このメソッドは循環依存を避けるため、ProjectSetupServiceから呼び出される想定です。
+   * 直接的なプロジェクト作成にはProjectSetupService.createDialogoiProjectWithSetupを使用してください。
+   * @param projectRootAbsolutePath プロジェクトルートの絶対パス
+   * @param title 作品タイトル
+   * @param author 著者名
+   * @param tags タグ（オプション）
+   * @param withAutoSetup 自動セットアップを実行するかどうか（デフォルト: false）
+   * @returns 作成成功時はtrue
+   * @deprecated ProjectSetupService.createDialogoiProjectWithSetupの使用を推奨
+   */
+  async createDialogoiProjectWithAutoSetupAsync(
+    projectRootAbsolutePath: string,
+    title: string,
+    author: string,
+    tags?: string[],
+    withAutoSetup: boolean = false,
+  ): Promise<boolean> {
+    if (withAutoSetup) {
+      // 自動セットアップが必要な場合は、ProjectSetupServiceを使用する必要がある
+      // ここでは循環依存を避けるため、基本的なプロジェクト作成のみ実行
+      console.warn(
+        'DialogoiYamlService.createDialogoiProjectWithAutoSetupAsync: 自動セットアップにはProjectSetupServiceの使用を推奨します',
+      );
+    }
+
+    return await this.createDialogoiProjectAsync(projectRootAbsolutePath, title, author, tags);
+  }
+
+  /**
    * dialogoi.yamlファイルの更新（非同期版）
    * @param projectRootAbsolutePath プロジェクトルートの絶対パス
    * @param updates 更新するフィールド

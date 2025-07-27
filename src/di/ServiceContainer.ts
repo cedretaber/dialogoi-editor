@@ -20,6 +20,7 @@ import { FileStatusService } from '../services/FileStatusService.js';
 import { FileManagementService } from '../services/FileManagementService.js';
 import { FileTypeDetectionService } from '../services/FileTypeDetectionService.js';
 import { ProjectAutoSetupService } from '../services/ProjectAutoSetupService.js';
+import { ProjectSetupService } from '../services/ProjectSetupService.js';
 import { Logger } from '../utils/Logger.js';
 import { Uri } from '../interfaces/Uri.js';
 
@@ -49,6 +50,7 @@ export interface IServiceContainer {
   getFileManagementService(): FileManagementService;
   getFileTypeDetectionService(): FileTypeDetectionService;
   getProjectAutoSetupService(): ProjectAutoSetupService;
+  getProjectSetupService(): ProjectSetupService;
   reset(): void;
 }
 
@@ -79,6 +81,7 @@ export class ServiceContainer implements IServiceContainer {
   private fileManagementService: FileManagementService | null = null;
   private fileTypeDetectionService: FileTypeDetectionService | null = null;
   private projectAutoSetupService: ProjectAutoSetupService | null = null;
+  private projectSetupService: ProjectSetupService | null = null;
 
   protected constructor() {}
 
@@ -312,6 +315,7 @@ export class ServiceContainer implements IServiceContainer {
     this.fileManagementService = null;
     this.fileTypeDetectionService = null;
     this.projectAutoSetupService = null;
+    this.projectSetupService = null;
   }
 
   getSettingsRepository(): SettingsRepository {
@@ -381,6 +385,18 @@ export class ServiceContainer implements IServiceContainer {
       );
     }
     return this.projectAutoSetupService;
+  }
+
+  getProjectSetupService(): ProjectSetupService {
+    if (!this.projectSetupService) {
+      const dialogoiYamlService = this.getDialogoiYamlService();
+      const projectAutoSetupService = this.getProjectAutoSetupService();
+      this.projectSetupService = new ProjectSetupService(
+        dialogoiYamlService,
+        projectAutoSetupService,
+      );
+    }
+    return this.projectSetupService;
   }
 
   /**

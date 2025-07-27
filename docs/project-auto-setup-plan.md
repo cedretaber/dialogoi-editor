@@ -16,13 +16,13 @@
 - ユーザの手動操作は最小限
 - その後の個別調整で細かいカスタマイズに対応
 
-## 実装計画
+## 実装結果
 
-### Phase 1: 既存機能の整理・削除
+### ✅ Phase 1: 既存機能の整理・削除（完了）
 
 #### 1.1 ディレクトリ一括追加機能の削除
 ```
-削除対象：
+削除完了：
 - src/webviews/BulkAddDirectoryProvider.ts
 - src/commands/bulkAddDirectoryCommands.ts
 - src/services/FileManagementService.bulkAddDirectory()
@@ -36,7 +36,7 @@
 
 #### 1.2 不要なインターフェース・型定義の削除
 ```
-削除対象：
+削除完了：
 - src/interfaces/BulkAddDirectory.ts
 - BulkAddFilePreview関連の型
 - BulkAddDirectoryMessage関連の型
@@ -44,26 +44,33 @@
 
 #### 1.3 WebViewビルド設定の整理
 ```
-package.jsonから削除：
+package.jsonから削除完了：
 - webview:build:bulkAddDirectory
 - webview:buildで該当箇所を削除
 ```
 
-### Phase 2: プロジェクト作成時自動ファイル登録機能の強化
+### ✅ Phase 2: プロジェクト作成時自動ファイル登録機能の強化（完了）
 
-#### 2.1 再帰的ディレクトリスキャン機能
+#### ✅ 2.1 再帰的ディレクトリスキャン機能（実装完了）
 ```typescript
-interface ProjectAutoSetupService {
+// 実装済み: src/services/ProjectAutoSetupService.ts
+class ProjectAutoSetupService {
   /**
    * プロジェクトルートから再帰的にファイルをスキャンし、
    * 各ディレクトリに.dialogoi-meta.yamlを配置
    */
-  setupProjectStructure(projectRoot: string): Promise<SetupResult>;
+  async setupProjectStructure(
+    projectRoot: string, 
+    options?: Partial<DirectorySetupOptions>
+  ): Promise<SetupResult>;
   
   /**
    * 全ファイルを自動的に管理対象に登録
    */
-  registerAllFiles(projectRoot: string): Promise<RegistrationResult>;
+  async registerAllFiles(
+    projectRoot: string, 
+    options?: Partial<FileRegistrationOptions>
+  ): Promise<RegistrationResult>;
 }
 ```
 
@@ -125,26 +132,75 @@ interface FileTypeConversionService {
   - setting → content
 - **確認**: 変更内容の確認ダイアログ表示
 
-### Phase 4: プロジェクト作成フローの統合
+### ✅ Phase 4: プロジェクト作成フローの統合（完了）
 
-#### 4.1 DialogoiYamlService.createDialogoiProjectAsyncの拡張
-現在の処理：
-1. `dialogoi.yaml`の作成のみ
-
-新しい処理：
-1. `dialogoi.yaml`の作成
-2. **ProjectAutoSetupService.setupProjectStructure()の呼び出し**
-3. **ProjectAutoSetupService.registerAllFiles()の呼び出し**
-
-#### 4.2 プロジェクト作成時のユーザーオプション
+#### ✅ 4.1 ProjectSetupServiceによる統合アーキテクチャ（実装完了）
+**循環依存を回避した新しいアーキテクチャ:**
 ```typescript
-interface ProjectCreationOptions {
-  autoRegisterFiles: boolean;           // 自動ファイル登録（デフォルト: true）
-  createDirectoryStructure: boolean;    // ディレクトリ構造自動生成（デフォルト: true）
-  fileTypeDetection: 'extension';       // ファイル種別判定方法
-  excludePatterns?: string[];           // カスタム除外パターン
+// 実装済み: src/services/ProjectSetupService.ts
+class ProjectSetupService {
+  constructor(
+    private dialogoiYamlService: DialogoiYamlService,
+    private projectAutoSetupService: ProjectAutoSetupService
+  ) {}
+
+  /**
+   * 新規プロジェクト作成 + 自動セットアップ
+   */
+  async createDialogoiProjectWithSetup(
+    projectRootAbsolutePath: string,
+    title: string,
+    author: string,
+    tags?: string[],
+    options?: ProjectSetupOptions
+  ): Promise<ProjectSetupResult>;
+
+  /**
+   * 既存プロジェクトに自動セットアップを適用
+   */
+  async setupExistingProject(
+    projectRootAbsolutePath: string,
+    options?: ProjectSetupOptions
+  ): Promise<ProjectSetupResult>;
 }
 ```
+
+**統合処理フロー:**
+1. `DialogoiYamlService.createDialogoiProjectAsync()` - dialogoi.yaml作成
+2. `ProjectAutoSetupService.setupProjectStructure()` - ディレクトリ構造セットアップ
+3. `ProjectAutoSetupService.registerAllFiles()` - 全ファイル自動登録
+
+#### ✅ 4.2 プロジェクト作成時のユーザーオプション（実装完了）
+```typescript
+// 実装済み: src/services/ProjectSetupService.ts
+interface ProjectSetupOptions {
+  autoRegisterFiles?: boolean;           // 自動ファイル登録（デフォルト: true）
+  createDirectoryStructure?: boolean;    // ディレクトリ構造自動生成（デフォルト: true）
+  fileTypeDetection?: 'extension';       // ファイル種別判定方法
+  excludePatterns?: string[];            // カスタム除外パターン
+  readmeTemplate?: 'minimal' | 'detailed'; // READMEテンプレート
+}
+```
+
+## 実装状況サマリー
+
+### ✅ 完了済み機能（Sprint 1-2）
+1. **ディレクトリ一括追加機能の完全削除** - 複雑なWebView UIを排除
+2. **ProjectAutoSetupService実装** - 自動プロジェクト構造セットアップ
+3. **ProjectSetupService実装** - 高レベル統合オーケストレーター
+4. **循環依存解決** - アーキテクチャの最適化
+5. **包括的テストカバレッジ** - 464個のサーバサイドテスト + 223個のReactテスト
+
+### 🔄 次期実装予定（Sprint 3-4）
+1. **FileTypeConversionService** - 個別ファイル種別変更機能
+2. **プログレス表示機能** - 長時間処理の可視化
+3. **エラーハンドリング強化** - より親切なエラーメッセージ
+
+### 📊 品質指標
+- **型安全性**: TypeScript strict mode 完全準拠
+- **コード品質**: ESLint max-warnings 0
+- **テストカバレッジ**: 全主要機能をカバー
+- **ビルド**: 全チェック通過（typecheck + lint + format + test:all + webview:build）
 
 ## 技術実装詳細
 

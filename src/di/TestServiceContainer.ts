@@ -29,6 +29,7 @@ import { FileStatusService } from '../services/FileStatusService.js';
 import { FileManagementService } from '../services/FileManagementService.js';
 import { FileTypeDetectionService } from '../services/FileTypeDetectionService.js';
 import { ProjectAutoSetupService } from '../services/ProjectAutoSetupService.js';
+import { ProjectSetupService } from '../services/ProjectSetupService.js';
 import { Logger } from '../utils/Logger.js';
 
 /**
@@ -58,6 +59,7 @@ export class TestServiceContainer implements IServiceContainer {
   private fileManagementService: FileManagementService | null = null;
   private fileTypeDetectionService: FileTypeDetectionService | null = null;
   private projectAutoSetupService: ProjectAutoSetupService | null = null;
+  private projectSetupService: ProjectSetupService | null = null;
 
   private constructor() {
     // テスト環境では常にMockFileRepositoryを使用
@@ -339,6 +341,18 @@ export class TestServiceContainer implements IServiceContainer {
       );
     }
     return this.projectAutoSetupService;
+  }
+
+  getProjectSetupService(): ProjectSetupService {
+    if (!this.projectSetupService) {
+      const dialogoiYamlService = this.getDialogoiYamlService();
+      const projectAutoSetupService = this.getProjectAutoSetupService();
+      this.projectSetupService = new ProjectSetupService(
+        dialogoiYamlService,
+        projectAutoSetupService,
+      );
+    }
+    return this.projectSetupService;
   }
 
   /**

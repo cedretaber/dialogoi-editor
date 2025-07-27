@@ -65,15 +65,20 @@
 │  ├─ DialogoiYamlService                         │
 │  ├─ DropHandlerService                          │
 │  ├─ FileChangeNotificationService               │
+│  ├─ FileManagementService                       │
 │  ├─ FileOperationService                        │
 │  ├─ FilePathMapService                          │
+│  ├─ FileStatusService                           │
+│  ├─ FileTypeDetectionService                    │
 │  ├─ ForeshadowingService                        │
 │  ├─ HashService                                 │
 │  ├─ HyperlinkExtractorService                   │
 │  ├─ MetaYamlService                             │
-│  ├─ ProjectCreationService                      │
+│  ├─ ProjectAutoSetupService (NEW)               │
+│  ├─ ProjectCreationService (DEPRECATED)         │
 │  ├─ ProjectLinkUpdateService                    │
 │  ├─ ProjectPathNormalizationService             │
+│  ├─ ProjectSetupService (NEW)                   │
 │  ├─ ProjectSettingsService                      │
 │  ├─ ReferenceManager                            │
 │  └─ TreeViewFilterService                       │
@@ -243,25 +248,48 @@ export class ServiceContainer {
 - ステータス管理（open/resolved）
 - ファイルハッシュによる変更検知
 
-### 4. DialogoiYamlService
+### 4. ProjectAutoSetupService (NEW)
+プロジェクト自動セットアップ機能：
+- 再帰的ディレクトリスキャン
+- .dialogoi-meta.yaml自動生成
+- README.md自動生成（minimal/detailed）
+- 全ファイル自動登録（除外パターン対応）
+- ファイル種別自動判定
+
+### 5. ProjectSetupService (NEW)
+高レベルプロジェクト作成オーケストレーター：
+- DialogoiYamlService + ProjectAutoSetupServiceの統合
+- 循環依存を回避した適切なアーキテクチャ
+- 新規プロジェクト作成 + 自動セットアップ
+- 既存プロジェクトへの自動セットアップ適用
+- 詳細な進行状況レポート
+
+### 6. FileTypeDetectionService (NEW)
+ファイル種別自動判定：
+- 拡張子ベース判定（.txt→content, .md→setting）
+- ディレクトリベース判定（contents/→content系）
+- 除外パターン処理（glob対応）
+- ProjectCreationServiceから機能抽出・改良
+
+### 7. DialogoiYamlService
 プロジェクト設定（`dialogoi.yaml`）の管理：
 - プロジェクト作成・読み込み・保存
 - プロジェクトルート検索
 - バリデーション
 
-### 5. ReferenceManager
+### 8. ReferenceManager
 参照関係の一元管理：
 - 手動参照とハイパーリンク参照の統合
 - 双方向参照の自動追跡
 - 存在チェック機能
 
-### 6. ForeshadowingService
+### 9. ForeshadowingService
 伏線管理機能：
 - 複数の「張る」位置と「回収」位置の管理
 - 伏線状態の追跡（planned/partially_planted/fully_planted/resolved/error）
 - ファイル存在確認
 
-### 7. HashService
+### 10. HashService
 ファイル変更検知：
 - SHA-256ハッシュ計算
 - ファイル内容の変更検知
@@ -380,6 +408,41 @@ React WebView更新・編集モード開始
 - WeakMapによる循環参照回避
 - 適切なリスナー削除とクリーンアップ
 - MockRepositoryによるテスト時メモリ効率
+
+## アーキテクチャ改善（2025年1月）
+
+### 循環依存解決とサービス統合
+
+**問題:** 従来のProjectCreationServiceとDialogoiYamlServiceの間に循環依存の課題があった
+
+**解決策:** ProjectSetupServiceによる統合オーケストレーター導入
+```
+階層構造:
+ProjectSetupService (高レベル統合)
+├─ DialogoiYamlService (基本プロジェクト作成)
+└─ ProjectAutoSetupService (自動セットアップ)
+    ├─ MetaYamlService
+    ├─ FileTypeDetectionService
+    └─ DialogoiYamlService (除外パターン取得)
+```
+
+**利点:**
+- 循環依存の完全解決
+- 単一責任原則の徹底
+- テスト可能性の向上
+- 将来の機能拡張に対する柔軟性
+
+### 機能分割とモジュール化
+
+**ProjectCreationService → 3つのサービスに分割:**
+1. **FileTypeDetectionService**: ファイル種別判定ロジックの抽出
+2. **ProjectAutoSetupService**: 自動セットアップ機能の実装
+3. **ProjectSetupService**: 高レベルオーケストレーション
+
+**メリット:**
+- 各サービスの責務が明確
+- 個別のテストが容易
+- 再利用性の向上
 
 ## セキュリティ考慮事項
 
