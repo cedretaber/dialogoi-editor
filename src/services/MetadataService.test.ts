@@ -1,19 +1,16 @@
 import assert from 'assert';
 import { MetadataService } from './MetadataService.js';
-import { FileOperationService } from './FileOperationService.js';
 import { TestServiceContainer } from '../di/TestServiceContainer.js';
 import { MockFileRepository } from '../repositories/MockFileRepository.js';
 
 suite('MetadataService テストスイート', () => {
   let metadataService: MetadataService;
-  let fileOperationService: FileOperationService;
   let mockFileRepository: MockFileRepository;
 
   setup(async () => {
     const container = TestServiceContainer.create();
     mockFileRepository = container.getFileRepository() as MockFileRepository;
-    fileOperationService = container.getFileOperationService();
-    metadataService = new MetadataService(fileOperationService);
+    metadataService = container.getMetadataService();
 
     // テスト用ディレクトリ構造の準備
     mockFileRepository.createDirectoryForTest('/test');

@@ -657,9 +657,7 @@ export class DialogoiTreeDataProvider
 
   // タグ操作メソッド
   async addTag(dirPath: string, fileName: string, tag: string): Promise<FileOperationResult> {
-    const metadataService = ServiceContainer.getInstance().getMetadataService(
-      this.novelRoot ?? undefined,
-    );
+    const metadataService = ServiceContainer.getInstance().getMetadataService();
     const result = await metadataService.addTag(dirPath, fileName, tag);
 
     if (result.success) {
@@ -670,9 +668,7 @@ export class DialogoiTreeDataProvider
   }
 
   async removeTag(dirPath: string, fileName: string, tag: string): Promise<FileOperationResult> {
-    const metadataService = ServiceContainer.getInstance().getMetadataService(
-      this.novelRoot ?? undefined,
-    );
+    const metadataService = ServiceContainer.getInstance().getMetadataService();
     const result = await metadataService.removeTag(dirPath, fileName, tag);
 
     if (result.success) {
@@ -683,9 +679,7 @@ export class DialogoiTreeDataProvider
   }
 
   async setTags(dirPath: string, fileName: string, tags: string[]): Promise<FileOperationResult> {
-    const metadataService = ServiceContainer.getInstance().getMetadataService(
-      this.novelRoot ?? undefined,
-    );
+    const metadataService = ServiceContainer.getInstance().getMetadataService();
     const result = await metadataService.setTags(dirPath, fileName, tags);
 
     if (result.success) {
@@ -701,9 +695,7 @@ export class DialogoiTreeDataProvider
     fileName: string,
     referencePath: string,
   ): Promise<FileOperationResult> {
-    const metadataService = ServiceContainer.getInstance().getMetadataService(
-      this.novelRoot ?? undefined,
-    );
+    const metadataService = ServiceContainer.getInstance().getMetadataService();
     const result = await metadataService.addReference(dirPath, fileName, referencePath);
 
     if (result.success) {
@@ -732,9 +724,7 @@ export class DialogoiTreeDataProvider
     fileName: string,
     referencePath: string,
   ): Promise<FileOperationResult> {
-    const metadataService = ServiceContainer.getInstance().getMetadataService(
-      this.novelRoot ?? undefined,
-    );
+    const metadataService = ServiceContainer.getInstance().getMetadataService();
     const result = await metadataService.removeReference(dirPath, fileName, referencePath);
 
     if (result.success) {
@@ -763,9 +753,7 @@ export class DialogoiTreeDataProvider
     fileName: string,
     references: string[],
   ): Promise<FileOperationResult> {
-    const metadataService = ServiceContainer.getInstance().getMetadataService(
-      this.novelRoot ?? undefined,
-    );
+    const metadataService = ServiceContainer.getInstance().getMetadataService();
     const result = await metadataService.setReferences(dirPath, fileName, references);
 
     if (result.success) {

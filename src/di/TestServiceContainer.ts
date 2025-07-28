@@ -6,7 +6,6 @@ import { ReferenceManager } from '../services/ReferenceManager.js';
 import { CommentService } from '../services/CommentService.js';
 import { DialogoiYamlService } from '../services/DialogoiYamlService.js';
 import { MetaYamlService } from '../services/MetaYamlService.js';
-import { FileOperationService } from '../services/FileOperationService.js';
 import { MetadataService } from '../services/MetadataService.js';
 import { FilePathMapService } from '../services/FilePathMapService.js';
 import { HyperlinkExtractorService } from '../services/HyperlinkExtractorService.js';
@@ -43,7 +42,6 @@ export class TestServiceContainer implements IServiceContainer {
   private referenceManager: ReferenceManager | null = null;
   private dialogoiYamlService: DialogoiYamlService | null = null;
   private metaYamlService: MetaYamlService | null = null;
-  private fileOperationService: FileOperationService | null = null;
   private metadataService: MetadataService | null = null;
   private filePathMapService: FilePathMapService | null = null;
   private hyperlinkExtractorService: HyperlinkExtractorService | null = null;
@@ -147,32 +145,11 @@ export class TestServiceContainer implements IServiceContainer {
   }
 
   /**
-   * FileOperationServiceを取得
-   */
-  getFileOperationService(novelRootAbsolutePath?: string): FileOperationService {
-    if (!this.fileOperationService) {
-      this.fileOperationService = new FileOperationService(
-        this.fileRepository,
-        this.getMetaYamlService(),
-        novelRootAbsolutePath,
-      );
-    }
-    return this.fileOperationService;
-  }
-
-  /**
    * MetadataServiceを取得
    */
-  getMetadataService(novelRootAbsolutePath?: string): MetadataService {
-    if (
-      novelRootAbsolutePath !== undefined &&
-      novelRootAbsolutePath !== null &&
-      novelRootAbsolutePath !== ''
-    ) {
-      return new MetadataService(this.getFileOperationService(novelRootAbsolutePath));
-    }
+  getMetadataService(): MetadataService {
     if (!this.metadataService) {
-      this.metadataService = new MetadataService(this.getFileOperationService());
+      this.metadataService = new MetadataService(this.getMetaYamlService());
     }
     return this.metadataService;
   }
@@ -227,7 +204,6 @@ export class TestServiceContainer implements IServiceContainer {
     this.referenceManager = null;
     this.dialogoiYamlService = null;
     this.metaYamlService = null;
-    this.fileOperationService = null;
     this.metadataService = null;
     this.filePathMapService = null;
     this.hyperlinkExtractorService = null;

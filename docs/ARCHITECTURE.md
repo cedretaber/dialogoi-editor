@@ -60,25 +60,22 @@
 │  Business Logic Layer                           │
 │  ├─ CharacterService                            │
 │  ├─ CommentService                              │
+│  ├─ CoreFileService                             │
 │  ├─ DialogoiSettingsService                     │
 │  ├─ DialogoiTemplateService                     │
 │  ├─ DialogoiYamlService                         │
 │  ├─ DropHandlerService                          │
 │  ├─ FileChangeNotificationService               │
 │  ├─ FileManagementService                       │
-│  ├─ FileOperationService                        │
 │  ├─ FilePathMapService                          │
 │  ├─ FileStatusService                           │
-│  ├─ FileTypeConversionService (NEW)             │
-│  ├─ FileTypeDetectionService                    │
+│  ├─ FileTypeConversionService                   │
 │  ├─ ForeshadowingService                        │
-│  ├─ HashService                                 │
 │  ├─ HyperlinkExtractorService                   │
+│  ├─ MetadataService                             │
 │  ├─ MetaYamlService                             │
 │  ├─ ProjectAutoSetupService                     │
-│  ├─ ProjectCreationService (DEPRECATED)         │
 │  ├─ ProjectLinkUpdateService                    │
-│  ├─ ProjectPathNormalizationService             │
 │  ├─ ProjectPathService                          │
 │  ├─ ProjectSetupService                         │
 │  ├─ ProjectSettingsService                      │
@@ -240,84 +237,54 @@ export class ServiceContainer {
 
 ## 主要サービスの概要
 
-### 1. FileOperationService
-ファイル・ディレクトリの基本操作を提供：
-- 作成・削除・名前変更・移動
-- タグ・参照の操作
+### 1. CoreFileService
+ファイル・ディレクトリの基本操作：
+- 作成・削除・名前変更・移動・順序変更
+- ファイル内容の読み書き（低レベルAPI）
 - メタデータとの同期管理
 
-### 2. MetaYamlService
+### 2. MetadataService
+メタデータ専用操作：
+- タグ操作：addTag, removeTag, setTags
+- 参照操作：addReference, removeReference, setReferences
+- 汎用メタデータ更新：updateMetaYaml
+
+### 3. MetaYamlService
 `.dialogoi-meta.yaml`ファイルの管理：
 - 読み込み・保存・バリデーション
 - ファイル情報の追加・削除・更新
-- タグ・参照関係の管理
 
-### 3. CommentService
+### 4. CommentService
 コメント・TODO機能の管理：
 - GitHub風行番号形式（#L42, #L4-L7）対応
 - マークダウン対応コメントの作成・編集・削除
 - ステータス管理（open/resolved）
 - ファイルハッシュによる変更検知
 
-### 4. ProjectAutoSetupService ✅ 実装完了
-プロジェクト自動セットアップ機能：
-- 再帰的ディレクトリスキャン
-- .dialogoi-meta.yaml自動生成
-- README.md自動生成（minimal/detailed）
-- 全ファイル自動登録（除外パターン対応）
-- ファイル種別自動判定
+### 5. FileManagementService
+ファイル管理操作と業務ロジック：
+- 未管理ファイルのmeta.yaml追加・削除
+- 欠損ファイルの作成（テンプレート対応）
+- キャラクター操作：setCharacterImportance, setMultipleCharacters, removeCharacter
+- 伏線操作：setForeshadowing, removeForeshadowing
 
-### 5. ProjectSetupService ✅ 実装完了
-高レベルプロジェクト作成オーケストレーター：
-- DialogoiYamlService + ProjectAutoSetupServiceの統合
-- 循環依存を回避した適切なアーキテクチャ
-- 新規プロジェクト作成 + 自動セットアップ
-- 既存プロジェクトへの自動セットアップ適用
-- 詳細な進行状況レポート
-
-### 6. FileTypeDetectionService ✅ 実装完了
-ファイル種別自動判定：
-- 拡張子ベース判定（.txt→content, .md→setting）
-- ディレクトリベース判定（contents/→content系）
-- 除外パターン処理（glob対応）
-- ProjectCreationServiceから機能抽出・改良
-
-### 7. FileTypeConversionService ✅ 実装完了
-ファイル種別変更機能：
-- content ↔ setting間の変更
-- プロジェクト内ファイル検索・更新
-- meta.yamlファイルの安全な更新
-- TreeView・WebView即座更新
-
-### 8. ProjectPathService ✅ 実装完了
-プロジェクトパス管理：
-- プロジェクトルート検索・検証
-- 相対パス・絶対パス変換
-- PathUtilsの単一責任化リファクタリング
-
-### 9. DialogoiYamlService
+### 6. DialogoiYamlService
 プロジェクト設定（`dialogoi.yaml`）の管理：
 - プロジェクト作成・読み込み・保存
-- プロジェクトルート検索
-- バリデーション
+- プロジェクトルート検索・判定
+- バリデーション・除外パターン取得
 
-### 10. ReferenceManager
+### 7. ReferenceManager
 参照関係の一元管理：
 - 手動参照とハイパーリンク参照の統合
 - 双方向参照の自動追跡
-- 存在チェック機能
+- 存在チェック・整合性保持
 
-### 11. ForeshadowingService
+### 8. ForeshadowingService
 伏線管理機能：
 - 複数の「張る」位置と「回収」位置の管理
 - 伏線状態の追跡（planned/partially_planted/fully_planted/resolved/error）
-- ファイル存在確認
-
-### 12. HashService
-ファイル変更検知：
-- SHA-256ハッシュ計算
-- ファイル内容の変更検知
-- コメント・参照の整合性保持
+- ファイル存在確認・バリデーション
 
 ## WebView UI アーキテクチャ
 
@@ -433,40 +400,6 @@ React WebView更新・編集モード開始
 - 適切なリスナー削除とクリーンアップ
 - MockRepositoryによるテスト時メモリ効率
 
-## アーキテクチャ改善（2025年1月）
-
-### 循環依存解決とサービス統合
-
-**問題:** 従来のProjectCreationServiceとDialogoiYamlServiceの間に循環依存の課題があった
-
-**解決策:** ProjectSetupServiceによる統合オーケストレーター導入
-```
-階層構造:
-ProjectSetupService (高レベル統合)
-├─ DialogoiYamlService (基本プロジェクト作成)
-└─ ProjectAutoSetupService (自動セットアップ)
-    ├─ MetaYamlService
-    ├─ FileTypeDetectionService
-    └─ DialogoiYamlService (除外パターン取得)
-```
-
-**利点:**
-- 循環依存の完全解決
-- 単一責任原則の徹底
-- テスト可能性の向上
-- 将来の機能拡張に対する柔軟性
-
-### 機能分割とモジュール化
-
-**ProjectCreationService → 3つのサービスに分割:**
-1. **FileTypeDetectionService**: ファイル種別判定ロジックの抽出
-2. **ProjectAutoSetupService**: 自動セットアップ機能の実装
-3. **ProjectSetupService**: 高レベルオーケストレーション
-
-**メリット:**
-- 各サービスの責務が明確
-- 個別のテストが容易
-- 再利用性の向上
 
 ## セキュリティ考慮事項
 
