@@ -611,3 +611,42 @@ src/services/ディレクトリには26個のサービスクラスが存在し�
 - ドキュメント整合性向上
 
 この分析により、プロジェクトの技術的負債を体系的に解消し、より保守しやすい設計への移行が可能になります。
+
+## 実際の移行結果 (2025-01-28)
+
+### **Phase 1: utils化完了**
+
+以下の3つのサービスのutils化が完了しました：
+
+#### ✅ 移行完了済み
+
+| 元サービス | 移行先 | 移行理由 | 実装変更点 |
+|-----------|--------|----------|------------|
+| HashService | utils/HashCalculator.ts | 純粋なハッシュ計算、DI不要 | 静的メソッドに変更、FileRepository引数受け取り |
+| FileTypeDetectionService | utils/FileTypeDetector.ts | 純粋なファイル種別判定、DI不要 | 静的メソッドに変更、判定ロジック改善 |
+| ProjectPathNormalizationService | utils/PathNormalizer.ts | 純粋なパス操作、DI不要 | 静的メソッドに変更、パス正規化関数群 |
+
+#### ❌ utils化見送り
+
+| サービス | 見送り理由 |
+|---------|------------|
+| HyperlinkExtractorService | FileRepository・FilePathMapServiceへの依存、複雑なプロジェクト内リンク判定ロジック |
+| ProjectLinkUpdateService | FileRepository・MetaYamlServiceへの依存、ファイル更新を伴う複雑な処理 |
+
+### **移行による効果**
+
+- **サービス数削減**: 26 → 23サービス
+- **DI依存削除**: 3サービスで依存関係注入が不要に
+- **テスト実行改善**: MockFileRepositoryを引数で渡す形で単体テストが高速化
+- **コード可読性向上**: 純粋関数として静的メソッド化による意図明確化
+- **技術的負債削減**: サービス登録・初期化コードの削除
+
+### **今後の方針**
+
+HyperlinkExtractorServiceとProjectLinkUpdateServiceは、以下の理由によりutils化を行わず、サービスとして保持：
+
+1. **適切な依存関係**: 他のサービスへの依存は処理の複雑さに見合っている
+2. **ビジネスロジック**: 単純なユーティリティではなく、プロジェクト固有の複雑な処理
+3. **自然な設計**: DI による依存性注入がアーキテクチャとして適切
+
+utils化は「純粋なロジック処理で、サービス間依存が不要なもの」に限定し、無理なutils化は行わない方針で完了。
