@@ -1382,7 +1382,7 @@ export class FileOperationService {
   /**
    * .dialogoi-meta.yamlを更新する共通ロジック（非同期版）
    */
-  private async updateMetaYamlAsync(
+  async updateMetaYamlAsync(
     dirPath: string,
     updateFunction: (meta: MetaYaml) => MetaYaml,
   ): Promise<FileOperationResult> {

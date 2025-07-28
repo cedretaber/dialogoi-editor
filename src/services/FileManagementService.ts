@@ -1,6 +1,7 @@
 import { FileRepository } from '../repositories/FileRepository.js';
 import { MetaYamlService } from './MetaYamlService.js';
-import { DialogoiTreeItem } from '../utils/MetaYamlUtils.js';
+import { DialogoiTreeItem, MetaYaml } from '../utils/MetaYamlUtils.js';
+import { ForeshadowingData } from './ForeshadowingService.js';
 import * as path from 'path';
 
 /**
@@ -10,6 +11,7 @@ export interface FileManagementResult {
   success: boolean;
   message: string;
   error?: Error;
+  updatedItems?: DialogoiTreeItem[];
 }
 
 /**
@@ -205,6 +207,279 @@ export class FileManagementService {
       return `${fileName}\n\n（このファイルの内容をここに記述してください）\n`;
     } else {
       return `// ${fileName}\n\n`;
+    }
+  }
+
+  /**
+   * メタデータを更新する汎用メソッド
+   * @param dirPath ディレクトリパス
+   * @param updateFunction 更新関数
+   * @returns 処理結果
+   */
+  private async updateMetaYaml(
+    dirPath: string,
+    updateFunction: (meta: MetaYaml) => MetaYaml,
+  ): Promise<FileManagementResult> {
+    try {
+      // .dialogoi-meta.yamlを読み込み
+      const meta = await this.metaYamlService.loadMetaYamlAsync(dirPath);
+      if (meta === null) {
+        return {
+          success: false,
+          message: '.dialogoi-meta.yamlが見つからないか、読み込みに失敗しました。',
+        };
+      }
+
+      // 更新を実行
+      const updatedMeta = updateFunction(meta);
+
+      // .dialogoi-meta.yamlを保存
+      const saveResult = await this.metaYamlService.saveMetaYamlAsync(dirPath, updatedMeta);
+      if (!saveResult) {
+        return {
+          success: false,
+          message: '.dialogoi-meta.yamlの保存に失敗しました。',
+        };
+      }
+
+      // パスを更新したアイテムを返す
+      const updatedItems = updatedMeta.files.map((file: DialogoiTreeItem) => ({
+        ...file,
+        path: path.join(dirPath, file.name),
+      }));
+
+      return {
+        success: true,
+        message: '.dialogoi-meta.yamlを更新しました。',
+        updatedItems,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: `.dialogoi-meta.yaml更新エラー: ${error instanceof Error ? error.message : String(error)}`,
+      };
+    }
+  }
+
+  /**
+   * ファイルのキャラクター重要度を設定する
+   * @param dirPath ディレクトリパス
+   * @param fileName ファイル名
+   * @param importance キャラクター重要度
+   * @returns 処理結果
+   */
+  async setCharacterImportance(
+    dirPath: string,
+    fileName: string,
+    importance: 'main' | 'sub' | 'background',
+  ): Promise<FileManagementResult> {
+    try {
+      const result = await this.updateMetaYaml(dirPath, (meta) => {
+        const fileIndex = meta.files.findIndex((file) => file.name === fileName);
+        if (fileIndex === -1) {
+          throw new Error(`.dialogoi-meta.yaml内にファイル ${fileName} が見つかりません。`);
+        }
+
+        const fileItem = meta.files[fileIndex];
+        if (fileItem !== undefined) {
+          if (!fileItem.character) {
+            fileItem.character = {
+              importance: importance,
+              multiple_characters: false,
+            };
+          } else {
+            fileItem.character.importance = importance;
+          }
+        }
+        return meta;
+      });
+
+      if (!result.success) {
+        return result;
+      }
+
+      return {
+        success: true,
+        message: `${fileName} のキャラクター重要度を "${importance}" に設定しました。`,
+        updatedItems: result.updatedItems,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: `キャラクター重要度設定エラー: ${error instanceof Error ? error.message : String(error)}`,
+      };
+    }
+  }
+
+  /**
+   * ファイルの複数キャラクターフラグを設定する
+   * @param dirPath ディレクトリパス
+   * @param fileName ファイル名
+   * @param multipleCharacters 複数キャラクターフラグ
+   * @returns 処理結果
+   */
+  async setMultipleCharacters(
+    dirPath: string,
+    fileName: string,
+    multipleCharacters: boolean,
+  ): Promise<FileManagementResult> {
+    try {
+      const result = await this.updateMetaYaml(dirPath, (meta) => {
+        const fileIndex = meta.files.findIndex((file) => file.name === fileName);
+        if (fileIndex === -1) {
+          throw new Error(`.dialogoi-meta.yaml内にファイル ${fileName} が見つかりません。`);
+        }
+
+        const fileItem = meta.files[fileIndex];
+        if (fileItem !== undefined) {
+          if (!fileItem.character) {
+            fileItem.character = {
+              importance: 'sub',
+              multiple_characters: multipleCharacters,
+            };
+          } else {
+            fileItem.character.multiple_characters = multipleCharacters;
+          }
+        }
+        return meta;
+      });
+
+      if (!result.success) {
+        return result;
+      }
+
+      return {
+        success: true,
+        message: `${fileName} の複数キャラクターフラグを "${multipleCharacters ? '有効' : '無効'}" に設定しました。`,
+        updatedItems: result.updatedItems,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: `複数キャラクターフラグ設定エラー: ${error instanceof Error ? error.message : String(error)}`,
+      };
+    }
+  }
+
+  /**
+   * ファイルのキャラクター設定を削除する
+   * @param dirPath ディレクトリパス
+   * @param fileName ファイル名
+   * @returns 処理結果
+   */
+  async removeCharacter(dirPath: string, fileName: string): Promise<FileManagementResult> {
+    try {
+      const result = await this.updateMetaYaml(dirPath, (meta) => {
+        const fileIndex = meta.files.findIndex((file) => file.name === fileName);
+        if (fileIndex === -1) {
+          throw new Error(`.dialogoi-meta.yaml内にファイル ${fileName} が見つかりません。`);
+        }
+
+        const fileItem = meta.files[fileIndex];
+        if (fileItem !== undefined) {
+          delete fileItem.character;
+        }
+        return meta;
+      });
+
+      if (!result.success) {
+        return result;
+      }
+
+      return {
+        success: true,
+        message: `${fileName} のキャラクター設定を削除しました。`,
+        updatedItems: result.updatedItems,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: `キャラクター設定削除エラー: ${error instanceof Error ? error.message : String(error)}`,
+      };
+    }
+  }
+
+  /**
+   * ファイルの伏線設定を設定する
+   * @param dirPath ディレクトリパス
+   * @param fileName ファイル名
+   * @param foreshadowingData 伏線データ
+   * @returns 処理結果
+   */
+  async setForeshadowing(
+    dirPath: string,
+    fileName: string,
+    foreshadowingData: ForeshadowingData,
+  ): Promise<FileManagementResult> {
+    try {
+      const result = await this.updateMetaYaml(dirPath, (meta) => {
+        const fileIndex = meta.files.findIndex((file) => file.name === fileName);
+        if (fileIndex === -1) {
+          throw new Error(`.dialogoi-meta.yaml内にファイル ${fileName} が見つかりません。`);
+        }
+
+        const fileItem = meta.files[fileIndex];
+        if (fileItem !== undefined) {
+          fileItem.foreshadowing = {
+            plants: foreshadowingData.plants,
+            payoff: foreshadowingData.payoff,
+          };
+        }
+        return meta;
+      });
+
+      if (!result.success) {
+        return result;
+      }
+
+      return {
+        success: true,
+        message: `${fileName} の伏線設定を更新しました。`,
+        updatedItems: result.updatedItems,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: `伏線設定エラー: ${error instanceof Error ? error.message : String(error)}`,
+      };
+    }
+  }
+
+  /**
+   * ファイルの伏線設定を削除する
+   * @param dirPath ディレクトリパス
+   * @param fileName ファイル名
+   * @returns 処理結果
+   */
+  async removeForeshadowing(dirPath: string, fileName: string): Promise<FileManagementResult> {
+    try {
+      const result = await this.updateMetaYaml(dirPath, (meta) => {
+        const fileIndex = meta.files.findIndex((file) => file.name === fileName);
+        if (fileIndex === -1) {
+          throw new Error(`.dialogoi-meta.yaml内にファイル ${fileName} が見つかりません。`);
+        }
+
+        const fileItem = meta.files[fileIndex];
+        if (fileItem !== undefined) {
+          delete fileItem.foreshadowing;
+        }
+        return meta;
+      });
+
+      if (!result.success) {
+        return result;
+      }
+
+      return {
+        success: true,
+        message: `${fileName} の伏線設定を削除しました。`,
+        updatedItems: result.updatedItems,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: `伏線設定削除エラー: ${error instanceof Error ? error.message : String(error)}`,
+      };
     }
   }
 }

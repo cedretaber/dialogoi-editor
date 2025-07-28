@@ -7,6 +7,7 @@ import { CommentService } from '../services/CommentService.js';
 import { DialogoiYamlService } from '../services/DialogoiYamlService.js';
 import { MetaYamlService } from '../services/MetaYamlService.js';
 import { FileOperationService } from '../services/FileOperationService.js';
+import { MetadataService } from '../services/MetadataService.js';
 import { FilePathMapService } from '../services/FilePathMapService.js';
 import { HyperlinkExtractorService } from '../services/HyperlinkExtractorService.js';
 import { DropHandlerService } from '../services/DropHandlerService.js';
@@ -34,6 +35,7 @@ export interface IServiceContainer {
   getDialogoiYamlService(): DialogoiYamlService;
   getMetaYamlService(): MetaYamlService;
   getFileOperationService(novelRootAbsolutePath?: string): FileOperationService;
+  getMetadataService(): MetadataService;
   getFilePathMapService(): FilePathMapService;
   getHyperlinkExtractorService(): HyperlinkExtractorService;
   getDropHandlerService(): DropHandlerService;
@@ -64,6 +66,7 @@ export class ServiceContainer implements IServiceContainer {
   private dialogoiYamlService: DialogoiYamlService | null = null;
   private metaYamlService: MetaYamlService | null = null;
   private fileOperationService: FileOperationService | null = null;
+  private metadataService: MetadataService | null = null;
   private filePathMapService: FilePathMapService | null = null;
   private hyperlinkExtractorService: HyperlinkExtractorService | null = null;
   private dropHandlerService: DropHandlerService | null = null;
@@ -103,6 +106,7 @@ export class ServiceContainer implements IServiceContainer {
     this.dialogoiYamlService = null;
     this.metaYamlService = null;
     this.fileOperationService = null;
+    this.metadataService = null;
     this.filePathMapService = null;
     this.hyperlinkExtractorService = null;
     this.dropHandlerService = null;
@@ -218,6 +222,16 @@ export class ServiceContainer implements IServiceContainer {
   }
 
   /**
+   * MetadataServiceを取得
+   */
+  getMetadataService(): MetadataService {
+    if (!this.metadataService) {
+      this.metadataService = new MetadataService(this.getFileOperationService());
+    }
+    return this.metadataService;
+  }
+
+  /**
    * FilePathMapServiceを取得
    */
   getFilePathMapService(): FilePathMapService {
@@ -276,6 +290,7 @@ export class ServiceContainer implements IServiceContainer {
     this.dialogoiYamlService = null;
     this.metaYamlService = null;
     this.fileOperationService = null;
+    this.metadataService = null;
     this.filePathMapService = null;
     this.hyperlinkExtractorService = null;
     this.dropHandlerService = null;
