@@ -4,7 +4,6 @@
  * 重要な注意事項:
  * - document.querySelector() は使用禁止 (無限待機の原因)
  * - 重複要素がある場合は getAllByText() や特定セレクタを使用
- * - waitFor には必ず timeout を設定
  * - 詳細は CLAUDE.md の "Reactコンポーネントテストの注意事項" を参照
  */
 import { suite, test, beforeEach, afterEach } from 'mocha';
@@ -114,12 +113,9 @@ suite('FileDetailsApp コンポーネント', () => {
       render(<FileDetailsApp />);
       assert(screen.getByText('ファイルまたはディレクトリを選択してください'));
       // VSCode APIの状態は非同期で更新されるため、waitForで待つ
-      await waitFor(
-        () => {
-          assert(screen.getByText('VSCode API: 準備完了'));
-        },
-        { timeout: 3000 },
-      );
+      await waitFor(() => {
+        assert(screen.getByText('VSCode API: 準備完了'));
+      });
     });
 
     test('メッセージリスナーが登録される', () => {
@@ -131,12 +127,9 @@ suite('FileDetailsApp コンポーネント', () => {
       const spy = createPostMessageSpy();
       render(<FileDetailsApp />);
 
-      await waitFor(
-        () => {
-          assert(spy.wasCalledWith({ type: 'ready' }));
-        },
-        { timeout: 3000 },
-      );
+      await waitFor(() => {
+        assert(spy.wasCalledWith({ type: 'ready' }));
+      });
     });
 
     test('コンポーネントのクリーンアップ時にリスナーが削除される', () => {
@@ -159,18 +152,15 @@ suite('FileDetailsApp コンポーネント', () => {
       sendMessage(updateMessage);
 
       // 状態更新を待つ
-      await waitFor(
-        () => {
-          // ファイル名が表示されることを直接確認しない（特定の要素が複数あるため）
-          // 代わりにコンポーネントが正しくレンダリングされているかを確認
-          // 各セクションが表示される
-          assert(screen.getByText('タグ'));
-          // contentタイプの場合は「登場人物」と「関連設定」が表示される
-          assert(screen.getByText('登場人物 (1)'));
-          assert(screen.getByText('基本情報'));
-        },
-        { timeout: 3000 },
-      );
+      await waitFor(() => {
+        // ファイル名が表示されることを直接確認しない（特定の要素が複数あるため）
+        // 代わりにコンポーネントが正しくレンダリングされているかを確認
+        // 各セクションが表示される
+        assert(screen.getByText('タグ'));
+        // contentタイプの場合は「登場人物」と「関連設定」が表示される
+        assert(screen.getByText('登場人物 (1)'));
+        assert(screen.getByText('基本情報'));
+      });
     });
 
     test('異なるtypeのメッセージは無視される', () => {
@@ -190,12 +180,9 @@ suite('FileDetailsApp コンポーネント', () => {
 
       // キャラクター情報なし
       sendMessage({ type: 'updateFile', data: mockFileData });
-      await waitFor(
-        () => {
-          assert(!screen.queryByText('キャラクター情報'));
-        },
-        { timeout: 3000 },
-      );
+      await waitFor(() => {
+        assert(!screen.queryByText('キャラクター情報'));
+      });
 
       // キャラクター情報あり
       const dataWithCharacter = {
@@ -207,12 +194,9 @@ suite('FileDetailsApp コンポーネント', () => {
         },
       };
       sendMessage({ type: 'updateFile', data: dataWithCharacter });
-      await waitFor(
-        () => {
-          assert(screen.getByText('キャラクター情報'));
-        },
-        { timeout: 3000 },
-      );
+      await waitFor(() => {
+        assert(screen.getByText('キャラクター情報'));
+      });
     });
 
     test('伏線情報は設定ファイルの場合のみ表示される', async () => {
@@ -225,12 +209,9 @@ suite('FileDetailsApp コンポーネント', () => {
         foreshadowing: { plants: [{ location: 'test.md', comment: '' }] },
       };
       sendMessage({ type: 'updateFile', data: contentData });
-      await waitFor(
-        () => {
-          assert(!screen.queryByText('🔮 伏線管理'));
-        },
-        { timeout: 3000 },
-      );
+      await waitFor(() => {
+        assert(!screen.queryByText('🔮 伏線管理'));
+      });
 
       // settingタイプでは表示される
       const settingData = {
@@ -239,12 +220,9 @@ suite('FileDetailsApp コンポーネント', () => {
         foreshadowing: { plants: [{ location: 'test.md', comment: '' }] },
       };
       sendMessage({ type: 'updateFile', data: settingData });
-      await waitFor(
-        () => {
-          assert(screen.getByText('🔮 伏線管理'));
-        },
-        { timeout: 3000 },
-      );
+      await waitFor(() => {
+        assert(screen.getByText('🔮 伏線管理'));
+      });
     });
 
     test('レビュー情報が空の場合は表示されない', () => {
@@ -268,12 +246,9 @@ suite('FileDetailsApp コンポーネント', () => {
       sendMessage({ type: 'updateFile', data: mockFileData });
 
       // 状態更新を待つ - タグセクションが表示されることを確認
-      await waitFor(
-        () => {
-          assert(screen.getByText('タグ'));
-        },
-        { timeout: 3000 },
-      );
+      await waitFor(() => {
+        assert(screen.getByText('タグ'));
+      });
 
       // タグ入力フィールドに入力
       const input = screen.getByPlaceholderText('新しいタグを入力してEnterキーを押してください...');
@@ -294,13 +269,10 @@ suite('FileDetailsApp コンポーネント', () => {
       sendMessage({ type: 'updateFile', data: mockFileData });
 
       // タグが表示されるまで待つ
-      await waitFor(
-        () => {
-          // タグが表示されていることを確認
-          assert(screen.getByText('#タグ1'));
-        },
-        { timeout: 3000 },
-      );
+      await waitFor(() => {
+        // タグが表示されていることを確認
+        assert(screen.getByText('#タグ1'));
+      });
 
       // 削除ボタンをクリック
       const deleteButtons = screen.getAllByTitle('タグを削除');
@@ -322,13 +294,10 @@ suite('FileDetailsApp コンポーネント', () => {
       sendMessage({ type: 'updateFile', data: mockFileData });
 
       // 状態更新を待つ
-      await waitFor(
-        () => {
-          // ファイル名が表示されることを直接確認しない（特定の要素が複数あるため）
-          // 代わりにコンポーネントが正しくレンダリングされているかを確認
-        },
-        { timeout: 3000 },
-      );
+      await waitFor(() => {
+        // ファイル名が表示されることを直接確認しない（特定の要素が複数あるため）
+        // 代わりにコンポーネントが正しくレンダリングされているかを確認
+      });
 
       // 参照リンクをクリック
       const referenceLink = screen.getByText('hero.md');
@@ -348,13 +317,10 @@ suite('FileDetailsApp コンポーネント', () => {
       sendMessage({ type: 'updateFile', data: mockFileData });
 
       // 状態更新を待つ
-      await waitFor(
-        () => {
-          // ファイル名が表示されることを直接確認しない（特定の要素が複数あるため）
-          // 代わりにコンポーネントが正しくレンダリングされているかを確認
-        },
-        { timeout: 3000 },
-      );
+      await waitFor(() => {
+        // ファイル名が表示されることを直接確認しない（特定の要素が複数あるため）
+        // 代わりにコンポーネントが正しくレンダリングされているかを確認
+      });
 
       // 削除ボタンをクリック
       const deleteButton = screen.getByTitle('手動参照を削除');
@@ -383,13 +349,10 @@ suite('FileDetailsApp コンポーネント', () => {
       sendMessage({ type: 'updateFile', data: dataWithReversRef });
 
       // 状態更新を待つ
-      await waitFor(
-        () => {
-          // ファイル名が表示されることを直接確認しない（特定の要素が複数あるため）
-          // 代わりにコンポーネントが正しくレンダリングされているかを確認
-        },
-        { timeout: 3000 },
-      );
+      await waitFor(() => {
+        // ファイル名が表示されることを直接確認しない（特定の要素が複数あるため）
+        // 代わりにコンポーネントが正しくレンダリングされているかを確認
+      });
 
       // 削除ボタンをクリック
       const deleteButton = screen.getByTitle('手動参照を削除');
@@ -418,12 +381,9 @@ suite('FileDetailsApp コンポーネント', () => {
       sendMessage({ type: 'updateFile', data: dataWithCharacter });
 
       // 状態更新を待つ - キャラクター情報セクションが表示されるまで待機
-      await waitFor(
-        () => {
-          assert(screen.getByText('キャラクター情報'));
-        },
-        { timeout: 3000 },
-      );
+      await waitFor(() => {
+        assert(screen.getByText('キャラクター情報'));
+      });
 
       // 削除ボタンをクリック
       const deleteButton = screen.getByTitle('キャラクター情報を削除');
@@ -453,28 +413,22 @@ suite('FileDetailsApp コンポーネント', () => {
       sendMessage({ type: 'updateFile', data: dataWithForeshadowing });
 
       // 状態更新を待つ
-      await waitFor(
-        () => {
-          // ファイル名が表示されることを直接確認しない（特定の要素が複数あるため）
-          // 代わりにコンポーネントが正しくレンダリングされているかを確認
-          assert(screen.getByText('🔮 伏線管理'));
-        },
-        { timeout: 3000 },
-      );
+      await waitFor(() => {
+        // ファイル名が表示されることを直接確認しない（特定の要素が複数あるため）
+        // 代わりにコンポーネントが正しくレンダリングされているかを確認
+        assert(screen.getByText('🔮 伏線管理'));
+      });
 
       // 追加ボタンをクリック
       const addButton = screen.getByText('+ 位置を追加');
       fireEvent.click(addButton);
 
       // フォームが表示されるのを待つ
-      await waitFor(
-        () => {
-          // 正しいプレースホルダーテキストでフォームを確認
-          const input = screen.getByPlaceholderText('例: contents/chapter1.txt');
-          assert(input);
-        },
-        { timeout: 3000 },
-      );
+      await waitFor(() => {
+        // 正しいプレースホルダーテキストでフォームを確認
+        const input = screen.getByPlaceholderText('例: contents/chapter1.txt');
+        assert(input);
+      });
 
       // フォームに入力（location のみでもOK）
       const locationInput = screen.getByPlaceholderText('例: contents/chapter1.txt');
@@ -498,14 +452,11 @@ suite('FileDetailsApp コンポーネント', () => {
       sendMessage({ type: 'updateFile', data: dataWithForeshadowing });
 
       // 状態更新を待つ
-      await waitFor(
-        () => {
-          // ファイル名が表示されることを直接確認しない（特定の要素が複数あるため）
-          // 代わりにコンポーネントが正しくレンダリングされているかを確認
-          assert(screen.getByText('🔮 伏線管理'));
-        },
-        { timeout: 3000 },
-      );
+      await waitFor(() => {
+        // ファイル名が表示されることを直接確認しない（特定の要素が複数あるため）
+        // 代わりにコンポーネントが正しくレンダリングされているかを確認
+        assert(screen.getByText('🔮 伏線管理'));
+      });
 
       // 削除ボタンをクリック
       const deleteButtons = screen.getAllByText('削除');
@@ -525,14 +476,11 @@ suite('FileDetailsApp コンポーネント', () => {
       sendMessage({ type: 'updateFile', data: dataWithForeshadowing });
 
       // 状態更新を待つ
-      await waitFor(
-        () => {
-          // ファイル名が表示されることを直接確認しない（特定の要素が複数あるため）
-          // 代わりにコンポーネントが正しくレンダリングされているかを確認
-          assert(screen.getByText('🔮 伏線管理'));
-        },
-        { timeout: 3000 },
-      );
+      await waitFor(() => {
+        // ファイル名が表示されることを直接確認しない（特定の要素が複数あるため）
+        // 代わりにコンポーネントが正しくレンダリングされているかを確認
+        assert(screen.getByText('🔮 伏線管理'));
+      });
 
       // 編集ボタンをクリック
       const editButton = screen.getAllByText('編集')[0];
@@ -564,27 +512,21 @@ suite('FileDetailsApp コンポーネント', () => {
       sendMessage({ type: 'updateFile', data: dataWithoutPayoff });
 
       // 状態更新を待つ
-      await waitFor(
-        () => {
-          // ファイル名が表示されることを直接確認しない（特定の要素が複数あるため）
-          // 代わりにコンポーネントが正しくレンダリングされているかを確認
-          assert(screen.getByText('🔮 伏線管理'));
-        },
-        { timeout: 3000 },
-      );
+      await waitFor(() => {
+        // ファイル名が表示されることを直接確認しない（特定の要素が複数あるため）
+        // 代わりにコンポーネントが正しくレンダリングされているかを確認
+        assert(screen.getByText('🔮 伏線管理'));
+      });
 
       // 設定ボタンをクリック
       const setButton = screen.getByText('+ 回収位置を設定');
       fireEvent.click(setButton);
 
       // フォームが表示されるのを待つ
-      await waitFor(
-        () => {
-          const input = screen.getByPlaceholderText('例: contents/chapter5.txt');
-          assert(input);
-        },
-        { timeout: 3000 },
-      );
+      await waitFor(() => {
+        const input = screen.getByPlaceholderText('例: contents/chapter5.txt');
+        assert(input);
+      });
 
       // フォームに入力（location のみでもOK）
       const locationInput = screen.getByPlaceholderText('例: contents/chapter5.txt');
@@ -608,14 +550,11 @@ suite('FileDetailsApp コンポーネント', () => {
       sendMessage({ type: 'updateFile', data: dataWithForeshadowing });
 
       // 状態更新を待つ
-      await waitFor(
-        () => {
-          // ファイル名が表示されることを直接確認しない（特定の要素が複数あるため）
-          // 代わりにコンポーネントが正しくレンダリングされているかを確認
-          assert(screen.getByText('🔮 伏線管理'));
-        },
-        { timeout: 3000 },
-      );
+      await waitFor(() => {
+        // ファイル名が表示されることを直接確認しない（特定の要素が複数あるため）
+        // 代わりにコンポーネントが正しくレンダリングされているかを確認
+        assert(screen.getByText('🔮 伏線管理'));
+      });
 
       // 削除ボタンをクリック（2番目の削除ボタンが回収位置）
       const deleteButtons = screen.getAllByText('削除');
@@ -635,12 +574,9 @@ suite('FileDetailsApp コンポーネント', () => {
       const dataWithoutName = { ...mockFileData, name: '' };
       sendMessage({ type: 'updateFile', data: dataWithoutName });
 
-      await waitFor(
-        () => {
-          assert(screen.getByText('Unknown File'));
-        },
-        { timeout: 3000 },
-      );
+      await waitFor(() => {
+        assert(screen.getByText('Unknown File'));
+      });
     });
 
     test('複数の操作が連続して行われる場合', async () => {
@@ -649,13 +585,10 @@ suite('FileDetailsApp コンポーネント', () => {
       sendMessage({ type: 'updateFile', data: mockFileData });
 
       // 状態更新を待つ
-      await waitFor(
-        () => {
-          // ファイル名が表示されることを直接確認しない（特定の要素が複数あるため）
-          // 代わりにコンポーネントが正しくレンダリングされているかを確認
-        },
-        { timeout: 3000 },
-      );
+      await waitFor(() => {
+        // ファイル名が表示されることを直接確認しない（特定の要素が複数あるため）
+        // 代わりにコンポーネントが正しくレンダリングされているかを確認
+      });
 
       // タグ追加
       const tagInput = screen.getByPlaceholderText(
@@ -698,13 +631,10 @@ suite('FileDetailsApp コンポーネント', () => {
       });
 
       // 状態更新を待つ
-      await waitFor(
-        () => {
-          // ファイル名が表示されることを直接確認しない（特定の要素が複数あるため）
-          // 代わりにコンポーネントが正しくレンダリングされているかを確認
-        },
-        { timeout: 3000 },
-      );
+      await waitFor(() => {
+        // ファイル名が表示されることを直接確認しない（特定の要素が複数あるため）
+        // 代わりにコンポーネントが正しくレンダリングされているかを確認
+      });
     });
   });
 });
