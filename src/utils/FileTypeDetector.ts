@@ -3,7 +3,7 @@ import * as path from 'path';
 /**
  * ファイル種別の検出方法
  */
-export type FileTypeDetectionMethod = 'extension' | 'directory' | 'manual';
+export type FileTypeDetectionMethod = 'extension' | 'manual';
 
 /**
  * ファイル種別検出ユーティリティ
@@ -24,8 +24,6 @@ export class FileTypeDetector {
     switch (detectionMethod) {
       case 'extension':
         return FileTypeDetector.detectByExtension(filePath);
-      case 'directory':
-        return FileTypeDetector.detectByDirectory(filePath);
       case 'manual':
         // 手動選択の場合はデフォルトとしてsettingを返す
         return 'setting';
@@ -51,43 +49,6 @@ export class FileTypeDetector {
       // デフォルトは setting として扱う
       return 'setting';
     }
-  }
-
-  /**
-   * ディレクトリ名ベースのファイル種別判定
-   * @param filePath ファイルパス
-   * @returns ファイル種別
-   */
-  static detectByDirectory(filePath: string): 'content' | 'setting' {
-    const dirName = path.dirname(filePath).toLowerCase();
-    const segments = dirName.split(path.sep);
-
-    // ディレクトリ名から判定
-    for (const segment of segments) {
-      // content系のディレクトリ
-      if (
-        segment.includes('content') ||
-        segment.includes('chapter') ||
-        segment.includes('episode') ||
-        segment.includes('scene')
-      ) {
-        return 'content';
-      }
-
-      // setting系のディレクトリ
-      if (
-        segment.includes('setting') ||
-        segment.includes('character') ||
-        segment.includes('world') ||
-        segment.includes('glossary') ||
-        segment.includes('reference')
-      ) {
-        return 'setting';
-      }
-    }
-
-    // ディレクトリからの判定ができない場合は拡張子ベースにフォールバック
-    return FileTypeDetector.detectByExtension(filePath);
   }
 
   /**

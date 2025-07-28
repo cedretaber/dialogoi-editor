@@ -86,96 +86,6 @@ suite('FileTypeDetector テストスイート', () => {
     });
   });
 
-  suite('detectByDirectory', () => {
-    test('contents ディレクトリは content 種別として判定される', () => {
-      const result = FileTypeDetector.detectByDirectory('/project/contents/file.txt');
-      assert.strictEqual(result, 'content');
-    });
-
-    test('chapter ディレクトリは content 種別として判定される', () => {
-      const result = FileTypeDetector.detectByDirectory('/project/chapter/file.txt');
-      assert.strictEqual(result, 'content');
-    });
-
-    test('episode ディレクトリは content 種別として判定される', () => {
-      const result = FileTypeDetector.detectByDirectory('/project/episode/file.txt');
-      assert.strictEqual(result, 'content');
-    });
-
-    test('scene ディレクトリは content 種別として判定される', () => {
-      const result = FileTypeDetector.detectByDirectory('/project/scene/file.txt');
-      assert.strictEqual(result, 'content');
-    });
-
-    test('setting ディレクトリは setting 種別として判定される', () => {
-      const result = FileTypeDetector.detectByDirectory('/project/setting/file.txt');
-      assert.strictEqual(result, 'setting');
-    });
-
-    test('character ディレクトリは setting 種別として判定される', () => {
-      const result = FileTypeDetector.detectByDirectory('/project/character/file.txt');
-      assert.strictEqual(result, 'setting');
-    });
-
-    test('world ディレクトリは setting 種別として判定される', () => {
-      const result = FileTypeDetector.detectByDirectory('/project/world/file.txt');
-      assert.strictEqual(result, 'setting');
-    });
-
-    test('glossary ディレクトリは setting 種別として判定される', () => {
-      const result = FileTypeDetector.detectByDirectory('/project/glossary/file.txt');
-      assert.strictEqual(result, 'setting');
-    });
-
-    test('reference ディレクトリは setting 種別として判定される', () => {
-      const result = FileTypeDetector.detectByDirectory('/project/reference/file.txt');
-      assert.strictEqual(result, 'setting');
-    });
-
-    test('その他のディレクトリは拡張子ベースにフォールバックする', () => {
-      const txtResult = FileTypeDetector.detectByDirectory('/project/other/file.txt');
-      assert.strictEqual(txtResult, 'content'); // .txt なので content
-
-      const mdResult = FileTypeDetector.detectByDirectory('/project/other/file.md');
-      assert.strictEqual(mdResult, 'setting'); // .md なので setting
-    });
-
-    test('ネストしたパスでcontent系ディレクトリがある場合', () => {
-      const result = FileTypeDetector.detectByDirectory('/project/deep/nested/contents/file.txt');
-      assert.strictEqual(result, 'content');
-    });
-
-    test('ネストしたパスでsetting系ディレクトリがある場合', () => {
-      const result = FileTypeDetector.detectByDirectory('/project/deep/nested/character/file.txt');
-      assert.strictEqual(result, 'setting');
-    });
-
-    test('ディレクトリ名が部分一致でも判定される', () => {
-      const result = FileTypeDetector.detectByDirectory('/project/my-contents-dir/file.txt');
-      assert.strictEqual(result, 'content');
-    });
-
-    test('Windows パス区切り文字でも正しく判定される', () => {
-      const result = FileTypeDetector.detectByDirectory('C:\\project\\contents\\file.txt');
-      assert.strictEqual(result, 'content');
-    });
-
-    test('相対パスでも正しく判定される', () => {
-      const result = FileTypeDetector.detectByDirectory('./contents/file.txt');
-      assert.strictEqual(result, 'content');
-    });
-
-    test('大文字小文字混合でも正しく判定される', () => {
-      const result = FileTypeDetector.detectByDirectory('/project/Contents/file.txt');
-      assert.strictEqual(result, 'content');
-    });
-
-    test('日本語ディレクトリ名は拡張子ベースにフォールバックする', () => {
-      const result = FileTypeDetector.detectByDirectory('/project/本文/file.txt');
-      assert.strictEqual(result, 'content'); // .txt なので content
-    });
-  });
-
   suite('detectFileType', () => {
     test('拡張子ベース判定（デフォルト）が正しく動作する', () => {
       const txtResult = FileTypeDetector.detectFileType('/project/anywhere/chapter.txt');
@@ -183,20 +93,6 @@ suite('FileTypeDetector テストスイート', () => {
 
       const mdResult = FileTypeDetector.detectFileType('/project/anywhere/setting.md');
       assert.strictEqual(mdResult, 'setting');
-    });
-
-    test('ディレクトリベース判定を指定した場合が正しく動作する', () => {
-      const contentResult = FileTypeDetector.detectFileType(
-        '/project/contents/file.unknown',
-        'directory',
-      );
-      assert.strictEqual(contentResult, 'content');
-
-      const settingResult = FileTypeDetector.detectFileType(
-        '/project/character/file.unknown',
-        'directory',
-      );
-      assert.strictEqual(settingResult, 'setting');
     });
 
     test('拡張子ベース判定を明示的に指定した場合が正しく動作する', () => {
@@ -207,21 +103,6 @@ suite('FileTypeDetector テストスイート', () => {
     test('手動選択を指定した場合はsettingが返される', () => {
       const result = FileTypeDetector.detectFileType('/project/chapter.txt', 'manual');
       assert.strictEqual(result, 'setting');
-    });
-
-    test('ファイルパスとディレクトリパスで結果が異なるケース', () => {
-      // contents ディレクトリの .md ファイル
-      const extensionResult = FileTypeDetector.detectFileType(
-        '/project/contents/setting.md',
-        'extension',
-      );
-      assert.strictEqual(extensionResult, 'setting'); // .md なので setting
-
-      const directoryResult = FileTypeDetector.detectFileType(
-        '/project/contents/setting.md',
-        'directory',
-      );
-      assert.strictEqual(directoryResult, 'content'); // contents ディレクトリなので content
     });
   });
 
