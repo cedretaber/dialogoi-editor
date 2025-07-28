@@ -4,7 +4,7 @@ import { MetaYamlService } from './MetaYamlService.js';
 import { MetaYamlUtils, DialogoiTreeItem, MetaYaml } from '../utils/MetaYamlUtils.js';
 import { ForeshadowingData } from './ForeshadowingService.js';
 import { ProjectLinkUpdateService } from './ProjectLinkUpdateService.js';
-import { ProjectPathNormalizationService } from './ProjectPathNormalizationService.js';
+import { PathNormalizer } from '../utils/PathNormalizer.js';
 // import { ReferenceManager } from './ReferenceManager.js';
 
 /**
@@ -21,7 +21,6 @@ export interface FileOperationResult {
  */
 export class FileOperationService {
   private linkUpdateService?: ProjectLinkUpdateService;
-  private pathNormalizationService?: ProjectPathNormalizationService;
   private novelRootPath?: string;
 
   constructor(
@@ -35,7 +34,6 @@ export class FileOperationService {
       novelRootAbsolutePath !== null &&
       novelRootAbsolutePath !== ''
     ) {
-      this.pathNormalizationService = new ProjectPathNormalizationService(novelRootAbsolutePath);
       this.linkUpdateService = new ProjectLinkUpdateService(
         fileRepository,
         metaYamlService,
@@ -330,9 +328,14 @@ export class FileOperationService {
       await this.fileRepository.renameAsync(oldUri, newUri);
 
       // プロジェクトルート相対パスでのリンク更新
-      if (this.linkUpdateService && this.pathNormalizationService) {
-        const oldProjectPath = this.pathNormalizationService.getProjectRelativePath(oldPath);
-        const newProjectPath = this.pathNormalizationService.getProjectRelativePath(newPath);
+      if (
+        this.linkUpdateService &&
+        this.novelRootPath !== undefined &&
+        this.novelRootPath !== null &&
+        this.novelRootPath !== ''
+      ) {
+        const oldProjectPath = PathNormalizer.getProjectRelativePath(oldPath, this.novelRootPath);
+        const newProjectPath = PathNormalizer.getProjectRelativePath(newPath, this.novelRootPath);
 
         if (
           oldProjectPath !== null &&
@@ -419,9 +422,14 @@ export class FileOperationService {
       await this.fileRepository.renameAsync(oldUri, newUri);
 
       // プロジェクトルート相対パスでのリンク更新
-      if (this.linkUpdateService && this.pathNormalizationService) {
-        const oldProjectPath = this.pathNormalizationService.getProjectRelativePath(oldPath);
-        const newProjectPath = this.pathNormalizationService.getProjectRelativePath(newPath);
+      if (
+        this.linkUpdateService &&
+        this.novelRootPath !== undefined &&
+        this.novelRootPath !== null &&
+        this.novelRootPath !== ''
+      ) {
+        const oldProjectPath = PathNormalizer.getProjectRelativePath(oldPath, this.novelRootPath);
+        const newProjectPath = PathNormalizer.getProjectRelativePath(newPath, this.novelRootPath);
 
         if (
           oldProjectPath !== null &&
@@ -1076,7 +1084,12 @@ export class FileOperationService {
         await this.fileRepository.renameAsync(sourceDirUri, targetDirUri);
 
         // ディレクトリ内の全ファイルのリンク更新（プロジェクトルート相対パス）
-        if (this.linkUpdateService && this.pathNormalizationService) {
+        if (
+          this.linkUpdateService &&
+          this.novelRootPath !== undefined &&
+          this.novelRootPath !== null &&
+          this.novelRootPath !== ''
+        ) {
           await this.updateLinksForDirectoryMoveAsync(sourceDirPath, targetDirPath);
         }
 
@@ -1204,13 +1217,19 @@ export class FileOperationService {
         // プロジェクトルート相対パスでのリンク更新（異なるディレクトリ間での移動の場合のみ）
         if (
           this.linkUpdateService &&
-          this.pathNormalizationService &&
+          this.novelRootPath !== undefined &&
+          this.novelRootPath !== null &&
+          this.novelRootPath !== '' &&
           !isReorderingInSameDirectory
         ) {
-          const oldProjectPath =
-            this.pathNormalizationService.getProjectRelativePath(sourceFilePath);
-          const newProjectPath =
-            this.pathNormalizationService.getProjectRelativePath(targetFilePath);
+          const oldProjectPath = PathNormalizer.getProjectRelativePath(
+            sourceFilePath,
+            this.novelRootPath,
+          );
+          const newProjectPath = PathNormalizer.getProjectRelativePath(
+            targetFilePath,
+            this.novelRootPath,
+          );
 
           if (
             oldProjectPath !== null &&
@@ -1261,7 +1280,12 @@ export class FileOperationService {
     oldDirPath: string,
     newDirPath: string,
   ): Promise<void> {
-    if (!this.linkUpdateService || !this.pathNormalizationService) {
+    if (
+      !this.linkUpdateService ||
+      this.novelRootPath === undefined ||
+      this.novelRootPath === null ||
+      this.novelRootPath === ''
+    ) {
       return;
     }
 
@@ -1284,7 +1308,12 @@ export class FileOperationService {
     rootOldDirPath: string,
     rootNewDirPath: string,
   ): Promise<void> {
-    if (!this.linkUpdateService || !this.pathNormalizationService) {
+    if (
+      !this.linkUpdateService ||
+      this.novelRootPath === undefined ||
+      this.novelRootPath === null ||
+      this.novelRootPath === ''
+    ) {
       return;
     }
 
@@ -1311,10 +1340,14 @@ export class FileOperationService {
             );
           } else {
             // ファイルの場合はリンク更新
-            const oldProjectPath =
-              this.pathNormalizationService.getProjectRelativePath(oldEntryPath);
-            const newProjectPath =
-              this.pathNormalizationService.getProjectRelativePath(newEntryPath);
+            const oldProjectPath = PathNormalizer.getProjectRelativePath(
+              oldEntryPath,
+              this.novelRootPath,
+            );
+            const newProjectPath = PathNormalizer.getProjectRelativePath(
+              newEntryPath,
+              this.novelRootPath,
+            );
 
             if (
               oldProjectPath !== null &&

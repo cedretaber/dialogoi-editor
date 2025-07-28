@@ -11,7 +11,6 @@ import { MetaYamlService } from '../services/MetaYamlService.js';
 import { FileOperationService } from '../services/FileOperationService.js';
 import { FilePathMapService } from '../services/FilePathMapService.js';
 import { HyperlinkExtractorService } from '../services/HyperlinkExtractorService.js';
-import { ProjectPathNormalizationService } from '../services/ProjectPathNormalizationService.js';
 import { DropHandlerService } from '../services/DropHandlerService.js';
 import {
   FileChangeNotificationService,
@@ -49,7 +48,6 @@ export class TestServiceContainer implements IServiceContainer {
   private fileOperationService: FileOperationService | null = null;
   private filePathMapService: FilePathMapService | null = null;
   private hyperlinkExtractorService: HyperlinkExtractorService | null = null;
-  private projectPathNormalizationService: ProjectPathNormalizationService | null = null;
   private dropHandlerService: DropHandlerService | null = null;
   private settingsRepository: SettingsRepository | null = null;
   private dialogoiSettingsService: DialogoiSettingsService | null = null;
@@ -213,16 +211,6 @@ export class TestServiceContainer implements IServiceContainer {
   }
 
   /**
-   * ProjectPathNormalizationServiceを取得
-   */
-  getProjectPathNormalizationService(): ProjectPathNormalizationService {
-    if (!this.projectPathNormalizationService) {
-      this.projectPathNormalizationService = new ProjectPathNormalizationService('/test');
-    }
-    return this.projectPathNormalizationService;
-  }
-
-  /**
    * DropHandlerServiceを取得
    */
   getDropHandlerService(): DropHandlerService {
@@ -251,7 +239,6 @@ export class TestServiceContainer implements IServiceContainer {
     this.fileOperationService = null;
     this.filePathMapService = null;
     this.hyperlinkExtractorService = null;
-    this.projectPathNormalizationService = null;
     this.dropHandlerService = null;
     this.settingsRepository = null;
     this.dialogoiSettingsService = null;

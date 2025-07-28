@@ -1,52 +1,52 @@
 import * as assert from 'assert';
 import * as path from 'path';
-import { ProjectPathNormalizationService } from './ProjectPathNormalizationService.js';
+import { PathNormalizer } from './PathNormalizer.js';
 
-suite('ProjectPathNormalizationService テストスイート', () => {
-  let service: ProjectPathNormalizationService;
+suite('PathNormalizer テストスイート', () => {
   const testProjectRoot = '/home/user/novel-project';
-
-  setup(() => {
-    service = new ProjectPathNormalizationService(testProjectRoot);
-  });
 
   suite('normalizeToProjectPath', () => {
     test('プロジェクトルート相対パスはそのまま返す', () => {
-      const result = service.normalizeToProjectPath(
+      const result = PathNormalizer.normalizeToProjectPath(
         'settings/characters/hero.md',
         '/home/user/novel-project/contents/chapter1.md',
+        testProjectRoot,
       );
       assert.strictEqual(result, 'settings/characters/hero.md');
     });
 
     test('現在ファイルからの相対パスをプロジェクトルート相対パスに変換', () => {
-      const result = service.normalizeToProjectPath(
+      const result = PathNormalizer.normalizeToProjectPath(
         '../settings/world.md',
         '/home/user/novel-project/contents/chapter1.md',
+        testProjectRoot,
       );
       assert.strictEqual(result, 'settings/world.md');
     });
 
     test('複雑な相対パスを正規化', () => {
-      const result = service.normalizeToProjectPath(
+      const result = PathNormalizer.normalizeToProjectPath(
         '../../settings/characters/hero.md',
         '/home/user/novel-project/contents/volume1/chapter1.md',
+        testProjectRoot,
       );
       assert.strictEqual(result, 'settings/characters/hero.md');
     });
 
     test('同一ディレクトリ内のファイル参照', () => {
-      const result = service.normalizeToProjectPath(
+      const result = PathNormalizer.normalizeToProjectPath(
         './hero.md',
         '/home/user/novel-project/settings/characters/villain.md',
+        testProjectRoot,
       );
       assert.strictEqual(result, 'settings/characters/hero.md');
     });
 
     test('プロジェクト外のファイルはnullを返す', () => {
-      const result = service.normalizeToProjectPath(
+      const result = PathNormalizer.normalizeToProjectPath(
         '../../../external/file.md',
         '/home/user/novel-project/contents/chapter1.md',
+        testProjectRoot,
       );
       assert.strictEqual(result, null);
     });
@@ -61,18 +61,20 @@ suite('ProjectPathNormalizationService テストスイート', () => {
       ];
 
       testUrls.forEach((url) => {
-        const result = service.normalizeToProjectPath(
+        const result = PathNormalizer.normalizeToProjectPath(
           url,
           '/home/user/novel-project/contents/chapter1.md',
+          testProjectRoot,
         );
         assert.strictEqual(result, null, `URL ${url} should return null`);
       });
     });
 
     test('絶対パスは対象外', () => {
-      const result = service.normalizeToProjectPath(
+      const result = PathNormalizer.normalizeToProjectPath(
         '/absolute/path/to/file.md',
         '/home/user/novel-project/contents/chapter1.md',
+        testProjectRoot,
       );
       assert.strictEqual(result, null);
     });
@@ -80,12 +82,12 @@ suite('ProjectPathNormalizationService テストスイート', () => {
 
   suite('resolveProjectPath', () => {
     test('プロジェクトルート相対パスを絶対パスに変換', () => {
-      const result = service.resolveProjectPath('settings/world.md');
+      const result = PathNormalizer.resolveProjectPath('settings/world.md', testProjectRoot);
       assert.strictEqual(result, path.join(testProjectRoot, 'settings/world.md'));
     });
 
     test('ルートディレクトリのファイル', () => {
-      const result = service.resolveProjectPath('README.md');
+      const result = PathNormalizer.resolveProjectPath('README.md', testProjectRoot);
       assert.strictEqual(result, path.join(testProjectRoot, 'README.md'));
     });
   });
@@ -93,44 +95,51 @@ suite('ProjectPathNormalizationService テストスイート', () => {
   suite('getProjectRelativePath', () => {
     test('絶対パスをプロジェクトルート相対パスに変換', () => {
       const absolutePath = path.join(testProjectRoot, 'settings', 'world.md');
-      const result = service.getProjectRelativePath(absolutePath);
+      const result = PathNormalizer.getProjectRelativePath(absolutePath, testProjectRoot);
       assert.strictEqual(result, 'settings/world.md');
     });
 
     test('プロジェクト外の絶対パスはnullを返す', () => {
-      const result = service.getProjectRelativePath('/external/path/file.md');
+      const result = PathNormalizer.getProjectRelativePath(
+        '/external/path/file.md',
+        testProjectRoot,
+      );
       assert.strictEqual(result, null);
     });
 
     test('プロジェクトルート自体のファイル', () => {
       const absolutePath = path.join(testProjectRoot, 'dialogoi.yaml');
-      const result = service.getProjectRelativePath(absolutePath);
+      const result = PathNormalizer.getProjectRelativePath(absolutePath, testProjectRoot);
       assert.strictEqual(result, 'dialogoi.yaml');
     });
   });
 
   suite('isSamePath', () => {
     test('同じパスの場合true', () => {
-      assert.strictEqual(service.isSamePath('settings/world.md', 'settings/world.md'), true);
+      assert.strictEqual(PathNormalizer.isSamePath('settings/world.md', 'settings/world.md'), true);
     });
 
     test('異なるパスの場合false', () => {
       assert.strictEqual(
-        service.isSamePath('settings/world.md', 'settings/characters/hero.md'),
+        PathNormalizer.isSamePath('settings/world.md', 'settings/characters/hero.md'),
         false,
       );
     });
 
     test('パス区切り文字が異なっても同じパスと認識', () => {
-      assert.strictEqual(service.isSamePath('settings\\world.md', 'settings/world.md'), true);
+      assert.strictEqual(
+        PathNormalizer.isSamePath('settings\\world.md', 'settings/world.md'),
+        true,
+      );
     });
   });
 
   suite('Windows パス対応', () => {
     test('Windows形式のパス区切り文字を正規化', () => {
-      const result = service.normalizeToProjectPath(
+      const result = PathNormalizer.normalizeToProjectPath(
         'settings\\characters\\hero.md',
         '/home/user/novel-project/contents/chapter1.md',
+        testProjectRoot,
       );
       assert.strictEqual(result, 'settings/characters/hero.md');
     });
@@ -138,36 +147,57 @@ suite('ProjectPathNormalizationService テストスイート', () => {
 
   suite('エッジケース', () => {
     test('空文字列の場合', () => {
-      const result = service.normalizeToProjectPath(
+      const result = PathNormalizer.normalizeToProjectPath(
         '',
         '/home/user/novel-project/contents/chapter1.md',
+        testProjectRoot,
       );
       assert.strictEqual(result, null);
     });
 
     test('ドット単体（現在ディレクトリ）', () => {
-      const result = service.normalizeToProjectPath(
+      const result = PathNormalizer.normalizeToProjectPath(
         '.',
         '/home/user/novel-project/contents/chapter1.md',
+        testProjectRoot,
       );
       // ドット（現在ディレクトリ）は contents ディレクトリを指す
       assert.strictEqual(result, 'contents');
     });
 
     test('ファイル名にスペースが含まれる場合', () => {
-      const result = service.normalizeToProjectPath(
+      const result = PathNormalizer.normalizeToProjectPath(
         '../settings/character name.md',
         '/home/user/novel-project/contents/chapter1.md',
+        testProjectRoot,
       );
       assert.strictEqual(result, 'settings/character name.md');
     });
 
     test('日本語ファイル名', () => {
-      const result = service.normalizeToProjectPath(
+      const result = PathNormalizer.normalizeToProjectPath(
         '../設定/キャラクター/主人公.md',
         '/home/user/novel-project/contents/chapter1.md',
+        testProjectRoot,
       );
       assert.strictEqual(result, '設定/キャラクター/主人公.md');
+    });
+  });
+
+  suite('normalizePathSeparators', () => {
+    test('Windows形式のパス区切り文字をUnix形式に変換', () => {
+      const result = PathNormalizer.normalizePathSeparators('settings\\characters\\hero.md');
+      assert.strictEqual(result, 'settings/characters/hero.md');
+    });
+
+    test('混在したパス区切り文字を統一', () => {
+      const result = PathNormalizer.normalizePathSeparators('settings/characters\\hero.md');
+      assert.strictEqual(result, 'settings/characters/hero.md');
+    });
+
+    test('Unix形式のパスはそのまま', () => {
+      const result = PathNormalizer.normalizePathSeparators('settings/characters/hero.md');
+      assert.strictEqual(result, 'settings/characters/hero.md');
     });
   });
 });

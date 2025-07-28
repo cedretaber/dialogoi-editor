@@ -1,7 +1,7 @@
 import * as path from 'path';
 import { FileRepository } from '../repositories/FileRepository.js';
 import { MetaYamlService } from './MetaYamlService.js';
-import { ProjectPathNormalizationService } from './ProjectPathNormalizationService.js';
+import { PathNormalizer } from '../utils/PathNormalizer.js';
 
 /**
  * リンク更新結果
@@ -18,15 +18,11 @@ export interface LinkUpdateResult {
  * プロジェクト全体のリンク更新サービス
  */
 export class ProjectLinkUpdateService {
-  private pathNormalizationService: ProjectPathNormalizationService;
-
   constructor(
     private fileRepository: FileRepository,
     private metaYamlService: MetaYamlService,
     private novelRootAbsolutePath: string,
-  ) {
-    this.pathNormalizationService = new ProjectPathNormalizationService(novelRootAbsolutePath);
-  }
+  ) {}
 
   /**
    * ファイル移動・改名時にプロジェクト全体のリンクを更新
@@ -129,15 +125,16 @@ export class ProjectLinkUpdateService {
       linkPattern,
       (match: string, text: string, url: string) => {
         // プロジェクト内リンクのみ更新対象
-        const normalizedUrl = this.pathNormalizationService.normalizeToProjectPath(
+        const normalizedUrl = PathNormalizer.normalizeToProjectPath(
           url,
           fileAbsolutePath,
+          this.novelRootAbsolutePath,
         );
 
         if (
           normalizedUrl !== null &&
           normalizedUrl !== '' &&
-          this.pathNormalizationService.isSamePath(normalizedUrl, oldProjectRelativePath)
+          PathNormalizer.isSamePath(normalizedUrl, oldProjectRelativePath)
         ) {
           hasUpdates = true;
           return `[${text}](${newProjectRelativePath})`;
@@ -174,15 +171,16 @@ export class ProjectLinkUpdateService {
       linkPattern,
       (match: string, text: string, url: string) => {
         // プロジェクト内リンクのみ更新対象
-        const normalizedUrl = this.pathNormalizationService.normalizeToProjectPath(
+        const normalizedUrl = PathNormalizer.normalizeToProjectPath(
           url,
           fileAbsolutePath,
+          this.novelRootAbsolutePath,
         );
 
         if (
           normalizedUrl !== null &&
           normalizedUrl !== '' &&
-          this.pathNormalizationService.isSamePath(normalizedUrl, oldProjectRelativePath)
+          PathNormalizer.isSamePath(normalizedUrl, oldProjectRelativePath)
         ) {
           hasUpdates = true;
           return `[${text}](${newProjectRelativePath})`;
@@ -220,7 +218,7 @@ export class ProjectLinkUpdateService {
     for (const fileItem of meta.files) {
       if (fileItem.references && Array.isArray(fileItem.references)) {
         const updatedReferences = fileItem.references.map((ref) => {
-          if (this.pathNormalizationService.isSamePath(ref, oldProjectRelativePath)) {
+          if (PathNormalizer.isSamePath(ref, oldProjectRelativePath)) {
             hasUpdates = true;
             return newProjectRelativePath;
           }
@@ -420,9 +418,10 @@ export class ProjectLinkUpdateService {
     while ((match = linkPattern.exec(content)) !== null) {
       const url = match[2];
       if (url !== undefined && url !== null && url !== '') {
-        const normalizedUrl = this.pathNormalizationService.normalizeToProjectPath(
+        const normalizedUrl = PathNormalizer.normalizeToProjectPath(
           url,
           fileAbsolutePath,
+          this.novelRootAbsolutePath,
         );
 
         if (normalizedUrl !== null && normalizedUrl !== '') {
@@ -448,9 +447,10 @@ export class ProjectLinkUpdateService {
     while ((match = linkPattern.exec(content)) !== null) {
       const url = match[2];
       if (url !== undefined && url !== null && url !== '') {
-        const normalizedUrl = this.pathNormalizationService.normalizeToProjectPath(
+        const normalizedUrl = PathNormalizer.normalizeToProjectPath(
           url,
           fileAbsolutePath,
+          this.novelRootAbsolutePath,
         );
 
         if (normalizedUrl !== null && normalizedUrl !== '') {
