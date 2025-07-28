@@ -32,6 +32,7 @@ suite('ProjectSettingsService テストスイート', () => {
         title: 'テスト小説',
         author: 'テスト著者',
         created_at: '2024-01-01T00:00:00Z',
+        updated_at: '2024-01-01T00:00:00Z',
         tags: ['ファンタジー', '冒険'],
         project_settings: {
           readme_filename: 'README.md',
@@ -157,7 +158,12 @@ project_settings:
         title: '元のタイトル',
         author: '元の著者',
         created_at: '2024-01-01T00:00:00Z',
+        updated_at: '2024-01-01T00:00:00Z',
         tags: ['元のタグ'],
+        project_settings: {
+          readme_filename: 'README.md',
+          exclude_patterns: [],
+        },
       };
 
       await mockFileRepository.writeFileAsync(
@@ -165,8 +171,12 @@ project_settings:
         `title: "${existingSettings.title}"
 author: "${existingSettings.author}"
 created_at: "${existingSettings.created_at}"
+updated_at: "${existingSettings.updated_at}"
 tags:
-  - "${existingSettings.tags?.[0]}"`,
+  - "${existingSettings.tags?.[0]}"
+project_settings:
+  readme_filename: "${existingSettings.project_settings.readme_filename}"
+  exclude_patterns: []`,
       );
 
       // 更新データ
@@ -211,6 +221,12 @@ tags:
         title: '元のタイトル',
         author: '元の著者',
         created_at: '2024-01-01T00:00:00Z',
+        updated_at: '2024-01-01T00:00:00Z',
+        tags: [],
+        project_settings: {
+          readme_filename: 'README.md',
+          exclude_patterns: [],
+        },
       };
 
       await mockFileRepository.writeFileAsync(
@@ -257,6 +273,7 @@ created_at: "${existingSettings.created_at}"`,
         title: '元のタイトル',
         author: '元の著者',
         created_at: '2024-01-01T00:00:00Z',
+        updated_at: '2024-01-01T00:00:00Z',
         tags: ['元のタグ'],
         project_settings: {
           readme_filename: 'OLD.md',
@@ -269,6 +286,7 @@ created_at: "${existingSettings.created_at}"`,
         `title: "${existingSettings.title}"
 author: "${existingSettings.author}"
 created_at: "${existingSettings.created_at}"
+updated_at: "${existingSettings.updated_at}"
 tags:
   - "${existingSettings.tags?.[0]}"
 project_settings:
@@ -295,8 +313,11 @@ project_settings:
       // 更新後の設定を確認
       const updatedSettings = await service.loadProjectSettings(projectRoot);
       assert.notStrictEqual(updatedSettings, null);
-      assert.strictEqual(updatedSettings?.tags, undefined);
-      assert.strictEqual(updatedSettings?.project_settings, undefined);
+      assert.deepStrictEqual(updatedSettings?.tags, []); // 空配列になる
+      assert.deepStrictEqual(updatedSettings?.project_settings, {
+        readme_filename: 'OLD.md', // 既存の値が保持される
+        exclude_patterns: ['*.old'], // 既存の値が保持される
+      });
     });
   });
 
@@ -306,7 +327,14 @@ project_settings:
 
       await mockFileRepository.writeFileAsync(
         mockFileRepository.createFileUri(`${projectRoot}/dialogoi.yaml`),
-        'title: "Test"',
+        `title: "Test"
+author: "Author"
+created_at: "2024-01-01T00:00:00Z"
+updated_at: "2024-01-01T00:00:00Z"
+tags: []
+project_settings:
+  readme_filename: "README.md"
+  exclude_patterns: []`,
       );
 
       const exists = await service.isDialogoiProject(projectRoot);

@@ -4,11 +4,11 @@ export interface DialogoiYaml {
   title: string;
   author: string;
   created_at: string;
-  tags?: string[];
-  updated_at?: string;
-  project_settings?: {
-    readme_filename?: string;
-    exclude_patterns?: string[];
+  tags: string[];
+  updated_at: string;
+  project_settings: {
+    readme_filename: string;
+    exclude_patterns: string[];
   };
 }
 
@@ -70,17 +70,20 @@ export class DialogoiYamlUtils {
     if (!data.created_at || data.created_at.trim() === '') {
       errors.push('created_at は必須フィールドです');
     }
+    if (!data.updated_at || data.updated_at.trim() === '') {
+      errors.push('updated_at は必須フィールドです');
+    }
 
     // 日付形式のチェック（ISO 8601）
-    if (data.created_at !== undefined && !this.isValidISODate(data.created_at)) {
+    if (!this.isValidISODate(data.created_at)) {
       errors.push('created_at はISO 8601形式である必要があります（例: 2024-01-01T00:00:00Z）');
     }
-    if (data.updated_at !== undefined && !this.isValidISODate(data.updated_at)) {
+    if (!this.isValidISODate(data.updated_at)) {
       errors.push('updated_at はISO 8601形式である必要があります（例: 2024-01-01T00:00:00Z）');
     }
 
     // タグの配列チェック
-    if (data.tags !== undefined && !Array.isArray(data.tags)) {
+    if (!Array.isArray(data.tags)) {
       errors.push('tags は配列である必要があります');
     }
 

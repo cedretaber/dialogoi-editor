@@ -65,6 +65,11 @@ author: "テスト著者"`;
         author: 'テスト著者',
         created_at: '2024-01-01T00:00:00Z',
         tags: ['ファンタジー', '冒険'],
+        updated_at: '2024-01-01T00:00:00Z',
+        project_settings: {
+          readme_filename: 'README.md',
+          exclude_patterns: ['*.tmp'],
+        },
       };
 
       const result = DialogoiYamlUtils.stringifyDialogoiYaml(data);
@@ -80,11 +85,17 @@ author: "テスト著者"`;
       assert.ok(result.includes('- 冒険'));
     });
 
-    test('tagsがない場合も正しく変換する', () => {
+    test('空のtagsでも正しく変換する', () => {
       const data: DialogoiYaml = {
         title: 'テスト小説',
         author: 'テスト著者',
         created_at: '2024-01-01T00:00:00Z',
+        tags: [],
+        updated_at: '2024-01-01T00:00:00Z',
+        project_settings: {
+          readme_filename: 'README.md',
+          exclude_patterns: [],
+        },
       };
 
       const result = DialogoiYamlUtils.stringifyDialogoiYaml(data);
@@ -95,7 +106,7 @@ author: "テスト著者"`;
         result.includes("created_at: '2024-01-01T00:00:00Z'") ||
           result.includes('created_at: 2024-01-01T00:00:00Z'),
       );
-      assert.ok(!result.includes('tags:'));
+      assert.ok(result.includes('tags: []')); // 空のtagsが出力される
     });
   });
 
@@ -106,6 +117,11 @@ author: "テスト著者"`;
         author: 'テスト著者',
         created_at: '2024-01-01T00:00:00Z',
         tags: ['ファンタジー'],
+        updated_at: '2024-01-01T00:00:00Z',
+        project_settings: {
+          readme_filename: 'README.md',
+          exclude_patterns: [],
+        },
       };
 
       const result = DialogoiYamlUtils.validateDialogoiYaml(data);
@@ -132,12 +148,20 @@ author: "テスト著者"`;
         title: 'テスト小説',
         author: 'テスト著者',
         created_at: '2024-01-01',
+        tags: [],
+        updated_at: '2024-01-01',
+        project_settings: {
+          readme_filename: 'README.md',
+          exclude_patterns: [],
+        },
       };
 
       const result = DialogoiYamlUtils.validateDialogoiYaml(data);
 
       assert.strictEqual(result.isValid, false);
+      assert.strictEqual(result.errors.length, 2); // created_atとupdated_atの両方がエラー
       assert.ok(result.errors.some((error) => error.includes('created_at')));
+      assert.ok(result.errors.some((error) => error.includes('updated_at')));
     });
 
     test('tagsが配列でない場合エラーを返す', () => {
@@ -146,6 +170,11 @@ author: "テスト著者"`;
         author: 'テスト著者',
         created_at: '2024-01-01T00:00:00Z',
         tags: 'ファンタジー' as unknown as string[],
+        updated_at: '2024-01-01T00:00:00Z',
+        project_settings: {
+          readme_filename: 'README.md',
+          exclude_patterns: [],
+        },
       };
 
       const result = DialogoiYamlUtils.validateDialogoiYaml(data);
@@ -158,14 +187,19 @@ author: "テスト著者"`;
       const data = {
         title: '',
         author: '',
-        created_at: 'invalid-date',
+        created_at: '',
         tags: 'not-array' as unknown as string[],
+        updated_at: '',
+        project_settings: {
+          readme_filename: '',
+          exclude_patterns: [],
+        },
       };
 
       const result = DialogoiYamlUtils.validateDialogoiYaml(data);
 
       assert.strictEqual(result.isValid, false);
-      assert.ok(result.errors.length >= 4);
+      assert.ok(result.errors.length >= 5); // title, author, created_at, updated_at, tags
     });
   });
 
@@ -178,6 +212,30 @@ author: "テスト著者"`;
       assert.ok(result.created_at);
       assert.ok(!isNaN(new Date(result.created_at).getTime()));
       assert.deepStrictEqual(result.tags, []);
+      assert.strictEqual(result.updated_at, result.created_at);
+      assert.deepStrictEqual(result.project_settings, {
+        readme_filename: 'README.md',
+        exclude_patterns: [
+          '.*',
+          '.DS_Store',
+          'Thumbs.db',
+          'desktop.ini',
+          '$RECYCLE.BIN',
+          '.Trash',
+          '.git',
+          '.gitignore',
+          '.hg',
+          '.svn',
+          '*.tmp',
+          '*.temp',
+          '*.log',
+          '*.bak',
+          '*.old',
+          'node_modules',
+          'dist',
+          'build',
+        ],
+      });
     });
 
     test('タグ付きのDialogoiYamlオブジェクトを作成する', () => {
@@ -188,6 +246,30 @@ author: "テスト著者"`;
       assert.strictEqual(result.author, '新しい著者');
       assert.ok(result.created_at);
       assert.deepStrictEqual(result.tags, tags);
+      assert.strictEqual(result.updated_at, result.created_at);
+      assert.deepStrictEqual(result.project_settings, {
+        readme_filename: 'README.md',
+        exclude_patterns: [
+          '.*',
+          '.DS_Store',
+          'Thumbs.db',
+          'desktop.ini',
+          '$RECYCLE.BIN',
+          '.Trash',
+          '.git',
+          '.gitignore',
+          '.hg',
+          '.svn',
+          '*.tmp',
+          '*.temp',
+          '*.log',
+          '*.bak',
+          '*.old',
+          'node_modules',
+          'dist',
+          'build',
+        ],
+      });
     });
 
     test('created_atが現在時刻に近い値になる', () => {
@@ -197,6 +279,7 @@ author: "テスト著者"`;
 
       assert.ok(result.created_at >= before);
       assert.ok(result.created_at <= after);
+      assert.strictEqual(result.updated_at, result.created_at);
     });
   });
 });

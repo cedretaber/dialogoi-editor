@@ -135,10 +135,7 @@ export class ProjectSettingsService {
         ...currentSettings,
         title: updateData.title.trim(),
         author: updateData.author.trim(),
-        tags:
-          updateData.tags?.length !== undefined && updateData.tags.length > 0
-            ? updateData.tags
-            : undefined,
+        tags: updateData.tags && updateData.tags.length > 0 ? updateData.tags : [],
         project_settings: this.mergeProjectSettings(
           currentSettings.project_settings,
           updateData.project_settings,
@@ -247,10 +244,7 @@ export class ProjectSettingsService {
       const newSettings: DialogoiYaml = {
         title: settingsData.title.trim(),
         author: settingsData.author.trim(),
-        tags:
-          settingsData.tags?.length !== undefined && settingsData.tags.length > 0
-            ? settingsData.tags
-            : undefined,
+        tags: settingsData.tags && settingsData.tags.length > 0 ? settingsData.tags : [],
         project_settings: this.mergeProjectSettings(undefined, settingsData.project_settings),
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
@@ -267,10 +261,9 @@ export class ProjectSettingsService {
 
       if (success) {
         // プロジェクト設定を更新（project_settingsを追加）
-        const updates: Partial<DialogoiYaml> = {};
-        if (newSettings.project_settings !== undefined) {
-          updates.project_settings = newSettings.project_settings;
-        }
+        const updates: Partial<DialogoiYaml> = {
+          project_settings: newSettings.project_settings,
+        };
         await this.dialogoiYamlService.updateDialogoiYamlAsync(projectRootAbsolutePath, updates);
         this.logger.info('New project created successfully');
       } else {
@@ -294,27 +287,34 @@ export class ProjectSettingsService {
    * @returns マージされた設定
    */
   private mergeProjectSettings(
-    current: DialogoiYaml['project_settings'],
+    current: DialogoiYaml['project_settings'] | undefined,
     updates: ProjectSettingsUpdateData['project_settings'],
   ): DialogoiYaml['project_settings'] {
+    // デフォルト値
+    const defaultSettings = {
+      readme_filename: 'README.md',
+      exclude_patterns: [] as string[],
+    };
+
+    // 更新がない場合は現在の設定またはデフォルト値を返す
     if (updates === undefined) {
-      return current;
+      return current || defaultSettings;
     }
 
-    const readme_filename =
-      updates.readme_filename !== undefined && updates.readme_filename.trim() !== ''
-        ? updates.readme_filename.trim()
-        : undefined;
+    const readme_filename = ((): string => {
+      if (updates.readme_filename !== undefined && updates.readme_filename !== null) {
+        const trimmed = updates.readme_filename.trim();
+        if (trimmed !== '') {
+          return trimmed;
+        }
+      }
+      return current?.readme_filename ?? defaultSettings.readme_filename;
+    })();
 
     const exclude_patterns =
       updates.exclude_patterns !== undefined && updates.exclude_patterns.length > 0
         ? updates.exclude_patterns
-        : undefined;
-
-    // 両方ともundefinedの場合はundefinedを返す
-    if (readme_filename === undefined && exclude_patterns === undefined) {
-      return undefined;
-    }
+        : current?.exclude_patterns || defaultSettings.exclude_patterns;
 
     return {
       readme_filename,

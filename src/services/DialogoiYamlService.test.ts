@@ -93,6 +93,11 @@ tags: ["ファンタジー"]`;
         author: 'テスト著者',
         created_at: '2024-01-01T00:00:00Z',
         tags: ['ファンタジー'],
+        updated_at: '2024-01-01T00:00:00Z',
+        project_settings: {
+          readme_filename: 'README.md',
+          exclude_patterns: [],
+        },
       };
 
       const result = await service.saveDialogoiYamlAsync(projectRoot, data);
@@ -117,6 +122,12 @@ tags: ["ファンタジー"]`;
         title: '',
         author: 'テスト著者',
         created_at: '2024-01-01T00:00:00Z',
+        tags: [],
+        updated_at: '2024-01-01T00:00:00Z',
+        project_settings: {
+          readme_filename: 'README.md',
+          exclude_patterns: [],
+        },
       };
 
       const result = await service.saveDialogoiYamlAsync(projectRoot, data);
@@ -130,6 +141,12 @@ tags: ["ファンタジー"]`;
         title: 'テスト小説',
         author: 'テスト著者',
         created_at: '2024-01-01T00:00:00Z',
+        tags: [],
+        updated_at: '2024-01-01T00:00:00Z',
+        project_settings: {
+          readme_filename: 'README.md',
+          exclude_patterns: [],
+        },
       };
 
       const before = new Date().toISOString();
@@ -212,7 +229,12 @@ tags: ["ファンタジー"]`;
       const dialogoiYamlPath = path.join(projectRoot, 'dialogoi.yaml');
       const originalContent = `title: "元のタイトル"
 author: "元の著者"
-created_at: "2024-01-01T00:00:00Z"`;
+created_at: "2024-01-01T00:00:00Z"
+updated_at: "2024-01-01T00:00:00Z"
+tags: []
+project_settings:
+  readme_filename: "README.md"
+  exclude_patterns: []`;
 
       mockFileRepository.createFileForTest(dialogoiYamlPath, originalContent);
 
