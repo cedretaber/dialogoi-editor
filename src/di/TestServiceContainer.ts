@@ -28,6 +28,7 @@ import { FileTypeConversionService } from '../services/FileTypeConversionService
 import { ProjectAutoSetupService } from '../services/ProjectAutoSetupService.js';
 import { ProjectSetupService } from '../services/ProjectSetupService.js';
 import { ProjectPathService } from '../services/ProjectPathService.js';
+import { CoreFileService } from '../services/CoreFileService.js';
 import { Logger } from '../utils/Logger.js';
 
 /**
@@ -56,6 +57,7 @@ export class TestServiceContainer implements IServiceContainer {
   private projectAutoSetupService: ProjectAutoSetupService | null = null;
   private projectSetupService: ProjectSetupService | null = null;
   private projectPathService: ProjectPathService | null = null;
+  private coreFileService: CoreFileService | null = null;
 
   private constructor() {
     // テスト環境では常にMockFileRepositoryを使用
@@ -322,6 +324,19 @@ export class TestServiceContainer implements IServiceContainer {
       this.projectPathService = new ProjectPathService(dialogoiYamlService);
     }
     return this.projectPathService;
+  }
+
+  getCoreFileService(novelRootAbsolutePath?: string): CoreFileService {
+    if (!this.coreFileService) {
+      const fileRepository = this.getFileRepository();
+      const metaYamlService = this.getMetaYamlService();
+      this.coreFileService = new CoreFileService(
+        fileRepository,
+        metaYamlService,
+        novelRootAbsolutePath ?? '/test-root',
+      );
+    }
+    return this.coreFileService;
   }
 
   /**
