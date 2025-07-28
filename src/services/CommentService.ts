@@ -9,7 +9,7 @@ import {
 } from '../models/Comment.js';
 import { FileRepository } from '../repositories/FileRepository.js';
 import { Uri } from '../interfaces/Uri.js';
-import { HashService } from './HashService.js';
+import { HashCalculator } from '../utils/HashCalculator.js';
 import { DialogoiYamlService } from './DialogoiYamlService.js';
 import { formatTargetFile } from '../utils/FileLineUrlParser.js';
 
@@ -22,7 +22,6 @@ export class CommentService {
 
   constructor(
     private fileRepository: FileRepository,
-    private hashService: HashService,
     private dialogoiYamlService: DialogoiYamlService,
     workspaceRoot: Uri,
   ) {
@@ -117,7 +116,10 @@ export class CommentService {
   ): Promise<void> {
     // 対象ファイルのハッシュを取得
     const targetFileUri = this.fileRepository.joinPath(this.workspaceRoot, targetRelativeFilePath);
-    const fileHash = await this.hashService.calculateFileHashAsync(targetFileUri);
+    const fileHash = await HashCalculator.calculateFileHashAsync(
+      this.fileRepository,
+      targetFileUri,
+    );
 
     // 既存のコメントファイルを読み込み
     let commentFile = await this.loadCommentFileAsync(targetRelativeFilePath);
@@ -226,7 +228,10 @@ export class CommentService {
     }
 
     const targetFileUri = this.fileRepository.joinPath(this.workspaceRoot, targetRelativeFilePath);
-    const currentHash = await this.hashService.calculateFileHashAsync(targetFileUri);
+    const currentHash = await HashCalculator.calculateFileHashAsync(
+      this.fileRepository,
+      targetFileUri,
+    );
 
     // 各コメントのfile_hashと比較
     return commentFile.comments.some((comment) => comment.file_hash !== currentHash);
@@ -244,7 +249,7 @@ export class CommentService {
     }
 
     const targetFileUri = this.fileRepository.joinPath(this.workspaceRoot, targetRelativeFilePath);
-    const newHash = await this.hashService.calculateFileHashAsync(targetFileUri);
+    const newHash = await HashCalculator.calculateFileHashAsync(this.fileRepository, targetFileUri);
 
     // 各コメントのfile_hashを更新
     for (const comment of commentFile.comments) {

@@ -3,19 +3,22 @@ import { FileRepository } from '../repositories/FileRepository.js';
 import { Uri } from '../interfaces/Uri.js';
 
 /**
- * ファイルハッシュ計算サービス
+ * ハッシュ計算ユーティリティ
+ * HashServiceから移行したutils関数群
  */
-export class HashService {
-  constructor(public fileRepository: FileRepository) {}
+export class HashCalculator {
   /**
    * ファイルの SHA-256 ハッシュを計算（非同期版）
+   * @param fileRepository ファイル操作リポジトリ
    * @param fileUri ファイルの URI
    * @returns SHA-256 ハッシュ文字列（プレフィックス付き）
-   * TODO: Phase 3での利用を想定
    */
-  async calculateFileHashAsync(fileUri: Uri): Promise<string> {
+  static async calculateFileHashAsync(
+    fileRepository: FileRepository,
+    fileUri: Uri,
+  ): Promise<string> {
     try {
-      const content = await this.fileRepository.readFileAsync(fileUri);
+      const content = await fileRepository.readFileAsync(fileUri);
       const hash = createHash('sha256').update(content).digest('hex');
       return `sha256:${hash}`;
     } catch (error) {
@@ -29,21 +32,25 @@ export class HashService {
    * @param content ファイルの内容（文字列）
    * @returns SHA-256 ハッシュ文字列（プレフィックス付き）
    */
-  calculateContentHash(content: string): string {
+  static calculateContentHash(content: string): string {
     const hash = createHash('sha256').update(content, 'utf8').digest('hex');
     return `sha256:${hash}`;
   }
 
   /**
    * ハッシュを検証（非同期版）
+   * @param fileRepository ファイル操作リポジトリ
    * @param fileUri ファイルの URI
    * @param expectedHash 期待されるハッシュ値
    * @returns ハッシュが一致するかどうか
-   * TODO: Phase 3での利用を想定
    */
-  async verifyFileHashAsync(fileUri: Uri, expectedHash: string): Promise<boolean> {
+  static async verifyFileHashAsync(
+    fileRepository: FileRepository,
+    fileUri: Uri,
+    expectedHash: string,
+  ): Promise<boolean> {
     try {
-      const actualHash = await this.calculateFileHashAsync(fileUri);
+      const actualHash = await HashCalculator.calculateFileHashAsync(fileRepository, fileUri);
       return actualHash === expectedHash;
     } catch (error) {
       console.error('ハッシュ検証エラー:', error);
@@ -56,7 +63,7 @@ export class HashService {
    * @param hash ハッシュ文字列
    * @returns アルゴリズム名
    */
-  getHashAlgorithm(hash: string): string {
+  static getHashAlgorithm(hash: string): string {
     const colonIndex = hash.indexOf(':');
     if (colonIndex === -1) {
       return 'unknown';
@@ -69,7 +76,7 @@ export class HashService {
    * @param hash ハッシュ文字列
    * @returns ハッシュ値
    */
-  getHashValue(hash: string): string {
+  static getHashValue(hash: string): string {
     const colonIndex = hash.indexOf(':');
     if (colonIndex === -1) {
       return hash;

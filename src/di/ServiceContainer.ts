@@ -3,7 +3,6 @@ import { MockFileRepository } from '../repositories/MockFileRepository.js';
 import { CharacterService } from '../services/CharacterService.js';
 import { ForeshadowingService } from '../services/ForeshadowingService.js';
 import { ReferenceManager } from '../services/ReferenceManager.js';
-import { HashService } from '../services/HashService.js';
 import { CommentService } from '../services/CommentService.js';
 import { DialogoiYamlService } from '../services/DialogoiYamlService.js';
 import { DialogoiTemplateService } from '../services/DialogoiTemplateService.js';
@@ -34,7 +33,6 @@ export interface IServiceContainer {
   getCharacterService(): CharacterService;
   getForeshadowingService(): ForeshadowingService;
   getReferenceManager(): ReferenceManager;
-  getHashService(): HashService;
   getCommentService(workspaceRoot: Uri): CommentService;
   getDialogoiYamlService(): DialogoiYamlService;
   getDialogoiTemplateService(): DialogoiTemplateService;
@@ -69,7 +67,6 @@ export class ServiceContainer implements IServiceContainer {
   private characterService: CharacterService | null = null;
   private foreshadowingService: ForeshadowingService | null = null;
   private referenceManager: ReferenceManager | null = null;
-  private hashService: HashService | null = null;
   private dialogoiYamlService: DialogoiYamlService | null = null;
   private dialogoiTemplateService: DialogoiTemplateService | null = null;
   private metaYamlService: MetaYamlService | null = null;
@@ -112,7 +109,6 @@ export class ServiceContainer implements IServiceContainer {
     this.characterService = null;
     this.foreshadowingService = null;
     this.referenceManager = null;
-    this.hashService = null;
     this.dialogoiYamlService = null;
     this.dialogoiTemplateService = null;
     this.metaYamlService = null;
@@ -174,22 +170,11 @@ export class ServiceContainer implements IServiceContainer {
   }
 
   /**
-   * HashServiceを取得
-   */
-  getHashService(): HashService {
-    if (!this.hashService) {
-      this.hashService = new HashService(this.getFileRepository());
-    }
-    return this.hashService;
-  }
-
-  /**
    * CommentServiceを取得
    */
   getCommentService(workspaceRoot: Uri): CommentService {
     return new CommentService(
       this.getFileRepository(),
-      this.getHashService(),
       this.getDialogoiYamlService(),
       workspaceRoot,
     );
@@ -320,7 +305,6 @@ export class ServiceContainer implements IServiceContainer {
     this.characterService = null;
     this.foreshadowingService = null;
     this.referenceManager = null;
-    this.hashService = null;
     this.dialogoiYamlService = null;
     this.dialogoiTemplateService = null;
     this.metaYamlService = null;

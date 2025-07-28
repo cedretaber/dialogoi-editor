@@ -3,7 +3,6 @@ import { MockFileRepository } from '../repositories/MockFileRepository.js';
 import { CharacterService } from '../services/CharacterService.js';
 import { ForeshadowingService } from '../services/ForeshadowingService.js';
 import { ReferenceManager } from '../services/ReferenceManager.js';
-import { HashService } from '../services/HashService.js';
 import { CommentService } from '../services/CommentService.js';
 import { DialogoiYamlService } from '../services/DialogoiYamlService.js';
 import { DialogoiTemplateService } from '../services/DialogoiTemplateService.js';
@@ -44,7 +43,6 @@ export class TestServiceContainer implements IServiceContainer {
   private characterService: CharacterService | null = null;
   private foreshadowingService: ForeshadowingService | null = null;
   private referenceManager: ReferenceManager | null = null;
-  private hashService: HashService | null = null;
   private dialogoiYamlService: DialogoiYamlService | null = null;
   private dialogoiTemplateService: DialogoiTemplateService | null = null;
   private projectCreationService: ProjectCreationService | null = null;
@@ -126,25 +124,10 @@ export class TestServiceContainer implements IServiceContainer {
   }
 
   /**
-   * HashServiceを取得
-   */
-  getHashService(): HashService {
-    if (!this.hashService) {
-      this.hashService = new HashService(this.fileRepository);
-    }
-    return this.hashService;
-  }
-
-  /**
    * CommentServiceを取得
    */
   getCommentService(workspaceRoot: Uri): CommentService {
-    return new CommentService(
-      this.fileRepository,
-      this.getHashService(),
-      this.getDialogoiYamlService(),
-      workspaceRoot,
-    );
+    return new CommentService(this.fileRepository, this.getDialogoiYamlService(), workspaceRoot);
   }
 
   /**
@@ -264,7 +247,6 @@ export class TestServiceContainer implements IServiceContainer {
     this.characterService = null;
     this.foreshadowingService = null;
     this.referenceManager = null;
-    this.hashService = null;
     this.dialogoiYamlService = null;
     this.dialogoiTemplateService = null;
     this.projectCreationService = null;
