@@ -4,7 +4,7 @@
 
 ## 概要
 
-src/services/ディレクトリには26個のサービスクラスが存在します。
+src/services/ディレクトリには~~26~~**23個**のサービスクラスが存在します。（3つのサービスがutils化により削除）
 このドキュメントでは、各サービスの責務、依存関係、利用状況を分析し、リファクタリング提案をまとめます。
 
 ## 分析観点
@@ -37,15 +37,15 @@ src/services/ディレクトリには26個のサービスクラスが存在し�
 | 10 | FilePathMapService | ✅ 済 | ファイルパス解決 | 適切 | 現状維持 |
 | 11 | FileStatusService | ✅ 済 | ファイル状態管理 | 適切 | 現状維持 |
 | 12 | FileTypeConversionService | ✅ 済 | ファイル種別変更 | 適切 | 現状維持 |
-| 13 | FileTypeDetectionService | ✅ 済 | ファイル種別判定 | 責務狭い | utils化検討 |
+| 13 | ~~FileTypeDetectionService~~ | ✅ 済 | ~~ファイル種別判定~~ | ~~責務狭い~~ | ~~utils化済み~~ |
 | 14 | ForeshadowingService | ✅ 済 | 伏線管理 | 適切 | 現状維持 |
-| 15 | HashService | ✅ 済 | ハッシュ計算 | 責務狭い | utils化検討 |
+| 15 | ~~HashService~~ | ✅ 済 | ~~ハッシュ計算~~ | ~~責務狭い~~ | ~~utils化済み~~ |
 | 16 | HyperlinkExtractorService | ✅ 済 | ハイパーリンク抽出 | 責務狭い | utils化検討 |
 | 17 | MetaYamlService | ✅ 済 | メタファイル管理 | 適切 | 現状維持 |
 | 18 | ProjectAutoSetupService | ✅ 済 | プロジェクト自動構築 | 適切 | 現状維持 |
 | 19 | ProjectCreationService | ✅ 済 | プロジェクト作成 | 廃止予定 | 削除 |
 | 20 | ProjectLinkUpdateService | ✅ 済 | リンク更新 | 責務狭い | utils化検討 |
-| 21 | ProjectPathNormalizationService | ✅ 済 | パス正規化 | 責務狭い | utils化検討 |
+| 21 | ~~ProjectPathNormalizationService~~ | ✅ 済 | ~~パス正規化~~ | ~~責務狭い~~ | ~~utils化済み~~ |
 | 22 | ProjectPathService | ✅ 済 | プロジェクトパス管理 | 適切 | 現状維持 |
 | 23 | ProjectSettingsService | ✅ 済 | プロジェクト設定管理 | 適切 | 現状維持 |
 | 24 | ProjectSetupService | ✅ 済 | プロジェクト統合セットアップ | 適切 | 現状維持 |
@@ -92,7 +92,7 @@ src/services/ディレクトリには26個のサービスクラスが存在し�
 
 **依存関係**:
 - FileRepository（DI）
-- HashService（DI）  
+- ~~HashService（DI）~~（utils/HashCalculator静的メソッドに変更）  
 - DialogoiYamlService（DI）
 - workspaceRoot: Uri（コンストラクタ引数）
 
@@ -606,7 +606,7 @@ src/services/ディレクトリには26個のサービスクラスが存在し�
 - 新機能開発時の影響範囲明確化
 
 ### **保守性向上**
-- ファイル数削減（26→約20サービス）
+- ファイル数削減（26→23サービス）
 - 依存関係の簡素化
 - ドキュメント整合性向上
 
@@ -640,6 +640,19 @@ src/services/ディレクトリには26個のサービスクラスが存在し�
 - **テスト実行改善**: MockFileRepositoryを引数で渡す形で単体テストが高速化
 - **コード可読性向上**: 純粋関数として静的メソッド化による意図明確化
 - **技術的負債削減**: サービス登録・初期化コードの削除
+
+### **Phase 1.5: HashCalculatorリファクタリング完了 (2025-01-28)**
+
+**HashCalculator純粋化**:
+- FileRepository依存を完全に除去
+- ファイル読み込みは呼び出し元（CommentService等）で実行
+- calculateContentHash/calculateBinaryHashによる純粋なハッシュ計算に特化
+- 単一責任原則の徹底により、よりテスタブルで再利用可能な設計に
+
+**FileTypeDetector機能削除**:  
+- directory判定機能を完全廃止（無意味なため）
+- FileTypeDetectionMethod型から'directory'オプション削除
+- 拡張子ベースのみに簡素化、小説プロジェクトの実態に適合
 
 ### **今後の方針**
 

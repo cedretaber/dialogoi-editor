@@ -5,8 +5,6 @@ import { ForeshadowingService } from '../services/ForeshadowingService.js';
 import { ReferenceManager } from '../services/ReferenceManager.js';
 import { CommentService } from '../services/CommentService.js';
 import { DialogoiYamlService } from '../services/DialogoiYamlService.js';
-import { DialogoiTemplateService } from '../services/DialogoiTemplateService.js';
-import { ProjectCreationService } from '../services/ProjectCreationService.js';
 import { MetaYamlService } from '../services/MetaYamlService.js';
 import { FileOperationService } from '../services/FileOperationService.js';
 import { FilePathMapService } from '../services/FilePathMapService.js';
@@ -42,8 +40,6 @@ export class TestServiceContainer implements IServiceContainer {
   private foreshadowingService: ForeshadowingService | null = null;
   private referenceManager: ReferenceManager | null = null;
   private dialogoiYamlService: DialogoiYamlService | null = null;
-  private dialogoiTemplateService: DialogoiTemplateService | null = null;
-  private projectCreationService: ProjectCreationService | null = null;
   private metaYamlService: MetaYamlService | null = null;
   private fileOperationService: FileOperationService | null = null;
   private filePathMapService: FilePathMapService | null = null;
@@ -137,30 +133,6 @@ export class TestServiceContainer implements IServiceContainer {
   }
 
   /**
-   * DialogoiTemplateServiceを取得
-   */
-  getDialogoiTemplateService(): DialogoiTemplateService {
-    if (!this.dialogoiTemplateService) {
-      this.dialogoiTemplateService = new DialogoiTemplateService(this.fileRepository);
-    }
-    return this.dialogoiTemplateService;
-  }
-
-  /**
-   * ProjectCreationServiceを取得
-   */
-  getProjectCreationService(): ProjectCreationService {
-    if (!this.projectCreationService) {
-      this.projectCreationService = new ProjectCreationService(
-        this.fileRepository,
-        this.getDialogoiYamlService(),
-        this.getDialogoiTemplateService(),
-      );
-    }
-    return this.projectCreationService;
-  }
-
-  /**
    * MetaYamlServiceを取得
    */
   getMetaYamlService(): MetaYamlService {
@@ -233,8 +205,6 @@ export class TestServiceContainer implements IServiceContainer {
     this.foreshadowingService = null;
     this.referenceManager = null;
     this.dialogoiYamlService = null;
-    this.dialogoiTemplateService = null;
-    this.projectCreationService = null;
     this.metaYamlService = null;
     this.fileOperationService = null;
     this.filePathMapService = null;
