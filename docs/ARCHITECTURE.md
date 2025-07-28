@@ -123,10 +123,19 @@
 - **ユーザーインターフェース制御**
 - **サービス層のビジネスロジックを利用**
 
-#### プロバイダー層（/src/providers/、/src/views/）の責務
+#### プロバイダー層（/src/providers/、/src/panels/、/src/tree/）の責務
 - **VSCode Extension API の具象実装**
 - **TreeDataProvider、WebViewProvider等の実装**
 - **UI表示ロジックとイベント処理**
+
+##### ディレクトリ使い分け
+- **providers/** - サイドバーパネル用のWebViewプロバイダー
+  - `CommentsViewProvider.ts`: コメント・TODO管理
+  - `FileDetailsViewProvider.ts`: ファイル詳細情報表示
+- **tree/** - TreeView専用のデータプロバイダー
+  - `DialogoiTreeDataProvider.ts`: ファイルツリー表示
+- **panels/** - メインエディタ領域のWebViewパネル管理
+  - `ProjectSettingsWebviewPanel.ts`: プロジェクト設定画面
 
 ### 実装例とパターン
 
@@ -492,3 +501,55 @@ ProjectSetupService (高レベル統合)
 - コード内ドキュメント
 - APIドキュメント自動生成
 - アーキテクチャ決定記録（ADR）
+
+## UI層ディレクトリ構造ガイド
+
+### ディレクトリ構成と責務
+
+```
+src/
+├── providers/        # サイドバーWebViewプロバイダー
+├── tree/            # TreeViewデータプロバイダー
+├── panels/          # メインエディタWebViewパネル
+└── commands/        # VSCodeコマンド登録
+
+webview/             # React UIコンポーネント（src/外）
+├── components/      # Reactコンポーネント群
+├── types/          # TypeScript型定義
+└── hooks/          # カスタムフック
+```
+
+### 新機能追加時のガイドライン
+
+#### サイドバーに新しいパネルを追加する場合
+1. `src/providers/`に新しい`*ViewProvider.ts`を作成
+2. `webview/components/`に対応するReactコンポーネントを作成
+3. `extension.ts`でプロバイダーを登録
+
+#### メインエディタに新しいパネルを追加する場合
+1. `src/panels/`に新しい`*Panel.ts`を作成
+2. `webview/`に新しいエントリーポイント`*.tsx`を作成
+3. `src/commands/`で開くコマンドを定義
+
+#### TreeViewを拡張する場合
+1. `src/tree/DialogoiTreeDataProvider.ts`を更新
+2. ビジネスロジックは必ず`src/services/`に実装
+3. VSCode API依存部分のみTreeDataProviderに残す
+
+### 命名規則とベストプラクティス
+
+- **providers/**: `*ViewProvider.ts`（例：CommentsViewProvider）
+- **panels/**: `*Panel.ts`または`*WebviewPanel.ts`（例：ProjectSettingsWebviewPanel）
+- **tree/**: `*TreeDataProvider.ts`（例：DialogoiTreeDataProvider）
+- **webview/components/**: PascalCase（例：FileDetailsApp）
+
+### よくある間違いと回避方法
+
+❌ **間違い**: providers/にメインエディタ用のパネルを作成
+✅ **正解**: panels/にメインエディタ用パネルを作成
+
+❌ **間違い**: tree/にビジネスロジックを実装
+✅ **正解**: services/にビジネスロジックを実装し、tree/から呼び出す
+
+❌ **間違い**: webview/をsrc/内に配置
+✅ **正解**: webview/はプロジェクトルート直下に配置

@@ -2,7 +2,7 @@ import * as vscode from 'vscode';
 import { DialogoiTreeDataProvider } from '../tree/DialogoiTreeDataProvider.js';
 import { ServiceContainer } from '../di/ServiceContainer.js';
 import { Logger } from '../utils/Logger.js';
-import { ProjectSettingsWebviewPanel } from '../views/ProjectSettingsWebviewPanel.js';
+import { ProjectSettingsWebviewPanel } from '../panels/ProjectSettingsWebviewPanel.js';
 
 /**
  * プロジェクト関連のコマンドを登録
