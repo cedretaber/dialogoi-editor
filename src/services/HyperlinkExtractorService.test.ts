@@ -24,8 +24,8 @@ suite('HyperlinkExtractorService テストスイート', () => {
     test('基本的なマークダウンリンクを抽出できる', () => {
       // サービスを作成
       const metaYamlService = container.getMetaYamlService();
-      const fileOpService = container.getFileOperationService();
-      const filePathMapService = new FilePathMapService(metaYamlService, fileOpService);
+      const coreFileService = container.getCoreFileService();
+      const filePathMapService = new FilePathMapService(metaYamlService, coreFileService);
       service = new HyperlinkExtractorService(mockFileRepo, filePathMapService);
 
       const content = `
@@ -47,8 +47,8 @@ suite('HyperlinkExtractorService テストスイート', () => {
     test('タイトル付きマークダウンリンクを抽出できる', () => {
       // サービスを作成
       const metaYamlService = container.getMetaYamlService();
-      const fileOpService = container.getFileOperationService();
-      const filePathMapService = new FilePathMapService(metaYamlService, fileOpService);
+      const coreFileService = container.getCoreFileService();
+      const filePathMapService = new FilePathMapService(metaYamlService, coreFileService);
       service = new HyperlinkExtractorService(mockFileRepo, filePathMapService);
 
       const content = `
@@ -70,8 +70,8 @@ suite('HyperlinkExtractorService テストスイート', () => {
     test('外部リンクも抽出される', () => {
       // サービスを作成
       const metaYamlService = container.getMetaYamlService();
-      const fileOpService = container.getFileOperationService();
-      const filePathMapService = new FilePathMapService(metaYamlService, fileOpService);
+      const coreFileService = container.getCoreFileService();
+      const filePathMapService = new FilePathMapService(metaYamlService, coreFileService);
       service = new HyperlinkExtractorService(mockFileRepo, filePathMapService);
 
       const content = `
@@ -91,8 +91,8 @@ suite('HyperlinkExtractorService テストスイート', () => {
     test('空のテキストやURLも処理される', () => {
       // サービスを作成
       const metaYamlService = container.getMetaYamlService();
-      const fileOpService = container.getFileOperationService();
-      const filePathMapService = new FilePathMapService(metaYamlService, fileOpService);
+      const coreFileService = container.getCoreFileService();
+      const filePathMapService = new FilePathMapService(metaYamlService, coreFileService);
       service = new HyperlinkExtractorService(mockFileRepo, filePathMapService);
 
       const content = `
@@ -117,8 +117,8 @@ suite('HyperlinkExtractorService テストスイート', () => {
 
       // サービスを作成
       const metaYamlService = container.getMetaYamlService();
-      const fileOpService = container.getFileOperationService(novelRoot);
-      const filePathMapService = new FilePathMapService(metaYamlService, fileOpService);
+      const coreFileService = container.getCoreFileService(novelRoot);
+      const filePathMapService = new FilePathMapService(metaYamlService, coreFileService);
       service = new HyperlinkExtractorService(mockFileRepo, filePathMapService);
 
       mockFileRepo.createFileForTest(
@@ -169,8 +169,8 @@ files:
 
       // サービスを作成
       const metaYamlService = container.getMetaYamlService();
-      const fileOpService = container.getFileOperationService(novelRoot);
-      const filePathMapService = new FilePathMapService(metaYamlService, fileOpService);
+      const coreFileService = container.getCoreFileService(novelRoot);
+      const filePathMapService = new FilePathMapService(metaYamlService, coreFileService);
       service = new HyperlinkExtractorService(mockFileRepo, filePathMapService);
 
       mockFileRepo.createFileForTest(
@@ -218,8 +218,8 @@ files:
 
       // サービスを作成
       const metaYamlService = container.getMetaYamlService();
-      const fileOpService = container.getFileOperationService(novelRoot);
-      const filePathMapService = new FilePathMapService(metaYamlService, fileOpService);
+      const coreFileService = container.getCoreFileService(novelRoot);
+      const filePathMapService = new FilePathMapService(metaYamlService, coreFileService);
       service = new HyperlinkExtractorService(mockFileRepo, filePathMapService);
 
       mockFileRepo.createFileForTest(
@@ -298,8 +298,8 @@ files:
 
       // サービスを作成
       const metaYamlService = container.getMetaYamlService();
-      const fileOpService = container.getFileOperationService(novelRoot);
-      const filePathMapService = new FilePathMapService(metaYamlService, fileOpService);
+      const coreFileService = container.getCoreFileService(novelRoot);
+      const filePathMapService = new FilePathMapService(metaYamlService, coreFileService);
       service = new HyperlinkExtractorService(mockFileRepo, filePathMapService);
 
       mockFileRepo.createFileForTest(
@@ -337,8 +337,8 @@ files:
 
       // サービスを作成
       const metaYamlService = container.getMetaYamlService();
-      const fileOpService = container.getFileOperationService(novelRoot);
-      const filePathMapService = new FilePathMapService(metaYamlService, fileOpService);
+      const coreFileService = container.getCoreFileService(novelRoot);
+      const filePathMapService = new FilePathMapService(metaYamlService, coreFileService);
       service = new HyperlinkExtractorService(mockFileRepo, filePathMapService);
 
       mockFileRepo.createFileForTest(
@@ -398,8 +398,8 @@ files:
 
       // サービスを作成
       const metaYamlService = container.getMetaYamlService();
-      const fileOpService = container.getFileOperationService(novelRoot);
-      const filePathMapService = new FilePathMapService(metaYamlService, fileOpService);
+      const coreFileService = container.getCoreFileService(novelRoot);
+      const filePathMapService = new FilePathMapService(metaYamlService, coreFileService);
       service = new HyperlinkExtractorService(mockFileRepo, filePathMapService);
 
       // プロジェクトルート
@@ -510,8 +510,8 @@ files:
       const novelRoot = '/test/novel';
 
       const metaYamlService = container.getMetaYamlService();
-      const fileOpService = container.getFileOperationService(novelRoot);
-      const filePathMapService = new FilePathMapService(metaYamlService, fileOpService);
+      const coreFileService = container.getCoreFileService(novelRoot);
+      const filePathMapService = new FilePathMapService(metaYamlService, coreFileService);
       service = new HyperlinkExtractorService(mockFileRepo, filePathMapService);
 
       mockFileRepo.createFileForTest(
@@ -555,8 +555,8 @@ files:
       const novelRoot = '/test/novel';
 
       const metaYamlService = container.getMetaYamlService();
-      const fileOpService = container.getFileOperationService(novelRoot);
-      const filePathMapService = new FilePathMapService(metaYamlService, fileOpService);
+      const coreFileService = container.getCoreFileService(novelRoot);
+      const filePathMapService = new FilePathMapService(metaYamlService, coreFileService);
       service = new HyperlinkExtractorService(mockFileRepo, filePathMapService);
 
       mockFileRepo.createFileForTest(
@@ -603,8 +603,8 @@ files:
       const novelRoot = '/test/novel';
 
       const metaYamlService = container.getMetaYamlService();
-      const fileOpService = container.getFileOperationService(novelRoot);
-      const filePathMapService = new FilePathMapService(metaYamlService, fileOpService);
+      const coreFileService = container.getCoreFileService(novelRoot);
+      const filePathMapService = new FilePathMapService(metaYamlService, coreFileService);
       service = new HyperlinkExtractorService(mockFileRepo, filePathMapService);
 
       mockFileRepo.createFileForTest(

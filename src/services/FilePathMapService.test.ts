@@ -26,8 +26,8 @@ suite('FilePathMapService テストスイート', () => {
 
       // ServiceをnovelRootPathと共に作成
       const metaYamlService = container.getMetaYamlService();
-      const fileOpService = container.getFileOperationService(novelRoot);
-      service = new FilePathMapService(metaYamlService, fileOpService);
+      const coreFileService = container.getCoreFileService(novelRoot);
+      service = new FilePathMapService(metaYamlService, coreFileService);
 
       // ルートのmeta.yaml
       mockFileRepo.createFileForTest(
@@ -94,8 +94,8 @@ files:
 
       // ServiceをnovelRootPathと共に作成
       const metaYamlService = container.getMetaYamlService();
-      const fileOpService = container.getFileOperationService(novelRoot);
-      service = new FilePathMapService(metaYamlService, fileOpService);
+      const coreFileService = container.getCoreFileService(novelRoot);
+      service = new FilePathMapService(metaYamlService, coreFileService);
 
       // ルートのmeta.yamlのみ作成
       mockFileRepo.createFileForTest(
@@ -121,8 +121,8 @@ files:
 
       // ServiceをnovelRootPathと共に作成
       const metaYamlService = container.getMetaYamlService();
-      const fileOpService = container.getFileOperationService(novelRoot);
-      service = new FilePathMapService(metaYamlService, fileOpService);
+      const coreFileService = container.getCoreFileService(novelRoot);
+      service = new FilePathMapService(metaYamlService, coreFileService);
 
       mockFileRepo.createFileForTest(
         `${novelRoot}/.dialogoi-meta.yaml`,
@@ -173,8 +173,8 @@ files:
 
       // ServiceをnovelRootPathと共に作成
       const metaYamlService = container.getMetaYamlService();
-      const fileOpService = container.getFileOperationService(novelRoot);
-      service = new FilePathMapService(metaYamlService, fileOpService);
+      const coreFileService = container.getCoreFileService(novelRoot);
+      service = new FilePathMapService(metaYamlService, coreFileService);
 
       mockFileRepo.createFileForTest(
         `${novelRoot}/.dialogoi-meta.yaml`,
@@ -217,8 +217,8 @@ files:
 
       // ServiceをnovelRootPathと共に作成
       const metaYamlService = container.getMetaYamlService();
-      const fileOpService = container.getFileOperationService(novelRoot);
-      service = new FilePathMapService(metaYamlService, fileOpService);
+      const coreFileService = container.getCoreFileService(novelRoot);
+      service = new FilePathMapService(metaYamlService, coreFileService);
 
       mockFileRepo.createFileForTest(
         `${novelRoot}/.dialogoi-meta.yaml`,
@@ -254,8 +254,8 @@ files: []
 
       // ServiceをnovelRootPathと共に作成
       const metaYamlService = container.getMetaYamlService();
-      const fileOpService = container.getFileOperationService(novelRoot);
-      service = new FilePathMapService(metaYamlService, fileOpService);
+      const coreFileService = container.getCoreFileService(novelRoot);
+      service = new FilePathMapService(metaYamlService, coreFileService);
 
       mockFileRepo.createFileForTest(
         `${novelRoot}/.dialogoi-meta.yaml`,
@@ -284,8 +284,8 @@ files:
 
       // ServiceをnovelRootPathと共に作成
       const metaYamlService = container.getMetaYamlService();
-      const fileOpService = container.getFileOperationService(novelRoot);
-      service = new FilePathMapService(metaYamlService, fileOpService);
+      const coreFileService = container.getCoreFileService(novelRoot);
+      service = new FilePathMapService(metaYamlService, coreFileService);
 
       mockFileRepo.createFileForTest(
         `${novelRoot}/.dialogoi-meta.yaml`,
@@ -335,8 +335,8 @@ files:
 
       // ServiceをnovelRootPathと共に作成
       const metaYamlService = container.getMetaYamlService();
-      const fileOpService = container.getFileOperationService(novelRoot);
-      service = new FilePathMapService(metaYamlService, fileOpService);
+      const coreFileService = container.getCoreFileService(novelRoot);
+      service = new FilePathMapService(metaYamlService, coreFileService);
 
       mockFileRepo.createFileForTest(
         `${novelRoot}/.dialogoi-meta.yaml`,

@@ -1286,11 +1286,11 @@ export class FileDetailsViewProvider implements vscode.WebviewViewProvider {
       const dirPath = this.treeDataProvider.getDirectoryPath(this.currentItem);
       this.logger.info(`ファイル名変更: ${oldName} → ${newName} (${dirPath})`);
 
-      // ServiceContainerからFileOperationServiceを取得してrenameFileAsyncメソッドを使用
+      // ServiceContainerからCoreFileServiceを取得してrenameFileメソッドを使用
       const serviceContainer = ServiceContainer.getInstance();
-      const fileOperationService = serviceContainer.getFileOperationService();
+      const coreFileService = serviceContainer.getCoreFileService();
 
-      const result = await fileOperationService.renameFileAsync(dirPath, oldName, newName);
+      const result = await coreFileService.renameFile(dirPath, oldName, newName);
 
       if (result.success) {
         this.sendRenameResponse(responseId, true);

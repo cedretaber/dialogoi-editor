@@ -163,7 +163,14 @@ export class TestServiceContainer implements IServiceContainer {
   /**
    * MetadataServiceを取得
    */
-  getMetadataService(): MetadataService {
+  getMetadataService(novelRootAbsolutePath?: string): MetadataService {
+    if (
+      novelRootAbsolutePath !== undefined &&
+      novelRootAbsolutePath !== null &&
+      novelRootAbsolutePath !== ''
+    ) {
+      return new MetadataService(this.getFileOperationService(novelRootAbsolutePath));
+    }
     if (!this.metadataService) {
       this.metadataService = new MetadataService(this.getFileOperationService());
     }
@@ -177,7 +184,7 @@ export class TestServiceContainer implements IServiceContainer {
     if (!this.filePathMapService) {
       this.filePathMapService = new FilePathMapService(
         this.getMetaYamlService(),
-        this.getFileOperationService(),
+        this.getCoreFileService(),
       );
     }
     return this.filePathMapService;

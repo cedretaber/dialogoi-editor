@@ -5,7 +5,7 @@ import { ServiceContainer } from '../di/ServiceContainer.js';
 import { ReferenceManager } from '../services/ReferenceManager.js';
 import { TreeViewFilterService, FilterState } from '../services/TreeViewFilterService.js';
 import { Logger } from '../utils/Logger.js';
-import { FileOperationResult } from '../services/FileOperationService.js';
+import { FileOperationResult } from '../services/CoreFileService.js';
 import { FileChangeNotificationService } from '../services/FileChangeNotificationService.js';
 import { FileStatus } from '../services/FileStatusService.js';
 
@@ -456,10 +456,10 @@ export class DialogoiTreeDataProvider
     tags: string[] = [],
     subtype?: 'character' | 'foreshadowing' | 'glossary',
   ): Promise<void> {
-    const fileOperationService = ServiceContainer.getInstance().getFileOperationService(
+    const coreFileService = ServiceContainer.getInstance().getCoreFileService(
       this.novelRoot ?? undefined,
     );
-    const result = await fileOperationService.createFileAsync(
+    const result = await coreFileService.createFile(
       dirPath,
       fileName,
       fileType,
@@ -477,10 +477,10 @@ export class DialogoiTreeDataProvider
   }
 
   async deleteFile(dirPath: string, fileName: string): Promise<void> {
-    const fileOperationService = ServiceContainer.getInstance().getFileOperationService(
+    const coreFileService = ServiceContainer.getInstance().getCoreFileService(
       this.novelRoot ?? undefined,
     );
-    const result = await fileOperationService.deleteFileAsync(dirPath, fileName);
+    const result = await coreFileService.deleteFile(dirPath, fileName);
 
     if (result.success) {
       this.refresh();
@@ -505,10 +505,10 @@ export class DialogoiTreeDataProvider
       return; // ユーザーがキャンセル
     }
 
-    const fileOperationService = ServiceContainer.getInstance().getFileOperationService(
+    const coreFileService = ServiceContainer.getInstance().getCoreFileService(
       this.novelRoot ?? undefined,
     );
-    const result = await fileOperationService.deleteDirectoryAsync(parentDir, dirName);
+    const result = await coreFileService.deleteDirectory(parentDir, dirName);
 
     if (result.success) {
       this.refresh();
@@ -519,10 +519,10 @@ export class DialogoiTreeDataProvider
   }
 
   async reorderFiles(dirPath: string, fromIndex: number, toIndex: number): Promise<void> {
-    const fileOperationService = ServiceContainer.getInstance().getFileOperationService(
+    const coreFileService = ServiceContainer.getInstance().getCoreFileService(
       this.novelRoot ?? undefined,
     );
-    const result = await fileOperationService.reorderFiles(dirPath, fromIndex, toIndex);
+    const result = await coreFileService.reorderFiles(dirPath, fromIndex, toIndex);
 
     if (result.success) {
       this.refresh();
@@ -533,10 +533,10 @@ export class DialogoiTreeDataProvider
   }
 
   async renameFile(dirPath: string, oldName: string, newName: string): Promise<void> {
-    const fileOperationService = ServiceContainer.getInstance().getFileOperationService(
+    const coreFileService = ServiceContainer.getInstance().getCoreFileService(
       this.novelRoot ?? undefined,
     );
-    const result = await fileOperationService.renameFileAsync(dirPath, oldName, newName);
+    const result = await coreFileService.renameFile(dirPath, oldName, newName);
 
     if (result.success) {
       this.refresh();
@@ -657,10 +657,10 @@ export class DialogoiTreeDataProvider
 
   // タグ操作メソッド
   async addTag(dirPath: string, fileName: string, tag: string): Promise<FileOperationResult> {
-    const fileOperationService = ServiceContainer.getInstance().getFileOperationService(
+    const metadataService = ServiceContainer.getInstance().getMetadataService(
       this.novelRoot ?? undefined,
     );
-    const result = await fileOperationService.addTag(dirPath, fileName, tag);
+    const result = await metadataService.addTag(dirPath, fileName, tag);
 
     if (result.success) {
       this.refresh();
@@ -670,10 +670,10 @@ export class DialogoiTreeDataProvider
   }
 
   async removeTag(dirPath: string, fileName: string, tag: string): Promise<FileOperationResult> {
-    const fileOperationService = ServiceContainer.getInstance().getFileOperationService(
+    const metadataService = ServiceContainer.getInstance().getMetadataService(
       this.novelRoot ?? undefined,
     );
-    const result = await fileOperationService.removeTag(dirPath, fileName, tag);
+    const result = await metadataService.removeTag(dirPath, fileName, tag);
 
     if (result.success) {
       this.refresh();
@@ -683,10 +683,10 @@ export class DialogoiTreeDataProvider
   }
 
   async setTags(dirPath: string, fileName: string, tags: string[]): Promise<FileOperationResult> {
-    const fileOperationService = ServiceContainer.getInstance().getFileOperationService(
+    const metadataService = ServiceContainer.getInstance().getMetadataService(
       this.novelRoot ?? undefined,
     );
-    const result = await fileOperationService.setTags(dirPath, fileName, tags);
+    const result = await metadataService.setTags(dirPath, fileName, tags);
 
     if (result.success) {
       this.refresh();
@@ -701,10 +701,10 @@ export class DialogoiTreeDataProvider
     fileName: string,
     referencePath: string,
   ): Promise<FileOperationResult> {
-    const fileOperationService = ServiceContainer.getInstance().getFileOperationService(
+    const metadataService = ServiceContainer.getInstance().getMetadataService(
       this.novelRoot ?? undefined,
     );
-    const result = await fileOperationService.addReference(dirPath, fileName, referencePath);
+    const result = await metadataService.addReference(dirPath, fileName, referencePath);
 
     if (result.success) {
       // ReferenceManagerを更新
@@ -732,10 +732,10 @@ export class DialogoiTreeDataProvider
     fileName: string,
     referencePath: string,
   ): Promise<FileOperationResult> {
-    const fileOperationService = ServiceContainer.getInstance().getFileOperationService(
+    const metadataService = ServiceContainer.getInstance().getMetadataService(
       this.novelRoot ?? undefined,
     );
-    const result = await fileOperationService.removeReference(dirPath, fileName, referencePath);
+    const result = await metadataService.removeReference(dirPath, fileName, referencePath);
 
     if (result.success) {
       // ReferenceManagerを更新
@@ -763,10 +763,10 @@ export class DialogoiTreeDataProvider
     fileName: string,
     references: string[],
   ): Promise<FileOperationResult> {
-    const fileOperationService = ServiceContainer.getInstance().getFileOperationService(
+    const metadataService = ServiceContainer.getInstance().getMetadataService(
       this.novelRoot ?? undefined,
     );
-    const result = await fileOperationService.setReferences(dirPath, fileName, references);
+    const result = await metadataService.setReferences(dirPath, fileName, references);
 
     if (result.success) {
       // ReferenceManagerを更新
@@ -1001,10 +1001,10 @@ export class DialogoiTreeDataProvider
         }
         // target が subdirectory または undefined の場合は newIndex は undefined のまま（末尾に追加）
 
-        const fileOperationService = ServiceContainer.getInstance().getFileOperationService(
+        const coreFileService = ServiceContainer.getInstance().getCoreFileService(
           this.novelRoot ?? undefined,
         );
-        const result = await fileOperationService.moveFileAsync(
+        const result = await coreFileService.moveFile(
           sourceDir,
           draggedItem.name,
           targetDir,
@@ -1042,10 +1042,10 @@ export class DialogoiTreeDataProvider
         }
         // target が subdirectory または undefined の場合は newIndex は undefined のまま（末尾に追加）
 
-        const fileOperationService = ServiceContainer.getInstance().getFileOperationService(
+        const coreFileService = ServiceContainer.getInstance().getCoreFileService(
           this.novelRoot ?? undefined,
         );
-        const result = await fileOperationService.moveDirectoryAsync(
+        const result = await coreFileService.moveDirectory(
           sourceDir,
           draggedItem.name,
           targetDir,

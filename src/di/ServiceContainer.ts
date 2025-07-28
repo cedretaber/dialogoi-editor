@@ -20,6 +20,7 @@ import { FileTypeConversionService } from '../services/FileTypeConversionService
 import { ProjectPathService } from '../services/ProjectPathService.js';
 import { ProjectAutoSetupService } from '../services/ProjectAutoSetupService.js';
 import { ProjectSetupService } from '../services/ProjectSetupService.js';
+import { CoreFileService } from '../services/CoreFileService.js';
 import { Logger } from '../utils/Logger.js';
 import { Uri } from '../interfaces/Uri.js';
 
@@ -35,7 +36,7 @@ export interface IServiceContainer {
   getDialogoiYamlService(): DialogoiYamlService;
   getMetaYamlService(): MetaYamlService;
   getFileOperationService(novelRootAbsolutePath?: string): FileOperationService;
-  getMetadataService(): MetadataService;
+  getMetadataService(novelRootAbsolutePath?: string): MetadataService;
   getFilePathMapService(): FilePathMapService;
   getHyperlinkExtractorService(): HyperlinkExtractorService;
   getDropHandlerService(): DropHandlerService;
@@ -49,6 +50,7 @@ export interface IServiceContainer {
   getProjectAutoSetupService(): ProjectAutoSetupService;
   getProjectSetupService(): ProjectSetupService;
   getProjectPathService(): ProjectPathService;
+  getCoreFileService(novelRootAbsolutePath?: string): CoreFileService;
   reset(): void;
 }
 
@@ -79,6 +81,7 @@ export class ServiceContainer implements IServiceContainer {
   private projectAutoSetupService: ProjectAutoSetupService | null = null;
   private projectSetupService: ProjectSetupService | null = null;
   private projectPathService: ProjectPathService | null = null;
+  private coreFileService: CoreFileService | null = null;
 
   protected constructor() {}
 
@@ -224,7 +227,14 @@ export class ServiceContainer implements IServiceContainer {
   /**
    * MetadataServiceを取得
    */
-  getMetadataService(): MetadataService {
+  getMetadataService(novelRootAbsolutePath?: string): MetadataService {
+    if (
+      novelRootAbsolutePath !== undefined &&
+      novelRootAbsolutePath !== null &&
+      novelRootAbsolutePath !== ''
+    ) {
+      return new MetadataService(this.getFileOperationService(novelRootAbsolutePath));
+    }
     if (!this.metadataService) {
       this.metadataService = new MetadataService(this.getFileOperationService());
     }
@@ -238,7 +248,7 @@ export class ServiceContainer implements IServiceContainer {
     if (!this.filePathMapService) {
       this.filePathMapService = new FilePathMapService(
         this.getMetaYamlService(),
-        this.getFileOperationService(),
+        this.getCoreFileService(),
       );
     }
     return this.filePathMapService;
@@ -302,6 +312,7 @@ export class ServiceContainer implements IServiceContainer {
     this.projectAutoSetupService = null;
     this.projectSetupService = null;
     this.projectPathService = null;
+    this.coreFileService = null;
   }
 
   getSettingsRepository(): SettingsRepository {
@@ -399,6 +410,31 @@ export class ServiceContainer implements IServiceContainer {
       this.projectPathService = new ProjectPathService(dialogoiYamlService);
     }
     return this.projectPathService;
+  }
+
+  getCoreFileService(novelRootAbsolutePath?: string): CoreFileService {
+    // novelRootAbsolutePathが指定された場合は、常に新しいインスタンスを作成
+    if (
+      novelRootAbsolutePath !== undefined &&
+      novelRootAbsolutePath !== null &&
+      novelRootAbsolutePath !== ''
+    ) {
+      return new CoreFileService(
+        this.getFileRepository(),
+        this.getMetaYamlService(),
+        novelRootAbsolutePath,
+      );
+    }
+
+    // novelRootAbsolutePathが指定されていない場合は、キャッシュされたインスタンスを使用
+    if (!this.coreFileService) {
+      this.coreFileService = new CoreFileService(
+        this.getFileRepository(),
+        this.getMetaYamlService(),
+        undefined,
+      );
+    }
+    return this.coreFileService;
   }
 
   /**

@@ -1,7 +1,7 @@
 import * as path from 'path';
 import { DialogoiTreeItem } from '../utils/MetaYamlUtils.js';
 import { MetaYamlService } from './MetaYamlService.js';
-import { FileOperationService } from './FileOperationService.js';
+import { CoreFileService } from './CoreFileService.js';
 
 /**
  * プロジェクト内ファイルのメタデータエントリ
@@ -32,7 +32,7 @@ export class FilePathMapService {
 
   constructor(
     private metaYamlService: MetaYamlService,
-    private fileOperationService: FileOperationService,
+    private coreFileService: CoreFileService,
   ) {}
 
   /**
@@ -123,7 +123,7 @@ export class FilePathMapService {
     linkRelativePath: string,
     currentFileAbsolutePath: string,
   ): string | null {
-    let novelRootPath = this.fileOperationService.getNovelRootPath();
+    let novelRootPath = this.coreFileService.getNovelRootPath();
 
     // FileOperationServiceからノベルルートが取得できない場合は、
     // 保存されたcurrentNovelRootPathを使用
@@ -166,7 +166,7 @@ export class FilePathMapService {
     linkRelativePath: string,
     currentFileAbsolutePath: string,
   ): string | null {
-    let novelRootPath = this.fileOperationService.getNovelRootPath();
+    let novelRootPath = this.coreFileService.getNovelRootPath();
 
     // FileOperationServiceからノベルルートが取得できない場合は、
     // 保存されたcurrentNovelRootPathを使用
@@ -233,7 +233,7 @@ export class FilePathMapService {
    * @param item ファイルアイテム、削除の場合はnull
    */
   updateFile(fileAbsolutePath: string, item: DialogoiTreeItem | null): void {
-    const novelRootPath = this.fileOperationService.getNovelRootPath();
+    const novelRootPath = this.coreFileService.getNovelRootPath();
     if (novelRootPath === undefined || novelRootPath === null || novelRootPath === '') {
       return;
     }

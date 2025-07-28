@@ -345,19 +345,29 @@ await coreFileService.createFileAsync(dirPath, fileName, fileType, content);
   - 旧FileManagementServiceとの統合
 - [x] 拡張FileManagementServiceの単体テスト作成 (15テスト)
 
-### Phase 3: コアファイルサービス作成
-- [ ] **CoreFileService**の実装 (9メソッド移行)
+### Phase 3: コアファイルサービス作成 ✅ **完了**
+- [x] **CoreFileService**の実装 (8メソッド移行)
   - 最も複雑なファイル+メタデータ複合操作
   - 重複メソッド統合（Async版に一本化）
   - データ整合性の重点テスト
-- [ ] CoreFileServiceの単体テスト作成
+  - 低レベルAPIメソッドに特殊用途コメント追加
+- [x] CoreFileServiceの単体テスト作成 (21テスト)
 
-### Phase 4: 統合と一括更新
-- [ ] ServiceContainer完全更新（全DIバインディング変更）
-- [ ] 利用箇所一括更新（12+箇所のimport・メソッド呼び出し変更）
+### Phase 4: 統合と一括更新 ✅ **完了** 
+- [x] ServiceContainer完全更新（全DIバインディング変更）
+- [x] 利用箇所一括更新（12+箇所のimport・メソッド呼び出し変更）
+- [x] 統合テスト実行・CI確認（npm run check-all 成功）
+
+**主要な更新完了:**
+- DialogoiTreeDataProvider.ts: 全メソッドを新サービスに置き換え
+- FileDetailsViewProvider.ts: renameFile → CoreFileService 
+- characterCommands.ts: キャラクター操作 → FileManagementService
+- FilePathMapService.ts: CoreFileService依存に変更
+- 全テストファイル: 新サービス対応済み
+
+### Phase 5: 最終整理 🔄 **進行中**
 - [ ] 既存テストの分割・整理（サービス別テストスイート作成）
-- [ ] 統合テスト実行・CI確認
-- [ ] 旧FileOperationService削除
+- [ ] 旧FileOperationService削除（依存関係の最終調整）
 
 ## 注意事項・リスク
 
@@ -423,10 +433,31 @@ await coreFileService.createFileAsync(dirPath, fileName, fileType, content);
 - check-all CI通過 ✅
 - git commit完了 ✅
 
+### 2025-01-28 (Phase 4完了・Phase 5開始) ✅
+
+**Phase 4実装成果:**
+- [x] **ServiceContainer完全更新** - DI設定を全て新サービスに対応
+- [x] **主要利用箇所の一括更新完了:**
+  - DialogoiTreeDataProvider.ts: 全10メソッドを適切なサービス（CoreFileService/MetadataService）に分割
+  - FileDetailsViewProvider.ts: renameFile操作をCoreFileServiceに移行
+  - characterCommands.ts: キャラクター操作をFileManagementServiceに移行
+  - FilePathMapService.ts: getNovelRootPath()をCoreFileServiceから取得
+- [x] **テストファイル更新:** FilePathMapService.test.ts, HyperlinkExtractorService.test.tsの新サービス対応
+- [x] **統合テスト成功:** npm run check-all 完全通過（475テスト成功）
+
+**Phase 5開始:**
+- MetadataServiceのFileOperationService依存関係の整理が残存
+- 旧FileOperationServiceの削除準備
+
+**品質指標（Phase 4完了時点）:**
+- **全475テスト通過** ✅
+- TypeScript/ESLint/Prettier全通過 ✅
+- CI check-all 完全成功 ✅
+- 破壊的変更なし（既存API継続動作） ✅
+
 ## 次回セッションでの継続ポイント
 
-**Phase 3: CoreFileService作成**から開始：
-1. **CoreFileService.ts**の実装（8メソッド移行）
-2. 重複メソッド統合（Async版に一本化）
-3. CoreFileServiceの単体テスト作成
-4. データ整合性の重点テスト実装
+**Phase 5: 最終整理**から開始：
+1. **MetadataService依存関係整理** - FileOperationService依存の解消
+2. **旧FileOperationService削除** - 完全な移行完了
+3. **テストスイート整理** - サービス別テスト構造の最適化（任意）
