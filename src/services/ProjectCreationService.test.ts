@@ -36,13 +36,7 @@ project_settings:
     // テスト用テンプレートを設定
     mockFileRepository.setExtensionResource('templates/default-dialogoi.yaml', testTemplate);
 
-    const fileTypeDetectionService = container.getFileTypeDetectionService();
-    service = new ProjectCreationService(
-      mockFileRepository,
-      dialogoiYamlService,
-      templateService,
-      fileTypeDetectionService,
-    );
+    service = new ProjectCreationService(mockFileRepository, dialogoiYamlService, templateService);
   });
 
   suite('createProject', () => {

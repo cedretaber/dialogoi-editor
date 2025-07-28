@@ -6,10 +6,10 @@ import * as path from 'path';
 export type FileTypeDetectionMethod = 'extension' | 'directory' | 'manual';
 
 /**
- * ファイル種別検出サービス
- * ProjectCreationServiceから抽出・改良
+ * ファイル種別検出ユーティリティ
+ * 元FileTypeDetectionServiceから移行、DI不要な静的メソッドに変更
  */
-export class FileTypeDetectionService {
+export class FileTypeDetector {
   /**
    * ファイル種別の自動判定
    * ユーザー方針: .txt→content（本文）, .md→setting（設定）
@@ -17,15 +17,15 @@ export class FileTypeDetectionService {
    * @param detectionMethod 検出方法
    * @returns ファイル種別
    */
-  detectFileType(
+  static detectFileType(
     filePath: string,
     detectionMethod: FileTypeDetectionMethod = 'extension',
   ): 'content' | 'setting' {
     switch (detectionMethod) {
       case 'extension':
-        return this.detectByExtension(filePath);
+        return FileTypeDetector.detectByExtension(filePath);
       case 'directory':
-        return this.detectByDirectory(filePath);
+        return FileTypeDetector.detectByDirectory(filePath);
       case 'manual':
         // 手動選択の場合はデフォルトとしてsettingを返す
         return 'setting';
@@ -39,7 +39,7 @@ export class FileTypeDetectionService {
    * @param filePath ファイルパス
    * @returns ファイル種別
    */
-  detectByExtension(filePath: string): 'content' | 'setting' {
+  static detectByExtension(filePath: string): 'content' | 'setting' {
     const extension = path.extname(filePath).toLowerCase();
 
     // ユーザー方針: .txt→content（本文）, .md→setting（設定）
@@ -58,7 +58,7 @@ export class FileTypeDetectionService {
    * @param filePath ファイルパス
    * @returns ファイル種別
    */
-  detectByDirectory(filePath: string): 'content' | 'setting' {
+  static detectByDirectory(filePath: string): 'content' | 'setting' {
     const dirName = path.dirname(filePath).toLowerCase();
     const segments = dirName.split(path.sep);
 
@@ -87,7 +87,7 @@ export class FileTypeDetectionService {
     }
 
     // ディレクトリからの判定ができない場合は拡張子ベースにフォールバック
-    return this.detectByExtension(filePath);
+    return FileTypeDetector.detectByExtension(filePath);
   }
 
   /**
@@ -97,13 +97,13 @@ export class FileTypeDetectionService {
    * @param excludePatterns 除外パターン
    * @returns 除外対象かどうか
    */
-  isExcluded(relativePath: string, excludePatterns: string[]): boolean {
+  static isExcluded(relativePath: string, excludePatterns: string[]): boolean {
     const fileName = path.basename(relativePath);
 
     for (const pattern of excludePatterns) {
       // 単純なパターンマッチング実装
-      const fileNameMatch = this.matchesPattern(fileName, pattern);
-      const relativePathMatch = this.matchesPattern(relativePath, pattern);
+      const fileNameMatch = FileTypeDetector.matchesPattern(fileName, pattern);
+      const relativePathMatch = FileTypeDetector.matchesPattern(relativePath, pattern);
 
       if (fileNameMatch || relativePathMatch) {
         return true;
@@ -120,7 +120,7 @@ export class FileTypeDetectionService {
    * @param pattern パターン
    * @returns マッチするかどうか
    */
-  private matchesPattern(text: string, pattern: string): boolean {
+  private static matchesPattern(text: string, pattern: string): boolean {
     // ドットで始まるファイル/ディレクトリ（特別パターン）
     if (pattern === '.*') {
       return text.startsWith('.');

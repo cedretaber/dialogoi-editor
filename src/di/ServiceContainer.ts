@@ -17,7 +17,6 @@ import { DialogoiSettingsService } from '../services/DialogoiSettingsService.js'
 import { ProjectSettingsService } from '../services/ProjectSettingsService.js';
 import { FileStatusService } from '../services/FileStatusService.js';
 import { FileManagementService } from '../services/FileManagementService.js';
-import { FileTypeDetectionService } from '../services/FileTypeDetectionService.js';
 import { FileTypeConversionService } from '../services/FileTypeConversionService.js';
 import { ProjectPathService } from '../services/ProjectPathService.js';
 import { ProjectAutoSetupService } from '../services/ProjectAutoSetupService.js';
@@ -48,7 +47,6 @@ export interface IServiceContainer {
   getProjectSettingsService(): ProjectSettingsService;
   getFileStatusService(): FileStatusService;
   getFileManagementService(): FileManagementService;
-  getFileTypeDetectionService(): FileTypeDetectionService;
   getFileTypeConversionService(): FileTypeConversionService;
   getProjectAutoSetupService(): ProjectAutoSetupService;
   getProjectSetupService(): ProjectSetupService;
@@ -80,7 +78,6 @@ export class ServiceContainer implements IServiceContainer {
   private projectSettingsService: ProjectSettingsService | null = null;
   private fileStatusService: FileStatusService | null = null;
   private fileManagementService: FileManagementService | null = null;
-  private fileTypeDetectionService: FileTypeDetectionService | null = null;
   private fileTypeConversionService: FileTypeConversionService | null = null;
   private projectAutoSetupService: ProjectAutoSetupService | null = null;
   private projectSetupService: ProjectSetupService | null = null;
@@ -317,7 +314,6 @@ export class ServiceContainer implements IServiceContainer {
     this.dialogoiSettingsService = null;
     this.fileStatusService = null;
     this.fileManagementService = null;
-    this.fileTypeDetectionService = null;
     this.fileTypeConversionService = null;
     this.projectAutoSetupService = null;
     this.projectSetupService = null;
@@ -375,13 +371,6 @@ export class ServiceContainer implements IServiceContainer {
     return this.fileManagementService;
   }
 
-  getFileTypeDetectionService(): FileTypeDetectionService {
-    if (!this.fileTypeDetectionService) {
-      this.fileTypeDetectionService = new FileTypeDetectionService();
-    }
-    return this.fileTypeDetectionService;
-  }
-
   getFileTypeConversionService(): FileTypeConversionService {
     if (!this.fileTypeConversionService) {
       const fileRepository = this.getFileRepository();
@@ -399,12 +388,10 @@ export class ServiceContainer implements IServiceContainer {
       const fileRepository = this.getFileRepository();
       const metaYamlService = this.getMetaYamlService();
       const dialogoiYamlService = this.getDialogoiYamlService();
-      const fileTypeDetectionService = this.getFileTypeDetectionService();
       this.projectAutoSetupService = new ProjectAutoSetupService(
         fileRepository,
         metaYamlService,
         dialogoiYamlService,
-        fileTypeDetectionService,
       );
     }
     return this.projectAutoSetupService;

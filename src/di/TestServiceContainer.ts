@@ -26,7 +26,6 @@ import { DialogoiSettingsService } from '../services/DialogoiSettingsService.js'
 import { ProjectSettingsService } from '../services/ProjectSettingsService.js';
 import { FileStatusService } from '../services/FileStatusService.js';
 import { FileManagementService } from '../services/FileManagementService.js';
-import { FileTypeDetectionService } from '../services/FileTypeDetectionService.js';
 import { FileTypeConversionService } from '../services/FileTypeConversionService.js';
 import { ProjectAutoSetupService } from '../services/ProjectAutoSetupService.js';
 import { ProjectSetupService } from '../services/ProjectSetupService.js';
@@ -57,7 +56,6 @@ export class TestServiceContainer implements IServiceContainer {
   private projectSettingsService: ProjectSettingsService | null = null;
   private fileStatusService: FileStatusService | null = null;
   private fileManagementService: FileManagementService | null = null;
-  private fileTypeDetectionService: FileTypeDetectionService | null = null;
   private fileTypeConversionService: FileTypeConversionService | null = null;
   private projectAutoSetupService: ProjectAutoSetupService | null = null;
   private projectSetupService: ProjectSetupService | null = null;
@@ -159,7 +157,6 @@ export class TestServiceContainer implements IServiceContainer {
         this.fileRepository,
         this.getDialogoiYamlService(),
         this.getDialogoiTemplateService(),
-        this.getFileTypeDetectionService(),
       );
     }
     return this.projectCreationService;
@@ -311,13 +308,6 @@ export class TestServiceContainer implements IServiceContainer {
     return this.fileManagementService;
   }
 
-  getFileTypeDetectionService(): FileTypeDetectionService {
-    if (!this.fileTypeDetectionService) {
-      this.fileTypeDetectionService = new FileTypeDetectionService();
-    }
-    return this.fileTypeDetectionService;
-  }
-
   getFileTypeConversionService(): FileTypeConversionService {
     if (!this.fileTypeConversionService) {
       const fileRepository = this.getFileRepository();
@@ -335,12 +325,10 @@ export class TestServiceContainer implements IServiceContainer {
       const fileRepository = this.getFileRepository();
       const metaYamlService = this.getMetaYamlService();
       const dialogoiYamlService = this.getDialogoiYamlService();
-      const fileTypeDetectionService = this.getFileTypeDetectionService();
       this.projectAutoSetupService = new ProjectAutoSetupService(
         fileRepository,
         metaYamlService,
         dialogoiYamlService,
-        fileTypeDetectionService,
       );
     }
     return this.projectAutoSetupService;

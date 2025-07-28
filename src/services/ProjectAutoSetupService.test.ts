@@ -4,26 +4,22 @@ import { TestServiceContainer } from '../di/TestServiceContainer.js';
 import { MockFileRepository } from '../repositories/MockFileRepository.js';
 import { MetaYamlService } from './MetaYamlService.js';
 import { DialogoiYamlService } from './DialogoiYamlService.js';
-import { FileTypeDetectionService } from './FileTypeDetectionService.js';
 
 suite('ProjectAutoSetupService テストスイート', () => {
   let projectAutoSetupService: ProjectAutoSetupService;
   let mockFileRepository: MockFileRepository;
   let metaYamlService: MetaYamlService;
   let dialogoiYamlService: DialogoiYamlService;
-  let fileTypeDetectionService: FileTypeDetectionService;
 
   setup(() => {
     const container = TestServiceContainer.create();
     mockFileRepository = container.getMockFileRepository();
     metaYamlService = container.getMetaYamlService();
     dialogoiYamlService = container.getDialogoiYamlService();
-    fileTypeDetectionService = container.getFileTypeDetectionService();
     projectAutoSetupService = new ProjectAutoSetupService(
       mockFileRepository,
       metaYamlService,
       dialogoiYamlService,
-      fileTypeDetectionService,
     );
   });
 

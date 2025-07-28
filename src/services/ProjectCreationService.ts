@@ -1,7 +1,7 @@
 import { FileRepository } from '../repositories/FileRepository.js';
 import { DialogoiYamlService } from './DialogoiYamlService.js';
 import { DialogoiTemplateService } from './DialogoiTemplateService.js';
-import { FileTypeDetectionService } from './FileTypeDetectionService.js';
+import { FileTypeDetector } from '../utils/FileTypeDetector.js';
 import { MetaYaml } from '../utils/MetaYamlUtils.js';
 import * as path from 'path';
 import * as yaml from 'js-yaml';
@@ -39,7 +39,6 @@ export class ProjectCreationService {
     private fileRepository: FileRepository,
     private dialogoiYamlService: DialogoiYamlService,
     private templateService: DialogoiTemplateService,
-    private fileTypeDetectionService: FileTypeDetectionService,
   ) {}
 
   /**
@@ -240,7 +239,7 @@ export class ProjectCreationService {
 
     // 除外パターンをチェック
     const relativePath = path.relative(projectRootAbsolutePath, currentAbsolutePath);
-    if (this.fileTypeDetectionService.isExcluded(relativePath, excludePatterns)) {
+    if (FileTypeDetector.isExcluded(relativePath, excludePatterns)) {
       result.skippedFiles?.push(currentAbsolutePath);
       return;
     }
@@ -256,7 +255,7 @@ export class ProjectCreationService {
       const entryRelativePath = path.relative(projectRootAbsolutePath, entryAbsolutePath);
 
       // 除外パターンをチェック
-      if (this.fileTypeDetectionService.isExcluded(entryRelativePath, excludePatterns)) {
+      if (FileTypeDetector.isExcluded(entryRelativePath, excludePatterns)) {
         result.skippedFiles?.push(entryAbsolutePath);
         continue;
       }
@@ -329,7 +328,7 @@ export class ProjectCreationService {
       }
 
       // ファイル種別の自動判定
-      const fileType = this.fileTypeDetectionService.detectFileType(fileName);
+      const fileType = FileTypeDetector.detectFileType(fileName);
       const relativeFilePath = fileName; // 同じディレクトリ内なのでファイル名のみ
 
       metaYaml.files.push({

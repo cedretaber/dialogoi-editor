@@ -1,7 +1,7 @@
 import { FileRepository } from '../repositories/FileRepository.js';
 import { MetaYamlService } from './MetaYamlService.js';
 import { DialogoiYamlService } from './DialogoiYamlService.js';
-import { FileTypeDetectionService } from './FileTypeDetectionService.js';
+import { FileTypeDetector } from '../utils/FileTypeDetector.js';
 import { DialogoiTreeItem, MetaYamlUtils } from '../utils/MetaYamlUtils.js';
 import * as path from 'path';
 
@@ -55,7 +55,6 @@ export class ProjectAutoSetupService {
     private fileRepository: FileRepository,
     private metaYamlService: MetaYamlService,
     private dialogoiYamlService: DialogoiYamlService,
-    private fileTypeDetectionService: FileTypeDetectionService,
   ) {}
 
   /**
@@ -346,7 +345,7 @@ export class ProjectAutoSetupService {
           }
 
           // ファイル種別を自動判定
-          const fileType = this.fileTypeDetectionService.detectFileType(filePath);
+          const fileType = FileTypeDetector.detectFileType(filePath);
 
           // meta.yamlに追加
           const newEntry: DialogoiTreeItem = {
@@ -483,7 +482,7 @@ export class ProjectAutoSetupService {
    * ファイルが除外対象かどうかをチェック
    */
   private isExcluded(fileName: string, excludePatterns: string[]): boolean {
-    return this.fileTypeDetectionService.isExcluded(fileName, excludePatterns);
+    return FileTypeDetector.isExcluded(fileName, excludePatterns);
   }
 
   /**
