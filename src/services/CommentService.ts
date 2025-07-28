@@ -116,10 +116,8 @@ export class CommentService {
   ): Promise<void> {
     // 対象ファイルのハッシュを取得
     const targetFileUri = this.fileRepository.joinPath(this.workspaceRoot, targetRelativeFilePath);
-    const fileHash = await HashCalculator.calculateFileHashAsync(
-      this.fileRepository,
-      targetFileUri,
-    );
+    const fileContent = await this.fileRepository.readFileAsync(targetFileUri, 'utf8');
+    const fileHash = HashCalculator.calculateContentHash(fileContent);
 
     // 既存のコメントファイルを読み込み
     let commentFile = await this.loadCommentFileAsync(targetRelativeFilePath);
@@ -228,10 +226,8 @@ export class CommentService {
     }
 
     const targetFileUri = this.fileRepository.joinPath(this.workspaceRoot, targetRelativeFilePath);
-    const currentHash = await HashCalculator.calculateFileHashAsync(
-      this.fileRepository,
-      targetFileUri,
-    );
+    const fileContent = await this.fileRepository.readFileAsync(targetFileUri, 'utf8');
+    const currentHash = HashCalculator.calculateContentHash(fileContent);
 
     // 各コメントのfile_hashと比較
     return commentFile.comments.some((comment) => comment.file_hash !== currentHash);
@@ -249,7 +245,8 @@ export class CommentService {
     }
 
     const targetFileUri = this.fileRepository.joinPath(this.workspaceRoot, targetRelativeFilePath);
-    const newHash = await HashCalculator.calculateFileHashAsync(this.fileRepository, targetFileUri);
+    const fileContent = await this.fileRepository.readFileAsync(targetFileUri, 'utf8');
+    const newHash = HashCalculator.calculateContentHash(fileContent);
 
     // 各コメントのfile_hashを更新
     for (const comment of commentFile.comments) {

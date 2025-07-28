@@ -1,15 +1,8 @@
-import { suite, test, setup } from 'mocha';
+import { suite, test } from 'mocha';
 import * as assert from 'assert';
 import { HashCalculator } from './HashCalculator.js';
-import { MockFileRepository } from '../repositories/MockFileRepository.js';
 
 suite('HashCalculator テストスイート', () => {
-  let mockFileRepository: MockFileRepository;
-
-  setup(() => {
-    mockFileRepository = new MockFileRepository();
-  });
-
   suite('calculateContentHash', () => {
     test('文字列からハッシュを計算する', () => {
       const content = 'Hello, World!';
@@ -96,83 +89,68 @@ suite('HashCalculator テストスイート', () => {
     });
   });
 
-  suite('非同期メソッドテスト', () => {
-    test('calculateFileHashAsync でファイルハッシュを計算できる', async () => {
-      const testFilePath = '/test/sample.txt';
-      const testContent = 'Hello, World!';
+  suite('calculateBinaryHash', () => {
+    test('バイナリデータからハッシュを計算する', () => {
+      const data = Buffer.from('Hello, World!', 'utf8');
+      const hash = HashCalculator.calculateBinaryHash(data);
 
-      mockFileRepository.createFileForTest(testFilePath, testContent);
-      const fileUri = mockFileRepository.createFileUri(testFilePath);
-
-      const hash = await HashCalculator.calculateFileHashAsync(mockFileRepository, fileUri);
-
-      assert.strictEqual(hash.startsWith('sha256:'), true);
-      assert.strictEqual(hash.length, 71); // "sha256:" + 64文字のハッシュ
+      assert.strictEqual(typeof hash, 'string');
+      assert.ok(hash.startsWith('sha256:'));
+      assert.strictEqual(hash.length, 71); // 'sha256:' + 64文字のハッシュ
     });
 
-    test('calculateFileHashAsync で存在しないファイルのハッシュ計算でエラーが発生する', async () => {
-      const nonExistentPath = '/test/non-existent.txt';
-      const fileUri = mockFileRepository.createFileUri(nonExistentPath);
+    test('空のバイナリデータからハッシュを計算する', () => {
+      const data = Buffer.alloc(0);
+      const hash = HashCalculator.calculateBinaryHash(data);
 
-      try {
-        await HashCalculator.calculateFileHashAsync(mockFileRepository, fileUri);
-        assert.fail('エラーが発生するはず');
-      } catch (error) {
-        assert.strictEqual(error instanceof Error, true);
-        if (error instanceof Error) {
-          assert.strictEqual(error.message.includes('ファイルハッシュの計算に失敗しました'), true);
-        }
-      }
-    });
-
-    test('verifyFileHashAsync で正しいハッシュの検証ができる', async () => {
-      const testFilePath = '/test/sample.txt';
-      const testContent = 'Hello, World!';
-
-      mockFileRepository.createFileForTest(testFilePath, testContent);
-      const fileUri = mockFileRepository.createFileUri(testFilePath);
-
-      // まずハッシュを計算
-      const expectedHash = await HashCalculator.calculateFileHashAsync(mockFileRepository, fileUri);
-
-      // ハッシュを検証
-      const isValid = await HashCalculator.verifyFileHashAsync(
-        mockFileRepository,
-        fileUri,
-        expectedHash,
+      assert.strictEqual(typeof hash, 'string');
+      assert.ok(hash.startsWith('sha256:'));
+      assert.strictEqual(
+        hash,
+        'sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855',
       );
+    });
+
+    test('同じバイナリデータからは同じハッシュが生成される', () => {
+      const data = Buffer.from('Test content', 'utf8');
+      const hash1 = HashCalculator.calculateBinaryHash(data);
+      const hash2 = HashCalculator.calculateBinaryHash(data);
+
+      assert.strictEqual(hash1, hash2);
+    });
+  });
+
+  suite('verifyContentHash', () => {
+    test('正しいハッシュで検証が成功する', () => {
+      const content = 'Hello, World!';
+      const expectedHash = HashCalculator.calculateContentHash(content);
+      const isValid = HashCalculator.verifyContentHash(content, expectedHash);
 
       assert.strictEqual(isValid, true);
     });
 
-    test('verifyFileHashAsync で間違ったハッシュの検証ができる', async () => {
-      const testFilePath = '/test/sample.txt';
-      const testContent = 'Hello, World!';
-
-      mockFileRepository.createFileForTest(testFilePath, testContent);
-      const fileUri = mockFileRepository.createFileUri(testFilePath);
-
-      const wrongHash = 'sha256:wronghash123456789';
-
-      const isValid = await HashCalculator.verifyFileHashAsync(
-        mockFileRepository,
-        fileUri,
-        wrongHash,
-      );
+    test('間違ったハッシュで検証が失敗する', () => {
+      const content = 'Hello, World!';
+      const wrongHash = 'sha256:wronghash123456789abcdef';
+      const isValid = HashCalculator.verifyContentHash(content, wrongHash);
 
       assert.strictEqual(isValid, false);
     });
+  });
 
-    test('verifyFileHashAsync で存在しないファイルの検証は false を返す', async () => {
-      const nonExistentPath = '/test/non-existent.txt';
-      const fileUri = mockFileRepository.createFileUri(nonExistentPath);
-      const anyHash = 'sha256:anyhash123456789';
+  suite('verifyBinaryHash', () => {
+    test('正しいハッシュで検証が成功する', () => {
+      const data = Buffer.from('Hello, World!', 'utf8');
+      const expectedHash = HashCalculator.calculateBinaryHash(data);
+      const isValid = HashCalculator.verifyBinaryHash(data, expectedHash);
 
-      const isValid = await HashCalculator.verifyFileHashAsync(
-        mockFileRepository,
-        fileUri,
-        anyHash,
-      );
+      assert.strictEqual(isValid, true);
+    });
+
+    test('間違ったハッシュで検証が失敗する', () => {
+      const data = Buffer.from('Hello, World!', 'utf8');
+      const wrongHash = 'sha256:wronghash123456789abcdef';
+      const isValid = HashCalculator.verifyBinaryHash(data, wrongHash);
 
       assert.strictEqual(isValid, false);
     });
