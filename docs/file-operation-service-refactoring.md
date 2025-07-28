@@ -332,18 +332,18 @@ await coreFileService.createFileAsync(dirPath, fileName, fileType, content);
 
 ## 修正された実装計画 🚀
 
-### Phase 1: メタデータサービス作成
-- [ ] **MetadataService**の実装 (8メソッド移行)
+### Phase 1: メタデータサービス作成 ✅ **完了**
+- [x] **MetadataService**の実装 (8メソッド移行)
   - タグ・参照操作の単純なメタデータ専用操作
   - 最もリスクが低く、独立性が高い
-- [ ] MetadataServiceの単体テスト作成
-- [ ] ServiceContainer更新 (MetadataService DI設定)
+- [x] MetadataServiceの単体テスト作成 (12テスト)
+- [x] ServiceContainer更新 (MetadataService DI設定)
 
-### Phase 2: ファイル管理サービス拡張  
-- [ ] **FileManagementService**の拡張実装 (7メソッド移行)
+### Phase 2: ファイル管理サービス拡張 ✅ **完了**
+- [x] **FileManagementService**の拡張実装 (7メソッド移行)
   - 既存3メソッド + キャラクター・伏線機能4メソッド追加
   - 旧FileManagementServiceとの統合
-- [ ] 拡張FileManagementServiceの単体テスト作成
+- [x] 拡張FileManagementServiceの単体テスト作成 (15テスト)
 
 ### Phase 3: コアファイルサービス作成
 - [ ] **CoreFileService**の実装 (9メソッド移行)
@@ -398,12 +398,35 @@ await coreFileService.createFileAsync(dirPath, fileName, fileType, content);
 3. **設計の簡略化** - ファサード不要、一括更新による直接的なアプローチ
 4. **命名の一貫性** - FileManagementService名の継続、Async版への統一
 
+### 2025-01-28 (Phase 1 & 2 実装完了) ✅
+
+**Phase 1実装成果:**
+- [x] **MetadataService**完全実装（8メソッド）
+  - タグ操作: `addTag()`, `removeTag()`, `setTags()`
+  - 参照操作: `addReference()`, `removeReference()`, `setReferences()`
+  - 汎用操作: `updateMetaYaml()`, `updateAllReferences()`
+- [x] MetadataService.test.ts作成（12テスト）
+- [x] ServiceContainer/TestServiceContainer DI設定更新
+
+**Phase 2実装成果:**
+- [x] **FileManagementService**拡張実装（7メソッド移行）
+  - 既存機能3メソッド: `addFileToManagement()`, `removeFileFromManagement()`, `createMissingFile()`
+  - キャラクター機能3メソッド: `setCharacterImportance()`, `setMultipleCharacters()`, `removeCharacter()`
+  - 伏線機能2メソッド: `setForeshadowing()`, `removeForeshadowing()`
+  - プライベート汎用メソッド: `updateMetaYaml()`
+- [x] FileManagementService.test.ts作成（15テスト）
+- [x] テストファイル配置修正（プロジェクト構造準拠）
+
+**品質指標:**
+- **全475テスト通過** ✅
+- TypeScript/ESLint/Prettier全通過 ✅
+- check-all CI通過 ✅
+- git commit完了 ✅
+
 ## 次回セッションでの継続ポイント
 
-**Phase 1: メタデータサービス作成**から開始：
-1. **MetadataService.ts**の実装（8メソッド移行）
-2. MetadataServiceの単体テスト作成
-3. ServiceContainerのDI設定更新
-4. `npm run check-all`でCIパス確認
-
-調査・設計により、簡潔で安全な分割方針が確定しました。実装フェーズに移行可能です。
+**Phase 3: CoreFileService作成**から開始：
+1. **CoreFileService.ts**の実装（8メソッド移行）
+2. 重複メソッド統合（Async版に一本化）
+3. CoreFileServiceの単体テスト作成
+4. データ整合性の重点テスト実装

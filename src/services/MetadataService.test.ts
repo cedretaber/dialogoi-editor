@@ -1,8 +1,8 @@
 import assert from 'assert';
-import { MetadataService } from '../../services/MetadataService.js';
-import { FileOperationService } from '../../services/FileOperationService.js';
-import { TestServiceContainer } from '../../di/TestServiceContainer.js';
-import { MockFileRepository } from '../../repositories/MockFileRepository.js';
+import { MetadataService } from './MetadataService.js';
+import { FileOperationService } from './FileOperationService.js';
+import { TestServiceContainer } from '../di/TestServiceContainer.js';
+import { MockFileRepository } from '../repositories/MockFileRepository.js';
 
 suite('MetadataService テストスイート', () => {
   let metadataService: MetadataService;

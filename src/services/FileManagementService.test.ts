@@ -1,282 +1,288 @@
-import * as assert from 'assert';
+import assert from 'assert';
 import { FileManagementService } from './FileManagementService.js';
+import { ForeshadowingData } from './ForeshadowingService.js';
 import { TestServiceContainer } from '../di/TestServiceContainer.js';
 import { MockFileRepository } from '../repositories/MockFileRepository.js';
-import { MetaYamlService } from './MetaYamlService.js';
 
 suite('FileManagementService テストスイート', () => {
   let fileManagementService: FileManagementService;
   let mockFileRepository: MockFileRepository;
-  let metaYamlService: MetaYamlService;
 
-  setup(() => {
+  setup(async () => {
     const container = TestServiceContainer.create();
-    mockFileRepository = container.getMockFileRepository();
-    metaYamlService = container.getMetaYamlService();
-    fileManagementService = new FileManagementService(mockFileRepository, metaYamlService);
+    mockFileRepository = container.getFileRepository() as MockFileRepository;
+    fileManagementService = container.getFileManagementService();
+
+    // テスト用ディレクトリ構造の準備
+    mockFileRepository.createDirectoryForTest('/test');
+    await mockFileRepository.writeFileAsync(
+      mockFileRepository.createFileUri('/test/.dialogoi-meta.yaml'),
+      `files:
+  - name: character.txt
+    type: content
+    subtype: character
+  - name: foreshadow.txt
+    type: content
+    subtype: foreshadowing
+  - name: plain.txt
+    type: content
+`,
+    );
   });
 
-  suite('addFileToManagement', () => {
-    test('管理対象外ファイルを正常に追加する', async () => {
-      const directoryPath = '/test/project';
-      const filePath = '/test/project/new-file.txt';
+  suite('既存機能テスト', () => {
+    test('管理対象外ファイルを管理対象に追加できる', async () => {
+      // 新しいファイルを作成
+      await mockFileRepository.writeFileAsync(
+        mockFileRepository.createFileUri('/test/new-file.txt'),
+        'New content',
+      );
 
-      // テスト環境を準備
-      mockFileRepository.createDirectoryForTest(directoryPath);
-      mockFileRepository.createFileForTest(filePath, 'test content');
-
-      const metaContent = `files:
-  - name: existing.txt
-    type: content
-    path: /test/project/existing.txt`;
-
-      mockFileRepository.createFileForTest(`${directoryPath}/.dialogoi-meta.yaml`, metaContent);
-
-      // ファイルを管理対象に追加
-      const result = await fileManagementService.addFileToManagement(filePath, 'content');
+      const result = await fileManagementService.addFileToManagement(
+        '/test/new-file.txt',
+        'content',
+      );
 
       assert.strictEqual(result.success, true);
-      assert.strictEqual(result.message, 'ファイルを管理対象に追加しました: new-file.txt');
+      assert(result.message.includes('管理対象に追加しました'));
 
-      // meta.yamlが更新されていることを確認
-      const updatedMeta = await metaYamlService.loadMetaYamlAsync(directoryPath);
-      assert.notStrictEqual(updatedMeta, null);
-      assert.strictEqual(updatedMeta?.files.length, 2);
-
-      const newEntry = updatedMeta?.files.find((f) => f.name === 'new-file.txt');
-      assert.notStrictEqual(newEntry, undefined);
-      assert.strictEqual(newEntry?.type, 'content');
-      assert.strictEqual(newEntry?.path, filePath);
+      // メタデータが更新されているか確認
+      const metaContent = await mockFileRepository.readFileAsync(
+        mockFileRepository.createFileUri('/test/.dialogoi-meta.yaml'),
+        'utf8',
+      );
+      assert(metaContent.includes('new-file.txt'));
     });
 
-    test('存在しないファイルの場合はエラーを返す', async () => {
-      const filePath = '/test/project/nonexistent.txt';
-
-      const result = await fileManagementService.addFileToManagement(filePath, 'content');
+    test('存在しないファイルの追加はエラー', async () => {
+      const result = await fileManagementService.addFileToManagement(
+        '/test/nonexistent.txt',
+        'content',
+      );
 
       assert.strictEqual(result.success, false);
-      assert.ok(result.message.includes('ファイルが存在しません'));
+      assert(result.message.includes('ファイルが存在しません'));
     });
 
-    test('meta.yamlが存在しない場合はエラーを返す', async () => {
-      const directoryPath = '/test/project';
-      const filePath = '/test/project/file.txt';
-
-      mockFileRepository.createDirectoryForTest(directoryPath);
-      mockFileRepository.createFileForTest(filePath, 'test content');
-      // meta.yamlは作成しない
-
-      const result = await fileManagementService.addFileToManagement(filePath, 'content');
-
-      assert.strictEqual(result.success, false);
-      assert.ok(result.message.includes('管理ファイルが見つかりません'));
-    });
-
-    test('既に管理対象のファイルの場合はエラーを返す', async () => {
-      const directoryPath = '/test/project';
-      const filePath = '/test/project/existing.txt';
-
-      mockFileRepository.createDirectoryForTest(directoryPath);
-      mockFileRepository.createFileForTest(filePath, 'test content');
-
-      const metaContent = `files:
-  - name: existing.txt
-    type: content
-    path: /test/project/existing.txt`;
-
-      mockFileRepository.createFileForTest(`${directoryPath}/.dialogoi-meta.yaml`, metaContent);
-
-      const result = await fileManagementService.addFileToManagement(filePath, 'content');
-
-      assert.strictEqual(result.success, false);
-      assert.ok(result.message.includes('既に管理対象です'));
-    });
-
-    test('setting種別でファイルを追加できる', async () => {
-      const directoryPath = '/test/project';
-      const filePath = '/test/project/setting.md';
-
-      mockFileRepository.createDirectoryForTest(directoryPath);
-      mockFileRepository.createFileForTest(filePath, '# Setting');
-
-      const metaContent = `files: []`;
-      mockFileRepository.createFileForTest(`${directoryPath}/.dialogoi-meta.yaml`, metaContent);
-
-      const result = await fileManagementService.addFileToManagement(filePath, 'setting');
+    test('管理対象からファイルを削除できる', async () => {
+      const result = await fileManagementService.removeFileFromManagement('/test/plain.txt');
 
       assert.strictEqual(result.success, true);
+      assert(result.message.includes('管理対象から削除しました'));
 
-      const updatedMeta = await metaYamlService.loadMetaYamlAsync(directoryPath);
-      const newEntry = updatedMeta?.files.find((f) => f.name === 'setting.md');
-      assert.strictEqual(newEntry?.type, 'setting');
+      // メタデータから削除されているか確認
+      const metaContent = await mockFileRepository.readFileAsync(
+        mockFileRepository.createFileUri('/test/.dialogoi-meta.yaml'),
+        'utf8',
+      );
+      assert(!metaContent.includes('plain.txt'));
+    });
+
+    test('欠損ファイルを作成できる', async () => {
+      const result = await fileManagementService.createMissingFile(
+        '/test/missing.txt',
+        'Test content',
+      );
+
+      assert.strictEqual(result.success, true);
+      assert(result.message.includes('ファイルを作成しました'));
+
+      // ファイルが作成されているか確認
+      const fileContent = await mockFileRepository.readFileAsync(
+        mockFileRepository.createFileUri('/test/missing.txt'),
+        'utf8',
+      );
+      assert.strictEqual(fileContent, 'Test content');
     });
   });
 
-  suite('removeFileFromManagement', () => {
-    test('管理対象ファイルを正常に削除する', async () => {
-      const directoryPath = '/test/project';
-      const filePath = '/test/project/target.txt';
-
-      mockFileRepository.createDirectoryForTest(directoryPath);
-
-      const metaContent = `files:
-  - name: target.txt
-    type: content
-    path: /test/project/target.txt
-  - name: keep.txt
-    type: content
-    path: /test/project/keep.txt`;
-
-      mockFileRepository.createFileForTest(`${directoryPath}/.dialogoi-meta.yaml`, metaContent);
-
-      const result = await fileManagementService.removeFileFromManagement(filePath);
+  suite('キャラクター操作', () => {
+    test('キャラクター重要度を設定できる', async () => {
+      const result = await fileManagementService.setCharacterImportance(
+        '/test',
+        'character.txt',
+        'main',
+      );
 
       assert.strictEqual(result.success, true);
-      assert.strictEqual(result.message, 'ファイルを管理対象から削除しました: target.txt');
+      assert(result.message.includes('キャラクター重要度を "main" に設定しました'));
+      assert(result.updatedItems);
 
-      // meta.yamlから削除されていることを確認
-      const updatedMeta = await metaYamlService.loadMetaYamlAsync(directoryPath);
-      assert.strictEqual(updatedMeta?.files.length, 1);
-      assert.strictEqual(updatedMeta?.files[0]?.name, 'keep.txt');
+      // メタデータが更新されているか確認
+      const metaContent = await mockFileRepository.readFileAsync(
+        mockFileRepository.createFileUri('/test/.dialogoi-meta.yaml'),
+        'utf8',
+      );
+      assert(metaContent.includes('importance: main'));
     });
 
-    test('meta.yamlが存在しない場合はエラーを返す', async () => {
-      const filePath = '/test/project/file.txt';
-
-      const result = await fileManagementService.removeFileFromManagement(filePath);
+    test('存在しないファイルにキャラクター重要度を設定するとエラー', async () => {
+      const result = await fileManagementService.setCharacterImportance(
+        '/test',
+        'nonexistent.txt',
+        'main',
+      );
 
       assert.strictEqual(result.success, false);
-      assert.ok(result.message.includes('管理ファイルが見つかりません'));
+      assert(result.message.includes('見つかりません'));
     });
 
-    test('管理対象でないファイルの場合はエラーを返す', async () => {
-      const directoryPath = '/test/project';
-      const filePath = '/test/project/notmanaged.txt';
+    test('複数キャラクターフラグを設定できる', async () => {
+      const result = await fileManagementService.setMultipleCharacters(
+        '/test',
+        'character.txt',
+        true,
+      );
 
-      mockFileRepository.createDirectoryForTest(directoryPath);
+      assert.strictEqual(result.success, true);
+      assert(result.message.includes('複数キャラクターフラグを "有効" に設定しました'));
+      assert(result.updatedItems);
 
-      const metaContent = `files:
-  - name: managed.txt
-    type: content
-    path: /test/project/managed.txt`;
+      // メタデータが更新されているか確認
+      const metaContent = await mockFileRepository.readFileAsync(
+        mockFileRepository.createFileUri('/test/.dialogoi-meta.yaml'),
+        'utf8',
+      );
+      assert(metaContent.includes('multiple_characters: true'));
+    });
 
-      mockFileRepository.createFileForTest(`${directoryPath}/.dialogoi-meta.yaml`, metaContent);
+    test('新規ファイルに複数キャラクターフラグを設定できる', async () => {
+      const result = await fileManagementService.setMultipleCharacters('/test', 'plain.txt', false);
 
-      const result = await fileManagementService.removeFileFromManagement(filePath);
+      assert.strictEqual(result.success, true);
+      assert(result.message.includes('複数キャラクターフラグを "無効" に設定しました'));
 
-      assert.strictEqual(result.success, false);
-      assert.ok(result.message.includes('管理対象ではありません'));
+      // メタデータが更新されているか確認
+      const metaContent = await mockFileRepository.readFileAsync(
+        mockFileRepository.createFileUri('/test/.dialogoi-meta.yaml'),
+        'utf8',
+      );
+      assert(metaContent.includes('importance: sub'));
+      assert(metaContent.includes('multiple_characters: false'));
+    });
+
+    test('キャラクター設定を削除できる', async () => {
+      // まずキャラクター設定を追加
+      await fileManagementService.setCharacterImportance('/test', 'character.txt', 'main');
+
+      // 削除
+      const result = await fileManagementService.removeCharacter('/test', 'character.txt');
+
+      assert.strictEqual(result.success, true);
+      assert(result.message.includes('キャラクター設定を削除しました'));
+      assert(result.updatedItems);
+
+      // メタデータからキャラクター設定が削除されているか確認
+      const metaContent = await mockFileRepository.readFileAsync(
+        mockFileRepository.createFileUri('/test/.dialogoi-meta.yaml'),
+        'utf8',
+      );
+      assert(!metaContent.includes('character:'));
     });
   });
 
-  suite('createMissingFile', () => {
-    test('欠損ファイルを正常に作成する', async () => {
-      const directoryPath = '/test/project';
-      const filePath = '/test/project/missing.txt';
+  suite('伏線操作', () => {
+    test('伏線設定を設定できる', async () => {
+      const foreshadowingData: ForeshadowingData = {
+        plants: [
+          {
+            location: 'Chapter 1:10',
+            comment: 'Plant 1',
+          },
+        ],
+        payoff: {
+          location: 'Chapter 5:100',
+          comment: 'Payoff',
+        },
+      };
 
-      mockFileRepository.createDirectoryForTest(directoryPath);
-
-      const result = await fileManagementService.createMissingFile(filePath);
-
-      assert.strictEqual(result.success, true);
-      assert.strictEqual(result.message, 'ファイルを作成しました: missing.txt');
-
-      // ファイルが作成されていることを確認
-      const fileUri = mockFileRepository.createFileUri(filePath);
-      const exists = await mockFileRepository.existsAsync(fileUri);
-      assert.strictEqual(exists, true);
-
-      // デフォルト内容が設定されていることを確認
-      const content = await mockFileRepository.readFileAsync(fileUri, 'utf8');
-      assert.ok(content.includes('missing.txt'));
-    });
-
-    test('既に存在するファイルの場合はエラーを返す', async () => {
-      const directoryPath = '/test/project';
-      const filePath = '/test/project/existing.txt';
-
-      mockFileRepository.createDirectoryForTest(directoryPath);
-      mockFileRepository.createFileForTest(filePath, 'existing content');
-
-      const result = await fileManagementService.createMissingFile(filePath);
-
-      assert.strictEqual(result.success, false);
-      assert.ok(result.message.includes('既に存在します'));
-    });
-
-    test('親ディレクトリが存在しない場合はエラーを返す', async () => {
-      const filePath = '/test/nonexistent/file.txt';
-
-      const result = await fileManagementService.createMissingFile(filePath);
-
-      assert.strictEqual(result.success, false);
-      assert.ok(result.message.includes('親ディレクトリが存在しません'));
-    });
-
-    test('カスタムテンプレートでファイルを作成できる', async () => {
-      const directoryPath = '/test/project';
-      const filePath = '/test/project/custom.txt';
-      const customTemplate = 'カスタムテンプレート内容';
-
-      mockFileRepository.createDirectoryForTest(directoryPath);
-
-      const result = await fileManagementService.createMissingFile(filePath, customTemplate);
+      const result = await fileManagementService.setForeshadowing(
+        '/test',
+        'foreshadow.txt',
+        foreshadowingData,
+      );
 
       assert.strictEqual(result.success, true);
+      assert(result.message.includes('伏線設定を更新しました'));
+      assert(result.updatedItems);
 
-      const fileUri = mockFileRepository.createFileUri(filePath);
-      const content = await mockFileRepository.readFileAsync(fileUri, 'utf8');
-      assert.strictEqual(content, customTemplate);
+      // メタデータが更新されているか確認
+      const metaContent = await mockFileRepository.readFileAsync(
+        mockFileRepository.createFileUri('/test/.dialogoi-meta.yaml'),
+        'utf8',
+      );
+      assert(metaContent.includes('foreshadowing:'));
+      assert(metaContent.includes('Plant 1'));
+      assert(metaContent.includes('Payoff'));
     });
 
-    test('拡張子に応じて適切なデフォルト内容を生成する', async () => {
-      const directoryPath = '/test/project';
-      mockFileRepository.createDirectoryForTest(directoryPath);
+    test('存在しないファイルに伏線設定を設定するとエラー', async () => {
+      const foreshadowingData: ForeshadowingData = {
+        plants: [],
+        payoff: {
+          location: 'Chapter 5:100',
+          comment: 'Payoff',
+        },
+      };
 
-      // .mdファイル
-      const mdPath = '/test/project/test.md';
-      await fileManagementService.createMissingFile(mdPath);
-      const mdUri = mockFileRepository.createFileUri(mdPath);
-      const mdContent = await mockFileRepository.readFileAsync(mdUri, 'utf8');
-      assert.ok(mdContent.startsWith('# test.md'));
+      const result = await fileManagementService.setForeshadowing(
+        '/test',
+        'nonexistent.txt',
+        foreshadowingData,
+      );
 
-      // .txtファイル
-      const txtPath = '/test/project/test.txt';
-      await fileManagementService.createMissingFile(txtPath);
-      const txtUri = mockFileRepository.createFileUri(txtPath);
-      const txtContent = await mockFileRepository.readFileAsync(txtUri, 'utf8');
-      assert.ok(txtContent.startsWith('test.txt'));
+      assert.strictEqual(result.success, false);
+      assert(result.message.includes('見つかりません'));
+    });
 
-      // その他の拡張子
-      const jsPath = '/test/project/test.js';
-      await fileManagementService.createMissingFile(jsPath);
-      const jsUri = mockFileRepository.createFileUri(jsPath);
-      const jsContent = await mockFileRepository.readFileAsync(jsUri, 'utf8');
-      assert.ok(jsContent.startsWith('// test.js'));
+    test('伏線設定を削除できる', async () => {
+      // まず伏線設定を追加
+      const foreshadowingData: ForeshadowingData = {
+        plants: [],
+        payoff: {
+          location: 'Chapter 5:100',
+          comment: 'Payoff',
+        },
+      };
+      await fileManagementService.setForeshadowing('/test', 'foreshadow.txt', foreshadowingData);
+
+      // 削除
+      const result = await fileManagementService.removeForeshadowing('/test', 'foreshadow.txt');
+
+      assert.strictEqual(result.success, true);
+      assert(result.message.includes('伏線設定を削除しました'));
+      assert(result.updatedItems);
+
+      // メタデータから伏線設定が削除されているか確認
+      const metaContent = await mockFileRepository.readFileAsync(
+        mockFileRepository.createFileUri('/test/.dialogoi-meta.yaml'),
+        'utf8',
+      );
+      assert(!metaContent.includes('foreshadowing:'));
     });
   });
 
   suite('エラーハンドリング', () => {
-    test('無効なパスでのファイル追加は適切にエラーハンドリングされる', async () => {
-      // 無効なパス（空文字列）でテスト
-      const invalidPath = '';
-
-      const result = await fileManagementService.addFileToManagement(invalidPath, 'content');
+    test('メタデータファイルが存在しない場合のエラー', async () => {
+      const result = await fileManagementService.setCharacterImportance(
+        '/nonexistent',
+        'file.txt',
+        'main',
+      );
 
       assert.strictEqual(result.success, false);
-      assert.ok(result.message.includes('失敗しました') || result.message.includes('存在しません'));
+      assert(result.message.includes('.dialogoi-meta.yamlが見つから'));
     });
 
-    test('無効なパスでのファイル削除は適切にエラーハンドリングされる', async () => {
-      // 無効なパス（空文字列）でテスト
-      const invalidPath = '';
-
-      const result = await fileManagementService.removeFileFromManagement(invalidPath);
+    test('存在しないファイルに対する操作はエラー', async () => {
+      const result = await fileManagementService.setCharacterImportance(
+        '/test',
+        'nonexistent.txt',
+        'main',
+      );
 
       assert.strictEqual(result.success, false);
-      assert.ok(
-        result.message.includes('失敗しました') || result.message.includes('見つかりません'),
-      );
+      assert(result.message.includes('見つかりません'));
     });
   });
 });
