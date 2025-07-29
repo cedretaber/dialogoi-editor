@@ -81,7 +81,7 @@ project_settings:
       // 不正なYAMLファイルをモック
       await mockFileRepository.writeFileAsync(
         mockFileRepository.createFileUri(`${projectRoot}/dialogoi.yaml`),
-        'invalid yaml content: [',
+        'title: "テスト"\nauthor: "著者"\ninvalid: yaml: [unclosed',
       );
 
       const loadedSettings = await service.loadProjectSettings(projectRoot);

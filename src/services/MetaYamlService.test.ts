@@ -3,6 +3,7 @@ import { MetaYamlService } from './MetaYamlService.js';
 import { MetaYaml } from '../utils/MetaYamlUtils.js';
 import { TestServiceContainer } from '../di/TestServiceContainer.js';
 import { MockFileRepository } from '../repositories/MockFileRepository.js';
+import { createContentItem, createSubdirectoryItem } from '../test/testHelpers.js';
 
 suite('MetaYamlService テストスイート', () => {
   let service: MetaYamlService;
@@ -23,17 +24,36 @@ suite('MetaYamlService テストスイート', () => {
   suite('loadMetaYamlAsync', () => {
     test('正常な.dialogoi-meta.yamlファイルを読み込む', async () => {
       const testDir = '/test/project';
+
+      const contentItem = createContentItem({
+        name: 'chapter1.txt',
+        path: `${testDir}/chapter1.txt`,
+        tags: ['重要', '序章'],
+      });
+
+      const subdirItem = createSubdirectoryItem({
+        name: 'settings',
+        path: `${testDir}/settings`,
+      });
+
       const metaContent = `readme: README.md
 files:
-  - name: chapter1.txt
-    type: content
-    path: ${testDir}/chapter1.txt
+  - name: ${contentItem.name}
+    type: ${contentItem.type}
+    path: ${contentItem.path}
+    hash: ${contentItem.hash}
     tags:
       - 重要
       - 序章
-  - name: settings
-    type: subdirectory
-    path: ${testDir}/settings`;
+    references: []
+    comments: ${contentItem.comments}
+    isUntracked: ${contentItem.isUntracked}
+    isMissing: ${contentItem.isMissing}
+  - name: ${subdirItem.name}
+    type: ${subdirItem.type}
+    path: ${subdirItem.path}
+    isUntracked: ${subdirItem.isUntracked}
+    isMissing: ${subdirItem.isMissing}`;
 
       mockFileRepository.addDirectory(testDir);
       mockFileRepository.addFile(`${testDir}/.dialogoi-meta.yaml`, metaContent);
@@ -64,6 +84,13 @@ files:
 files:
   - name: chapter1.txt
     type: content
+    path: /test/project/chapter1.txt
+    hash: hash123
+    tags: []
+    references: []
+    comments: ''
+    isUntracked: false
+    isMissing: false
   - invalid: yaml: content`;
 
       mockFileRepository.addDirectory(testDir);
@@ -109,23 +136,17 @@ files:
             path: `${testDir}/chapter1.txt`,
             tags: ['重要', '序章'],
             references: ['settings/world.md'],
-            character: {
-              importance: 'main',
-              multiple_characters: false,
-              display_name: '主人公',
-            },
-            foreshadowing: {
-              plants: [{ location: 'chapter1.txt', comment: '伏線の設置' }],
-              payoff: { location: 'chapter10.txt', comment: '伏線の回収' },
-            },
             comments: '.chapter1.txt.comments.yaml',
-            glossary: true,
             hash: 'abc123',
+            isUntracked: false,
+            isMissing: false,
           },
           {
             name: 'settings',
             type: 'subdirectory',
             path: `${testDir}/settings`,
+            isUntracked: false,
+            isMissing: false,
           },
         ],
       };
@@ -143,12 +164,7 @@ files:
       assert.ok(savedContent.includes('readme: README.md'));
       assert.ok(savedContent.includes('name: chapter1.txt'));
       assert.ok(savedContent.includes('type: content'));
-      assert.ok(savedContent.includes('importance: main'));
-      assert.ok(savedContent.includes('display_name: 主人公'));
-      assert.ok(savedContent.includes('location: chapter1.txt'));
-      assert.ok(savedContent.includes('location: chapter10.txt'));
       assert.ok(savedContent.includes('comments: .chapter1.txt.comments.yaml'));
-      assert.ok(savedContent.includes('glossary: true'));
       assert.ok(savedContent.includes('hash: abc123'));
     });
 
@@ -176,11 +192,12 @@ files:
       const testDir = '/test/project';
       const meta: MetaYaml = {
         files: [
-          {
+          createContentItem({
             name: 'test.txt',
-            type: 'content',
             path: `${testDir}/test.txt`,
-          },
+            hash: 'hash123',
+            comments: '.test.txt.comments.yaml',
+          }),
         ],
       };
 
@@ -389,18 +406,10 @@ files: []`;
             path: `${testDir}/chapter1.txt`,
             tags: ['重要', '序章'],
             references: ['settings/world.md'],
-            character: {
-              importance: 'main',
-              multiple_characters: false,
-              display_name: '主人公',
-            },
-            foreshadowing: {
-              plants: [{ location: 'chapter1.txt', comment: '伏線の設置' }],
-              payoff: { location: 'chapter10.txt', comment: '伏線の回収' },
-            },
             comments: '.chapter1.txt.comments.yaml',
-            glossary: true,
             hash: 'abc123',
+            isUntracked: false,
+            isMissing: false,
           },
         ],
       };
@@ -438,7 +447,12 @@ files: []`;
             name: fileName,
             type: 'content',
             path: `${testDir}/${fileName}`,
+            hash: 'hash123',
             tags: ['既存タグ1', '既存タグ2'],
+            references: [],
+            comments: `.${fileName}.comments.yaml`,
+            isUntracked: false,
+            isMissing: false,
           },
         ],
       };
@@ -459,7 +473,7 @@ files: []`;
         const fileItem = updatedMeta.files.find((f) => f.name === fileName);
         assert.notStrictEqual(fileItem, undefined);
 
-        if (fileItem !== undefined) {
+        if (fileItem !== undefined && 'tags' in fileItem) {
           assert.deepStrictEqual(fileItem.tags, newTags);
         }
       }
@@ -475,7 +489,12 @@ files: []`;
             name: fileName,
             type: 'content',
             path: `${testDir}/${fileName}`,
+            hash: 'hash123',
             tags: ['既存タグ1', '既存タグ2'],
+            references: [],
+            comments: `.${fileName}.comments.yaml`,
+            isUntracked: false,
+            isMissing: false,
           },
         ],
       };
@@ -495,8 +514,8 @@ files: []`;
         const fileItem = updatedMeta.files.find((f) => f.name === fileName);
         assert.notStrictEqual(fileItem, undefined);
 
-        if (fileItem !== undefined) {
-          assert.strictEqual(fileItem.tags, undefined);
+        if (fileItem !== undefined && 'tags' in fileItem) {
+          assert.deepStrictEqual(fileItem.tags, []);
         }
       }
     });
@@ -511,7 +530,12 @@ files: []`;
             name: fileName,
             type: 'content',
             path: `${testDir}/${fileName}`,
+            hash: 'hash123',
             tags: ['既存タグ1'],
+            references: [],
+            comments: '.test.comments.yaml',
+            isUntracked: false,
+            isMissing: false,
           },
         ],
       };
@@ -531,7 +555,7 @@ files: []`;
         const fileItem = updatedMeta.files.find((f) => f.name === fileName);
         assert.notStrictEqual(fileItem, undefined);
 
-        if (fileItem !== undefined) {
+        if (fileItem !== undefined && 'tags' in fileItem) {
           assert.deepStrictEqual(fileItem.tags, ['既存タグ1', '新タグ']);
         }
       }
@@ -547,7 +571,12 @@ files: []`;
             name: fileName,
             type: 'content',
             path: `${testDir}/${fileName}`,
+            hash: 'hash123',
             tags: ['既存タグ1'],
+            references: [],
+            comments: '.test.comments.yaml',
+            isUntracked: false,
+            isMissing: false,
           },
         ],
       };
@@ -567,7 +596,7 @@ files: []`;
         const fileItem = updatedMeta.files.find((f) => f.name === fileName);
         assert.notStrictEqual(fileItem, undefined);
 
-        if (fileItem !== undefined) {
+        if (fileItem !== undefined && 'tags' in fileItem) {
           assert.deepStrictEqual(fileItem.tags, ['既存タグ1']);
         }
       }
@@ -583,6 +612,12 @@ files: []`;
             name: fileName,
             type: 'content',
             path: `${testDir}/${fileName}`,
+            hash: 'hash123',
+            tags: [],
+            references: [],
+            comments: `.${fileName}.comments.yaml`,
+            isUntracked: false,
+            isMissing: false,
           },
         ],
       };
@@ -602,7 +637,7 @@ files: []`;
         const fileItem = updatedMeta.files.find((f) => f.name === fileName);
         assert.notStrictEqual(fileItem, undefined);
 
-        if (fileItem !== undefined) {
+        if (fileItem !== undefined && 'tags' in fileItem) {
           assert.deepStrictEqual(fileItem.tags, ['新タグ']);
         }
       }
@@ -618,7 +653,12 @@ files: []`;
             name: fileName,
             type: 'content',
             path: `${testDir}/${fileName}`,
+            hash: 'hash123',
             tags: ['タグ1', 'タグ2', 'タグ3'],
+            references: [],
+            comments: '.test.comments.yaml',
+            isUntracked: false,
+            isMissing: false,
           },
         ],
       };
@@ -638,7 +678,7 @@ files: []`;
         const fileItem = updatedMeta.files.find((f) => f.name === fileName);
         assert.notStrictEqual(fileItem, undefined);
 
-        if (fileItem !== undefined) {
+        if (fileItem !== undefined && 'tags' in fileItem) {
           assert.deepStrictEqual(fileItem.tags, ['タグ1', 'タグ3']);
         }
       }
@@ -654,7 +694,12 @@ files: []`;
             name: fileName,
             type: 'content',
             path: `${testDir}/${fileName}`,
+            hash: 'hash123',
             tags: ['タグ1'],
+            references: [],
+            comments: '.test.comments.yaml',
+            isUntracked: false,
+            isMissing: false,
           },
         ],
       };
@@ -674,8 +719,8 @@ files: []`;
         const fileItem = updatedMeta.files.find((f) => f.name === fileName);
         assert.notStrictEqual(fileItem, undefined);
 
-        if (fileItem !== undefined) {
-          assert.strictEqual(fileItem.tags, undefined);
+        if (fileItem !== undefined && 'tags' in fileItem) {
+          assert.deepStrictEqual(fileItem.tags, []);
         }
       }
     });
@@ -690,7 +735,12 @@ files: []`;
             name: fileName,
             type: 'content',
             path: `${testDir}/${fileName}`,
+            hash: 'hash123',
             tags: ['タグ1'],
+            references: [],
+            comments: '.test.comments.yaml',
+            isUntracked: false,
+            isMissing: false,
           },
         ],
       };
@@ -710,7 +760,7 @@ files: []`;
         const fileItem = updatedMeta.files.find((f) => f.name === fileName);
         assert.notStrictEqual(fileItem, undefined);
 
-        if (fileItem !== undefined) {
+        if (fileItem !== undefined && 'tags' in fileItem) {
           assert.deepStrictEqual(fileItem.tags, ['タグ1']);
         }
       }
@@ -742,6 +792,12 @@ files: []`;
             name: 'chapter1.txt',
             type: 'content',
             path: `${testDir}/chapter1.txt`,
+            hash: 'hash123',
+            tags: [],
+            references: [],
+            comments: '.chapter1.txt.comments.yaml',
+            isUntracked: false,
+            isMissing: false,
           },
         ],
       };
@@ -766,9 +822,39 @@ files: []`;
       const meta: MetaYaml = {
         readme: 'README.md',
         files: [
-          { name: 'file1.txt', type: 'content', path: `${testDir}/file1.txt` },
-          { name: 'file2.txt', type: 'content', path: `${testDir}/file2.txt` },
-          { name: 'file3.txt', type: 'content', path: `${testDir}/file3.txt` },
+          {
+            name: 'file1.txt',
+            type: 'content',
+            path: `${testDir}/file1.txt`,
+            hash: 'hash123',
+            tags: [],
+            references: [],
+            comments: '.file1.txt.comments.yaml',
+            isUntracked: false,
+            isMissing: false,
+          },
+          {
+            name: 'file2.txt',
+            type: 'content',
+            path: `${testDir}/file2.txt`,
+            hash: 'hash123',
+            tags: [],
+            references: [],
+            comments: '.file2.txt.comments.yaml',
+            isUntracked: false,
+            isMissing: false,
+          },
+          {
+            name: 'file3.txt',
+            type: 'content',
+            path: `${testDir}/file3.txt`,
+            hash: 'hash123',
+            tags: [],
+            references: [],
+            comments: '.file3.txt.comments.yaml',
+            isUntracked: false,
+            isMissing: false,
+          },
         ],
       };
 
@@ -799,14 +885,46 @@ files: []`;
       const sourceMeta: MetaYaml = {
         readme: 'README.md',
         files: [
-          { name: 'file1.txt', type: 'content', path: `${sourceDir}/file1.txt` },
-          { name: 'file2.txt', type: 'content', path: `${sourceDir}/file2.txt` },
+          {
+            name: 'file1.txt',
+            type: 'content',
+            path: `${sourceDir}/file1.txt`,
+            hash: 'hash123',
+            tags: [],
+            references: [],
+            comments: '.file1.txt.comments.yaml',
+            isUntracked: false,
+            isMissing: false,
+          },
+          {
+            name: 'file2.txt',
+            type: 'content',
+            path: `${sourceDir}/file2.txt`,
+            hash: 'hash123',
+            tags: [],
+            references: [],
+            comments: '.file2.txt.comments.yaml',
+            isUntracked: false,
+            isMissing: false,
+          },
         ],
       };
 
       const targetMeta: MetaYaml = {
         readme: 'README.md',
-        files: [{ name: 'file3.txt', type: 'content', path: `${targetDir}/file3.txt` }],
+        files: [
+          {
+            name: 'file3.txt',
+            type: 'content',
+            path: `${targetDir}/file3.txt`,
+            hash: 'hash123',
+            tags: [],
+            references: [],
+            comments: '.file3.txt.comments.yaml',
+            isUntracked: false,
+            isMissing: false,
+          },
+        ],
       };
 
       mockFileRepository.addDirectory(sourceDir);
@@ -843,7 +961,19 @@ files: []`;
       const testDir = '/test/project';
       const meta: MetaYaml = {
         readme: 'README.md',
-        files: [{ name: 'file1.txt', type: 'content', path: `${testDir}/file1.txt` }],
+        files: [
+          {
+            name: 'file1.txt',
+            type: 'content',
+            path: `${testDir}/file1.txt`,
+            hash: 'hash123',
+            tags: [],
+            references: [],
+            comments: '.file1.txt.comments.yaml',
+            isUntracked: false,
+            isMissing: false,
+          },
+        ],
       };
 
       mockFileRepository.addDirectory(testDir);

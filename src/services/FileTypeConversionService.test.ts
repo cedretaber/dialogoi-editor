@@ -44,7 +44,13 @@ suite('FileTypeConversionService テストスイート', () => {
           {
             name: fileName,
             type: 'content' as const,
-            path: fileName,
+            path: absoluteFilePath,
+            hash: 'hash123',
+            tags: [],
+            references: [],
+            comments: '.chapter1.txt.comments.yaml',
+            isUntracked: false,
+            isMissing: false,
           },
         ],
       };
@@ -94,7 +100,12 @@ suite('FileTypeConversionService テストスイート', () => {
           {
             name: fileName,
             type: 'setting' as const,
-            path: fileName,
+            path: absoluteFilePath,
+            hash: 'hash456',
+            tags: [],
+            comments: '.character.md.comments.yaml',
+            isUntracked: false,
+            isMissing: false,
           },
         ],
       };
@@ -144,7 +155,13 @@ suite('FileTypeConversionService テストスイート', () => {
           {
             name: fileName,
             type: 'content' as const,
-            path: fileName,
+            path: absoluteFilePath,
+            hash: 'hash123',
+            tags: [],
+            references: [],
+            comments: '.chapter1.txt.comments.yaml',
+            isUntracked: false,
+            isMissing: false,
           },
         ],
       };
@@ -228,7 +245,13 @@ suite('FileTypeConversionService テストスイート', () => {
           {
             name: 'other.txt',
             type: 'content' as const,
-            path: 'other.txt',
+            path: `${testDir}/other.txt`,
+            hash: 'hash456',
+            tags: [],
+            references: [],
+            comments: '.other.txt.comments.yaml',
+            isUntracked: false,
+            isMissing: false,
           },
         ],
       };

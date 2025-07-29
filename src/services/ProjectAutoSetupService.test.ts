@@ -90,10 +90,17 @@ updated_at: 2024-01-01T00:00:00.000Z
       mockFileRepository.createFileForTest(`${projectRoot}/dialogoi.yaml`, dialogoiContent);
 
       // 既存の.dialogoi-meta.yamlを作成
-      const existingMetaContent = `files:
+      const existingMetaContent = `readme: README.md
+files:
   - name: existing.txt
     type: content
-    path: /test/existing-project/existing.txt`;
+    path: /test/existing-project/existing.txt
+    hash: existingHash
+    tags: []
+    references: []
+    comments: '.existing.txt.comments.yaml'
+    isUntracked: false
+    isMissing: false`;
       mockFileRepository.createFileForTest(
         `${projectRoot}/.dialogoi-meta.yaml`,
         existingMetaContent,
@@ -276,10 +283,17 @@ updated_at: 2024-01-01T00:00:00.000Z
       mockFileRepository.createFileForTest(`${projectRoot}/dialogoi.yaml`, dialogoiContent);
 
       // 既存のmeta.yamlを作成（一部ファイルが既に登録済み）
-      const metaContent = `files:
+      const metaContent = `readme: README.md
+files:
   - name: existing.txt
     type: content
-    path: /test/existing-files-project/existing.txt`;
+    path: /test/existing-files-project/existing.txt
+    hash: existingHash
+    tags: []
+    references: []
+    comments: '.existing.txt.comments.yaml'
+    isUntracked: false
+    isMissing: false`;
       mockFileRepository.createFileForTest(`${projectRoot}/.dialogoi-meta.yaml`, metaContent);
 
       // テスト用ファイルを作成

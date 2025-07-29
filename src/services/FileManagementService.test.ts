@@ -17,15 +17,41 @@ suite('FileManagementService テストスイート', () => {
     mockFileRepository.createDirectoryForTest('/test');
     await mockFileRepository.writeFileAsync(
       mockFileRepository.createFileUri('/test/.dialogoi-meta.yaml'),
-      `files:
+      `readme: README.md
+files:
   - name: character.txt
-    type: content
-    subtype: character
+    type: setting
+    path: /test/character.txt
+    hash: hash123
+    tags: []
+    comments: '.character.txt.comments.yaml'
+    isUntracked: false
+    isMissing: false
+    character:
+      importance: sub
+      multiple_characters: false
+      display_name: 'テストキャラクター'
   - name: foreshadow.txt
-    type: content
-    subtype: foreshadowing
+    type: setting
+    path: /test/foreshadow.txt
+    hash: hash456
+    tags: []
+    comments: '.foreshadow.txt.comments.yaml'
+    isUntracked: false
+    isMissing: false
+    foreshadowing:
+      plants: []
+      payoff:
+        location: ""
+        comment: ""
   - name: plain.txt
-    type: content
+    type: setting
+    path: /test/plain.txt
+    hash: hash789
+    tags: []
+    comments: '.plain.txt.comments.yaml'
+    isUntracked: false
+    isMissing: false
 `,
     );
   });

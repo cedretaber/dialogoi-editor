@@ -77,7 +77,10 @@ tags: ["ファンタジー"]`;
       const projectRoot = '/test/project';
       const dialogoiYamlPath = path.join(projectRoot, 'dialogoi.yaml');
 
-      mockFileRepository.createFileForTest(dialogoiYamlPath, 'invalid yaml content [');
+      mockFileRepository.createFileForTest(
+        dialogoiYamlPath,
+        'title: "テスト"\nauthor: "著者"\ninvalid: yaml: [unclosed',
+      );
 
       const result = await service.loadDialogoiYamlAsync(projectRoot);
       assert.strictEqual(result, null);

@@ -451,7 +451,7 @@ created_at: '2024-01-01T00:00:00Z'`;
         workspaceRootPath,
         `.${testRelativeFilePath}.comments.yaml`,
       );
-      mockFileRepository.addFile(commentFilePath, 'invalid yaml content: [unclosed');
+      mockFileRepository.addFile(commentFilePath, 'file_hash: "test"\ninvalid: yaml: [unclosed');
 
       try {
         await commentService.loadCommentFileAsync(testRelativeFilePath);

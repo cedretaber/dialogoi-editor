@@ -3,6 +3,7 @@ import { FileRepository } from '../repositories/FileRepository.js';
 import { ServiceContainer } from '../di/ServiceContainer.js';
 import { HyperlinkExtractorService } from './HyperlinkExtractorService.js';
 import { FilePathMapService } from './FilePathMapService.js';
+import { hasReferencesProperty } from '../utils/MetaYamlUtils.js';
 
 export interface ReferenceEntry {
   path: string;
@@ -177,7 +178,7 @@ export class ReferenceManager {
         await this.scanDirectoryReferences(subDirPath, fileRelativePath);
       } else {
         // ファイルの手動参照関係を追加
-        if (file.references && file.references.length > 0) {
+        if (hasReferencesProperty(file) && file.references.length > 0) {
           this.addFileReferences(fileRelativePath, file.references, 'manual');
         }
 

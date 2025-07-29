@@ -7,6 +7,10 @@ files:
       - 基本設定
     references:
       - contents/02_entrance_ceremony.txt
+    hash: ''
+    comments: ''
+    isUntracked: false
+    isMissing: false
   - name: magic_system.md
     type: setting
     tags:
@@ -14,12 +18,24 @@ files:
       - システム
     references:
       - contents/03_first_magic_lesson.txt
+    hash: ''
+    comments: ''
+    isUntracked: false
+    isMissing: false
   - name: glossary.md
     type: setting
     glossary: true
     tags:
       - 用語集
+    hash: ''
+    comments: ''
+    isUntracked: false
+    isMissing: false
   - name: characters
     type: subdirectory
+    isUntracked: false
+    isMissing: false
   - name: foreshadowings
     type: subdirectory
+    isUntracked: false
+    isMissing: false

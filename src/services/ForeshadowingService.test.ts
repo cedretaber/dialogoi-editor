@@ -3,6 +3,7 @@ import * as path from 'path';
 import { ForeshadowingService, ForeshadowingData } from './ForeshadowingService.js';
 import { MockFileRepository } from '../repositories/MockFileRepository.js';
 import { MetaYamlService } from './MetaYamlService.js';
+import { isForeshadowingItem } from '../utils/MetaYamlUtils.js';
 
 suite('ForeshadowingService', () => {
   let mockFileRepository: MockFileRepository;
@@ -264,10 +265,16 @@ suite('ForeshadowingService', () => {
     // テスト用のmeta.yamlセットアップ
     setup(() => {
       const metaYamlPath = path.join(novelRootAbsolutePath, '.dialogoi-meta.yaml');
-      const metaYamlContent = `files:
+      const metaYamlContent = `readme: README.md
+files:
   - name: test.md
     type: setting
     path: ${novelRootAbsolutePath}/settings/test.md
+    hash: testhash
+    tags: []
+    comments: '.test.md.comments.yaml'
+    isUntracked: false
+    isMissing: false
     foreshadowing:
       plants: []
       payoff:
@@ -295,9 +302,15 @@ suite('ForeshadowingService', () => {
       if (fileItem === undefined) {
         return;
       }
-      assert.strictEqual(fileItem.foreshadowing?.plants.length, 1);
-      assert.strictEqual(fileItem.foreshadowing?.plants[0]?.location, 'contents/chapter1.txt');
-      assert.strictEqual(fileItem.foreshadowing?.plants[0]?.comment, '最初のヒント');
+
+      // 型ガードを使って安全にforeshadowingプロパティにアクセス
+      if (isForeshadowingItem(fileItem)) {
+        assert.strictEqual(fileItem.foreshadowing.plants.length, 1);
+        assert.strictEqual(fileItem.foreshadowing.plants[0]?.location, 'contents/chapter1.txt');
+        assert.strictEqual(fileItem.foreshadowing.plants[0]?.comment, '最初のヒント');
+      } else {
+        assert.fail('fileItemにforeshadowingプロパティが存在しません');
+      }
     });
 
     test('removePlant - 植込み位置を正常に削除', async () => {
@@ -317,7 +330,13 @@ suite('ForeshadowingService', () => {
         return;
       }
       const fileItem = meta.files.find((f) => f.name === 'test.md');
-      assert.strictEqual(fileItem?.foreshadowing?.plants.length, 0);
+      assert.notStrictEqual(fileItem, undefined);
+
+      if (fileItem && isForeshadowingItem(fileItem)) {
+        assert.strictEqual(fileItem.foreshadowing.plants.length, 0);
+      } else {
+        assert.fail('fileItemにforeshadowingプロパティが存在しません');
+      }
     });
 
     test('updatePlant - 植込み位置を正常に更新', async () => {
@@ -342,8 +361,14 @@ suite('ForeshadowingService', () => {
         return;
       }
       const fileItem = meta.files.find((f) => f.name === 'test.md');
-      assert.strictEqual(fileItem?.foreshadowing?.plants[0]?.location, 'contents/chapter2.txt');
-      assert.strictEqual(fileItem?.foreshadowing?.plants[0]?.comment, '更新後');
+      assert.notStrictEqual(fileItem, undefined);
+
+      if (fileItem && isForeshadowingItem(fileItem)) {
+        assert.strictEqual(fileItem.foreshadowing.plants[0]?.location, 'contents/chapter2.txt');
+        assert.strictEqual(fileItem.foreshadowing.plants[0]?.comment, '更新後');
+      } else {
+        assert.fail('fileItemにforeshadowingプロパティが存在しません');
+      }
     });
 
     test('setPayoff - 回収位置を正常に設定', async () => {
@@ -360,8 +385,14 @@ suite('ForeshadowingService', () => {
         return;
       }
       const fileItem = meta.files.find((f) => f.name === 'test.md');
-      assert.strictEqual(fileItem?.foreshadowing?.payoff.location, 'contents/chapter5.txt');
-      assert.strictEqual(fileItem?.foreshadowing?.payoff.comment, '真相明示');
+      assert.notStrictEqual(fileItem, undefined);
+
+      if (fileItem && isForeshadowingItem(fileItem)) {
+        assert.strictEqual(fileItem.foreshadowing.payoff.location, 'contents/chapter5.txt');
+        assert.strictEqual(fileItem.foreshadowing.payoff.comment, '真相明示');
+      } else {
+        assert.fail('fileItemにforeshadowingプロパティが存在しません');
+      }
     });
 
     test('removePayoff - 回収位置を正常に削除', async () => {
@@ -380,8 +411,14 @@ suite('ForeshadowingService', () => {
         return;
       }
       const fileItem = meta.files.find((f) => f.name === 'test.md');
-      assert.strictEqual(fileItem?.foreshadowing?.payoff.location, '');
-      assert.strictEqual(fileItem?.foreshadowing?.payoff.comment, '');
+      assert.notStrictEqual(fileItem, undefined);
+
+      if (fileItem && isForeshadowingItem(fileItem)) {
+        assert.strictEqual(fileItem.foreshadowing.payoff.location, '');
+        assert.strictEqual(fileItem.foreshadowing.payoff.comment, '');
+      } else {
+        assert.fail('fileItemにforeshadowingプロパティが存在しません');
+      }
     });
 
     test('エラーケース - 存在しないファイル', async () => {

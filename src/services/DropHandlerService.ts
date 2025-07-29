@@ -5,6 +5,7 @@ import { MetaYamlService } from './MetaYamlService.js';
 import { DialogoiYamlService } from './DialogoiYamlService.js';
 import { FileChangeNotificationService } from './FileChangeNotificationService.js';
 import { ReferenceManager } from './ReferenceManager.js';
+import { hasReferencesProperty } from '../utils/MetaYamlUtils.js';
 
 /**
  * ドロップされたファイル情報
@@ -168,8 +169,16 @@ export class DropHandlerService {
       };
     }
 
+    // コンテンツファイルのみ参照を持つことができる
+    if (!hasReferencesProperty(fileItem)) {
+      return {
+        success: false,
+        message: `${targetFileName} はコンテンツファイルではないため、参照を追加できません。`,
+      };
+    }
+
     // 重複チェック
-    const existingReferences = fileItem.references || [];
+    const existingReferences = fileItem.references;
     if (existingReferences.includes(droppedFileProjectRelativePath)) {
       return {
         success: true,

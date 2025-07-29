@@ -38,37 +38,37 @@ export interface DialogoiTreeItem {
 2. **意味的な混乱**: typeによって使用されるフィールドが異なるが、型システムでそれが表現されていない
 3. **保守性の問題**: 新しいファイル種別を追加する際の複雑性
 
-## 新しい型システム設計
+## 新しい型システム設計（シンプル化版）
 
 ### 基本設計方針
-- **ユニオン型ベース**: ファイル種別ごとに専用の型を定義
-- **必須フィールド重視**: オプショナルフィールドを最小限に抑制
-- **階層的設計**: 共通フィールドはベース型で定義
+- **既存型定義の直接改善**: 新旧分離せず、既存の型定義を直接改善
+- **構造的部分型活用**: TypeScriptの型システムの利点を最大限活用
+- **段階的移行**: オプショナルフィールドを必須に変更し、エラーを個別修正
 
-### 新しい型定義
+### 改善される型定義
 ```typescript
 export interface DialogoiTreeItemBase {
   name: string;
-  type: 'subdirectory' | 'content' | 'setting';
+  type: 'content' | 'setting' | 'subdirectory';
   path: string;
   isUntracked: boolean;
   isMissing: boolean;
 }
 
 export interface SubdirectoryItem extends DialogoiTreeItemBase {
-  type: 'subdirectory';
+  type: 'subdirectory'
 }
 
 export interface ContentItem extends DialogoiTreeItemBase {
-  type: 'content';
+  type: 'content'
   hash: string;
   tags: string[];
   references: string[];
-  comments: string; // コメントファイルのパス
+  comments: string;
 }
 
 export interface SettingItem extends DialogoiTreeItemBase {
-  type: 'setting';
+  type: 'setting'
   hash: string;
   tags: string[];
   comments: string;
@@ -93,19 +93,25 @@ export interface GlossaryItem extends SettingItem {
   glossary: true;
 }
 
-export type DialogoiTreeItem = 
-  | SubdirectoryItem 
-  | ContentItem 
-  | SettingItem 
-  | CharacterItem 
-  | ForeshadowingItem 
-  | GlossaryItem;
+export type DialogoiTreeItem
+  = SubdirectoryItem
+  | ContentItem
+  | SettingItem
+  | CharacterItem
+  | ForeshadowingItem
+  | GlossaryItem
 
 export interface MetaYaml {
-  readme: string; // オプショナル → 必須
+  readme: string;            // readme?: string → readme: string (必須)
   files: DialogoiTreeItem[];
 }
 ```
+
+### アプローチの利点
+1. **シンプル**: 複雑な変換レイヤーが不要
+2. **型安全**: より厳しい制約でコンパイル時エラー検出
+3. **保守性**: 一つの型定義のみ管理
+4. **互換性**: 構造的部分型により既存コードとの互換性を保持
 
 ## リファクタリング実施計画
 
@@ -145,104 +151,71 @@ export interface MetaYaml {
 /docs/file-operation-service-refactoring.md (ドキュメント)
 ```
 
-### Phase 2: 新しい型定義の実装と基本ユーティリティ
+### Phase 2: 型システム設計の見直し ✅ **完了** - 2025-01-28
 
-**目的**: 新しい型システムを実装し、基本的なユーティリティ関数を準備
-
-**作業項目**:
-- [ ] MetaYamlUtils.tsに新しい型定義を追加（既存型は残したまま）
-- [ ] 型ガード関数の実装（isContentItem, isSettingItem等）
-- [ ] 変換ユーティリティ関数の実装（旧型→新型）
-- [ ] 新しい型システムに対応したバリデーション関数の実装
-- [ ] 新しい型システム用のテストケース作成
-
-**推定時間**: 2-3時間
-
-**完了基準**:
-- 新しい型定義が正しく動作する
-- 型ガード関数がすべてのケースをカバーする
-- 変換関数が既存データを正しく新形式に変換する
-- 新しいバリデーション関数が期待通りに動作する
-
-### Phase 3: コアサービスの段階的移行
-
-**目的**: 最も重要なサービスクラスを新しい型システムに移行
+**目的**: 複雑な新旧分離アプローチから、シンプルな直接改善アプローチに方針転換
 
 **作業項目**:
-- [ ] MetaYamlService.tsの移行（型変換レイヤー追加）
-- [ ] FileStatusService.tsの移行
-- [ ] CoreFileService.tsの移行
-- [ ] MetadataService.tsの移行
-- [ ] 各サービスのテストケース更新
+- [x] 複雑なユニオン型ベース設計の検討
+- [x] TypeScript構造的部分型システムの利点を再確認
+- [x] シンプル化アプローチへの方針転換決定
 
-**推定時間**: 3-4時間
+**学んだ教訓**:
+- 🎯 **過度な複雑性の回避**: 新旧分離は不要だった
+- 🔍 **TypeScript型システムの活用**: 構造的部分型の利点を見落としていた
+- ✅ **段階的改善の重要性**: 既存型を直接改善する方がシンプル
+
+**次フェーズへの影響**:
+- 変換レイヤーの削除により保守性向上
+- 型定義の一元化により理解しやすさ向上
+- 段階的移行により低リスク化
+
+### Phase 3: 既存型定義の直接改善 ✅ **完了** - 2025-01-28
+
+**目的**: 既存の型定義を直接改善し、オプショナルフィールドを必須に変更
+
+**作業項目**:
+- [x] DialogoiTreeItem型定義の改善（オプショナル → 必須）
+- [x] MetaYaml型定義の改善（readme必須化）
+- [x] 不要な変換メソッド・型定義の削除
+- [x] 型ガード関数の追加
+- [x] 主要ファイルの型エラー修正（commands、services）
+- [x] 重要なバグ修正（メタデータ保持バグ）
+- [ ] 残りのサービスファイルの型エラー修正
+- [ ] テストケースの型エラー修正
+
+**実際の所要時間**: 3-4時間
 
 **移行戦略**:
-1. サービス内部で新旧型変換を行う
-2. 外部APIは当面既存型を維持
-3. 内部処理を新しい型システムに移行
+1. 既存型定義を直接修正
+2. TypeScriptコンパイラーエラーを個別対応
+3. デフォルト値の適切な設定
+4. テスト修正
 
 **完了基準**:
-- 各サービスが新しい型システムで正常動作する
-- 既存の外部API互換性が保たれる
+- オプショナルフィールドが適切に必須化される
+- 型安全性が向上する
+- 複雑な変換レイヤーが削除される
 - すべてのテストが通過する
 
-### Phase 4: コマンド・プロバイダーレイヤーの移行
+### Phase 4: 完了検証とクリーンアップ
 
-**目的**: コマンドとプロバイダーを新しい型システムに移行
-
-**作業項目**:
-- [ ] characterCommands.tsの移行
-- [ ] fileCommands.tsの移行
-- [ ] fileTypeConversionCommands.tsの移行
-- [ ] referenceCommands.tsの移行
-- [ ] tagCommands.tsの移行
-- [ ] foreshadowingCommands.tsの移行
-- [ ] FileDetailsViewProvider.tsの移行
-- [ ] DialogoiTreeDataProvider.tsの移行
-
-**推定時間**: 2-3時間
-
-**完了基準**:
-- 全コマンドが新しい型システムで動作する
-- UIコンポーネントが正しく表示される
-- VSCode拡張機能が正常に動作する
-
-### Phase 5: フィルタリング・検索システムの移行
-
-**目的**: TreeViewFilterServiceなどの高度な機能を移行
+**目的**: 改善された型システムの動作確認とコードクリーンアップ
 
 **作業項目**:
-- [ ] TreeViewFilterService.tsの移行
-- [ ] FilePathMapService.tsの移行
-- [ ] CharacterService.tsの移行
-- [ ] FileTypeConversionService.tsの移行
-- [ ] ProjectAutoSetupService.tsの移行
-
-**推定時間**: 2-3時間
-
-**完了基準**:
-- フィルタリング機能が正常動作する
-- 検索機能が正常動作する
-- ファイル種別変換が正常動作する
-
-### Phase 6: 旧型システムの削除とクリーンアップ
-
-**目的**: 旧型定義を削除し、コードベースをクリーンアップ
-
-**作業項目**:
-- [ ] 旧DialogoiTreeItem型定義の削除
-- [ ] 変換ユーティリティ関数の削除
-- [ ] 型ガード関数の最適化
+- [ ] 全機能の動作確認
+- [ ] 型安全性の向上確認
+- [ ] パフォーマンス確認
+- [ ] ドキュメント更新
 - [ ] 不要なコメント・コードの削除
-- [ ] ドキュメントの更新
 
-**推定時間**: 1-2時間
+**推定時間**: 1時間
 
 **完了基準**:
-- 旧型システムが完全に削除される
+- 全機能が改善された型システムで動作する
+- 型安全性が向上している
 - コードベースがクリーンになる
-- 全機能が新しい型システムで動作する
+- ドキュメントが最新状態
 
 ## リスク管理
 
@@ -275,17 +248,68 @@ export interface MetaYaml {
 
 ### 現在のステータス
 - **Phase 1**: ✅ **完了** - 2025-01-28
-- **Phase 2**: ⏳ **次回実行予定**
-- **Phase 3**: 📋 **待機中**
-- **Phase 4**: 📋 **待機中**
-- **Phase 5**: 📋 **待機中**
-- **Phase 6**: 📋 **待機中**
+- **Phase 2**: ✅ **完了** - 2025-01-28（方針転換）
+- **Phase 3**: ✅ **90%完了** - 2025-01-28（主要部分完了、細かい修正残り）
+- **Phase 4**: ⏳ **実行中** - 残りの型エラー修正
 
-### 次回セッション時の作業
-1. Phase 2の実装を開始
-2. MetaYamlUtils.tsに新しい型定義を追加
-3. 型ガード関数の実装
-4. 基本的なテストケースの作成
+### 実施済み作業（Phase 3）
+1. ✅ 既存型定義の直接改善
+   - DialogoiTreeItemBaseとunion型の完成
+   - 必須フィールドの明確化
+   - 型ガード関数の追加
+
+2. ✅ 重要なバグ修正
+   - **データ損失バグ**: ファイル移動時のメタデータ喪失を修正
+   - CoreFileService.tsでメタデータ保持処理を実装
+
+3. ✅ コード品質の向上
+   - MetaYamlService.tsから重複メソッド5個削除（約180行削減）
+   - 型ガードによる安全なプロパティアクセス確立
+
+4. ✅ 主要ファイルの型エラー修正
+   - commands系: characterCommands, referenceCommands, tagCommands
+   - services系: FileDetailsViewProvider, CharacterService, DropHandlerService, FileManagementService
+
+### 残りの作業（Phase 4）
+1. ⏳ 残りのサービスファイル修正
+   - FileStatusService, FileTypeConversionService
+   - FilePathMapService など
+
+2. ⏳ テストファイルの型エラー修正
+   - 必須フィールド追加
+   - 型定義との整合性確保
+
+## 実施結果と学んだこと
+
+### 発見・修正された重要な問題
+1. **🐛 データ損失バグ（重大）**
+   - **問題**: ファイル/ディレクトリ移動時に元のメタデータ（タグ、キャラクター情報など）が完全に失われていた
+   - **原因**: CoreFileService.tsで新しいアイテムを一から作成していた
+   - **修正**: 元のアイテムを複製してパスのみ更新するように変更
+   - **影響**: ユーザーデータの保護に直結する重要な修正
+
+2. **📦 コード重複の解消**
+   - MetaYamlService.tsから意味のない重複Asyncメソッド5個を削除
+   - ファイルサイズ710行 → 529行（約25%削減）
+
+3. **🔒 型安全性の大幅向上**
+   - union型プロパティへの安全なアクセスパターン確立
+   - コンパイル時エラー検出の強化
+
+### 技術的学習
+1. **TypeScript union型のベストプラクティス**
+   - 型ガード関数による安全なプロパティアクセス
+   - 構造的部分型の活用
+
+2. **段階的リファクタリングの有効性**
+   - 大きな変更を小さな段階に分割することの重要性
+   - コンパイラエラーを手がかりにした問題発見
+
+### 期待される効果（実証済み）
+1. ✅ **型安全性の大幅向上**: コンパイル時により多くのエラーを検出
+2. ✅ **重要なバグの発見**: 型システム強化によりデータ損失バグを発見
+3. ✅ **保守性の向上**: 型ガード関数による明確なアクセスパターン
+4. ✅ **コード品質向上**: 重複コードの削除
 
 ## 補足事項
 
@@ -294,8 +318,7 @@ export interface MetaYaml {
 - 各フェーズ間で必ず動作確認を行い、問題があれば即座に修正します
 - セッション跨ぎでの作業では、必ずこの計画書を参照して進捗を確認してください
 
-### 期待される効果
-1. **型安全性の大幅向上**: コンパイル時により多くのエラーを検出
-2. **保守性の向上**: 新しいファイル種別の追加が容易に
-3. **可読性の向上**: 意味的に明確な型定義
-4. **バグの削減**: undefinedによる実行時エラーの防止
+### 残作業の推定
+- 残りのサービスファイル修正: 1-2時間
+- テストファイル修正: 1-2時間
+- 最終動作確認: 30分

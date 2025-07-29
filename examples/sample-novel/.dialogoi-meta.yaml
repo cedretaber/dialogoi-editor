@@ -2,8 +2,18 @@ readme: README.md
 files:
   - name: contents
     type: subdirectory
+    isUntracked: false
+    isMissing: false
   - name: settings
     type: subdirectory
+    isUntracked: false
+    isMissing: false
   - name: missing_file.txt
     type: content
-    tags: ["test"]
+    tags:
+      - test
+    hash: ''
+    references: []
+    comments: ''
+    isUntracked: false
+    isMissing: false

@@ -1,6 +1,13 @@
 import * as path from 'path';
 import { FileRepository } from '../repositories/FileRepository.js';
-import { MetaYamlUtils, MetaYaml, DialogoiTreeItem } from '../utils/MetaYamlUtils.js';
+import {
+  MetaYamlUtils,
+  MetaYaml,
+  DialogoiTreeItem,
+  hasTagsProperty,
+  hasReferencesProperty,
+  hasCharacterProperty,
+} from '../utils/MetaYamlUtils.js';
 
 /**
  * .dialogoi-meta.yaml ファイルの操作を行うサービス
@@ -119,11 +126,16 @@ export class MetaYamlService {
         return false;
       }
 
+      // サブディレクトリにはタグを設定できない
+      if (!hasTagsProperty(fileItem)) {
+        return false; // サブディレクトリアイテムの場合は処理しない
+      }
+
       // タグを更新
       if (tags.length > 0) {
         fileItem.tags = tags;
       } else {
-        delete fileItem.tags;
+        fileItem.tags = []; // 空配列に設定
       }
 
       // .dialogoi-meta.yaml を更新
@@ -151,8 +163,13 @@ export class MetaYamlService {
       return false;
     }
 
+    // サブディレクトリにはタグを設定できない
+    if (!hasTagsProperty(fileItem)) {
+      return false;
+    }
+
     // 既存のタグを取得
-    const currentTags = fileItem.tags || [];
+    const currentTags = fileItem.tags;
 
     // 重複チェック
     if (currentTags.includes(tag)) {
@@ -174,12 +191,17 @@ export class MetaYamlService {
     }
 
     const fileItem = meta.files.find((item) => item.name === fileName);
-    if (!fileItem || !fileItem.tags) {
+    if (!fileItem) {
+      return true; // ファイルがない場合は成功とする
+    }
+
+    // サブディレクトリにはタグがない
+    if (!hasTagsProperty(fileItem) || fileItem.tags.length === 0) {
       return true; // タグがない場合は成功とする
     }
 
     // タグを削除
-    const newTags = fileItem.tags.filter((t) => t !== tag);
+    const newTags = fileItem.tags.filter((t: string) => t !== tag);
     return await this.updateFileTags(dirAbsolutePath, fileName, newTags);
   }
 
@@ -450,15 +472,20 @@ export class MetaYamlService {
     }
 
     const fileItem = meta.files.find((item) => item.name === fileName);
-    if (!fileItem || !fileItem.references) {
+    if (!fileItem) {
+      return true; // ファイルがない場合は成功とする
+    }
+
+    // サブディレクトリや設定ファイルには参照がない
+    if (!hasReferencesProperty(fileItem) || fileItem.references.length === 0) {
       return true; // 参照がない場合は成功とする
     }
 
     // 参照を削除
-    const newReferences = fileItem.references.filter((ref) => ref !== reference);
+    const newReferences = fileItem.references.filter((ref: string) => ref !== reference);
 
     if (newReferences.length === 0) {
-      delete fileItem.references;
+      fileItem.references = [];
     } else {
       fileItem.references = newReferences;
     }
@@ -480,150 +507,29 @@ export class MetaYamlService {
       return false;
     }
 
-    // キャラクター情報を削除
-    delete fileItem.character;
-
-    return await this.saveMetaYamlAsync(dirAbsolutePath, meta);
-  }
-
-  /**
-   * ファイルのタグを更新（非同期版）
-   */
-  async updateFileTagsAsync(
-    dirAbsolutePath: string,
-    fileName: string,
-    tags: string[],
-  ): Promise<boolean> {
-    const metaUri = this.fileRepository.createFileUri(
-      path.join(dirAbsolutePath, '.dialogoi-meta.yaml'),
-    );
-
-    try {
-      // 既存の .dialogoi-meta.yaml を読み込む
-      const meta = await this.loadMetaYamlAsync(dirAbsolutePath);
-      if (!meta) {
-        return false;
-      }
-
-      const fileItem = meta.files.find((item) => item.name === fileName);
-      if (!fileItem) {
-        return false;
-      }
-
-      // タグを更新
-      if (tags.length > 0) {
-        fileItem.tags = tags;
-      } else {
-        delete fileItem.tags;
-      }
-
-      // .dialogoi-meta.yaml を更新
-      const updatedContent = MetaYamlUtils.stringifyMetaYaml(meta);
-      await this.fileRepository.writeFileAsync(metaUri, updatedContent);
-
-      return true;
-    } catch (error) {
-      console.error('タグの更新に失敗しました:', error);
-      return false;
-    }
-  }
-
-  /**
-   * ファイルにタグを追加（非同期版）
-   */
-  async addFileTagAsync(dirAbsolutePath: string, fileName: string, tag: string): Promise<boolean> {
-    const meta = await this.loadMetaYamlAsync(dirAbsolutePath);
-    if (!meta) {
-      return false;
+    // サブディレクトリやキャラクター以外のファイルにはキャラクター情報がない
+    if (!hasCharacterProperty(fileItem)) {
+      return false; // キャラクターファイルでない場合は処理しない
     }
 
-    const fileItem = meta.files.find((item) => item.name === fileName);
-    if (!fileItem) {
-      return false;
+    // CharacterItemからSettingItemへの変換は型システム上複雑
+    // 実際の実装では、新しいSettingItemを作成し直す必要がある
+    const newSettingItem: DialogoiTreeItem = {
+      name: fileItem.name,
+      type: 'setting',
+      path: fileItem.path,
+      hash: fileItem.hash,
+      tags: fileItem.tags,
+      comments: fileItem.comments,
+      isUntracked: fileItem.isUntracked,
+      isMissing: fileItem.isMissing,
+    };
+
+    // 元のアイテムを新しいアイテムで置き換え
+    const itemIndex = meta.files.findIndex((item) => item.name === fileName);
+    if (itemIndex !== -1) {
+      meta.files[itemIndex] = newSettingItem;
     }
-
-    // 既存のタグを取得
-    const currentTags = fileItem.tags || [];
-
-    // 重複チェック
-    if (currentTags.includes(tag)) {
-      return true; // 既に存在する場合は成功とする
-    }
-
-    // タグを追加
-    const newTags = [...currentTags, tag];
-    return this.updateFileTagsAsync(dirAbsolutePath, fileName, newTags);
-  }
-
-  /**
-   * ファイルからタグを削除（非同期版）
-   */
-  async removeFileTagAsync(
-    dirAbsolutePath: string,
-    fileName: string,
-    tag: string,
-  ): Promise<boolean> {
-    const meta = await this.loadMetaYamlAsync(dirAbsolutePath);
-    if (!meta) {
-      return false;
-    }
-
-    const fileItem = meta.files.find((item) => item.name === fileName);
-    if (!fileItem || !fileItem.tags) {
-      return true; // タグがない場合は成功とする
-    }
-
-    // タグを削除
-    const newTags = fileItem.tags.filter((t) => t !== tag);
-    return this.updateFileTagsAsync(dirAbsolutePath, fileName, newTags);
-  }
-
-  /**
-   * ファイルの参照関係を削除（非同期版）
-   */
-  async removeFileReferenceAsync(
-    dirAbsolutePath: string,
-    fileName: string,
-    reference: string,
-  ): Promise<boolean> {
-    const meta = await this.loadMetaYamlAsync(dirAbsolutePath);
-    if (!meta) {
-      return false;
-    }
-
-    const fileItem = meta.files.find((item) => item.name === fileName);
-    if (!fileItem || !fileItem.references) {
-      return true; // 参照がない場合は成功とする
-    }
-
-    // 参照を削除
-    const newReferences = fileItem.references.filter((ref) => ref !== reference);
-
-    if (newReferences.length === 0) {
-      delete fileItem.references;
-    } else {
-      fileItem.references = newReferences;
-    }
-
-    return await this.saveMetaYamlAsync(dirAbsolutePath, meta);
-  }
-
-  /**
-   * ファイルのキャラクター情報を削除（非同期版）
-   */
-  async removeFileCharacterAsync(dirAbsolutePath: string, fileName: string): Promise<boolean> {
-    const meta = await this.loadMetaYamlAsync(dirAbsolutePath);
-    if (!meta) {
-      return false;
-    }
-
-    const fileItem = meta.files.find((item) => item.name === fileName);
-    if (!fileItem) {
-      return false;
-    }
-
-    // キャラクター情報を削除
-    delete fileItem.character;
 
     return await this.saveMetaYamlAsync(dirAbsolutePath, meta);
   }

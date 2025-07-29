@@ -1,6 +1,6 @@
 import * as path from 'path';
 import { FileRepository } from '../repositories/FileRepository.js';
-import { ForeshadowingPoint } from '../utils/MetaYamlUtils.js';
+import { ForeshadowingPoint, isForeshadowingItem } from '../utils/MetaYamlUtils.js';
 import { MetaYamlService } from './MetaYamlService.js';
 
 export interface ForeshadowingData {
@@ -159,11 +159,11 @@ export class ForeshadowingService {
         return { success: false, message: 'ファイルアイテムが見つかりません' };
       }
 
-      // foreshadowing構造を初期化（存在しない場合）
-      if (!fileItem.foreshadowing) {
-        fileItem.foreshadowing = {
-          plants: [],
-          payoff: { location: '', comment: '' },
+      // 型ガードで伏線ファイルであることを確認
+      if (!isForeshadowingItem(fileItem)) {
+        return {
+          success: false,
+          message: 'ファイルが伏線ファイルではありません。先に伏線ファイルとして設定してください。',
         };
       }
 
@@ -214,8 +214,13 @@ export class ForeshadowingService {
       }
 
       const fileItem = meta.files[fileIndex];
-      if (fileItem === undefined || !fileItem.foreshadowing) {
-        return { success: false, message: '伏線データが見つかりません' };
+      if (fileItem === undefined) {
+        return { success: false, message: 'ファイルアイテムが見つかりません' };
+      }
+
+      // 型ガードで伏線ファイルであることを確認
+      if (!isForeshadowingItem(fileItem)) {
+        return { success: false, message: 'ファイルが伏線ファイルではありません' };
       }
 
       // インデックスの検証
@@ -274,8 +279,13 @@ export class ForeshadowingService {
       }
 
       const fileItem = meta.files[fileIndex];
-      if (fileItem === undefined || !fileItem.foreshadowing) {
-        return { success: false, message: '伏線データが見つかりません' };
+      if (fileItem === undefined) {
+        return { success: false, message: 'ファイルアイテムが見つかりません' };
+      }
+
+      // 型ガードで伏線ファイルであることを確認
+      if (!isForeshadowingItem(fileItem)) {
+        return { success: false, message: 'ファイルが伏線ファイルではありません' };
       }
 
       // インデックスの検証
@@ -335,11 +345,11 @@ export class ForeshadowingService {
         return { success: false, message: 'ファイルアイテムが見つかりません' };
       }
 
-      // foreshadowing構造を初期化（存在しない場合）
-      if (!fileItem.foreshadowing) {
-        fileItem.foreshadowing = {
-          plants: [],
-          payoff: { location: '', comment: '' },
+      // 型ガードで伏線ファイルであることを確認
+      if (!isForeshadowingItem(fileItem)) {
+        return {
+          success: false,
+          message: 'ファイルが伏線ファイルではありません。先に伏線ファイルとして設定してください。',
         };
       }
 
@@ -389,8 +399,13 @@ export class ForeshadowingService {
       }
 
       const fileItem = meta.files[fileIndex];
-      if (fileItem === undefined || !fileItem.foreshadowing) {
-        return { success: false, message: '伏線データが見つかりません' };
+      if (fileItem === undefined) {
+        return { success: false, message: 'ファイルアイテムが見つかりません' };
+      }
+
+      // 型ガードで伏線ファイルであることを確認
+      if (!isForeshadowingItem(fileItem)) {
+        return { success: false, message: 'ファイルが伏線ファイルではありません' };
       }
 
       // 回収位置を削除（空の値に設定）

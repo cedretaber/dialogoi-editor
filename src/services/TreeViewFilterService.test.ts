@@ -6,6 +6,11 @@ import { ReferenceManager } from './ReferenceManager.js';
 import { TestServiceContainer } from '../di/TestServiceContainer.js';
 import { ServiceContainer } from '../di/ServiceContainer.js';
 import { MockFileRepository } from '../repositories/MockFileRepository.js';
+import {
+  createContentItem,
+  createSettingItem,
+  createSubdirectoryItem,
+} from '../test/testHelpers.js';
 
 suite('TreeViewFilterService テストスイート', () => {
   let filterService: TreeViewFilterService;
@@ -115,42 +120,36 @@ suite('TreeViewFilterService テストスイート', () => {
 
   suite('タグフィルタリング機能', () => {
     const testItems: DialogoiTreeItem[] = [
-      {
+      createContentItem({
         name: 'chapter1.md',
-        type: 'content',
         path: '/test/chapter1.md',
         tags: ['主人公', '冒険'],
-      },
-      {
+      }),
+      createContentItem({
         name: 'chapter2.md',
-        type: 'content',
         path: '/test/chapter2.md',
         tags: ['バトル', '魔法'],
-      },
-      {
+      }),
+      createSettingItem({
         name: 'character1.md',
-        type: 'setting',
         path: '/test/character1.md',
         tags: ['主人公', 'キャラクター'],
-      },
-      {
+      }),
+      createSettingItem({
         name: 'character2.md',
-        type: 'setting',
         path: '/test/character2.md',
         tags: ['敵', 'キャラクター'],
-      },
-      {
+      }),
+      createSettingItem({
         name: 'settings.md',
-        type: 'setting',
         path: '/test/settings.md',
         tags: ['世界観'],
-      },
-      {
+      }),
+      createContentItem({
         name: 'noTags.md',
-        type: 'content',
         path: '/test/noTags.md',
-        // tagsプロパティなし
-      },
+        tags: [],
+      }),
     ];
 
     test('フィルターなしで全てのファイルが返される', () => {
@@ -194,12 +193,11 @@ suite('TreeViewFilterService テストスイート', () => {
     test('大文字小文字を無視してフィルタリング', () => {
       // 英語の大文字小文字で検証
       const englishTestItems: DialogoiTreeItem[] = [
-        {
+        createContentItem({
           name: 'hero.md',
-          type: 'content',
           path: '/test/hero.md',
           tags: ['Hero', 'Adventure'],
-        },
+        }),
       ];
 
       filterService.setTagFilter('hero');
@@ -227,24 +225,20 @@ suite('TreeViewFilterService テストスイート', () => {
 
   suite('参照関係フィルタリング機能', () => {
     const testItems: DialogoiTreeItem[] = [
-      {
+      createContentItem({
         name: 'chapter1.md',
-        type: 'content',
         path: '/test/chapter1.md',
         references: ['character1.md', 'settings.md'],
-      },
-      {
+      }),
+      createContentItem({
         name: 'chapter2.md',
-        type: 'content',
         path: '/test/chapter2.md',
         references: ['character2.md', 'magic.md'],
-      },
-      {
+      }),
+      createSettingItem({
         name: 'character1.md',
-        type: 'setting',
         path: '/test/character1.md',
-        // referencesプロパティなし
-      },
+      }),
     ];
 
     test('参照関係でフィルタリング', () => {
@@ -283,21 +277,18 @@ suite('TreeViewFilterService テストスイート', () => {
 
   suite('ファイル種別フィルタリング機能', () => {
     const testItems: DialogoiTreeItem[] = [
-      {
+      createContentItem({
         name: 'chapter1.md',
-        type: 'content',
         path: '/test/chapter1.md',
-      },
-      {
+      }),
+      createSettingItem({
         name: 'character1.md',
-        type: 'setting',
         path: '/test/character1.md',
-      },
-      {
+      }),
+      createSubdirectoryItem({
         name: 'subdir',
-        type: 'subdirectory',
         path: '/test/subdir',
-      },
+      }),
     ];
 
     test('contentタイプでフィルタリング', () => {
@@ -335,7 +326,7 @@ suite('TreeViewFilterService テストスイート', () => {
     test('空のフィルター値では全てのアイテムが返される', () => {
       filterService.setTagFilter('');
       const testItems: DialogoiTreeItem[] = [
-        { name: 'test.md', type: 'content', path: '/test.md', tags: ['tag1'] },
+        createContentItem({ name: 'test.md', path: '/test.md', tags: ['tag1'] }),
       ];
       const result = filterService.applyFilter(testItems);
       assert.strictEqual(result.length, 1);
@@ -343,13 +334,12 @@ suite('TreeViewFilterService テストスイート', () => {
 
     test('フィルター種別を変更しても正しく動作する', () => {
       const testItems: DialogoiTreeItem[] = [
-        {
+        createContentItem({
           name: 'test.md',
-          type: 'content',
           path: '/test.md',
           tags: ['hero'],
           references: ['char.md'],
-        },
+        }),
       ];
 
       // タグフィルター

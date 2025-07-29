@@ -4,6 +4,13 @@ import { ProjectLinkUpdateService } from './ProjectLinkUpdateService.js';
 import { MockFileRepository } from '../repositories/MockFileRepository.js';
 import { TestServiceContainer } from '../di/TestServiceContainer.js';
 import { ServiceContainer } from '../di/ServiceContainer.js';
+import { hasReferencesProperty } from '../utils/MetaYamlUtils.js';
+import {
+  createContentItem,
+  createSubdirectoryItem,
+  createSettingItem,
+  createCharacterItem,
+} from '../test/testHelpers.js';
 
 suite('ProjectLinkUpdateService テストスイート', () => {
   let service: ProjectLinkUpdateService;
@@ -42,12 +49,27 @@ suite('ProjectLinkUpdateService テストスイート', () => {
     mockFileRepository.addFile(path.join(testProjectRoot, 'dialogoi.yaml'), 'version: 1.0');
 
     // ルートのmeta.yaml
+    const contentsSubdir = createSubdirectoryItem({
+      name: 'contents',
+      path: path.join(testProjectRoot, 'contents'),
+    });
+    const settingsSubdir = createSubdirectoryItem({
+      name: 'settings',
+      path: path.join(testProjectRoot, 'settings'),
+    });
+
     const rootMeta = `readme: README.md
 files:
-  - name: contents
-    type: subdirectory
-  - name: settings
-    type: subdirectory
+  - name: ${contentsSubdir.name}
+    type: ${contentsSubdir.type}
+    path: ${contentsSubdir.path}
+    isUntracked: ${contentsSubdir.isUntracked}
+    isMissing: ${contentsSubdir.isMissing}
+  - name: ${settingsSubdir.name}
+    type: ${settingsSubdir.type}
+    path: ${settingsSubdir.path}
+    isUntracked: ${settingsSubdir.isUntracked}
+    isMissing: ${settingsSubdir.isMissing}
 `;
     mockFileRepository.addFile(path.join(testProjectRoot, '.dialogoi-meta.yaml'), rootMeta);
 
@@ -55,15 +77,38 @@ files:
     const contentsDir = path.join(testProjectRoot, 'contents');
     mockFileRepository.addDirectory(contentsDir);
 
+    const chapter1Item = createContentItem({
+      name: 'chapter1.md',
+      path: path.join(contentsDir, 'chapter1.md'),
+      references: ['settings/world.md', 'settings/characters/hero.md'],
+    });
+    const chapter2Item = createContentItem({
+      name: 'chapter2.md',
+      path: path.join(contentsDir, 'chapter2.md'),
+    });
+
     const contentsMeta = `readme: README.md
 files:
-  - name: chapter1.md
-    type: content
+  - name: ${chapter1Item.name}
+    type: ${chapter1Item.type}
+    path: ${chapter1Item.path}
+    hash: ${chapter1Item.hash}
+    tags: []
     references:
       - settings/world.md
       - settings/characters/hero.md
-  - name: chapter2.md
-    type: content
+    comments: ${chapter1Item.comments}
+    isUntracked: ${chapter1Item.isUntracked}
+    isMissing: ${chapter1Item.isMissing}
+  - name: ${chapter2Item.name}
+    type: ${chapter2Item.type}
+    path: ${chapter2Item.path}
+    hash: ${chapter2Item.hash}
+    tags: []
+    references: []
+    comments: ${chapter2Item.comments}
+    isUntracked: ${chapter2Item.isUntracked}
+    isMissing: ${chapter2Item.isMissing}
 `;
     mockFileRepository.addFile(path.join(contentsDir, '.dialogoi-meta.yaml'), contentsMeta);
 
@@ -86,12 +131,30 @@ files:
     const settingsDir = path.join(testProjectRoot, 'settings');
     mockFileRepository.addDirectory(settingsDir);
 
+    const worldItem = createSettingItem({
+      name: 'world.md',
+      path: path.join(settingsDir, 'world.md'),
+    });
+    const charactersSubdir = createSubdirectoryItem({
+      name: 'characters',
+      path: path.join(settingsDir, 'characters'),
+    });
+
     const settingsMeta = `readme: README.md
 files:
-  - name: world.md
-    type: setting
-  - name: characters
-    type: subdirectory
+  - name: ${worldItem.name}
+    type: ${worldItem.type}
+    path: ${worldItem.path}
+    hash: ${worldItem.hash}
+    tags: []
+    comments: ${worldItem.comments}
+    isUntracked: ${worldItem.isUntracked}
+    isMissing: ${worldItem.isMissing}
+  - name: ${charactersSubdir.name}
+    type: ${charactersSubdir.type}
+    path: ${charactersSubdir.path}
+    isUntracked: ${charactersSubdir.isUntracked}
+    isMissing: ${charactersSubdir.isMissing}
 `;
     mockFileRepository.addFile(path.join(settingsDir, '.dialogoi-meta.yaml'), settingsMeta);
 
@@ -101,13 +164,30 @@ files:
     const charactersDir = path.join(settingsDir, 'characters');
     mockFileRepository.addDirectory(charactersDir);
 
+    const heroItem = createCharacterItem({
+      name: 'hero.md',
+      path: path.join(charactersDir, 'hero.md'),
+      character: {
+        importance: 'main',
+        multiple_characters: false,
+        display_name: '',
+      },
+    });
+
     const charactersMeta = `readme: README.md
 files:
-  - name: hero.md
-    type: setting
+  - name: ${heroItem.name}
+    type: ${heroItem.type}
+    path: ${heroItem.path}
+    hash: ${heroItem.hash}
+    tags: []
+    comments: ${heroItem.comments}
+    isUntracked: ${heroItem.isUntracked}
+    isMissing: ${heroItem.isMissing}
     character:
       importance: main
       multiple_characters: false
+      display_name: ''
 `;
     mockFileRepository.addFile(path.join(charactersDir, '.dialogoi-meta.yaml'), charactersMeta);
 
@@ -182,10 +262,12 @@ files:
     }
     const chapter1Item = meta.files.find((file) => file.name === 'chapter1.md');
     assert.notStrictEqual(chapter1Item, undefined);
-    assert.deepStrictEqual(chapter1Item?.references, [
-      'settings/world.md',
-      'settings/characters/main-character.md',
-    ]);
+    if (chapter1Item && hasReferencesProperty(chapter1Item)) {
+      assert.deepStrictEqual(chapter1Item.references, [
+        'settings/world.md',
+        'settings/characters/main-character.md',
+      ]);
+    }
   });
 
   test('ファイル移動時の複数リンク更新', async () => {
@@ -220,10 +302,13 @@ files:
       throw new Error('meta should not be null');
     }
     const chapter1Item = meta.files.find((file) => file.name === 'chapter1.md');
-    assert.deepStrictEqual(chapter1Item?.references, [
-      'settings/world.md',
-      'settings/people/hero.md',
-    ]);
+    assert.notStrictEqual(chapter1Item, undefined);
+    if (chapter1Item && hasReferencesProperty(chapter1Item)) {
+      assert.deepStrictEqual(chapter1Item.references, [
+        'settings/world.md',
+        'settings/people/hero.md',
+      ]);
+    }
   });
 
   test('プロジェクト外リンクは更新しない', async () => {

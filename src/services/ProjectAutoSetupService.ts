@@ -352,7 +352,13 @@ export class ProjectAutoSetupService {
             name: fileName,
             type: fileType,
             path: filePath,
-          };
+            isUntracked: false,
+            isMissing: false,
+            hash: 'default-hash',
+            tags: [],
+            references: fileType === 'content' ? [] : undefined,
+            comments: `.${fileName}.comments.yaml`,
+          } as DialogoiTreeItem;
 
           metaYaml.files.push(newEntry);
           registeredFiles++;
@@ -372,6 +378,8 @@ export class ProjectAutoSetupService {
                 name: dirName,
                 type: 'subdirectory',
                 path: subDirPath,
+                isUntracked: false,
+                isMissing: false,
               };
 
               metaYaml.files.push(newDirEntry);

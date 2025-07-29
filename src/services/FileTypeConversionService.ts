@@ -1,7 +1,7 @@
 import { FileRepository } from '../repositories/FileRepository.js';
 import { MetaYamlService } from './MetaYamlService.js';
 import { FileChangeNotificationService } from './FileChangeNotificationService.js';
-import { DialogoiTreeItem, MetaYaml } from '../utils/MetaYamlUtils.js';
+import { DialogoiTreeItem, MetaYaml, ContentItem, SettingItem } from '../utils/MetaYamlUtils.js';
 import { Logger } from '../utils/Logger.js';
 import * as path from 'path';
 
@@ -118,10 +118,7 @@ export class FileTypeConversionService {
       }
 
       // 6. meta.yamlでファイル種別を更新
-      const updatedFileEntry: DialogoiTreeItem = {
-        ...fileEntry,
-        type: newType,
-      };
+      const updatedFileEntry: DialogoiTreeItem = this.convertFileTypeInternal(fileEntry, newType);
 
       if (!Array.isArray(metaYaml.files)) {
         return {
@@ -461,6 +458,51 @@ export class FileTypeConversionService {
         `[FileTypeConversion] isFileTypeConvertibleでエラー: ${error instanceof Error ? error.message : String(error)}`,
       );
       return false;
+    }
+  }
+
+  /**
+   * ファイル種別を変換する（メタデータの適切な変換を行う）
+   * @param sourceItem 変換元のファイルアイテム
+   * @param newType 新しいファイル種別
+   * @returns 変換後のファイルアイテム
+   */
+  private convertFileTypeInternal(
+    sourceItem: DialogoiTreeItem,
+    newType: 'content' | 'setting',
+  ): DialogoiTreeItem {
+    // 基本プロパティは保持
+    // 型ガードを使用してプロパティに安全にアクセス
+    const hash = 'hash' in sourceItem ? sourceItem.hash : '';
+    const tags = 'tags' in sourceItem ? sourceItem.tags : [];
+    const comments = 'comments' in sourceItem ? sourceItem.comments : '';
+
+    const baseProperties = {
+      name: sourceItem.name,
+      path: sourceItem.path,
+      hash: hash,
+      tags: tags,
+      comments: comments,
+      isUntracked: sourceItem.isUntracked,
+      isMissing: sourceItem.isMissing,
+    };
+
+    if (newType === 'content') {
+      // setting → content: referencesを空配列で初期化
+      const contentItem: ContentItem = {
+        ...baseProperties,
+        type: 'content',
+        references: [], // 新規初期化
+      };
+      return contentItem;
+    } else {
+      // content → setting: referencesを除去、特別な種別情報も除去
+      const settingItem: SettingItem = {
+        ...baseProperties,
+        type: 'setting',
+        // references, character, foreshadowing, glossary は含めない
+      };
+      return settingItem;
     }
   }
 }

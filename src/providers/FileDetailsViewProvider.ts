@@ -1,6 +1,13 @@
 import * as vscode from 'vscode';
 import * as path from 'path';
-import { DialogoiTreeItem } from '../utils/MetaYamlUtils.js';
+import {
+  DialogoiTreeItem,
+  hasTagsProperty,
+  hasReferencesProperty,
+  hasCharacterProperty,
+  isGlossaryItem,
+  isForeshadowingItem,
+} from '../utils/MetaYamlUtils.js';
 import { Logger } from '../utils/Logger.js';
 import { DialogoiTreeDataProvider } from '../tree/DialogoiTreeDataProvider.js';
 import { MetaYamlService } from '../services/MetaYamlService.js';
@@ -299,16 +306,26 @@ export class FileDetailsViewProvider implements vscode.WebviewViewProvider {
         if (meta) {
           const fileItem = meta.files.find((item) => item.name === fileName);
           if (fileItem) {
+            // 型ガードを使って安全にプロパティアクセス
+            const tags = hasTagsProperty(fileItem) ? fileItem.tags : [];
+            const references = hasReferencesProperty(fileItem) ? fileItem.references : [];
+            const character = hasCharacterProperty(fileItem) ? fileItem.character : undefined;
+            const glossary = isGlossaryItem(fileItem) ? fileItem.glossary : undefined;
+            const foreshadowing = isForeshadowingItem(fileItem)
+              ? fileItem.foreshadowing
+              : undefined;
+
             // 現在のアイテムを最新データで更新
-            return {
+            const updatedItem: DialogoiTreeItem = {
               ...this.currentItem,
               type: fileItem.type, // 重要：種別変更を反映
-              tags: fileItem.tags || [],
-              references: fileItem.references || [],
-              character: fileItem.character,
-              glossary: fileItem.glossary,
-              foreshadowing: fileItem.foreshadowing,
-            };
+              tags,
+              references,
+              character,
+              glossary,
+              foreshadowing,
+            } as DialogoiTreeItem;
+            return updatedItem;
           }
         }
       }
@@ -539,10 +556,10 @@ export class FileDetailsViewProvider implements vscode.WebviewViewProvider {
             name: item.name,
             type: item.type,
             path: relativePath ?? item.path, // 相対パスが取得できない場合は絶対パスを使用
-            tags: item.tags,
-            character: item.character,
+            tags: hasTagsProperty(item) ? item.tags : [],
+            character: hasCharacterProperty(item) ? item.character : undefined,
             referenceData: referenceData,
-            foreshadowing: item.foreshadowing,
+            foreshadowing: isForeshadowingItem(item) ? item.foreshadowing : undefined,
           }
         : null;
 
@@ -909,7 +926,7 @@ export class FileDetailsViewProvider implements vscode.WebviewViewProvider {
         .replace(/\\/g, '/');
 
       // 参照元ファイルのmeta.yamlから現在のファイルへの参照を削除
-      const success = await this.metaYamlService?.removeFileReferenceAsync(
+      const success = await this.metaYamlService?.removeFileReference(
         referenceSourceDirPath,
         referenceSourceFileName,
         currentFileRelativePath,
@@ -994,7 +1011,7 @@ export class FileDetailsViewProvider implements vscode.WebviewViewProvider {
       const dirPath = path.dirname(this.currentItem.path || '');
       const fileName = this.currentItem.name;
 
-      const success = await this.metaYamlService?.removeFileCharacterAsync(dirPath, fileName);
+      const success = await this.metaYamlService?.removeFileCharacter(dirPath, fileName);
       if (success === true) {
         this.logger.info(`キャラクター情報削除: ${fileName}`);
         vscode.window.showInformationMessage('キャラクター情報を削除しました');

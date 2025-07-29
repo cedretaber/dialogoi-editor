@@ -44,7 +44,8 @@ author: "テスト著者"`;
 
     test('不正なYAML形式の場合nullを返す', () => {
       const yamlContent = `title: "テスト小説"
-  author: "テスト著者"`;
+author: "テスト著者"
+invalid: yaml: syntax`;
 
       const result = DialogoiYamlUtils.parseDialogoiYaml(yamlContent);
 

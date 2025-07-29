@@ -13,6 +13,10 @@ files:
       - 主人公
       - 古代魔法
       - 長期伏線
+    hash: ''
+    comments: ''
+    isUntracked: false
+    isMissing: false
   - name: academy_secret.md
     type: setting
     foreshadowing:
@@ -26,6 +30,10 @@ files:
       - 魔法学院
       - 秘密
       - 中期伏線
+    hash: ''
+    comments: ''
+    isUntracked: false
+    isMissing: false
   - name: ancient_prophecy.md
     type: setting
     foreshadowing:
@@ -39,3 +47,7 @@ files:
       - 予言
       - 運命
       - 長期伏線
+    hash: ''
+    comments: ''
+    isUntracked: false
+    isMissing: false

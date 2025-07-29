@@ -1,5 +1,10 @@
 import * as path from 'path';
-import { DialogoiTreeItem } from '../utils/MetaYamlUtils.js';
+import {
+  DialogoiTreeItem,
+  hasCharacterProperty,
+  isGlossaryItem,
+  isForeshadowingItem,
+} from '../utils/MetaYamlUtils.js';
 import { MetaYamlService } from './MetaYamlService.js';
 import { CoreFileService } from './CoreFileService.js';
 
@@ -68,11 +73,11 @@ export class FilePathMapService {
 
       const entry: FileMapEntry = {
         fileName: item.name,
-        isCharacter: item.character !== undefined,
+        isCharacter: hasCharacterProperty(item),
         relativePathFromRoot: normalizedPath,
         fileType: item.type,
-        glossary: item.glossary,
-        foreshadowing: item.foreshadowing !== undefined,
+        glossary: isGlossaryItem(item) ? item.glossary : undefined,
+        foreshadowing: isForeshadowingItem(item),
       };
 
       this.fileMap.set(normalizedPath, entry);
@@ -247,11 +252,11 @@ export class FilePathMapService {
       // ファイル追加・更新
       const entry: FileMapEntry = {
         fileName: item.name,
-        isCharacter: item.character !== undefined,
+        isCharacter: hasCharacterProperty(item),
         relativePathFromRoot,
         fileType: item.type,
-        glossary: item.glossary,
-        foreshadowing: item.foreshadowing !== undefined,
+        glossary: isGlossaryItem(item) ? item.glossary : undefined,
+        foreshadowing: isForeshadowingItem(item),
       };
       this.fileMap.set(relativePathFromRoot, entry);
     }

@@ -1,6 +1,13 @@
 import { FileRepository } from '../repositories/FileRepository.js';
 import { MetaYamlService } from './MetaYamlService.js';
-import { DialogoiTreeItem, MetaYaml } from '../utils/MetaYamlUtils.js';
+import {
+  DialogoiTreeItem,
+  MetaYaml,
+  hasCharacterProperty,
+  isForeshadowingItem,
+  CharacterItem,
+  ForeshadowingItem,
+} from '../utils/MetaYamlUtils.js';
 import { ForeshadowingData } from './ForeshadowingService.js';
 import * as path from 'path';
 
@@ -32,7 +39,7 @@ export class FileManagementService {
    */
   async addFileToManagement(
     absoluteFilePath: string,
-    fileType: 'content' | 'setting',
+    fileType: 'content' | 'setting' | 'subdirectory',
   ): Promise<FileManagementResult> {
     try {
       // ファイルの存在確認
@@ -66,12 +73,42 @@ export class FileManagementService {
         };
       }
 
-      // 新しいエントリを作成
-      const newEntry: DialogoiTreeItem = {
-        name: fileName,
-        type: fileType,
-        path: absoluteFilePath,
-      };
+      // 新しいエントリを作成（型に応じて必須フィールドを設定）
+      let newEntry: DialogoiTreeItem;
+
+      if (fileType === 'subdirectory') {
+        newEntry = {
+          name: fileName,
+          type: 'subdirectory',
+          path: absoluteFilePath,
+          isUntracked: false,
+          isMissing: false,
+        };
+      } else if (fileType === 'content') {
+        newEntry = {
+          name: fileName,
+          type: 'content',
+          path: absoluteFilePath,
+          hash: 'default-hash',
+          tags: [],
+          references: [],
+          comments: `.${fileName}.comments.yaml`,
+          isUntracked: false,
+          isMissing: false,
+        };
+      } else {
+        // setting
+        newEntry = {
+          name: fileName,
+          type: 'setting',
+          path: absoluteFilePath,
+          hash: 'default-hash',
+          tags: [],
+          comments: `.${fileName}.comments.yaml`,
+          isUntracked: false,
+          isMissing: false,
+        };
+      }
 
       // meta.yamlに追加
       metaYaml.files.push(newEntry);
@@ -282,13 +319,22 @@ export class FileManagementService {
 
         const fileItem = meta.files[fileIndex];
         if (fileItem !== undefined) {
-          if (!fileItem.character) {
-            fileItem.character = {
-              importance: importance,
-              multiple_characters: false,
-            };
-          } else {
+          // キャラクターファイルの場合のみ処理
+          if (hasCharacterProperty(fileItem)) {
             fileItem.character.importance = importance;
+          } else if (fileItem.type === 'setting') {
+            // settingファイルをcharacterファイルに変換するため、新しいCharacterItemを作成
+            const characterItem: CharacterItem = {
+              ...fileItem,
+              character: {
+                importance: importance,
+                multiple_characters: false,
+                display_name: fileItem.name,
+              },
+            };
+            meta.files[fileIndex] = characterItem;
+          } else {
+            throw new Error(`${fileName} はsettingファイルではありません。`);
           }
         }
         return meta;
@@ -332,13 +378,22 @@ export class FileManagementService {
 
         const fileItem = meta.files[fileIndex];
         if (fileItem !== undefined) {
-          if (!fileItem.character) {
-            fileItem.character = {
-              importance: 'sub',
-              multiple_characters: multipleCharacters,
-            };
-          } else {
+          // キャラクターファイルの場合のみ処理
+          if (hasCharacterProperty(fileItem)) {
             fileItem.character.multiple_characters = multipleCharacters;
+          } else if (fileItem.type === 'setting') {
+            // settingファイルをcharacterファイルに変換するため、新しいCharacterItemを作成
+            const characterItem: CharacterItem = {
+              ...fileItem,
+              character: {
+                importance: 'sub',
+                multiple_characters: multipleCharacters,
+                display_name: fileItem.name,
+              },
+            };
+            meta.files[fileIndex] = characterItem;
+          } else {
+            throw new Error(`${fileName} はsettingファイルではありません。`);
           }
         }
         return meta;
@@ -377,7 +432,12 @@ export class FileManagementService {
 
         const fileItem = meta.files[fileIndex];
         if (fileItem !== undefined) {
-          delete fileItem.character;
+          // キャラクターファイルの場合のみ処理
+          if (hasCharacterProperty(fileItem)) {
+            // 型安全にcharacterプロパティを削除
+            const { character, ...restItem } = fileItem;
+            meta.files[fileIndex] = restItem;
+          }
         }
         return meta;
       });
@@ -420,10 +480,23 @@ export class FileManagementService {
 
         const fileItem = meta.files[fileIndex];
         if (fileItem !== undefined) {
-          fileItem.foreshadowing = {
-            plants: foreshadowingData.plants,
-            payoff: foreshadowingData.payoff,
-          };
+          // 伏線ファイルの場合のみ処理
+          if (isForeshadowingItem(fileItem)) {
+            fileItem.foreshadowing = {
+              plants: foreshadowingData.plants,
+              payoff: foreshadowingData.payoff,
+            };
+          } else if (fileItem.type === 'setting') {
+            // settingファイルを伏線ファイルに変換
+            const foreshadowingItem: ForeshadowingItem = {
+              ...fileItem,
+              foreshadowing: {
+                plants: foreshadowingData.plants,
+                payoff: foreshadowingData.payoff,
+              },
+            };
+            meta.files[fileIndex] = foreshadowingItem;
+          }
         }
         return meta;
       });
@@ -461,7 +534,12 @@ export class FileManagementService {
 
         const fileItem = meta.files[fileIndex];
         if (fileItem !== undefined) {
-          delete fileItem.foreshadowing;
+          // 伏線ファイルの場合のみ処理
+          if (isForeshadowingItem(fileItem)) {
+            // 型安全にforeshadowingプロパティを削除
+            const { foreshadowing, ...restItem } = fileItem;
+            meta.files[fileIndex] = restItem;
+          }
         }
         return meta;
       });

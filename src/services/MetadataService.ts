@@ -1,5 +1,10 @@
 import { FileOperationResult } from './CoreFileService.js';
-import { MetaYaml, DialogoiTreeItem } from '../utils/MetaYamlUtils.js';
+import {
+  MetaYaml,
+  DialogoiTreeItem,
+  hasTagsProperty,
+  hasReferencesProperty,
+} from '../utils/MetaYamlUtils.js';
 import { MetaYamlService } from './MetaYamlService.js';
 import * as path from 'path';
 
@@ -22,12 +27,12 @@ export class MetadataService {
         }
 
         const fileItem = meta.files[fileIndex];
-        if (fileItem && fileItem.tags) {
+        if (fileItem && hasTagsProperty(fileItem)) {
           if (!fileItem.tags.includes(tag)) {
             fileItem.tags.push(tag);
           }
-        } else if (fileItem) {
-          fileItem.tags = [tag];
+        } else {
+          throw new Error(`ファイル ${fileName} はタグをサポートしていません。`);
         }
         return meta;
       });
@@ -53,8 +58,10 @@ export class MetadataService {
         }
 
         const fileItem = meta.files[fileIndex];
-        if (fileItem && fileItem.tags) {
+        if (fileItem && hasTagsProperty(fileItem)) {
           fileItem.tags = fileItem.tags.filter((t) => t !== tagId);
+        } else {
+          throw new Error(`ファイル ${fileName} はタグをサポートしていません。`);
         }
         return meta;
       });
@@ -80,8 +87,10 @@ export class MetadataService {
         }
 
         const fileItem = meta.files[fileIndex];
-        if (fileItem) {
+        if (fileItem && hasTagsProperty(fileItem)) {
           fileItem.tags = tags;
+        } else {
+          throw new Error(`ファイル ${fileName} はタグをサポートしていません。`);
         }
         return meta;
       });
@@ -111,12 +120,12 @@ export class MetadataService {
         }
 
         const fileItem = meta.files[fileIndex];
-        if (fileItem && fileItem.references) {
+        if (fileItem && hasReferencesProperty(fileItem)) {
           if (!fileItem.references.includes(targetPath)) {
             fileItem.references.push(targetPath);
           }
-        } else if (fileItem) {
-          fileItem.references = [targetPath];
+        } else {
+          throw new Error(`ファイル ${fileName} は参照をサポートしていません。`);
         }
         return meta;
       });
@@ -146,8 +155,10 @@ export class MetadataService {
         }
 
         const fileItem = meta.files[fileIndex];
-        if (fileItem && fileItem.references) {
+        if (fileItem && hasReferencesProperty(fileItem)) {
           fileItem.references = fileItem.references.filter((ref) => ref !== targetPath);
+        } else {
+          throw new Error(`ファイル ${fileName} は参照をサポートしていません。`);
         }
         return meta;
       });
@@ -177,8 +188,10 @@ export class MetadataService {
         }
 
         const fileItem = meta.files[fileIndex];
-        if (fileItem) {
+        if (fileItem && hasReferencesProperty(fileItem)) {
           fileItem.references = references;
+        } else {
+          throw new Error(`ファイル ${fileName} は参照をサポートしていません。`);
         }
         return meta;
       });

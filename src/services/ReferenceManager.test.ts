@@ -46,8 +46,14 @@ suite('ReferenceManager テストスイート', () => {
 files:
   - name: contents
     type: subdirectory
+    path: /tmp/dialogoi-ref-test/contents
+    isUntracked: false
+    isMissing: false
   - name: settings
     type: subdirectory
+    path: /tmp/dialogoi-ref-test/settings
+    isUntracked: false
+    isMissing: false
 `;
     mockFileRepository.addFile(path.join(testDir, '.dialogoi-meta.yaml'), rootMeta);
 
@@ -59,13 +65,25 @@ files:
 files:
   - name: chapter1.txt
     type: content
+    path: /tmp/dialogoi-ref-test/contents/chapter1.txt
+    hash: hash1
+    tags: []
     references:
       - settings/world.md
       - settings/characters/hero.md
+    comments: ''
+    isUntracked: false
+    isMissing: false
   - name: chapter2.txt
     type: content
+    path: /tmp/dialogoi-ref-test/contents/chapter2.txt
+    hash: hash2
+    tags: []
     references:
       - settings/magic.md
+    comments: ''
+    isUntracked: false
+    isMissing: false
 `;
     mockFileRepository.addFile(path.join(contentsDir, '.dialogoi-meta.yaml'), contentsMeta);
     mockFileRepository.addFile(path.join(contentsDir, 'chapter1.txt'), 'Chapter 1 content');
@@ -79,10 +97,25 @@ files:
 files:
   - name: world.md
     type: setting
+    path: /tmp/dialogoi-ref-test/settings/world.md
+    hash: hash3
+    tags: []
+    comments: ''
+    isUntracked: false
+    isMissing: false
   - name: magic.md
     type: setting
+    path: /tmp/dialogoi-ref-test/settings/magic.md
+    hash: hash4
+    tags: []
+    comments: ''
+    isUntracked: false
+    isMissing: false
   - name: characters
     type: subdirectory
+    path: /tmp/dialogoi-ref-test/settings/characters
+    isUntracked: false
+    isMissing: false
 `;
     mockFileRepository.addFile(path.join(settingsDir, '.dialogoi-meta.yaml'), settingsMeta);
     mockFileRepository.addFile(path.join(settingsDir, 'world.md'), 'World setting');
@@ -96,9 +129,16 @@ files:
 files:
   - name: hero.md
     type: setting
+    path: /tmp/dialogoi-ref-test/settings/characters/hero.md
+    hash: hash5
+    tags: []
+    comments: ''
+    isUntracked: false
+    isMissing: false
     character:
       importance: main
       multiple_characters: false
+      display_name: ''
 `;
     mockFileRepository.addFile(path.join(charactersDir, '.dialogoi-meta.yaml'), charactersMeta);
     mockFileRepository.addFile(path.join(charactersDir, 'hero.md'), 'Hero character');

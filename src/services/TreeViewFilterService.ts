@@ -1,4 +1,4 @@
-import { DialogoiTreeItem } from '../utils/MetaYamlUtils.js';
+import { DialogoiTreeItem, hasTagsProperty } from '../utils/MetaYamlUtils.js';
 import { Logger } from '../utils/Logger.js';
 import { ReferenceManager } from './ReferenceManager.js';
 
@@ -110,15 +110,15 @@ export class TreeViewFilterService {
     );
 
     const result = items.filter((item) => {
-      if (!item.tags || item.tags.length === 0) {
+      if (!hasTagsProperty(item) || item.tags.length === 0) {
         this.logger.info(`  ${item.name}: タグなし → 除外`);
         return false;
       }
 
       // 部分一致・大文字小文字無視でフィルタリング
-      const hasMatchingTag = item.tags.some((tag) => tag.toLowerCase().includes(tagValue));
+      const hasMatchingTag = item.tags.some((tag: string) => tag.toLowerCase().includes(tagValue));
       this.logger.info(
-        `  ${item.name}: tags=${JSON.stringify(item.tags)} → ${hasMatchingTag ? '含む' : '除外'}`,
+        `  ${item.name}: tags=${JSON.stringify(hasTagsProperty(item) ? item.tags : [])} → ${hasMatchingTag ? '含む' : '除外'}`,
       );
       return hasMatchingTag;
     });

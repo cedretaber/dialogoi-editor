@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 import { DialogoiTreeDataProvider } from '../tree/DialogoiTreeDataProvider.js';
-import { DialogoiTreeItem } from '../utils/MetaYamlUtils.js';
+import { DialogoiTreeItem, hasTagsProperty } from '../utils/MetaYamlUtils.js';
 
 /**
  * タグ関連のコマンドを登録
@@ -56,14 +56,22 @@ export function registerTagCommands(
         return;
       }
 
-      const currentTags = item.tags || [];
+      // サブディレクトリにはタグがない
+      if (!hasTagsProperty(item)) {
+        vscode.window.showInformationMessage(
+          `${item.name} にはタグを設定できません（コンテンツ・設定ファイルのみ対応）。`,
+        );
+        return;
+      }
+
+      const currentTags = item.tags;
       if (currentTags.length === 0) {
         vscode.window.showInformationMessage(`${item.name} にはタグが設定されていません。`);
         return;
       }
 
       const tagToRemove = await vscode.window.showQuickPick(
-        currentTags.map((tag) => ({ label: `#${tag}`, value: tag })),
+        currentTags.map((tag: string) => ({ label: `#${tag}`, value: tag })),
         {
           placeHolder: '削除するタグを選択してください',
         },
@@ -73,8 +81,8 @@ export function registerTagCommands(
         return;
       }
 
-      // valueプロパティからタグ名を取得
-      const tagName = tagToRemove.value;
+      // QuickPickItemのvalueプロパティからタグ名を取得
+      const tagName = (tagToRemove as { label: string; value: string }).value;
 
       const dirPath = treeDataProvider.getDirectoryPath(item);
       const result = await treeDataProvider.removeTag(dirPath, item.name, tagName);
@@ -96,7 +104,15 @@ export function registerTagCommands(
         return;
       }
 
-      const currentTags = item.tags || [];
+      // サブディレクトリにはタグがない
+      if (!hasTagsProperty(item)) {
+        vscode.window.showInformationMessage(
+          `${item.name} にはタグを設定できません（コンテンツ・設定ファイルのみ対応）。`,
+        );
+        return;
+      }
+
+      const currentTags = item.tags;
       const currentTagsStr = currentTags.length > 0 ? currentTags.join(', ') : '';
 
       const newTagsStr = await vscode.window.showInputBox({

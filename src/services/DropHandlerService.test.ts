@@ -43,8 +43,14 @@ tags: []`,
         `files:
   - name: chapter1.txt
     type: content
-    order: 1
-    references: []`,
+    path: /test/project/contents/chapter1.txt
+    hash: hash123
+    tags: []
+    references: []
+    comments: '.chapter1.txt.comments.yaml'
+    isUntracked: false
+    isMissing: false
+    order: 1`,
       );
 
       // 設定ファイル
@@ -54,6 +60,12 @@ tags: []`,
         `files:
   - name: character1.md
     type: setting
+    path: /test/project/settings/character1.md
+    hash: hash456
+    tags: []
+    comments: '.character1.md.comments.yaml'
+    isUntracked: false
+    isMissing: false
     subtype: character
     order: 1`,
       );
@@ -107,9 +119,15 @@ tags: []`,
         `files:
   - name: chapter1.txt
     type: content
-    order: 1
+    path: /test/project/contents/chapter1.txt
+    hash: hash789
+    tags: []
     references:
-      - settings/character1.md`,
+      - settings/character1.md
+    comments: '.chapter1.txt.comments.yaml'
+    isUntracked: false
+    isMissing: false
+    order: 1`,
       );
 
       // 設定ファイル
@@ -160,6 +178,12 @@ tags: []`,
         `files:
   - name: overview.md
     type: setting
+    path: /test/project/settings/overview.md
+    hash: hash_overview
+    tags: []
+    comments: '.overview.md.comments.yaml'
+    isUntracked: false
+    isMissing: false
     order: 1`,
       );
 
@@ -170,6 +194,12 @@ tags: []`,
         `files:
   - name: hero.md
     type: setting
+    path: /test/project/settings/characters/hero.md
+    hash: hash_hero
+    tags: []
+    comments: '.hero.md.comments.yaml'
+    isUntracked: false
+    isMissing: false
     subtype: character
     order: 1`,
       );

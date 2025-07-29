@@ -110,26 +110,58 @@ export class CoreFileService {
 
       // メタデータを更新
       const result = await this.updateMetaYaml(absoluteDirPath, (meta) => {
-        const newItem: DialogoiTreeItem = {
-          name: fileName,
-          type: fileType,
-          path: absoluteFilePath,
-        };
+        let newItem: DialogoiTreeItem;
 
-        // タグを設定
-        if (tags.length > 0) {
-          newItem.tags = tags;
-        }
-
-        // サブタイプを設定
-        if (subtype === 'character') {
-          newItem.character = {
-            importance: 'sub',
-            multiple_characters: false,
+        if (fileType === 'subdirectory') {
+          newItem = {
+            name: fileName,
+            type: 'subdirectory',
+            path: absoluteFilePath,
+            isUntracked: false,
+            isMissing: false,
           };
-        } else if (subtype === 'foreshadowing' || subtype === 'glossary') {
-          // subtypeプロパティは存在しないため、別の方法で処理する必要がある
-          // とりあえずスキップして、必要に応じて後で実装
+        } else if (fileType === 'content') {
+          newItem = {
+            name: fileName,
+            type: 'content',
+            path: absoluteFilePath,
+            hash: 'default-hash',
+            tags: tags,
+            references: [],
+            comments: `.${fileName}.comments.yaml`,
+            isUntracked: false,
+            isMissing: false,
+          };
+        } else {
+          // setting type
+          if (subtype === 'character') {
+            newItem = {
+              name: fileName,
+              type: 'setting',
+              path: absoluteFilePath,
+              hash: 'default-hash',
+              tags: tags,
+              comments: `.${fileName}.comments.yaml`,
+              isUntracked: false,
+              isMissing: false,
+              character: {
+                importance: 'sub',
+                multiple_characters: false,
+                display_name: fileName,
+              },
+            };
+          } else {
+            newItem = {
+              name: fileName,
+              type: 'setting',
+              path: absoluteFilePath,
+              hash: 'default-hash',
+              tags: tags,
+              comments: `.${fileName}.comments.yaml`,
+              isUntracked: false,
+              isMissing: false,
+            };
+          }
         }
 
         meta.files.push(newItem);
@@ -400,9 +432,14 @@ export class CoreFileService {
         await this.linkUpdateService.updateLinksAfterFileOperation(sourceFilePath, targetFilePath);
       }
 
-      // 移動元のメタデータからファイルを削除
+      // 移動元のメタデータからファイル情報を取得し削除
+      let originalItem: DialogoiTreeItem | undefined;
       const sourceResult = await this.updateMetaYaml(sourceAbsoluteDir, (meta) => {
-        meta.files = meta.files.filter((file) => file.name !== fileName);
+        const itemIndex = meta.files.findIndex((file) => file.name === fileName);
+        if (itemIndex !== -1) {
+          originalItem = meta.files[itemIndex];
+          meta.files.splice(itemIndex, 1);
+        }
         return meta;
       });
 
@@ -410,12 +447,21 @@ export class CoreFileService {
         return sourceResult;
       }
 
-      // 移動先のメタデータにファイルを追加
+      if (!originalItem) {
+        return {
+          success: false,
+          message: `移動元のメタデータで "${fileName}" が見つかりませんでした。`,
+        };
+      }
+
+      // 移動先のメタデータにファイルを追加（元の情報を保持）
       const targetResult = await this.updateMetaYaml(targetAbsoluteDir, (meta) => {
+        if (!originalItem) {
+          throw new Error('originalItemが見つかりません');
+        }
         const newItem: DialogoiTreeItem = {
-          name: fileName,
-          type: 'content', // デフォルト値、必要に応じて調整
-          path: targetFilePath,
+          ...originalItem,
+          path: targetFilePath, // パスのみ更新
         };
 
         if (newIndex !== undefined && newIndex <= meta.files.length) {
@@ -489,9 +535,14 @@ export class CoreFileService {
         await this.updateLinksForDirectoryMove(sourceDirPath, targetDirPath);
       }
 
-      // 移動元のメタデータからディレクトリを削除
+      // 移動元のメタデータからディレクトリ情報を取得し削除
+      let originalItem: DialogoiTreeItem | undefined;
       const sourceResult = await this.updateMetaYaml(sourceParentAbsolute, (meta) => {
-        meta.files = meta.files.filter((file) => file.name !== dirName);
+        const itemIndex = meta.files.findIndex((file) => file.name === dirName);
+        if (itemIndex !== -1) {
+          originalItem = meta.files[itemIndex];
+          meta.files.splice(itemIndex, 1);
+        }
         return meta;
       });
 
@@ -499,12 +550,21 @@ export class CoreFileService {
         return sourceResult;
       }
 
-      // 移動先のメタデータにディレクトリを追加
+      if (!originalItem) {
+        return {
+          success: false,
+          message: `移動元のメタデータで "${dirName}" が見つかりませんでした。`,
+        };
+      }
+
+      // 移動先のメタデータにディレクトリを追加（元の情報を保持）
       const targetResult = await this.updateMetaYaml(targetParentAbsolute, (meta) => {
+        if (!originalItem) {
+          throw new Error('originalItemが見つかりません');
+        }
         const newItem: DialogoiTreeItem = {
-          name: dirName,
-          type: 'subdirectory',
-          path: targetDirPath,
+          ...originalItem,
+          path: targetDirPath, // パスのみ更新
         };
 
         if (newIndex !== undefined && newIndex <= meta.files.length) {

@@ -1,6 +1,6 @@
 import { FileRepository } from '../repositories/FileRepository.js';
 import { MetaYamlService } from './MetaYamlService.js';
-import { DialogoiTreeItem } from '../utils/MetaYamlUtils.js';
+import { DialogoiTreeItem, hasCommentsProperty } from '../utils/MetaYamlUtils.js';
 import * as path from 'path';
 
 /**
@@ -72,7 +72,7 @@ export class FileStatusService {
 
       // コメントファイルも管理対象として登録
       for (const fileEntry of metaYaml.files) {
-        if (fileEntry.comments !== undefined && fileEntry.comments !== '') {
+        if (hasCommentsProperty(fileEntry) && fileEntry.comments !== '') {
           managedFilenames.add(fileEntry.comments);
         }
       }
@@ -190,13 +190,28 @@ export class FileStatusService {
       return treeItem;
     } else {
       // 未追跡ファイルの場合は基本的なTreeItemを作成
-      return {
-        name: statusInfo.name,
-        type: statusInfo.isDirectory === true ? 'subdirectory' : 'setting', // デフォルトはsetting
-        path: statusInfo.absolutePath,
-        // 未追跡であることを示すフラグ
-        isUntracked: true,
-      };
+      const itemType = statusInfo.isDirectory === true ? 'subdirectory' : 'setting'; // デフォルトはsetting
+
+      if (itemType === 'subdirectory') {
+        return {
+          name: statusInfo.name,
+          type: 'subdirectory',
+          path: statusInfo.absolutePath,
+          isUntracked: true,
+          isMissing: false,
+        };
+      } else {
+        return {
+          name: statusInfo.name,
+          type: 'setting',
+          path: statusInfo.absolutePath,
+          hash: '',
+          tags: [],
+          comments: '',
+          isUntracked: true,
+          isMissing: false,
+        };
+      }
     }
   }
 

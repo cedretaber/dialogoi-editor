@@ -37,8 +37,22 @@ created_at: '2024-01-01T00:00:00Z'`;
 files:
   - name: chapter1.txt
     type: content
+    path: /workspace/novel/chapter1.txt
+    hash: hash1
+    tags: []
+    references: []
+    comments: ''
+    isUntracked: false
+    isMissing: false
   - name: chapter2.txt
-    type: content`;
+    type: content
+    path: /workspace/novel/chapter2.txt
+    hash: hash2
+    tags: []
+    references: []
+    comments: ''
+    isUntracked: false
+    isMissing: false`;
 
     mockFileRepository.addFile(path.join(testProjectPath, 'dialogoi.yaml'), dialogoiYamlContent);
     mockFileRepository.addFile(path.join(testProjectPath, '.dialogoi-meta.yaml'), metaYamlContent);

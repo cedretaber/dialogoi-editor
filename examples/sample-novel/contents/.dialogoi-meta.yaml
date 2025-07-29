@@ -3,6 +3,12 @@ files:
   - name: 01_prologue.txt
     type: content
     path: /home/cedretaber/src/ts/dialogoi-editor/examples/sample-novel/contents/01_prologue.txt
+    hash: ''
+    tags: []
+    references: []
+    comments: ''
+    isUntracked: false
+    isMissing: false
   - name: 02_entrance_ceremony.txt
     type: content
     tags:
@@ -11,6 +17,10 @@ files:
     references:
       - settings/characters/tarou.md
       - settings/characters/hanako.md
+    hash: ''
+    comments: ''
+    isUntracked: false
+    isMissing: false
   - name: 03_first_magic_lesson.txt
     type: content
     tags:
@@ -20,6 +30,10 @@ files:
     references:
       - settings/magic_system.md
       - settings/foreshadowings/hidden_power.md
+    hash: ''
+    comments: ''
+    isUntracked: false
+    isMissing: false
   - name: 04_new_friendship.txt
     type: content
     tags:
@@ -27,3 +41,7 @@ files:
       - 友情
     references:
       - settings/characters/jirou.md
+    hash: ''
+    comments: ''
+    isUntracked: false
+    isMissing: false

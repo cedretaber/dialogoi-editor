@@ -1,6 +1,13 @@
 import * as vscode from 'vscode';
 import * as path from 'path';
-import { DialogoiTreeItem } from '../utils/MetaYamlUtils.js';
+import {
+  DialogoiTreeItem,
+  hasTagsProperty,
+  hasReferencesProperty,
+  hasCharacterProperty,
+  hasForeshadowingProperty,
+  isGlossaryItem,
+} from '../utils/MetaYamlUtils.js';
 import { ServiceContainer } from '../di/ServiceContainer.js';
 import { ReferenceManager } from '../services/ReferenceManager.js';
 import { TreeViewFilterService, FilterState } from '../services/TreeViewFilterService.js';
@@ -247,9 +254,9 @@ export class DialogoiTreeDataProvider
 
     // 表示名を決定（キャラクターファイルの場合はマークダウンから取得）
     let displayName = element.name;
-    if (element.character !== undefined && element.character.display_name !== undefined) {
+    if (hasCharacterProperty(element) && element.character.display_name !== undefined) {
       displayName = element.character.display_name;
-    } else if (element.character !== undefined && !isDirectory) {
+    } else if (hasCharacterProperty(element) && !isDirectory) {
       // display_nameが設定されていない場合は自動取得
       const characterService = ServiceContainer.getInstance().getCharacterService();
       displayName = await characterService.extractDisplayName(element.path);
@@ -278,16 +285,16 @@ export class DialogoiTreeDataProvider
       if (element.type === 'content') {
         item.iconPath = new vscode.ThemeIcon('file-text');
       } else if (element.type === 'setting') {
-        if (element.glossary === true) {
+        if (isGlossaryItem(element)) {
           item.iconPath = new vscode.ThemeIcon('book');
-        } else if (element.character !== undefined) {
+        } else if (hasCharacterProperty(element)) {
           // 重要度に応じたアイコン
           if (element.character.importance === 'main') {
             item.iconPath = new vscode.ThemeIcon('star');
           } else {
             item.iconPath = new vscode.ThemeIcon('person');
           }
-        } else if (element.foreshadowing !== undefined) {
+        } else if (hasForeshadowingProperty(element)) {
           item.iconPath = new vscode.ThemeIcon('eye');
         } else {
           item.iconPath = new vscode.ThemeIcon('gear');
@@ -335,8 +342,8 @@ export class DialogoiTreeDataProvider
       const descriptionParts: string[] = [];
 
       // タグの表示
-      if (element.tags !== undefined && element.tags.length > 0) {
-        const tagString = element.tags.map((tag) => `#${tag}`).join(' ');
+      if (hasTagsProperty(element) && element.tags.length > 0) {
+        const tagString = element.tags.map((tag: string) => `#${tag}`).join(' ');
         descriptionParts.push(tagString);
       }
 
@@ -563,9 +570,9 @@ export class DialogoiTreeDataProvider
     const tooltipParts: string[] = [];
 
     // キャラクター情報
-    if (element.character !== undefined) {
+    if (hasCharacterProperty(element)) {
       let displayName = element.character.display_name;
-      if (displayName === undefined && element.type !== 'subdirectory') {
+      if (displayName === undefined) {
         const characterService = ServiceContainer.getInstance().getCharacterService();
         displayName = await characterService.extractDisplayName(element.path);
       }
@@ -575,8 +582,8 @@ export class DialogoiTreeDataProvider
     }
 
     // タグ情報
-    if (element.tags !== undefined && element.tags.length > 0) {
-      const tagString = element.tags.map((tag) => `#${tag}`).join(' ');
+    if (hasTagsProperty(element) && element.tags.length > 0) {
+      const tagString = element.tags.map((tag: string) => `#${tag}`).join(' ');
       tooltipParts.push(`タグ: ${tagString}`);
     }
 
@@ -605,7 +612,7 @@ export class DialogoiTreeDataProvider
           validAppearances.push(ref);
         });
 
-        if (element.character && validAppearances.length > 0) {
+        if (hasCharacterProperty(element) && validAppearances.length > 0) {
           tooltipParts.push('');
           tooltipParts.push(`登場話: ${validAppearances.length}話`);
           validAppearances.forEach((ref) => {
@@ -613,7 +620,7 @@ export class DialogoiTreeDataProvider
           });
         } else if (
           element.type === 'setting' &&
-          !element.character &&
+          !hasCharacterProperty(element) &&
           validAppearances.length > 0
         ) {
           tooltipParts.push('');
@@ -640,7 +647,7 @@ export class DialogoiTreeDataProvider
     }
 
     // 伏線情報（Phase 3で新しいUI実装予定）
-    if (element.foreshadowing !== undefined) {
+    if (hasForeshadowingProperty(element)) {
       tooltipParts.push('');
       tooltipParts.push('伏線:');
       const plantsCount = element.foreshadowing.plants?.length || 0;
@@ -702,8 +709,9 @@ export class DialogoiTreeDataProvider
       // ReferenceManagerを更新
       const referenceManager = ReferenceManager.getInstance();
       const filePath = path.join(dirPath, fileName);
+      const foundItem = result.updatedItems?.find((item) => item.name === fileName);
       const currentReferences =
-        result.updatedItems?.find((item) => item.name === fileName)?.references || [];
+        foundItem && hasReferencesProperty(foundItem) ? foundItem.references : [];
       referenceManager.updateFileReferences(filePath, currentReferences);
 
       this.refresh();
@@ -731,8 +739,9 @@ export class DialogoiTreeDataProvider
       // ReferenceManagerを更新
       const referenceManager = ReferenceManager.getInstance();
       const filePath = path.join(dirPath, fileName);
+      const foundItem = result.updatedItems?.find((item) => item.name === fileName);
       const currentReferences =
-        result.updatedItems?.find((item) => item.name === fileName)?.references || [];
+        foundItem && hasReferencesProperty(foundItem) ? foundItem.references : [];
       referenceManager.updateFileReferences(filePath, currentReferences);
 
       this.refresh();
@@ -760,8 +769,9 @@ export class DialogoiTreeDataProvider
       // ReferenceManagerを更新
       const referenceManager = ReferenceManager.getInstance();
       const filePath = path.join(dirPath, fileName);
+      const foundItem = result.updatedItems?.find((item) => item.name === fileName);
       const currentReferences =
-        result.updatedItems?.find((item) => item.name === fileName)?.references || [];
+        foundItem && hasReferencesProperty(foundItem) ? foundItem.references : [];
       referenceManager.updateFileReferences(filePath, currentReferences);
 
       this.refresh();
@@ -796,11 +806,11 @@ export class DialogoiTreeDataProvider
 
     // 特殊なファイル種別
     if (element.type === 'setting') {
-      if (element.glossary === true) {
+      if (isGlossaryItem(element)) {
         contextParts.push('glossary');
-      } else if (element.character !== undefined) {
+      } else if (hasCharacterProperty(element)) {
         contextParts.push('character');
-      } else if (element.foreshadowing !== undefined) {
+      } else if (hasForeshadowingProperty(element)) {
         contextParts.push('foreshadowing');
       } else {
         contextParts.push('general');
@@ -904,12 +914,39 @@ export class DialogoiTreeDataProvider
           fileType: string;
           absolutePath: string;
         };
-        draggedItem = {
-          path: typedDropData.path,
-          name: typedDropData.name,
-          type: typedDropData.fileType,
-          absolutePath: typedDropData.absolutePath,
-        } as DialogoiTreeItem;
+        // fileTypeに基づいて適切な型のオブジェクトを作成
+        if (typedDropData.fileType === 'subdirectory') {
+          draggedItem = {
+            path: typedDropData.path,
+            name: typedDropData.name,
+            type: 'subdirectory',
+            isUntracked: false,
+            isMissing: false,
+          };
+        } else if (typedDropData.fileType === 'content') {
+          draggedItem = {
+            path: typedDropData.path,
+            name: typedDropData.name,
+            type: 'content',
+            hash: '',
+            tags: [],
+            references: [],
+            comments: '',
+            isUntracked: false,
+            isMissing: false,
+          };
+        } else {
+          draggedItem = {
+            path: typedDropData.path,
+            name: typedDropData.name,
+            type: 'setting',
+            hash: '',
+            tags: [],
+            comments: '',
+            isUntracked: false,
+            isMissing: false,
+          };
+        }
       } else {
         // 古い形式（直接DialogoiTreeItem配列）
         const draggedItems = transferItem.value as DialogoiTreeItem[];

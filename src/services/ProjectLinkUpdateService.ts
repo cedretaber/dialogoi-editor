@@ -2,6 +2,7 @@ import * as path from 'path';
 import { FileRepository } from '../repositories/FileRepository.js';
 import { MetaYamlService } from './MetaYamlService.js';
 import { PathNormalizer } from '../utils/PathNormalizer.js';
+import { hasReferencesProperty } from '../utils/MetaYamlUtils.js';
 
 /**
  * リンク更新結果
@@ -216,7 +217,7 @@ export class ProjectLinkUpdateService {
 
     // 各ファイルのreferencesをチェック
     for (const fileItem of meta.files) {
-      if (fileItem.references && Array.isArray(fileItem.references)) {
+      if (hasReferencesProperty(fileItem) && Array.isArray(fileItem.references)) {
         const updatedReferences = fileItem.references.map((ref) => {
           if (PathNormalizer.isSamePath(ref, oldProjectRelativePath)) {
             hasUpdates = true;

@@ -3,6 +3,7 @@ import * as assert from 'assert';
 import { FilePathMapService } from './FilePathMapService.js';
 import { TestServiceContainer } from '../di/TestServiceContainer.js';
 import { MockFileRepository } from '../repositories/MockFileRepository.js';
+import { DialogoiTreeItem } from '../utils/MetaYamlUtils.js';
 
 suite('FilePathMapService テストスイート', () => {
   let service: FilePathMapService;
@@ -232,10 +233,16 @@ files: []
       assert.strictEqual(service.getMapSize(), 0);
 
       // ファイルを追加
-      const newItem = {
+      const newItem: DialogoiTreeItem = {
         name: 'new.md',
         type: 'content' as const,
         path: `${novelRoot}/new.md`,
+        hash: 'newhash',
+        tags: [],
+        references: [],
+        comments: '',
+        isUntracked: false,
+        isMissing: false,
       };
 
       service.updateFile(`${novelRoot}/new.md`, newItem);

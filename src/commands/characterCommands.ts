@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import { DialogoiTreeDataProvider } from '../tree/DialogoiTreeDataProvider.js';
 import { ServiceContainer } from '../di/ServiceContainer.js';
-import { DialogoiTreeItem } from '../utils/MetaYamlUtils.js';
+import { DialogoiTreeItem, isCharacterItem } from '../utils/MetaYamlUtils.js';
 
 export function registerCharacterCommands(
   context: vscode.ExtensionContext,
@@ -15,7 +15,7 @@ export function registerCharacterCommands(
       const fileName = item.name;
 
       // 現在の設定を取得
-      const currentImportance = item.character?.importance || 'sub';
+      const currentImportance = isCharacterItem(item) ? item.character.importance : 'sub';
 
       // 重要度選択肢
       const importanceOptions = [
@@ -55,7 +55,7 @@ export function registerCharacterCommands(
       const fileName = item.name;
 
       // 現在の設定を取得
-      const currentMultiple = item.character?.multiple_characters ?? false;
+      const currentMultiple = isCharacterItem(item) ? item.character.multiple_characters : false;
 
       // 確認ダイアログ
       const newValue = !currentMultiple;

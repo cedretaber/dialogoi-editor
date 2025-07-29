@@ -50,16 +50,23 @@ suite('FileStatusService テストスイート', () => {
       mockFileRepository.createDirectoryForTest(directoryPath);
 
       // meta.yamlを作成
-      const metaContent = `files:
+      const metaContent = `readme: README.md
+files:
   - name: chapter1.txt
     type: content
     path: /test/managed/chapter1.txt
+    hash: hash123
     tags:
       - 重要
+    references: []
     comments: .chapter1.txt.comments.yaml
+    isUntracked: false
+    isMissing: false
   - name: settings
     type: subdirectory
-    path: /test/managed/settings`;
+    path: /test/managed/settings
+    isUntracked: false
+    isMissing: false`;
 
       mockFileRepository.createFileForTest('/test/managed/.dialogoi-meta.yaml', metaContent);
       mockFileRepository.createFileForTest('/test/managed/chapter1.txt', 'chapter content');
@@ -86,13 +93,26 @@ suite('FileStatusService テストスイート', () => {
       const directoryPath = '/test/missing';
       mockFileRepository.createDirectoryForTest(directoryPath);
 
-      const metaContent = `files:
+      const metaContent = `readme: README.md
+files:
   - name: missing.txt
     type: content
     path: /test/missing/missing.txt
+    hash: hash123
+    tags: []
+    references: []
+    comments: ''
+    isUntracked: false
+    isMissing: false
   - name: existing.txt
     type: content
-    path: /test/missing/existing.txt`;
+    path: /test/missing/existing.txt
+    hash: hash456
+    tags: []
+    references: []
+    comments: ''
+    isUntracked: false
+    isMissing: false`;
 
       mockFileRepository.createFileForTest('/test/missing/.dialogoi-meta.yaml', metaContent);
       mockFileRepository.createFileForTest('/test/missing/existing.txt', 'existing content');
@@ -120,7 +140,13 @@ suite('FileStatusService テストスイート', () => {
 files:
   - name: chapter1.txt
     type: content
-    path: /test/readme/chapter1.txt`;
+    path: /test/readme/chapter1.txt
+    hash: hash123
+    tags: []
+    references: []
+    comments: ''
+    isUntracked: false
+    isMissing: false`;
 
       mockFileRepository.createFileForTest('/test/readme/.dialogoi-meta.yaml', metaContent);
       mockFileRepository.createFileForTest('/test/readme/README.md', 'readme content');
@@ -143,14 +169,26 @@ files:
       const directoryPath = '/test/comments';
       mockFileRepository.createDirectoryForTest(directoryPath);
 
-      const metaContent = `files:
+      const metaContent = `readme: README.md
+files:
   - name: chapter1.txt
     type: content
     path: /test/comments/chapter1.txt
+    hash: hash123
+    tags: []
+    references: []
     comments: .chapter1.txt.comments.yaml
+    isUntracked: false
+    isMissing: false
   - name: chapter2.txt
     type: content
-    path: /test/comments/chapter2.txt`;
+    path: /test/comments/chapter2.txt
+    hash: hash456
+    tags: []
+    references: []
+    comments: ''
+    isUntracked: false
+    isMissing: false`;
 
       mockFileRepository.createFileForTest('/test/comments/.dialogoi-meta.yaml', metaContent);
       mockFileRepository.createFileForTest('/test/comments/chapter1.txt', 'chapter1 content');
@@ -182,10 +220,17 @@ files:
       const directoryPath = '/test/management';
       mockFileRepository.createDirectoryForTest(directoryPath);
 
-      const metaContent = `files:
+      const metaContent = `readme: README.md
+files:
   - name: test.txt
     type: content
-    path: /test/management/test.txt`;
+    path: /test/management/test.txt
+    hash: hash123
+    tags: []
+    references: []
+    comments: ''
+    isUntracked: false
+    isMissing: false`;
 
       mockFileRepository.createFileForTest('/test/management/.dialogoi-meta.yaml', metaContent);
       mockFileRepository.createFileForTest('/test/management/dialogoi.yaml', 'old config');
@@ -227,16 +272,31 @@ files:
       const directoryPath = '/test/sorting';
       mockFileRepository.createDirectoryForTest(directoryPath);
 
-      const metaContent = `files:
+      const metaContent = `readme: README.md
+files:
   - name: z-file.txt
     type: content
     path: /test/sorting/z-file.txt
+    hash: hash123
+    tags: []
+    references: []
+    comments: ''
+    isUntracked: false
+    isMissing: false
   - name: a-file.txt
     type: content
     path: /test/sorting/a-file.txt
+    hash: hash456
+    tags: []
+    references: []
+    comments: ''
+    isUntracked: false
+    isMissing: false
   - name: m-dir
     type: subdirectory
-    path: /test/sorting/m-dir`;
+    path: /test/sorting/m-dir
+    isUntracked: false
+    isMissing: false`;
 
       mockFileRepository.createFileForTest('/test/sorting/.dialogoi-meta.yaml', metaContent);
       mockFileRepository.createFileForTest('/test/sorting/z-file.txt', 'z content');
@@ -265,8 +325,12 @@ files:
         name: 'test.txt',
         type: 'content',
         path: '/test/test.txt',
+        hash: 'testhash',
         tags: ['重要'],
+        references: [],
         comments: '.test.txt.comments.yaml',
+        isUntracked: false,
+        isMissing: false,
       };
 
       const statusInfo: FileStatusInfo = {
@@ -284,8 +348,8 @@ files:
       assert.strictEqual(result.path, '/test/test.txt');
       assert.deepStrictEqual(result.tags, ['重要']);
       assert.strictEqual(result.comments, '.test.txt.comments.yaml');
-      assert.strictEqual(result.isMissing, undefined);
-      assert.strictEqual(result.isUntracked, undefined);
+      assert.strictEqual(result.isMissing, false);
+      assert.strictEqual(result.isUntracked, false);
     });
 
     test('欠損ファイルのStatusInfoを正しくTreeItemに変換する', () => {
@@ -293,6 +357,12 @@ files:
         name: 'missing.txt',
         type: 'content',
         path: '/test/missing.txt',
+        hash: 'missinghash',
+        tags: [],
+        references: [],
+        comments: '',
+        isUntracked: false,
+        isMissing: false,
       };
 
       const statusInfo: FileStatusInfo = {
@@ -308,7 +378,7 @@ files:
       assert.strictEqual(result.type, 'content');
       assert.strictEqual(result.path, '/test/missing.txt');
       assert.strictEqual(result.isMissing, true);
-      assert.strictEqual(result.isUntracked, undefined);
+      assert.strictEqual(result.isUntracked, false);
     });
 
     test('未追跡ファイルのStatusInfoを正しくTreeItemに変換する', () => {
@@ -325,7 +395,7 @@ files:
       assert.strictEqual(result.type, 'setting'); // デフォルト
       assert.strictEqual(result.path, '/test/untracked.txt');
       assert.strictEqual(result.isUntracked, true);
-      assert.strictEqual(result.isMissing, undefined);
+      assert.strictEqual(result.isMissing, false);
     });
 
     test('未追跡ディレクトリのStatusInfoを正しくTreeItemに変換する', () => {

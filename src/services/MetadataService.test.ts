@@ -2,6 +2,7 @@ import assert from 'assert';
 import { MetadataService } from './MetadataService.js';
 import { TestServiceContainer } from '../di/TestServiceContainer.js';
 import { MockFileRepository } from '../repositories/MockFileRepository.js';
+import { createContentItem } from '../test/testHelpers.js';
 
 suite('MetadataService テストスイート', () => {
   let metadataService: MetadataService;
@@ -14,18 +15,48 @@ suite('MetadataService テストスイート', () => {
 
     // テスト用ディレクトリ構造の準備
     mockFileRepository.createDirectoryForTest('/test');
-    await mockFileRepository.writeFileAsync(
-      mockFileRepository.createFileUri('/test/.dialogoi-meta.yaml'),
-      `files:
-  - name: test.txt
-    type: content
+
+    const testItem = createContentItem({
+      name: 'test.txt',
+      path: '/test/test.txt',
+      tags: ['tag1'],
+      references: ['/other/file.txt'],
+    });
+
+    const notagItem = createContentItem({
+      name: 'notag.txt',
+      path: '/test/notag.txt',
+      tags: [],
+      references: [],
+    });
+
+    const metaYamlContent = `readme: README.md
+files:
+  - name: ${testItem.name}
+    type: ${testItem.type}
+    path: ${testItem.path}
+    hash: ${testItem.hash}
     tags:
       - tag1
     references:
       - /other/file.txt
-  - name: notag.txt
-    type: content
-`,
+    comments: '${testItem.comments}'
+    isUntracked: ${testItem.isUntracked}
+    isMissing: ${testItem.isMissing}
+  - name: ${notagItem.name}
+    type: ${notagItem.type}
+    path: ${notagItem.path}
+    hash: ${notagItem.hash}
+    tags: []
+    references: []
+    comments: '${notagItem.comments}'
+    isUntracked: ${notagItem.isUntracked}
+    isMissing: ${notagItem.isMissing}
+`;
+
+    await mockFileRepository.writeFileAsync(
+      mockFileRepository.createFileUri('/test/.dialogoi-meta.yaml'),
+      metaYamlContent,
     );
   });
 

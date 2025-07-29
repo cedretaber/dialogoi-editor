@@ -5,6 +5,7 @@ import { CharacterService } from './CharacterService.js';
 import { MockFileRepository } from '../repositories/MockFileRepository.js';
 import { TestServiceContainer } from '../di/TestServiceContainer.js';
 import { MetaYamlService } from './MetaYamlService.js';
+import { hasCharacterProperty } from '../utils/MetaYamlUtils.js';
 
 suite('CharacterService テストスイート', () => {
   let mockFileRepository: MockFileRepository;
@@ -98,9 +99,16 @@ suite('CharacterService テストスイート', () => {
 files:
   - name: hero.md
     type: setting
+    path: /tmp/dialogoi-character-test/hero.md
+    hash: hash123
+    tags: []
+    comments: ''
+    isUntracked: false
+    isMissing: false
     character:
       importance: main
       multiple_characters: false
+      display_name: ''
 `;
       mockFileRepository.addFile(path.join(testDir, '.dialogoi-meta.yaml'), metaContent);
 
@@ -117,6 +125,12 @@ files:
 files:
   - name: world.md
     type: setting
+    path: /tmp/dialogoi-character-test/world.md
+    hash: hash456
+    tags: []
+    comments: ''
+    isUntracked: false
+    isMissing: false
 `;
       mockFileRepository.addFile(path.join(testDir, '.dialogoi-meta.yaml'), metaContent);
 
@@ -141,6 +155,12 @@ files:
 files:
   - name: world.md
     type: setting
+    path: /tmp/dialogoi-character-test/world.md
+    hash: hash456
+    tags: []
+    comments: ''
+    isUntracked: false
+    isMissing: false
 `;
       mockFileRepository.addFile(path.join(testDir, '.dialogoi-meta.yaml'), metaContent);
 
@@ -168,12 +188,18 @@ files:
 files:
   - name: hero.md
     type: setting
-    character:
-      importance: main
-      multiple_characters: false
+    path: /tmp/novel-project/settings/characters/hero.md
+    hash: hash789
     tags:
       - 主人公
       - 戦士
+    comments: ''
+    isUntracked: false
+    isMissing: false
+    character:
+      importance: main
+      multiple_characters: false
+      display_name: ''
 `;
       const metaPath = path.join(novelRoot, 'settings', 'characters', '.dialogoi-meta.yaml');
       mockFileRepository.addFile(metaPath, metaContent);
@@ -182,7 +208,14 @@ files:
       assert.notStrictEqual(fileInfo, null);
       assert.strictEqual(fileInfo?.name, 'hero.md');
       assert.strictEqual(fileInfo?.type, 'setting');
-      assert.strictEqual(fileInfo?.character?.importance, 'main');
+
+      // 型ガードを使って安全にcharacterプロパティにアクセス
+      if (fileInfo !== null && hasCharacterProperty(fileInfo)) {
+        assert.strictEqual(fileInfo.character.importance, 'main');
+      } else {
+        assert.fail('fileInfoにcharacterプロパティが存在しません');
+      }
+
       assert.deepStrictEqual(fileInfo?.tags, ['主人公', '戦士']);
     });
 

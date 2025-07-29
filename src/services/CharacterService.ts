@@ -1,6 +1,7 @@
 import * as path from 'path';
 import { FileRepository } from '../repositories/FileRepository.js';
 import { MetaYamlService } from './MetaYamlService.js';
+import { hasCharacterProperty } from '../utils/MetaYamlUtils.js';
 import { DialogoiTreeItem } from '../utils/MetaYamlUtils.js';
 
 export class CharacterService {
@@ -68,7 +69,7 @@ export class CharacterService {
       }
 
       const fileItem = meta.files.find((item) => item.name === fileName);
-      return fileItem !== undefined && fileItem.character !== undefined;
+      return fileItem !== undefined && hasCharacterProperty(fileItem);
     } catch {
       return false;
     }

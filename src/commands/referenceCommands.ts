@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 import { DialogoiTreeDataProvider } from '../tree/DialogoiTreeDataProvider.js';
-import { DialogoiTreeItem } from '../utils/MetaYamlUtils.js';
+import { DialogoiTreeItem, hasReferencesProperty } from '../utils/MetaYamlUtils.js';
 
 /**
  * 参照関連のコマンドを登録
@@ -55,7 +55,15 @@ export function registerReferenceCommands(
         return;
       }
 
-      const currentReferences = item.references || [];
+      // サブディレクトリや設定ファイルには参照がない
+      if (!hasReferencesProperty(item)) {
+        vscode.window.showInformationMessage(
+          `${item.name} には参照を設定できません（コンテンツファイルのみ対応）。`,
+        );
+        return;
+      }
+
+      const currentReferences = item.references;
       if (currentReferences.length === 0) {
         vscode.window.showInformationMessage(`${item.name} には参照が設定されていません。`);
         return;
@@ -89,7 +97,15 @@ export function registerReferenceCommands(
         return;
       }
 
-      const currentReferences = item.references || [];
+      // サブディレクトリや設定ファイルには参照がない
+      if (!hasReferencesProperty(item)) {
+        vscode.window.showInformationMessage(
+          `${item.name} には参照を設定できません（コンテンツファイルのみ対応）。`,
+        );
+        return;
+      }
+
+      const currentReferences = item.references;
       const currentReferencesStr = currentReferences.length > 0 ? currentReferences.join(', ') : '';
 
       const newReferencesStr = await vscode.window.showInputBox({
