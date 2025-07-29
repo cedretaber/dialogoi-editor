@@ -1,19 +1,19 @@
 import * as assert from 'assert';
-import { MetaYamlService } from './MetaYamlService.js';
+import { MetaYamlServiceImpl } from './MetaYamlServiceImpl.js';
 import { MetaYaml } from '../utils/MetaYamlUtils.js';
 import { TestServiceContainer } from '../di/TestServiceContainer.js';
 import { MockFileRepository } from '../repositories/MockFileRepository.js';
 import { createContentItem, createSubdirectoryItem } from '../test/testHelpers.js';
 
-suite('MetaYamlService テストスイート', () => {
-  let service: MetaYamlService;
+suite('MetaYamlServiceImpl テストスイート', () => {
+  let service: MetaYamlServiceImpl;
   let mockFileRepository: MockFileRepository;
   let testContainer: TestServiceContainer;
 
   setup(() => {
     testContainer = TestServiceContainer.create();
     mockFileRepository = testContainer.getFileRepository() as MockFileRepository;
-    service = testContainer.getMetaYamlService();
+    service = testContainer.getMetaYamlService() as MetaYamlServiceImpl;
   });
 
   teardown(() => {

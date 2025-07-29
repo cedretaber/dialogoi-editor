@@ -6,6 +6,7 @@ import { ReferenceManager } from '../services/ReferenceManager.js';
 import { CommentService } from '../services/CommentService.js';
 import { DialogoiYamlService } from '../services/DialogoiYamlService.js';
 import { MetaYamlService } from '../services/MetaYamlService.js';
+import { MetaYamlServiceImpl } from '../services/MetaYamlServiceImpl.js';
 import { MetadataService } from '../services/MetadataService.js';
 import { FilePathMapService } from '../services/FilePathMapService.js';
 import { HyperlinkExtractorService } from '../services/HyperlinkExtractorService.js';
@@ -20,6 +21,7 @@ import { ProjectPathService } from '../services/ProjectPathService.js';
 import { ProjectAutoSetupService } from '../services/ProjectAutoSetupService.js';
 import { ProjectSetupService } from '../services/ProjectSetupService.js';
 import { CoreFileService } from '../services/CoreFileService.js';
+import { ProjectLinkUpdateServiceImpl } from '../services/ProjectLinkUpdateServiceImpl.js';
 import { Logger } from '../utils/Logger.js';
 import { Uri } from '../interfaces/Uri.js';
 
@@ -187,7 +189,7 @@ export class ServiceContainer implements IServiceContainer {
    */
   getMetaYamlService(): MetaYamlService {
     if (!this.metaYamlService) {
-      this.metaYamlService = new MetaYamlService(this.getFileRepository());
+      this.metaYamlService = new MetaYamlServiceImpl(this.getFileRepository());
     }
     return this.metaYamlService;
   }
@@ -379,9 +381,15 @@ export class ServiceContainer implements IServiceContainer {
       novelRootAbsolutePath !== null &&
       novelRootAbsolutePath !== ''
     ) {
+      const linkUpdateService = new ProjectLinkUpdateServiceImpl(
+        this.getFileRepository(),
+        this.getMetaYamlService(),
+        novelRootAbsolutePath,
+      );
       return new CoreFileService(
         this.getFileRepository(),
         this.getMetaYamlService(),
+        linkUpdateService,
         novelRootAbsolutePath,
       );
     }
@@ -391,6 +399,7 @@ export class ServiceContainer implements IServiceContainer {
       this.coreFileService = new CoreFileService(
         this.getFileRepository(),
         this.getMetaYamlService(),
+        undefined,
         undefined,
       );
     }

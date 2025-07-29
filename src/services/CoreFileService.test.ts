@@ -2,14 +2,18 @@ import assert from 'assert';
 import { CoreFileService } from './CoreFileService.js';
 import { TestServiceContainer } from '../di/TestServiceContainer.js';
 import { MockFileRepository } from '../repositories/MockFileRepository.js';
+import { MockProjectLinkUpdateService } from '../repositories/MockProjectLinkUpdateService.js';
 
 suite('CoreFileService テストスイート', () => {
   let coreFileService: CoreFileService;
   let mockFileRepository: MockFileRepository;
+  let mockLinkUpdateService: MockProjectLinkUpdateService;
+  let container: TestServiceContainer;
 
   setup(async () => {
-    const container = TestServiceContainer.create();
+    container = TestServiceContainer.create();
     mockFileRepository = container.getFileRepository() as MockFileRepository;
+    mockLinkUpdateService = container.getMockProjectLinkUpdateService();
     coreFileService = container.getCoreFileService();
 
     // テスト用ディレクトリ構造の準備
@@ -149,6 +153,9 @@ suite('CoreFileService テストスイート', () => {
 
   suite('ファイル名変更', () => {
     test('ファイル名を変更できる', async () => {
+      // モックの呼び出し履歴をクリア
+      mockLinkUpdateService.clearUpdateCalls();
+
       const result = await coreFileService.renameFile('/test', 'existing.txt', 'renamed.txt');
 
       if (!result.success) {
@@ -178,6 +185,12 @@ suite('CoreFileService テストスイート', () => {
       } catch {
         console.error('Meta file read failed, but rename operation succeeded');
       }
+
+      // リンク更新サービスが適切に呼ばれたことを検証
+      const updateCalls = mockLinkUpdateService.getUpdateCalls();
+      assert.strictEqual(updateCalls.length, 1);
+      assert.strictEqual(updateCalls[0]?.oldPath, '/test/existing.txt');
+      assert.strictEqual(updateCalls[0]?.newPath, '/test/renamed.txt');
     });
 
     test('存在しないファイルの名前変更はエラー', async () => {
@@ -230,6 +243,9 @@ suite('CoreFileService テストスイート', () => {
     });
 
     test('ファイルを別ディレクトリに移動できる', async () => {
+      // モックの呼び出し履歴をクリア
+      mockLinkUpdateService.clearUpdateCalls();
+
       const result = await coreFileService.moveFile('/test', 'existing.txt', '/target');
 
       assert.strictEqual(result.success, true);
@@ -249,6 +265,12 @@ suite('CoreFileService テストスイート', () => {
         'utf8',
       );
       assert(targetMetaContent.includes('existing.txt'));
+
+      // リンク更新サービスが適切に呼ばれたことを検証
+      const updateCalls = mockLinkUpdateService.getUpdateCalls();
+      assert.strictEqual(updateCalls.length, 1);
+      assert.strictEqual(updateCalls[0]?.oldPath, '/test/existing.txt');
+      assert.strictEqual(updateCalls[0]?.newPath, '/target/existing.txt');
     });
 
     test('同じディレクトリ内での移動（順序変更）', async () => {

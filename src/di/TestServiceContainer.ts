@@ -6,6 +6,7 @@ import { ReferenceManager } from '../services/ReferenceManager.js';
 import { CommentService } from '../services/CommentService.js';
 import { DialogoiYamlService } from '../services/DialogoiYamlService.js';
 import { MetaYamlService } from '../services/MetaYamlService.js';
+import { MetaYamlServiceImpl } from '../services/MetaYamlServiceImpl.js';
 import { MetadataService } from '../services/MetadataService.js';
 import { FilePathMapService } from '../services/FilePathMapService.js';
 import { HyperlinkExtractorService } from '../services/HyperlinkExtractorService.js';
@@ -29,6 +30,8 @@ import { ProjectSetupService } from '../services/ProjectSetupService.js';
 import { ProjectPathService } from '../services/ProjectPathService.js';
 import { CoreFileService } from '../services/CoreFileService.js';
 import { Logger } from '../utils/Logger.js';
+import { MockProjectLinkUpdateService } from '../repositories/MockProjectLinkUpdateService.js';
+import { ProjectLinkUpdateService } from '../services/ProjectLinkUpdateService.js';
 
 /**
  * テスト専用の依存関係注入コンテナ
@@ -56,6 +59,7 @@ export class TestServiceContainer implements IServiceContainer {
   private projectSetupService: ProjectSetupService | null = null;
   private projectPathService: ProjectPathService | null = null;
   private coreFileService: CoreFileService | null = null;
+  private mockProjectLinkUpdateService: ProjectLinkUpdateService | null = null;
 
   private constructor() {
     // テスト環境では常にMockFileRepositoryを使用
@@ -139,7 +143,7 @@ export class TestServiceContainer implements IServiceContainer {
    */
   getMetaYamlService(): MetaYamlService {
     if (!this.metaYamlService) {
-      this.metaYamlService = new MetaYamlService(this.fileRepository);
+      this.metaYamlService = new MetaYamlServiceImpl(this.fileRepository);
     }
     return this.metaYamlService;
   }
@@ -210,6 +214,7 @@ export class TestServiceContainer implements IServiceContainer {
     this.dropHandlerService = null;
     this.settingsRepository = null;
     this.dialogoiSettingsService = null;
+    this.mockProjectLinkUpdateService = null;
   }
 
   getSettingsRepository(): SettingsRepository {
@@ -313,13 +318,25 @@ export class TestServiceContainer implements IServiceContainer {
     if (!this.coreFileService) {
       const fileRepository = this.getFileRepository();
       const metaYamlService = this.getMetaYamlService();
+      const linkUpdateService = this.getMockProjectLinkUpdateService();
       this.coreFileService = new CoreFileService(
         fileRepository,
         metaYamlService,
+        linkUpdateService,
         novelRootAbsolutePath ?? '/test-root',
       );
     }
     return this.coreFileService;
+  }
+
+  /**
+   * MockProjectLinkUpdateServiceを取得（テスト用）
+   */
+  getMockProjectLinkUpdateService(): MockProjectLinkUpdateService {
+    if (!this.mockProjectLinkUpdateService) {
+      this.mockProjectLinkUpdateService = new MockProjectLinkUpdateService();
+    }
+    return this.mockProjectLinkUpdateService as MockProjectLinkUpdateService;
   }
 
   /**
@@ -348,6 +365,11 @@ export class TestServiceContainer implements IServiceContainer {
     // ReferenceManagerのクリア
     if (this.referenceManager) {
       this.referenceManager.clear();
+    }
+
+    // MockProjectLinkUpdateServiceのクリア
+    if (this.mockProjectLinkUpdateService) {
+      (this.mockProjectLinkUpdateService as MockProjectLinkUpdateService).clearAllCalls();
     }
   }
 }

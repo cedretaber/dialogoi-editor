@@ -3,6 +3,7 @@ import * as path from 'path';
 import { ForeshadowingService, ForeshadowingData } from './ForeshadowingService.js';
 import { MockFileRepository } from '../repositories/MockFileRepository.js';
 import { MetaYamlService } from './MetaYamlService.js';
+import { MockMetaYamlService } from '../repositories/MockMetaYamlService.js';
 import { isForeshadowingItem } from '../utils/MetaYamlUtils.js';
 
 suite('ForeshadowingService', () => {
@@ -14,7 +15,7 @@ suite('ForeshadowingService', () => {
   setup(() => {
     // モックサービスを初期化
     mockFileRepository = new MockFileRepository();
-    metaYamlService = new MetaYamlService(mockFileRepository);
+    metaYamlService = new MockMetaYamlService();
     foreshadowingService = new ForeshadowingService(mockFileRepository, metaYamlService);
     novelRootAbsolutePath = '/tmp/dialogoi-test/novel';
 

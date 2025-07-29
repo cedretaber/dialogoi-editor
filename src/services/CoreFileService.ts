@@ -18,26 +18,15 @@ export interface FileOperationResult {
  * ファイルシステム操作とメタデータ更新を組み合わせた複合操作を提供
  */
 export class CoreFileService {
-  private linkUpdateService?: ProjectLinkUpdateService;
   private novelRootPath?: string;
 
   constructor(
     private fileRepository: FileRepository,
     private metaYamlService: MetaYamlService,
+    private linkUpdateService?: ProjectLinkUpdateService,
     novelRootAbsolutePath?: string,
   ) {
     this.novelRootPath = novelRootAbsolutePath;
-    if (
-      novelRootAbsolutePath !== undefined &&
-      novelRootAbsolutePath !== null &&
-      novelRootAbsolutePath !== ''
-    ) {
-      this.linkUpdateService = new ProjectLinkUpdateService(
-        fileRepository,
-        metaYamlService,
-        novelRootAbsolutePath,
-      );
-    }
   }
 
   /**
