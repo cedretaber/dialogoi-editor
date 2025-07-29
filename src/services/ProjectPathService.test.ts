@@ -1,5 +1,3 @@
-import { describe, it, beforeEach, afterEach } from 'mocha';
-import * as assert from 'assert';
 import * as path from 'path';
 import { TestServiceContainer } from '../di/TestServiceContainer.js';
 import { MockFileRepository } from '../repositories/MockFileRepository.js';
@@ -71,9 +69,9 @@ describe('ProjectPathService テストスイート', () => {
       const absoluteFilePath = path.join(testProjectPath, 'chapter1.txt');
 
       const result = await projectPathService.getRelativePathFromProject(absoluteFilePath);
-      assert.ok(result !== null);
-      assert.strictEqual(result.projectRoot, testProjectPath);
-      assert.strictEqual(result.relativePath, 'chapter1.txt');
+      expect(result !== null).toBeTruthy();
+      expect(result?.projectRoot).toBe(testProjectPath);
+      expect(result?.relativePath).toBe('chapter1.txt');
     });
 
     it('プロジェクト外ファイルの場合はnullが返される', async () => {
@@ -82,7 +80,7 @@ describe('ProjectPathService テストスイート', () => {
       mockFileRepository.addFile(outsideFilePath, 'test content');
 
       const result = await projectPathService.getRelativePathFromProject(outsideFilePath);
-      assert.strictEqual(result, null);
+      expect(result).toBe(null);
     });
 
     it('上位ディレクトリを参照するパスは無効として扱われる', async () => {
@@ -99,7 +97,7 @@ describe('ProjectPathService テストスイート', () => {
 
       // 上位ディレクトリのファイルはプロジェクト外として扱われる
       const result = await projectPathService.getRelativePathFromProject(upperFilePath);
-      assert.strictEqual(result, null);
+      expect(result).toBe(null);
     });
 
     it('サブディレクトリ内のファイルも正しく相対パス変換される', async () => {
@@ -109,9 +107,9 @@ describe('ProjectPathService テストスイート', () => {
       mockFileRepository.addFile(fileInSubDir, 'サブディレクトリ内の章');
 
       const result = await projectPathService.getRelativePathFromProject(fileInSubDir);
-      assert.ok(result !== null);
-      assert.strictEqual(result.projectRoot, testProjectPath);
-      assert.strictEqual(result.relativePath, 'contents/chapter3.txt');
+      expect(result !== null).toBeTruthy();
+      expect(result?.projectRoot).toBe(testProjectPath);
+      expect(result?.relativePath).toBe('contents/chapter3.txt');
     });
 
     it('パス区切り文字の正規化が正しく動作する', async () => {
@@ -119,11 +117,11 @@ describe('ProjectPathService テストスイート', () => {
       const normalPath = path.join(testProjectPath, 'chapter1.txt');
 
       const result = await projectPathService.getRelativePathFromProject(normalPath);
-      assert.ok(result !== null);
-      assert.strictEqual(result.projectRoot, testProjectPath);
+      expect(result !== null).toBeTruthy();
+      expect(result?.projectRoot).toBe(testProjectPath);
       // 結果は常にスラッシュ区切りになることを確認
-      assert.strictEqual(result.relativePath, 'chapter1.txt');
-      assert.ok(!result.relativePath.includes('\\'));
+      expect(result?.relativePath).toBe('chapter1.txt');
+      expect(!result?.relativePath.includes('\\')).toBeTruthy();
     });
 
     it('プロジェクトルート自体のファイルも正しく処理される', async () => {
@@ -132,9 +130,9 @@ describe('ProjectPathService テストスイート', () => {
       mockFileRepository.addFile(readmePath, '# README');
 
       const result = await projectPathService.getRelativePathFromProject(readmePath);
-      assert.ok(result !== null);
-      assert.strictEqual(result.projectRoot, testProjectPath);
-      assert.strictEqual(result.relativePath, 'README.md');
+      expect(result !== null).toBeTruthy();
+      expect(result?.projectRoot).toBe(testProjectPath);
+      expect(result?.relativePath).toBe('README.md');
     });
 
     it('深いネスト構造でも正しく動作する', async () => {
@@ -143,9 +141,9 @@ describe('ProjectPathService テストスイート', () => {
       mockFileRepository.addFile(deepPath, 'Deep nested file');
 
       const result = await projectPathService.getRelativePathFromProject(deepPath);
-      assert.ok(result !== null);
-      assert.strictEqual(result.projectRoot, testProjectPath);
-      assert.strictEqual(result.relativePath, 'a/b/c/d/file.txt');
+      expect(result !== null).toBeTruthy();
+      expect(result?.projectRoot).toBe(testProjectPath);
+      expect(result?.relativePath).toBe('a/b/c/d/file.txt');
     });
   });
 });

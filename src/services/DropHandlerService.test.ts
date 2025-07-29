@@ -1,26 +1,24 @@
-import { suite, test, setup, teardown } from 'mocha';
-import * as assert from 'assert';
 import { DropHandlerService, DroppedFileInfo } from './DropHandlerService.js';
 import { TestServiceContainer } from '../di/TestServiceContainer.js';
 import { MockFileRepository } from '../repositories/MockFileRepository.js';
 
-suite('DropHandlerService テストスイート', () => {
+describe('DropHandlerService テストスイート', () => {
   let dropHandlerService: DropHandlerService;
   let mockFileRepository: MockFileRepository;
   let container: TestServiceContainer;
 
-  setup(() => {
+  beforeEach(() => {
     container = TestServiceContainer.create();
     mockFileRepository = container.getFileRepository() as MockFileRepository;
     dropHandlerService = container.getDropHandlerService();
   });
 
-  teardown(() => {
+  afterEach(() => {
     container.cleanup();
   });
 
-  suite('handleDrop - 本文ファイルへのドロップ', () => {
-    test('本文ファイルに設定ファイルをドロップした場合、referencesに追加される', async () => {
+  describe('handleDrop - 本文ファイルへのドロップ', () => {
+    it('本文ファイルに設定ファイルをドロップした場合、referencesに追加される', async () => {
       // テスト用ファイル構造を準備
       const projectRoot = '/test/project';
       const contentsDir = '/test/project/contents';
@@ -86,17 +84,17 @@ tags: []`,
       );
 
       // 結果を検証
-      assert.strictEqual(result.success, true);
-      assert.strictEqual(result.message, '参照 "character1.md" を追加しました。');
-      assert.strictEqual(result.insertText, undefined);
+      expect(result.success).toBe(true);
+      expect(result.message).toBe('参照 "character1.md" を追加しました。');
+      expect(result.insertText).toBe(undefined);
 
       // meta.yamlに参照が追加されたことを確認
       const metaUri = mockFileRepository.createFileUri(`${contentsDir}/.dialogoi-meta.yaml`);
       const metaContent = await mockFileRepository.readFileAsync(metaUri, 'utf8');
-      assert.match(metaContent, /references:\s*\n\s*- settings\/character1\.md/);
+      expect(metaContent).toMatch(/references:\s*\n\s*- settings\/character1\.md/);
     });
 
-    test('既に存在する参照をドロップした場合、重複追加されない', async () => {
+    it('既に存在する参照をドロップした場合、重複追加されない', async () => {
       // テスト用ファイル構造を準備
       const projectRoot = '/test/project';
       const contentsDir = '/test/project/contents';
@@ -149,13 +147,13 @@ tags: []`,
       );
 
       // 結果を検証
-      assert.strictEqual(result.success, true);
-      assert.strictEqual(result.message, '参照 "settings/character1.md" は既に存在します。');
+      expect(result.success).toBe(true);
+      expect(result.message).toBe('参照 "settings/character1.md" は既に存在します。');
     });
   });
 
-  suite('handleDrop - 設定ファイルへのドロップ', () => {
-    test('設定ファイルにファイルをドロップした場合、マークダウンリンクが生成される', async () => {
+  describe('handleDrop - 設定ファイルへのドロップ', () => {
+    it('設定ファイルにファイルをドロップした場合、マークダウンリンクが生成される', async () => {
       // テスト用ファイル構造を準備
       const projectRoot = '/test/project';
       const settingsDir = '/test/project/settings';
@@ -217,15 +215,15 @@ tags: []`,
       const result = await dropHandlerService.handleDrop(`${settingsDir}/overview.md`, droppedData);
 
       // 結果を検証
-      assert.strictEqual(result.success, true);
-      assert.strictEqual(result.message, 'マークダウンリンク "hero.md" を生成しました。');
-      assert.strictEqual(result.insertText, '[hero.md](settings/characters/hero.md)');
-      assert.deepStrictEqual(result.insertPosition, { line: 0, character: 0 });
+      expect(result.success).toBe(true);
+      expect(result.message).toBe('マークダウンリンク "hero.md" を生成しました。');
+      expect(result.insertText).toBe('[hero.md](settings/characters/hero.md)');
+      expect(result.insertPosition).toEqual({ line: 0, character: 0 });
     });
   });
 
-  suite('handleDrop - エラーケース', () => {
-    test('Dialogoiプロジェクト外のファイルにドロップした場合、エラーになる', async () => {
+  describe('handleDrop - エラーケース', () => {
+    it('Dialogoiプロジェクト外のファイルにドロップした場合、エラーになる', async () => {
       // プロジェクト外のファイル
       const outsideFile = '/outside/file.txt';
       mockFileRepository.addFile(outsideFile, 'プロジェクト外のファイル');
@@ -243,14 +241,13 @@ tags: []`,
       const result = await dropHandlerService.handleDrop(outsideFile, droppedData);
 
       // 結果を検証
-      assert.strictEqual(result.success, false);
-      assert.strictEqual(
-        result.message,
-        'ドロップ先のファイルがDialogoiプロジェクトのファイルではありません。',
+      expect(result.success).toBe(false);
+      expect(
+        result.message).toBe('ドロップ先のファイルがDialogoiプロジェクトのファイルではありません。',
       );
     });
 
-    test('meta.yamlが存在しないディレクトリの本文ファイルにドロップした場合、エラーになる', async () => {
+    it('meta.yamlが存在しないディレクトリの本文ファイルにドロップした場合、エラーになる', async () => {
       // テスト用ファイル構造を準備
       const projectRoot = '/test/project';
       const contentsDir = '/test/project/contents';
@@ -284,10 +281,9 @@ tags: []`,
       );
 
       // 結果を検証
-      assert.strictEqual(result.success, false);
-      assert.strictEqual(
-        result.message,
-        'ドロップ先のファイルがDialogoiプロジェクトのファイルではありません。',
+      expect(result.success).toBe(false);
+      expect(
+        result.message).toBe('ドロップ先のファイルがDialogoiプロジェクトのファイルではありません。',
       );
     });
   });

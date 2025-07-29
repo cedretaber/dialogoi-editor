@@ -1,4 +1,3 @@
-import * as assert from 'assert';
 import {
   MetaYamlUtils,
   MetaYaml,
@@ -7,9 +6,9 @@ import {
   ContentItem,
 } from './MetaYamlUtils.js';
 
-suite('MetaYamlUtils テストスイート', () => {
-  suite('parseMetaYaml', () => {
-    test('正常なYAMLを正しく解析する', () => {
+describe('MetaYamlUtils テストスイート', () => {
+  describe('parseMetaYaml', () => {
+    it('正常なYAMLを正しく解析する', () => {
       const yamlContent = `readme: README.md
 files:
   - name: chapter1.txt
@@ -31,23 +30,23 @@ files:
     isMissing: false`;
 
       const result = MetaYamlUtils.parseMetaYaml(yamlContent);
-      assert.notStrictEqual(result, null);
-      assert.strictEqual(result?.readme, 'README.md');
-      assert.strictEqual(result?.files.length, 2);
+      expect(result).not.toBe(null);
+      expect(result?.readme).toBe('README.md');
+      expect(result?.files.length).toBe(2);
 
       const file1 = result?.files[0];
-      assert.strictEqual(file1?.name, 'chapter1.txt');
-      assert.strictEqual(file1?.type, 'content');
+      expect(file1?.name).toBe('chapter1.txt');
+      expect(file1?.type).toBe('content');
       if (file1?.type === 'content') {
         const contentItem = file1;
-        assert.deepStrictEqual(contentItem.tags, ['重要', '序章']);
-        assert.deepStrictEqual(contentItem.references, ['settings/world.md']);
-        assert.strictEqual(contentItem.comments, '.chapter1.txt.comments.yaml');
-        assert.strictEqual(contentItem.hash, 'abc123');
+        expect(contentItem.tags).toEqual(['重要', '序章']);
+        expect(contentItem.references).toEqual(['settings/world.md']);
+        expect(contentItem.comments).toBe('.chapter1.txt.comments.yaml');
+        expect(contentItem.hash).toBe('abc123');
       }
     });
 
-    test('最小構成のYAMLを正しく解析する', () => {
+    it('最小構成のYAMLを正しく解析する', () => {
       const yamlContent = `files:
   - name: test.txt
     type: content
@@ -60,25 +59,25 @@ files:
     isMissing: false`;
 
       const result = MetaYamlUtils.parseMetaYaml(yamlContent);
-      assert.notStrictEqual(result, null);
-      assert.strictEqual(result?.readme, undefined);
-      assert.strictEqual(result?.files.length, 1);
-      assert.strictEqual(result?.files[0]?.name, 'test.txt');
-      assert.strictEqual(result?.files[0]?.type, 'content');
-      assert.strictEqual(result?.files[0]?.path, '/test/test.txt');
+      expect(result).not.toBe(null);
+      expect(result?.readme).toBe(undefined);
+      expect(result?.files.length).toBe(1);
+      expect(result?.files[0]?.name).toBe('test.txt');
+      expect(result?.files[0]?.type).toBe('content');
+      expect(result?.files[0]?.path).toBe('/test/test.txt');
     });
 
-    test('空のfilesを正しく解析する', () => {
+    it('空のfilesを正しく解析する', () => {
       const yamlContent = `readme: README.md
 files: []`;
 
       const result = MetaYamlUtils.parseMetaYaml(yamlContent);
-      assert.notStrictEqual(result, null);
-      assert.strictEqual(result?.readme, 'README.md');
-      assert.strictEqual(result?.files.length, 0);
+      expect(result).not.toBe(null);
+      expect(result?.readme).toBe('README.md');
+      expect(result?.files.length).toBe(0);
     });
 
-    test('不正なYAMLの場合nullを返す', () => {
+    it('不正なYAMLの場合nullを返す', () => {
       const invalidYaml = `readme: README.md
 files:
   - name: test.txt
@@ -93,23 +92,23 @@ files:
   - invalid: yaml: syntax`;
 
       const result = MetaYamlUtils.parseMetaYaml(invalidYaml);
-      assert.strictEqual(result, null);
+      expect(result).toBe(null);
     });
 
-    test('空文字列の場合nullを返す', () => {
+    it('空文字列の場合nullを返す', () => {
       const result = MetaYamlUtils.parseMetaYaml('');
-      assert.strictEqual(result, null);
+      expect(result).toBe(null);
     });
 
-    test('filesが未定義の場合nullを返す', () => {
+    it('filesが未定義の場合nullを返す', () => {
       const yamlContent = `readme: README.md`;
       const result = MetaYamlUtils.parseMetaYaml(yamlContent);
-      assert.strictEqual(result, null);
+      expect(result).toBe(null);
     });
   });
 
-  suite('stringifyMetaYaml', () => {
-    test('正常なMetaYamlオブジェクトをYAML文字列に変換する', () => {
+  describe('stringifyMetaYaml', () => {
+    it('正常なMetaYamlオブジェクトをYAML文字列に変換する', () => {
       const meta: MetaYaml = {
         readme: 'README.md',
         files: [
@@ -137,14 +136,14 @@ files:
       const result = MetaYamlUtils.stringifyMetaYaml(meta);
 
       // 結果の検証
-      assert.strictEqual(typeof result, 'string');
-      assert.ok(result.includes('readme: README.md'));
-      assert.ok(result.includes('name: chapter1.txt'));
-      assert.ok(result.includes('type: content'));
-      assert.ok(result.includes('hash: abc123'));
+      expect(typeof result).toBe('string');
+      expect(result.includes('readme: README.md')).toBeTruthy();
+      expect(result.includes('name: chapter1.txt')).toBeTruthy();
+      expect(result.includes('type: content')).toBeTruthy();
+      expect(result.includes('hash: abc123')).toBeTruthy();
     });
 
-    test('readmeがない場合も正しく変換する', () => {
+    it('readmeがない場合も正しく変換する', () => {
       const meta = {
         files: [
           {
@@ -163,27 +162,27 @@ files:
 
       const result = MetaYamlUtils.stringifyMetaYaml(meta);
 
-      assert.strictEqual(typeof result, 'string');
-      assert.ok(result.includes('name: test.txt'));
-      assert.ok(result.includes('type: content'));
-      assert.ok(!result.includes('readme:'));
+      expect(typeof result).toBe('string');
+      expect(result.includes('name: test.txt')).toBeTruthy();
+      expect(result.includes('type: content')).toBeTruthy();
+      expect(!result.includes('readme:')).toBeTruthy();
     });
 
-    test('空のfilesを持つMetaYamlを正しく変換する', () => {
+    it('空のfilesを持つMetaYamlを正しく変換する', () => {
       const meta: MetaYaml = {
         readme: 'README.md',
         files: [],
       };
 
       const result = MetaYamlUtils.stringifyMetaYaml(meta);
-      assert.strictEqual(typeof result, 'string');
-      assert.ok(result.includes('readme: README.md'));
-      assert.ok(result.includes('files: []'));
+      expect(typeof result).toBe('string');
+      expect(result.includes('readme: README.md')).toBeTruthy();
+      expect(result.includes('files: []')).toBeTruthy();
     });
   });
 
-  suite('validateDialogoiTreeItem', () => {
-    test('正常なコンテンツアイテムのバリデーションが成功する', () => {
+  describe('validateDialogoiTreeItem', () => {
+    it('正常なコンテンツアイテムのバリデーションが成功する', () => {
       const item: ContentItem = {
         name: 'test.txt',
         type: 'content',
@@ -197,10 +196,10 @@ files:
       };
 
       const errors = MetaYamlUtils.validateDialogoiTreeItem(item);
-      assert.strictEqual(errors.length, 0);
+      expect(errors.length).toBe(0);
     });
 
-    test('正常なサブディレクトリアイテムのバリデーションが成功する', () => {
+    it('正常なサブディレクトリアイテムのバリデーションが成功する', () => {
       const item: SubdirectoryItem = {
         name: 'settings',
         type: 'subdirectory',
@@ -210,10 +209,10 @@ files:
       };
 
       const errors = MetaYamlUtils.validateDialogoiTreeItem(item);
-      assert.strictEqual(errors.length, 0);
+      expect(errors.length).toBe(0);
     });
 
-    test('nameが空の場合エラーを返す', () => {
+    it('nameが空の場合エラーを返す', () => {
       const item: ContentItem = {
         name: '',
         type: 'content',
@@ -227,14 +226,14 @@ files:
       };
 
       const errors = MetaYamlUtils.validateDialogoiTreeItem(item);
-      assert.strictEqual(errors.length, 1);
+      expect(errors.length).toBe(1);
       const firstError = errors[0];
       if (firstError !== undefined) {
-        assert.ok(firstError.includes('name フィールドは必須です'));
+        expect(firstError.includes('name フィールドは必須です')).toBeTruthy();
       }
     });
 
-    test('不正なtypeの場合エラーを返す', () => {
+    it('不正なtypeの場合エラーを返す', () => {
       const item = {
         name: 'test.txt',
         type: 'invalid',
@@ -242,20 +241,20 @@ files:
       } as unknown as DialogoiTreeItem;
 
       const errors = MetaYamlUtils.validateDialogoiTreeItem(item);
-      assert.strictEqual(errors.length, 1);
+      expect(errors.length).toBe(1);
       const firstError = errors[0];
       if (firstError !== undefined) {
-        assert.ok(
+        expect(
           firstError.includes(
             'type フィールドは content, setting, subdirectory のいずれかである必要があります',
-          ),
-        );
+          )
+        ).toBeTruthy();
       }
     });
   });
 
-  suite('validateMetaYaml', () => {
-    test('正常なMetaYamlのバリデーションが成功する', () => {
+  describe('validateMetaYaml', () => {
+    it('正常なMetaYamlのバリデーションが成功する', () => {
       const meta: MetaYaml = {
         readme: 'README.md',
         files: [
@@ -281,24 +280,24 @@ files:
       };
 
       const errors = MetaYamlUtils.validateMetaYaml(meta);
-      assert.strictEqual(errors.length, 0);
+      expect(errors.length).toBe(0);
     });
 
-    test('filesが配列でない場合エラーを返す', () => {
+    it('filesが配列でない場合エラーを返す', () => {
       const invalidMeta = {
         readme: 'README.md',
         files: 'invalid',
       } as unknown as MetaYaml;
 
       const errors = MetaYamlUtils.validateMetaYaml(invalidMeta);
-      assert.strictEqual(errors.length, 1);
+      expect(errors.length).toBe(1);
       const firstError = errors[0];
       if (firstError !== undefined) {
-        assert.ok(firstError.includes('files フィールドは配列である必要があります'));
+        expect(firstError.includes('files フィールドは配列である必要があります')).toBeTruthy();
       }
     });
 
-    test('ファイルアイテムのエラーがある場合インデックス付きでエラーを返す', () => {
+    it('ファイルアイテムのエラーがある場合インデックス付きでエラーを返す', () => {
       const meta: MetaYaml = {
         readme: 'README.md',
         files: [
@@ -322,27 +321,27 @@ files:
       };
 
       const errors = MetaYamlUtils.validateMetaYaml(meta);
-      assert.ok(errors.length > 0);
-      assert.ok(errors.some((error) => error.includes('files[1]:')));
+      expect(errors.length > 0).toBeTruthy();
+      expect(errors.some((error) => error.includes('files[1]:'))).toBeTruthy();
     });
   });
 
-  suite('createMetaYaml', () => {
-    test('新しいMetaYamlを作成', () => {
+  describe('createMetaYaml', () => {
+    it('新しいMetaYamlを作成', () => {
       const meta = MetaYamlUtils.createMetaYaml('README.md');
-      assert.strictEqual(meta.readme, 'README.md');
-      assert.strictEqual(meta.files.length, 0);
-      assert.ok(Array.isArray(meta.files));
+      expect(meta.readme).toBe('README.md');
+      expect(meta.files.length).toBe(0);
+      expect(Array.isArray(meta.files)).toBeTruthy();
 
       const errors = MetaYamlUtils.validateMetaYaml(meta);
-      assert.strictEqual(errors.length, 0);
+      expect(errors.length).toBe(0);
     });
 
-    test('readmeなしで新しいMetaYamlを作成', () => {
+    it('readmeなしで新しいMetaYamlを作成', () => {
       const meta = MetaYamlUtils.createMetaYaml();
-      assert.strictEqual(meta.readme, undefined);
-      assert.strictEqual(meta.files.length, 0);
-      assert.ok(Array.isArray(meta.files));
+      expect(meta.readme).toBe(undefined);
+      expect(meta.files.length).toBe(0);
+      expect(Array.isArray(meta.files)).toBeTruthy();
     });
   });
 });

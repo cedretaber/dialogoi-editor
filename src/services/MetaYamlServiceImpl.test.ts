@@ -1,28 +1,27 @@
-import * as assert from 'assert';
 import { MetaYamlServiceImpl } from './MetaYamlServiceImpl.js';
 import { MetaYaml } from '../utils/MetaYamlUtils.js';
 import { TestServiceContainer } from '../di/TestServiceContainer.js';
 import { MockFileRepository } from '../repositories/MockFileRepository.js';
 import { createContentItem, createSubdirectoryItem } from '../test/testHelpers.js';
 
-suite('MetaYamlServiceImpl テストスイート', () => {
+describe('MetaYamlServiceImpl テストスイート', () => {
   let service: MetaYamlServiceImpl;
   let mockFileRepository: MockFileRepository;
   let testContainer: TestServiceContainer;
 
-  setup(() => {
+  beforeEach(() => {
     testContainer = TestServiceContainer.create();
     mockFileRepository = testContainer.getFileRepository() as MockFileRepository;
     service = testContainer.getMetaYamlService() as MetaYamlServiceImpl;
   });
 
-  teardown(() => {
+  afterEach(() => {
     mockFileRepository.reset();
     testContainer.cleanup();
   });
 
-  suite('loadMetaYamlAsync', () => {
-    test('正常な.dialogoi-meta.yamlファイルを読み込む', async () => {
+  describe('loadMetaYamlAsync', () => {
+    it('正常な.dialogoi-meta.yamlファイルを読み込む', async () => {
       const testDir = '/test/project';
 
       const contentItem = createContentItem({
@@ -60,25 +59,25 @@ files:
 
       const result = await service.loadMetaYamlAsync(testDir);
 
-      assert.notStrictEqual(result, null);
-      assert.strictEqual(result?.readme, 'README.md');
-      assert.strictEqual(result?.files.length, 2);
-      assert.strictEqual(result?.files[0]?.name, 'chapter1.txt');
-      assert.strictEqual(result?.files[0]?.type, 'content');
-      assert.deepStrictEqual(result?.files[0]?.tags, ['重要', '序章']);
-      assert.strictEqual(result?.files[1]?.name, 'settings');
-      assert.strictEqual(result?.files[1]?.type, 'subdirectory');
+      expect(result).not.toBe(null);
+      expect(result?.readme).toBe('README.md');
+      expect(result?.files.length).toBe(2);
+      expect(result?.files[0]?.name).toBe('chapter1.txt');
+      expect(result?.files[0]?.type).toBe('content');
+      expect((result?.files[0] as any)?.tags).toEqual(['重要', '序章']);
+      expect(result?.files[1]?.name).toBe('settings');
+      expect(result?.files[1]?.type).toBe('subdirectory');
     });
 
-    test('.dialogoi-meta.yamlファイルが存在しない場合nullを返す', async () => {
+    it('.dialogoi-meta.yamlファイルが存在しない場合nullを返す', async () => {
       const testDir = '/test/project';
       mockFileRepository.addDirectory(testDir);
 
       const result = await service.loadMetaYamlAsync(testDir);
-      assert.strictEqual(result, null);
+      expect(result).toBe(null);
     });
 
-    test('不正なYAMLファイルの場合nullを返す', async () => {
+    it('不正なYAMLファイルの場合nullを返す', async () => {
       const testDir = '/test/project';
       const invalidYaml = `readme: README.md
 files:
@@ -97,19 +96,19 @@ files:
       mockFileRepository.addFile(`${testDir}/.dialogoi-meta.yaml`, invalidYaml);
 
       const result = await service.loadMetaYamlAsync(testDir);
-      assert.strictEqual(result, null);
+      expect(result).toBe(null);
     });
 
-    test('空の.dialogoi-meta.yamlファイルの場合nullを返す', async () => {
+    it('空の.dialogoi-meta.yamlファイルの場合nullを返す', async () => {
       const testDir = '/test/project';
       mockFileRepository.addDirectory(testDir);
       mockFileRepository.addFile(`${testDir}/.dialogoi-meta.yaml`, '');
 
       const result = await service.loadMetaYamlAsync(testDir);
-      assert.strictEqual(result, null);
+      expect(result).toBe(null);
     });
 
-    test('最小構成の.dialogoi-meta.yamlファイルを読み込む', async () => {
+    it('最小構成の.dialogoi-meta.yamlファイルを読み込む', async () => {
       const testDir = '/test/project';
       const metaContent = `files: []`;
 
@@ -118,14 +117,14 @@ files:
 
       const result = await service.loadMetaYamlAsync(testDir);
 
-      assert.notStrictEqual(result, null);
-      assert.strictEqual(result?.readme, undefined);
-      assert.strictEqual(result?.files.length, 0);
+      expect(result).not.toBe(null);
+      expect(result?.readme).toBe(undefined);
+      expect(result?.files.length).toBe(0);
     });
   });
 
-  suite('saveMetaYamlAsync', () => {
-    test('正常なMetaYamlオブジェクトを保存する', async () => {
+  describe('saveMetaYamlAsync', () => {
+    it('正常なMetaYamlオブジェクトを保存する', async () => {
       const testDir = '/test/project';
       const meta: MetaYaml = {
         readme: 'README.md',
@@ -154,21 +153,21 @@ files:
       mockFileRepository.addDirectory(testDir);
 
       const result = await service.saveMetaYamlAsync(testDir, meta);
-      assert.strictEqual(result, true);
+      expect(result).toBe(true);
 
       // 保存されたファイルを確認
       const savedContent = await mockFileRepository.readFileAsync(
         mockFileRepository.createFileUri(`${testDir}/.dialogoi-meta.yaml`),
         'utf8',
       );
-      assert.ok(savedContent.includes('readme: README.md'));
-      assert.ok(savedContent.includes('name: chapter1.txt'));
-      assert.ok(savedContent.includes('type: content'));
-      assert.ok(savedContent.includes('comments: .chapter1.txt.comments.yaml'));
-      assert.ok(savedContent.includes('hash: abc123'));
+      expect(savedContent.includes('readme: README.md')).toBeTruthy();
+      expect(savedContent.includes('name: chapter1.txt')).toBeTruthy();
+      expect(savedContent.includes('type: content')).toBeTruthy();
+      expect(savedContent.includes('comments: .chapter1.txt.comments.yaml')).toBeTruthy();
+      expect(savedContent.includes('hash: abc123')).toBeTruthy();
     });
 
-    test('空のfilesを持つMetaYamlを保存する', async () => {
+    it('空のfilesを持つMetaYamlを保存する', async () => {
       const testDir = '/test/project';
       const meta: MetaYaml = {
         readme: 'README.md',
@@ -178,17 +177,17 @@ files:
       mockFileRepository.addDirectory(testDir);
 
       const result = await service.saveMetaYamlAsync(testDir, meta);
-      assert.strictEqual(result, true);
+      expect(result).toBe(true);
 
       const savedContent = await mockFileRepository.readFileAsync(
         mockFileRepository.createFileUri(`${testDir}/.dialogoi-meta.yaml`),
         'utf8',
       );
-      assert.ok(savedContent.includes('readme: README.md'));
-      assert.ok(savedContent.includes('files: []'));
+      expect(savedContent.includes('readme: README.md')).toBeTruthy();
+      expect(savedContent.includes('files: []')).toBeTruthy();
     });
 
-    test('readmeがないMetaYamlを保存する', async () => {
+    it('readmeがないMetaYamlを保存する', async () => {
       const testDir = '/test/project';
       const meta: MetaYaml = {
         files: [
@@ -204,18 +203,18 @@ files:
       mockFileRepository.addDirectory(testDir);
 
       const result = await service.saveMetaYamlAsync(testDir, meta);
-      assert.strictEqual(result, true);
+      expect(result).toBe(true);
 
       const savedContent = await mockFileRepository.readFileAsync(
         mockFileRepository.createFileUri(`${testDir}/.dialogoi-meta.yaml`),
         'utf8',
       );
-      assert.ok(savedContent.includes('name: test.txt'));
-      assert.ok(savedContent.includes('type: content'));
-      assert.ok(!savedContent.includes('readme:'));
+      expect(savedContent.includes('name: test.txt')).toBeTruthy();
+      expect(savedContent.includes('type: content')).toBeTruthy();
+      expect(!savedContent.includes('readme:')).toBeTruthy();
     });
 
-    test('バリデーションエラーがある場合falseを返す', async () => {
+    it('バリデーションエラーがある場合falseを返す', async () => {
       const testDir = '/test/project';
       const invalidMeta = {
         readme: 'README.md',
@@ -231,14 +230,14 @@ files:
       mockFileRepository.addDirectory(testDir);
 
       const result = await service.saveMetaYamlAsync(testDir, invalidMeta);
-      assert.strictEqual(result, false);
+      expect(result).toBe(false);
 
       // .dialogoi-meta.yamlファイルが作成されていないことを確認
       const metaUri = mockFileRepository.createFileUri(`${testDir}/.dialogoi-meta.yaml`);
-      assert.strictEqual(await mockFileRepository.existsAsync(metaUri), false);
+      expect(await mockFileRepository.existsAsync(metaUri)).toBe(false);
     });
 
-    test('複数のバリデーションエラーがある場合falseを返す', async () => {
+    it('複数のバリデーションエラーがある場合falseを返す', async () => {
       const testDir = '/test/project';
       const invalidMeta = {
         files: [
@@ -258,12 +257,12 @@ files:
       mockFileRepository.addDirectory(testDir);
 
       const result = await service.saveMetaYamlAsync(testDir, invalidMeta);
-      assert.strictEqual(result, false);
+      expect(result).toBe(false);
     });
   });
 
-  suite('getReadmeFilePathAsync', () => {
-    test('readmeファイルが存在する場合パスを返す', async () => {
+  describe('getReadmeFilePathAsync', () => {
+    it('readmeファイルが存在する場合パスを返す', async () => {
       const testDir = '/test/project';
       const metaContent = `readme: README.md
 files: []`;
@@ -273,10 +272,10 @@ files: []`;
       mockFileRepository.addFile(`${testDir}/README.md`, '# Test Project');
 
       const result = await service.getReadmeFilePathAsync(testDir);
-      assert.strictEqual(result, `${testDir}/README.md`);
+      expect(result).toBe(`${testDir}/README.md`);
     });
 
-    test('readmeファイルが存在しない場合nullを返す', async () => {
+    it('readmeファイルが存在しない場合nullを返す', async () => {
       const testDir = '/test/project';
       const metaContent = `readme: README.md
 files: []`;
@@ -286,10 +285,10 @@ files: []`;
       // README.mdファイルは作成しない
 
       const result = await service.getReadmeFilePathAsync(testDir);
-      assert.strictEqual(result, null);
+      expect(result).toBe(null);
     });
 
-    test('.dialogoi-meta.yamlにreadmeが設定されていない場合nullを返す', async () => {
+    it('.dialogoi-meta.yamlにreadmeが設定されていない場合nullを返す', async () => {
       const testDir = '/test/project';
       const metaContent = `files: []`;
 
@@ -297,18 +296,18 @@ files: []`;
       mockFileRepository.addFile(`${testDir}/.dialogoi-meta.yaml`, metaContent);
 
       const result = await service.getReadmeFilePathAsync(testDir);
-      assert.strictEqual(result, null);
+      expect(result).toBe(null);
     });
 
-    test('.dialogoi-meta.yamlが存在しない場合nullを返す', async () => {
+    it('.dialogoi-meta.yamlが存在しない場合nullを返す', async () => {
       const testDir = '/test/project';
       mockFileRepository.addDirectory(testDir);
 
       const result = await service.getReadmeFilePathAsync(testDir);
-      assert.strictEqual(result, null);
+      expect(result).toBe(null);
     });
 
-    test('相対パスのreadmeファイルを正しく解決する', async () => {
+    it('相対パスのreadmeファイルを正しく解決する', async () => {
       const testDir = '/test/project';
       const metaContent = `readme: docs/README.md
 files: []`;
@@ -319,12 +318,12 @@ files: []`;
       mockFileRepository.addFile(`${testDir}/docs/README.md`, '# Test Project');
 
       const result = await service.getReadmeFilePathAsync(testDir);
-      assert.strictEqual(result, `${testDir}/docs/README.md`);
+      expect(result).toBe(`${testDir}/docs/README.md`);
     });
   });
 
-  suite('findNovelRootAsync', () => {
-    test('dialogoi.yamlが存在するディレクトリを見つける', async () => {
+  describe('findNovelRootAsync', () => {
+    it('dialogoi.yamlが存在するディレクトリを見つける', async () => {
       const workspaceRoot = '/test/workspace';
       const novelRoot = '/test/workspace/novel';
 
@@ -333,10 +332,10 @@ files: []`;
       mockFileRepository.addFile(`${novelRoot}/dialogoi.yaml`, 'version: 1.0');
 
       const result = await service.findNovelRootAsync(workspaceRoot);
-      assert.strictEqual(result, novelRoot);
+      expect(result).toBe(novelRoot);
     });
 
-    test('深い階層のdialogoiプロジェクトを見つける', async () => {
+    it('深い階層のdialogoiプロジェクトを見つける', async () => {
       const workspaceRoot = '/test/workspace';
       const novelRoot = '/test/workspace/projects/novel/src';
 
@@ -347,10 +346,10 @@ files: []`;
       mockFileRepository.addFile(`${novelRoot}/dialogoi.yaml`, 'version: 1.0');
 
       const result = await service.findNovelRootAsync(workspaceRoot);
-      assert.strictEqual(result, novelRoot);
+      expect(result).toBe(novelRoot);
     });
 
-    test('複数のdialogoiプロジェクトがある場合最初に見つかったものを返す', async () => {
+    it('複数のdialogoiプロジェクトがある場合最初に見つかったものを返す', async () => {
       const workspaceRoot = '/test/workspace';
       const novelRoot1 = '/test/workspace/project1';
       const novelRoot2 = '/test/workspace/project2';
@@ -363,39 +362,39 @@ files: []`;
 
       const result = await service.findNovelRootAsync(workspaceRoot);
       // どちらか一方が返されることを確認（実装に依存）
-      assert.ok(result === novelRoot1 || result === novelRoot2);
+      expect(result === novelRoot1 || result === novelRoot2).toBeTruthy();
     });
 
-    test('dialogoi.yamlが存在しない場合nullを返す', async () => {
+    it('dialogoi.yamlが存在しない場合nullを返す', async () => {
       const workspaceRoot = '/test/workspace';
       mockFileRepository.addDirectory(workspaceRoot);
       mockFileRepository.addDirectory(`${workspaceRoot}/project1`);
       mockFileRepository.addDirectory(`${workspaceRoot}/project2`);
 
       const result = await service.findNovelRootAsync(workspaceRoot);
-      assert.strictEqual(result, null);
+      expect(result).toBe(null);
     });
 
-    test('ワークスペースルート自体にdialogoiプロジェクトがある場合', async () => {
+    it('ワークスペースルート自体にdialogoiプロジェクトがある場合', async () => {
       const workspaceRoot = '/test/workspace';
       mockFileRepository.addDirectory(workspaceRoot);
       mockFileRepository.addFile(`${workspaceRoot}/dialogoi.yaml`, 'version: 1.0');
 
       const result = await service.findNovelRootAsync(workspaceRoot);
-      assert.strictEqual(result, workspaceRoot);
+      expect(result).toBe(workspaceRoot);
     });
 
-    test('空のディレクトリの場合nullを返す', async () => {
+    it('空のディレクトリの場合nullを返す', async () => {
       const workspaceRoot = '/test/workspace';
       mockFileRepository.addDirectory(workspaceRoot);
 
       const result = await service.findNovelRootAsync(workspaceRoot);
-      assert.strictEqual(result, null);
+      expect(result).toBe(null);
     });
   });
 
-  suite('相互運用テスト', () => {
-    test('loadMetaYamlとsaveMetaYamlの相互運用', async () => {
+  describe('相互運用テスト', () => {
+    it('loadMetaYamlとsaveMetaYamlの相互運用', async () => {
       const testDir = '/test/project';
       const meta: MetaYaml = {
         readme: 'README.md',
@@ -418,26 +417,26 @@ files: []`;
 
       // 保存 -> 読み込み -> 保存 -> 読み込み
       const saveResult1 = await service.saveMetaYamlAsync(testDir, meta);
-      assert.strictEqual(saveResult1, true);
+      expect(saveResult1).toBe(true);
 
       const loadResult1 = await service.loadMetaYamlAsync(testDir);
-      assert.notStrictEqual(loadResult1, null);
+      expect(loadResult1).not.toBe(null);
 
       if (loadResult1 !== null) {
         const saveResult2 = await service.saveMetaYamlAsync(testDir, loadResult1);
-        assert.strictEqual(saveResult2, true);
+        expect(saveResult2).toBe(true);
 
         const loadResult2 = await service.loadMetaYamlAsync(testDir);
-        assert.notStrictEqual(loadResult2, null);
+        expect(loadResult2).not.toBe(null);
 
         // 両方の読み込み結果が同じであることを確認
-        assert.deepStrictEqual(loadResult1, loadResult2);
+        expect(loadResult1).toEqual(loadResult2);
       }
     });
   });
 
-  suite('タグ操作テスト', () => {
-    test('updateFileTagsでタグを正常に更新する', async () => {
+  describe('タグ操作テスト', () => {
+    it('updateFileTagsでタグを正常に更新する', async () => {
       const testDir = '/test/project';
       const fileName = 'chapter1.txt';
       const meta: MetaYaml = {
@@ -463,23 +462,23 @@ files: []`;
       // タグを更新
       const newTags = ['新タグ1', '新タグ2', '新タグ3'];
       const result = await service.updateFileTags(testDir, fileName, newTags);
-      assert.strictEqual(result, true);
+      expect(result).toBe(true);
 
       // 更新されたタグを確認
       const updatedMeta = await service.loadMetaYamlAsync(testDir);
-      assert.notStrictEqual(updatedMeta, null);
+      expect(updatedMeta).not.toBe(null);
 
       if (updatedMeta !== null) {
         const fileItem = updatedMeta.files.find((f) => f.name === fileName);
-        assert.notStrictEqual(fileItem, undefined);
+        expect(fileItem).not.toBe(undefined);
 
         if (fileItem !== undefined && 'tags' in fileItem) {
-          assert.deepStrictEqual(fileItem.tags, newTags);
+          expect(fileItem.tags).toEqual(newTags);
         }
       }
     });
 
-    test('updateFileTagsでタグを空にする', async () => {
+    it('updateFileTagsでタグを空にする', async () => {
       const testDir = '/test/project';
       const fileName = 'chapter1.txt';
       const meta: MetaYaml = {
@@ -504,23 +503,23 @@ files: []`;
 
       // タグを空にする
       const result = await service.updateFileTags(testDir, fileName, []);
-      assert.strictEqual(result, true);
+      expect(result).toBe(true);
 
       // タグが削除されていることを確認
       const updatedMeta = await service.loadMetaYamlAsync(testDir);
-      assert.notStrictEqual(updatedMeta, null);
+      expect(updatedMeta).not.toBe(null);
 
       if (updatedMeta !== null) {
         const fileItem = updatedMeta.files.find((f) => f.name === fileName);
-        assert.notStrictEqual(fileItem, undefined);
+        expect(fileItem).not.toBe(undefined);
 
         if (fileItem !== undefined && 'tags' in fileItem) {
-          assert.deepStrictEqual(fileItem.tags, []);
+          expect(fileItem.tags).toEqual([]);
         }
       }
     });
 
-    test('addFileTagで新しいタグを追加する', async () => {
+    it('addFileTagで新しいタグを追加する', async () => {
       const testDir = '/test/project';
       const fileName = 'chapter1.txt';
       const meta: MetaYaml = {
@@ -545,23 +544,23 @@ files: []`;
 
       // 新しいタグを追加
       const result = await service.addFileTag(testDir, fileName, '新タグ');
-      assert.strictEqual(result, true);
+      expect(result).toBe(true);
 
       // タグが追加されていることを確認
       const updatedMeta = await service.loadMetaYamlAsync(testDir);
-      assert.notStrictEqual(updatedMeta, null);
+      expect(updatedMeta).not.toBe(null);
 
       if (updatedMeta !== null) {
         const fileItem = updatedMeta.files.find((f) => f.name === fileName);
-        assert.notStrictEqual(fileItem, undefined);
+        expect(fileItem).not.toBe(undefined);
 
         if (fileItem !== undefined && 'tags' in fileItem) {
-          assert.deepStrictEqual(fileItem.tags, ['既存タグ1', '新タグ']);
+          expect(fileItem.tags).toEqual(['既存タグ1', '新タグ']);
         }
       }
     });
 
-    test('addFileTagで重複タグを追加しても成功する', async () => {
+    it('addFileTagで重複タグを追加しても成功する', async () => {
       const testDir = '/test/project';
       const fileName = 'chapter1.txt';
       const meta: MetaYaml = {
@@ -586,23 +585,23 @@ files: []`;
 
       // 既存のタグを追加
       const result = await service.addFileTag(testDir, fileName, '既存タグ1');
-      assert.strictEqual(result, true);
+      expect(result).toBe(true);
 
       // タグが重複していないことを確認
       const updatedMeta = await service.loadMetaYamlAsync(testDir);
-      assert.notStrictEqual(updatedMeta, null);
+      expect(updatedMeta).not.toBe(null);
 
       if (updatedMeta !== null) {
         const fileItem = updatedMeta.files.find((f) => f.name === fileName);
-        assert.notStrictEqual(fileItem, undefined);
+        expect(fileItem).not.toBe(undefined);
 
         if (fileItem !== undefined && 'tags' in fileItem) {
-          assert.deepStrictEqual(fileItem.tags, ['既存タグ1']);
+          expect(fileItem.tags).toEqual(['既存タグ1']);
         }
       }
     });
 
-    test('addFileTagでタグがないファイルに新規追加', async () => {
+    it('addFileTagでタグがないファイルに新規追加', async () => {
       const testDir = '/test/project';
       const fileName = 'chapter1.txt';
       const meta: MetaYaml = {
@@ -627,23 +626,23 @@ files: []`;
 
       // 新しいタグを追加
       const result = await service.addFileTag(testDir, fileName, '新タグ');
-      assert.strictEqual(result, true);
+      expect(result).toBe(true);
 
       // タグが追加されていることを確認
       const updatedMeta = await service.loadMetaYamlAsync(testDir);
-      assert.notStrictEqual(updatedMeta, null);
+      expect(updatedMeta).not.toBe(null);
 
       if (updatedMeta !== null) {
         const fileItem = updatedMeta.files.find((f) => f.name === fileName);
-        assert.notStrictEqual(fileItem, undefined);
+        expect(fileItem).not.toBe(undefined);
 
         if (fileItem !== undefined && 'tags' in fileItem) {
-          assert.deepStrictEqual(fileItem.tags, ['新タグ']);
+          expect(fileItem.tags).toEqual(['新タグ']);
         }
       }
     });
 
-    test('removeFileTagでタグを削除する', async () => {
+    it('removeFileTagでタグを削除する', async () => {
       const testDir = '/test/project';
       const fileName = 'chapter1.txt';
       const meta: MetaYaml = {
@@ -668,23 +667,23 @@ files: []`;
 
       // タグを削除
       const result = await service.removeFileTag(testDir, fileName, 'タグ2');
-      assert.strictEqual(result, true);
+      expect(result).toBe(true);
 
       // タグが削除されていることを確認
       const updatedMeta = await service.loadMetaYamlAsync(testDir);
-      assert.notStrictEqual(updatedMeta, null);
+      expect(updatedMeta).not.toBe(null);
 
       if (updatedMeta !== null) {
         const fileItem = updatedMeta.files.find((f) => f.name === fileName);
-        assert.notStrictEqual(fileItem, undefined);
+        expect(fileItem).not.toBe(undefined);
 
         if (fileItem !== undefined && 'tags' in fileItem) {
-          assert.deepStrictEqual(fileItem.tags, ['タグ1', 'タグ3']);
+          expect(fileItem.tags).toEqual(['タグ1', 'タグ3']);
         }
       }
     });
 
-    test('removeFileTagで最後のタグを削除するとtagsフィールドが削除される', async () => {
+    it('removeFileTagで最後のタグを削除するとtagsフィールドが削除される', async () => {
       const testDir = '/test/project';
       const fileName = 'chapter1.txt';
       const meta: MetaYaml = {
@@ -709,23 +708,23 @@ files: []`;
 
       // 最後のタグを削除
       const result = await service.removeFileTag(testDir, fileName, 'タグ1');
-      assert.strictEqual(result, true);
+      expect(result).toBe(true);
 
       // tagsフィールドが削除されていることを確認
       const updatedMeta = await service.loadMetaYamlAsync(testDir);
-      assert.notStrictEqual(updatedMeta, null);
+      expect(updatedMeta).not.toBe(null);
 
       if (updatedMeta !== null) {
         const fileItem = updatedMeta.files.find((f) => f.name === fileName);
-        assert.notStrictEqual(fileItem, undefined);
+        expect(fileItem).not.toBe(undefined);
 
         if (fileItem !== undefined && 'tags' in fileItem) {
-          assert.deepStrictEqual(fileItem.tags, []);
+          expect(fileItem.tags).toEqual([]);
         }
       }
     });
 
-    test('removeFileTagで存在しないタグを削除しても成功する', async () => {
+    it('removeFileTagで存在しないタグを削除しても成功する', async () => {
       const testDir = '/test/project';
       const fileName = 'chapter1.txt';
       const meta: MetaYaml = {
@@ -750,39 +749,39 @@ files: []`;
 
       // 存在しないタグを削除
       const result = await service.removeFileTag(testDir, fileName, '存在しないタグ');
-      assert.strictEqual(result, true);
+      expect(result).toBe(true);
 
       // タグが変更されていないことを確認
       const updatedMeta = await service.loadMetaYamlAsync(testDir);
-      assert.notStrictEqual(updatedMeta, null);
+      expect(updatedMeta).not.toBe(null);
 
       if (updatedMeta !== null) {
         const fileItem = updatedMeta.files.find((f) => f.name === fileName);
-        assert.notStrictEqual(fileItem, undefined);
+        expect(fileItem).not.toBe(undefined);
 
         if (fileItem !== undefined && 'tags' in fileItem) {
-          assert.deepStrictEqual(fileItem.tags, ['タグ1']);
+          expect(fileItem.tags).toEqual(['タグ1']);
         }
       }
     });
 
-    test('.dialogoi-meta.yamlが存在しない場合はfalseを返す', async () => {
+    it('.dialogoi-meta.yamlが存在しない場合はfalseを返す', async () => {
       const testDir = '/test/project';
       const fileName = 'chapter1.txt';
 
       mockFileRepository.addDirectory(testDir);
 
       const updateResult = await service.updateFileTags(testDir, fileName, ['タグ']);
-      assert.strictEqual(updateResult, false);
+      expect(updateResult).toBe(false);
 
       const addResult = await service.addFileTag(testDir, fileName, 'タグ');
-      assert.strictEqual(addResult, false);
+      expect(addResult).toBe(false);
 
       const removeResult = await service.removeFileTag(testDir, fileName, 'タグ');
-      assert.strictEqual(removeResult, false);
+      expect(removeResult).toBe(false);
     });
 
-    test('ファイルが存在しない場合はfalseを返す', async () => {
+    it('ファイルが存在しない場合はfalseを返す', async () => {
       const testDir = '/test/project';
       const fileName = 'nonexistent.txt';
       const meta: MetaYaml = {
@@ -806,18 +805,18 @@ files: []`;
       await service.saveMetaYamlAsync(testDir, meta);
 
       const updateResult = await service.updateFileTags(testDir, fileName, ['タグ']);
-      assert.strictEqual(updateResult, false);
+      expect(updateResult).toBe(false);
 
       const addResult = await service.addFileTag(testDir, fileName, 'タグ');
-      assert.strictEqual(addResult, false);
+      expect(addResult).toBe(false);
 
       const removeResult = await service.removeFileTag(testDir, fileName, 'タグ');
-      assert.strictEqual(removeResult, true); // タグがない場合は成功とする仕様
+      expect(removeResult).toBe(true); // タグがない場合は成功とする仕様
     });
   });
 
-  suite('moveFileInMetadata', () => {
-    test('同じディレクトリ内でのファイル並び替え', async () => {
+  describe('moveFileInMetadata', () => {
+    it('同じディレクトリ内でのファイル並び替え', async () => {
       const testDir = '/test/project';
       const meta: MetaYaml = {
         readme: 'README.md',
@@ -864,21 +863,21 @@ files: []`;
       // file1.txt（インデックス0）をインデックス2に移動
       const result = await service.moveFileInMetadata(testDir, testDir, 'file1.txt', 2);
 
-      assert.strictEqual(result.success, true);
+      expect(result.success).toBe(true);
 
       // メタデータを再読み込みして順序を確認
       const updatedMeta = await service.loadMetaYamlAsync(testDir);
-      assert.notStrictEqual(updatedMeta, null);
+      expect(updatedMeta).not.toBe(null);
 
       if (updatedMeta !== null) {
-        assert.strictEqual(updatedMeta.files.length, 3);
-        assert.strictEqual(updatedMeta.files[0]?.name, 'file2.txt');
-        assert.strictEqual(updatedMeta.files[1]?.name, 'file3.txt');
-        assert.strictEqual(updatedMeta.files[2]?.name, 'file1.txt');
+        expect(updatedMeta.files.length).toBe(3);
+        expect(updatedMeta.files[0]?.name).toBe('file2.txt');
+        expect(updatedMeta.files[1]?.name).toBe('file3.txt');
+        expect(updatedMeta.files[2]?.name).toBe('file1.txt');
       }
     });
 
-    test('異なるディレクトリ間でのファイル移動', async () => {
+    it('異なるディレクトリ間でのファイル移動', async () => {
       const sourceDir = '/test/source';
       const targetDir = '/test/target';
 
@@ -935,29 +934,29 @@ files: []`;
       // file1.txtを移動
       const result = await service.moveFileInMetadata(sourceDir, targetDir, 'file1.txt', 0);
 
-      assert.strictEqual(result.success, true);
+      expect(result.success).toBe(true);
 
       // 移動元を確認
       const updatedSourceMeta = await service.loadMetaYamlAsync(sourceDir);
-      assert.notStrictEqual(updatedSourceMeta, null);
+      expect(updatedSourceMeta).not.toBe(null);
       if (updatedSourceMeta !== null) {
-        assert.strictEqual(updatedSourceMeta.files.length, 1);
-        assert.strictEqual(updatedSourceMeta.files[0]?.name, 'file2.txt');
+        expect(updatedSourceMeta.files.length).toBe(1);
+        expect(updatedSourceMeta.files[0]?.name).toBe('file2.txt');
       }
 
       // 移動先を確認
       const updatedTargetMeta = await service.loadMetaYamlAsync(targetDir);
-      assert.notStrictEqual(updatedTargetMeta, null);
+      expect(updatedTargetMeta).not.toBe(null);
       if (updatedTargetMeta !== null) {
-        assert.strictEqual(updatedTargetMeta.files.length, 2);
-        assert.strictEqual(updatedTargetMeta.files[0]?.name, 'file1.txt');
-        assert.strictEqual(updatedTargetMeta.files[1]?.name, 'file3.txt');
+        expect(updatedTargetMeta.files.length).toBe(2);
+        expect(updatedTargetMeta.files[0]?.name).toBe('file1.txt');
+        expect(updatedTargetMeta.files[1]?.name).toBe('file3.txt');
         // パスが更新されていることを確認
-        assert.strictEqual(updatedTargetMeta.files[0]?.path, `${targetDir}/file1.txt`);
+        expect(updatedTargetMeta.files[0]?.path).toBe(`${targetDir}/file1.txt`);
       }
     });
 
-    test('同じディレクトリ内で重複ファイル移動を試行（エラーにならない）', async () => {
+    it('同じディレクトリ内で重複ファイル移動を試行（エラーにならない）', async () => {
       const testDir = '/test/project';
       const meta: MetaYaml = {
         readme: 'README.md',
@@ -982,7 +981,7 @@ files: []`;
       // 同じディレクトリ内で同名ファイルを移動（重複だがエラーにならない）
       const result = await service.moveFileInMetadata(testDir, testDir, 'file1.txt', 0);
 
-      assert.strictEqual(result.success, true);
+      expect(result.success).toBe(true);
     });
   });
 });

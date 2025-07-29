@@ -1,5 +1,4 @@
-import { describe, it, beforeEach, afterEach } from 'mocha';
-import * as assert from 'assert';
+// Jestはグローバルにdescribe, it等が定義されているためimport不要
 import * as path from 'path';
 import { CommentService } from './CommentService.js';
 import { CreateCommentOptions } from '../models/Comment.js';
@@ -46,16 +45,16 @@ describe('CommentService テストスイート', () => {
 
       // コメントファイルが作成されているか確認
       const commentFile = await commentService.loadCommentFileAsync(testRelativeFilePath);
-      assert.ok(commentFile !== null);
+      expect(commentFile !== null).toBeTruthy();
       if (commentFile !== null) {
-        assert.strictEqual(commentFile.comments.length, 1);
-        assert.strictEqual(commentFile.comments[0]?.id, 1);
-        assert.strictEqual(commentFile.comments[0]?.target_file, 'test.txt#L1');
-        assert.strictEqual(commentFile.comments[0]?.content, 'これはテストコメントです');
-        assert.strictEqual(commentFile.comments[0]?.status, 'open');
-        assert.strictEqual(commentFile.comments[0]?.posted_by, 'author');
-        assert.ok(commentFile.comments[0]?.created_at);
-        assert.ok(commentFile.comments[0]?.file_hash);
+        expect(commentFile.comments.length).toBe(1);
+        expect(commentFile.comments[0]?.id).toBe(1);
+        expect(commentFile.comments[0]?.target_file).toBe('test.txt#L1');
+        expect(commentFile.comments[0]?.content).toBe('これはテストコメントです');
+        expect(commentFile.comments[0]?.status).toBe('open');
+        expect(commentFile.comments[0]?.posted_by).toBe('author');
+        expect(commentFile.comments[0]?.created_at).toBeTruthy();
+        expect(commentFile.comments[0]?.file_hash).toBeTruthy();
       }
     });
 
@@ -69,11 +68,11 @@ describe('CommentService テストスイート', () => {
       await commentService.addCommentAsync(testRelativeFilePath, options);
 
       const commentFile = await commentService.loadCommentFileAsync(testRelativeFilePath);
-      assert.ok(commentFile !== null);
+      expect(commentFile !== null).toBeTruthy();
       if (commentFile !== null) {
-        assert.strictEqual(commentFile.comments[0]?.id, 1);
-        assert.strictEqual(commentFile.comments[0]?.target_file, 'test.txt#L1-L3');
-        assert.strictEqual(commentFile.comments[0]?.content, '複数行にわたるコメント');
+        expect(commentFile.comments[0]?.id).toBe(1);
+        expect(commentFile.comments[0]?.target_file).toBe('test.txt#L1-L3');
+        expect(commentFile.comments[0]?.content).toBe('複数行にわたるコメント');
       }
     });
 
@@ -92,11 +91,11 @@ describe('CommentService テストスイート', () => {
       await commentService.addCommentAsync(testRelativeFilePath, options2);
 
       const commentFile = await commentService.loadCommentFileAsync(testRelativeFilePath);
-      assert.ok(commentFile !== null);
+      expect(commentFile !== null).toBeTruthy();
       if (commentFile !== null) {
-        assert.strictEqual(commentFile.comments.length, 2);
-        assert.strictEqual(commentFile.comments[0]?.content, '最初のコメント');
-        assert.strictEqual(commentFile.comments[1]?.content, '2番目のコメント');
+        expect(commentFile.comments.length).toBe(2);
+        expect(commentFile.comments[0]?.content).toBe('最初のコメント');
+        expect(commentFile.comments[1]?.content).toBe('2番目のコメント');
       }
     });
 
@@ -121,10 +120,10 @@ created_at: '2024-01-01T00:00:00Z'`;
 
       // コメントファイルを読み込み、posted_byを確認
       const commentFile = await commentService.loadCommentFileAsync(testRelativeFilePath);
-      assert.ok(commentFile !== null);
+      expect(commentFile !== null).toBeTruthy();
       if (commentFile !== null) {
-        assert.strictEqual(commentFile.comments.length, 1);
-        assert.strictEqual(commentFile.comments[0]?.posted_by, 'テスト著者');
+        expect(commentFile.comments.length).toBe(1);
+        expect(commentFile.comments[0]?.posted_by).toBe('テスト著者');
       }
     });
 
@@ -142,10 +141,10 @@ created_at: '2024-01-01T00:00:00Z'`;
 
       // コメントファイルを読み込み、posted_byがデフォルト値になっているか確認
       const commentFile = await commentService.loadCommentFileAsync('another.txt');
-      assert.ok(commentFile !== null);
+      expect(commentFile !== null).toBeTruthy();
       if (commentFile !== null) {
-        assert.strictEqual(commentFile.comments.length, 1);
-        assert.strictEqual(commentFile.comments[0]?.posted_by, 'author');
+        expect(commentFile.comments.length).toBe(1);
+        expect(commentFile.comments[0]?.posted_by).toBe('author');
       }
     });
   });
@@ -153,7 +152,7 @@ created_at: '2024-01-01T00:00:00Z'`;
   describe('loadCommentFileAsync', () => {
     it('存在しないコメントファイルを読み込む', async () => {
       const commentFile = await commentService.loadCommentFileAsync('nonexistent.txt');
-      assert.strictEqual(commentFile, null);
+      expect(commentFile).toBe(null);
     });
 
     it('コメントファイルを正しく読み込む', async () => {
@@ -165,10 +164,10 @@ created_at: '2024-01-01T00:00:00Z'`;
       await commentService.addCommentAsync(testRelativeFilePath, options);
       const commentFile = await commentService.loadCommentFileAsync(testRelativeFilePath);
 
-      assert.ok(commentFile !== null);
+      expect(commentFile !== null).toBeTruthy();
       if (commentFile !== null) {
-        assert.strictEqual(commentFile.comments.length, 1);
-        assert.strictEqual(commentFile.comments[0]?.content, 'テストコメント');
+        expect(commentFile.comments.length).toBe(1);
+        expect(commentFile.comments[0]?.content).toBe('テストコメント');
       }
     });
   });
@@ -184,9 +183,9 @@ created_at: '2024-01-01T00:00:00Z'`;
       await commentService.updateCommentAsync(testRelativeFilePath, 0, { status: 'resolved' });
 
       const commentFile = await commentService.loadCommentFileAsync(testRelativeFilePath);
-      assert.ok(commentFile !== null);
+      expect(commentFile !== null).toBeTruthy();
       if (commentFile !== null) {
-        assert.strictEqual(commentFile.comments[0]?.status, 'resolved');
+        expect(commentFile.comments[0]?.status).toBe('resolved');
       }
     });
 
@@ -202,9 +201,9 @@ created_at: '2024-01-01T00:00:00Z'`;
       });
 
       const commentFile = await commentService.loadCommentFileAsync(testRelativeFilePath);
-      assert.ok(commentFile !== null);
+      expect(commentFile !== null).toBeTruthy();
       if (commentFile !== null) {
-        assert.strictEqual(commentFile.comments[0]?.content, '更新されたコメント');
+        expect(commentFile.comments[0]?.content).toBe('更新されたコメント');
       }
     });
 
@@ -221,19 +220,19 @@ created_at: '2024-01-01T00:00:00Z'`;
       });
 
       const commentFile = await commentService.loadCommentFileAsync(testRelativeFilePath);
-      assert.ok(commentFile !== null);
+      expect(commentFile !== null).toBeTruthy();
       if (commentFile !== null) {
-        assert.strictEqual(commentFile.comments[0]?.content, '更新されたコメント');
-        assert.strictEqual(commentFile.comments[0]?.status, 'resolved');
+        expect(commentFile.comments[0]?.content).toBe('更新されたコメント');
+        expect(commentFile.comments[0]?.status).toBe('resolved');
       }
     });
 
     it('存在しないコメントファイルを更新しようとするとエラーが発生する', async () => {
       try {
         await commentService.updateCommentAsync('nonexistent.txt', 0, { status: 'resolved' });
-        assert.fail('エラーが発生すべきです');
+        fail('エラーが発生すべきです');
       } catch (error) {
-        assert.ok((error as Error).message.includes('更新対象のコメントが見つかりません'));
+        expect((error as Error).message).toContain('更新対象のコメントが見つかりません');
       }
     });
 
@@ -247,9 +246,9 @@ created_at: '2024-01-01T00:00:00Z'`;
 
       try {
         await commentService.updateCommentAsync(testRelativeFilePath, 999, { status: 'resolved' });
-        assert.fail('エラーが発生すべきです');
+        fail('エラーが発生すべきです');
       } catch (error) {
-        assert.ok((error as Error).message.includes('更新対象のコメントが見つかりません'));
+        expect((error as Error).message).toContain('更新対象のコメントが見つかりません');
       }
     });
   });
@@ -266,7 +265,7 @@ created_at: '2024-01-01T00:00:00Z'`;
 
       const commentFile = await commentService.loadCommentFileAsync(testRelativeFilePath);
       // コメントが全て削除された場合、ファイル自体が削除される
-      assert.strictEqual(commentFile, null);
+      expect(commentFile).toBe(null);
     });
 
     it('複数のコメントのうち1つを削除する', async () => {
@@ -285,20 +284,20 @@ created_at: '2024-01-01T00:00:00Z'`;
       await commentService.deleteCommentAsync(testRelativeFilePath, 0);
 
       const commentFile = await commentService.loadCommentFileAsync(testRelativeFilePath);
-      assert.ok(commentFile !== null);
+      expect(commentFile !== null).toBeTruthy();
       if (commentFile !== null) {
-        assert.strictEqual(commentFile.comments.length, 1);
-        assert.strictEqual(commentFile.comments[0]?.content, '2番目のコメント');
-        assert.strictEqual(commentFile.comments[0]?.id, 2);
+        expect(commentFile.comments.length).toBe(1);
+        expect(commentFile.comments[0]?.content).toBe('2番目のコメント');
+        expect(commentFile.comments[0]?.id).toBe(2);
       }
     });
 
     it('存在しないコメントファイルからの削除でエラーが発生する', async () => {
       try {
         await commentService.deleteCommentAsync('nonexistent.txt', 0);
-        assert.fail('エラーが発生すべきです');
+        fail('エラーが発生すべきです');
       } catch (error) {
-        assert.ok((error as Error).message.includes('削除対象のコメントが見つかりません'));
+        expect((error as Error).message).toContain('削除対象のコメントが見つかりません');
       }
     });
 
@@ -312,9 +311,9 @@ created_at: '2024-01-01T00:00:00Z'`;
 
       try {
         await commentService.deleteCommentAsync(testRelativeFilePath, 999);
-        assert.fail('エラーが発生すべきです');
+        fail('エラーが発生すべきです');
       } catch (error) {
-        assert.ok((error as Error).message.includes('削除対象のコメントが見つかりません'));
+        expect((error as Error).message).toContain('削除対象のコメントが見つかりません');
       }
     });
   });
@@ -328,7 +327,7 @@ created_at: '2024-01-01T00:00:00Z'`;
 
       await commentService.addCommentAsync(testRelativeFilePath, options);
       const isChanged = await commentService.isFileChangedAsync(testRelativeFilePath);
-      assert.strictEqual(isChanged, false);
+      expect(isChanged).toBe(false);
     });
 
     it('ファイルが変更された場合はtrueを返す', async () => {
@@ -344,12 +343,12 @@ created_at: '2024-01-01T00:00:00Z'`;
       mockFileRepository.addFile(fullTestAbsolutePath, 'Changed content!\nThis is modified.\n');
 
       const isChanged = await commentService.isFileChangedAsync(testRelativeFilePath);
-      assert.strictEqual(isChanged, true);
+      expect(isChanged).toBe(true);
     });
 
     it('コメントファイルが存在しない場合はfalseを返す', async () => {
       const isChanged = await commentService.isFileChangedAsync('nonexistent.txt');
-      assert.strictEqual(isChanged, false);
+      expect(isChanged).toBe(false);
     });
   });
 
@@ -368,14 +367,14 @@ created_at: '2024-01-01T00:00:00Z'`;
 
       // 変更前は true
       let isChanged = await commentService.isFileChangedAsync(testRelativeFilePath);
-      assert.strictEqual(isChanged, true);
+      expect(isChanged).toBe(true);
 
       // ハッシュを更新
       await commentService.updateFileHashAsync(testRelativeFilePath);
 
       // 更新後は false
       isChanged = await commentService.isFileChangedAsync(testRelativeFilePath);
-      assert.strictEqual(isChanged, false);
+      expect(isChanged).toBe(false);
     });
 
     it('コメントファイルが存在しない場合は何もしない', async () => {
@@ -388,7 +387,7 @@ created_at: '2024-01-01T00:00:00Z'`;
   describe('getCommentSummaryAsync', () => {
     it('コメントがない場合は空のサマリーを返す', async () => {
       const summary = await commentService.getCommentSummaryAsync('nonexistent.txt');
-      assert.deepStrictEqual(summary, { open: 0 });
+      expect(summary).toEqual({ open: 0 });
     });
 
     it('未完了コメントのみの場合', async () => {
@@ -406,7 +405,7 @@ created_at: '2024-01-01T00:00:00Z'`;
       await commentService.addCommentAsync(testRelativeFilePath, options2);
 
       const summary = await commentService.getCommentSummaryAsync(testRelativeFilePath);
-      assert.deepStrictEqual(summary, { open: 2 });
+      expect(summary).toEqual({ open: 2 });
     });
 
     it('完了・未完了が混在する場合', async () => {
@@ -427,7 +426,7 @@ created_at: '2024-01-01T00:00:00Z'`;
       await commentService.updateCommentAsync(testRelativeFilePath, 1, { status: 'resolved' });
 
       const summary = await commentService.getCommentSummaryAsync(testRelativeFilePath);
-      assert.deepStrictEqual(summary, { open: 1, resolved: 1 });
+      expect(summary).toEqual({ open: 1, resolved: 1 });
     });
 
     it('全てが完了している場合', async () => {
@@ -440,7 +439,7 @@ created_at: '2024-01-01T00:00:00Z'`;
       await commentService.updateCommentAsync(testRelativeFilePath, 0, { status: 'resolved' });
 
       const summary = await commentService.getCommentSummaryAsync(testRelativeFilePath);
-      assert.deepStrictEqual(summary, { open: 0, resolved: 1 });
+      expect(summary).toEqual({ open: 0, resolved: 1 });
     });
   });
 
@@ -454,9 +453,9 @@ created_at: '2024-01-01T00:00:00Z'`;
 
       try {
         await commentService.loadCommentFileAsync(testRelativeFilePath);
-        assert.fail('エラーが発生すべきです');
+        fail('エラーが発生すべきです');
       } catch (error) {
-        assert.ok((error as Error).message.includes('コメントファイル読み込みエラー'));
+        expect((error as Error).message).toContain('コメントファイル読み込みエラー');
       }
     });
 
@@ -472,9 +471,9 @@ created_at: '2024-01-01T00:00:00Z'`;
 
       try {
         await commentService.loadCommentFileAsync(testRelativeFilePath);
-        assert.fail('エラーが発生すべきです');
+        fail('エラーが発生すべきです');
       } catch (error) {
-        assert.ok((error as Error).message.includes('コメントファイルの形式が正しくありません'));
+        expect((error as Error).message).toContain('コメントファイルの形式が正しくありません');
       }
     });
   });

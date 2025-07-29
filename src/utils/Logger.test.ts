@@ -1,9 +1,7 @@
 /* eslint-disable no-console */
-import { suite, test, setup, teardown } from 'mocha';
-import * as assert from 'assert';
 import { Logger } from './Logger.js';
 
-suite('Logger テストスイート', () => {
+describe('Logger テストスイート', () => {
   let logger: Logger;
   let originalNodeEnv: string | undefined;
   let consoleLogs: string[] = [];
@@ -15,7 +13,7 @@ suite('Logger テストスイート', () => {
   const originalConsoleWarn = console.warn;
   const originalConsoleError = console.error;
 
-  setup(() => {
+  beforeEach(() => {
     // 環境変数を保存
     originalNodeEnv = process.env['NODE_ENV'];
 
@@ -38,7 +36,7 @@ suite('Logger テストスイート', () => {
     logger = Logger.getInstance();
   });
 
-  teardown(() => {
+  afterEach(() => {
     // console メソッドを復元
     console.log = originalConsoleLog;
     console.warn = originalConsoleWarn;
@@ -55,121 +53,99 @@ suite('Logger テストスイート', () => {
     logger.reset();
   });
 
-  test('シングルトンパターンが正しく動作する', () => {
+  it('シングルトンパターンが正しく動作する', () => {
     const logger1 = Logger.getInstance();
     const logger2 = Logger.getInstance();
 
-    assert.strictEqual(logger1, logger2, 'Loggerインスタンスは同一であるべき');
+    expect(logger1).toBe(logger2);
   });
 
-  test('開発環境でdebugログが出力される', () => {
+  it('開発環境でdebugログが出力される', () => {
     process.env['NODE_ENV'] = 'development';
     logger.reset();
 
     logger.debug('テストデバッグメッセージ');
 
-    assert.strictEqual(consoleLogs.length, 1, 'debugログが1つ出力されるべき');
-    assert.ok(
-      consoleLogs[0] !== undefined && consoleLogs[0].includes('[DEBUG] テストデバッグメッセージ'),
-      'DEBUG プレフィックスが含まれるべき',
-    );
+    expect(consoleLogs.length).toBe(1);
+    expect(
+      consoleLogs[0] !== undefined && consoleLogs[0].includes('[DEBUG] テストデバッグメッセージ')).toBeTruthy();
   });
 
-  test('本番環境ではdebugログが出力されない', () => {
+  it('本番環境ではdebugログが出力されない', () => {
     process.env['NODE_ENV'] = 'production';
     logger.reset();
 
     logger.debug('テストデバッグメッセージ');
 
-    assert.strictEqual(consoleLogs.length, 0, 'debugログは出力されないべき');
+    expect(consoleLogs.length).toBe(0);
   });
 
-  test('テスト環境でdebugログが出力される', () => {
+  it('テスト環境でdebugログが出力される', () => {
     process.env['NODE_ENV'] = 'test';
     logger.reset();
 
     logger.debug('テストデバッグメッセージ');
 
-    assert.strictEqual(consoleLogs.length, 1, 'debugログが1つ出力されるべき');
-    assert.ok(
-      consoleLogs[0] !== undefined && consoleLogs[0].includes('[DEBUG] テストデバッグメッセージ'),
-      'DEBUG プレフィックスが含まれるべき',
-    );
+    expect(consoleLogs.length).toBe(1);
+    expect(
+      consoleLogs[0] !== undefined && consoleLogs[0].includes('[DEBUG] テストデバッグメッセージ')).toBeTruthy();
   });
 
-  test('infoログが正しく出力される', () => {
+  it('infoログが正しく出力される', () => {
     logger.info('情報メッセージ');
 
-    assert.strictEqual(consoleLogs.length, 1, 'infoログが1つ出力されるべき');
-    assert.ok(
-      consoleLogs[0] !== undefined && consoleLogs[0].includes('[INFO] 情報メッセージ'),
-      'INFO プレフィックスが含まれるべき',
-    );
+    expect(consoleLogs.length).toBe(1);
+    expect(
+      consoleLogs[0] !== undefined && consoleLogs[0].includes('[INFO] 情報メッセージ')).toBeTruthy();
   });
 
-  test('warnログが正しく出力される', () => {
+  it('warnログが正しく出力される', () => {
     logger.warn('警告メッセージ');
 
-    assert.strictEqual(consoleWarns.length, 1, 'warnログが1つ出力されるべき');
-    assert.ok(
-      consoleWarns[0] !== undefined && consoleWarns[0].includes('[WARN] 警告メッセージ'),
-      'WARN プレフィックスが含まれるべき',
-    );
+    expect(consoleWarns.length).toBe(1);
+    expect(
+      consoleWarns[0] !== undefined && consoleWarns[0].includes('[WARN] 警告メッセージ')).toBeTruthy();
   });
 
-  test('errorログが正しく出力される（エラーオブジェクトなし）', () => {
+  it('errorログが正しく出力される（エラーオブジェクトなし）', () => {
     logger.error('エラーメッセージ');
 
-    assert.strictEqual(consoleErrors.length, 1, 'errorログが1つ出力されるべき');
-    assert.ok(
-      consoleErrors[0] !== undefined && consoleErrors[0].includes('[ERROR] エラーメッセージ'),
-      'ERROR プレフィックスが含まれるべき',
-    );
+    expect(consoleErrors.length).toBe(1);
+    expect(
+      consoleErrors[0] !== undefined && consoleErrors[0].includes('[ERROR] エラーメッセージ')).toBeTruthy();
   });
 
-  test('errorログが正しく出力される（エラーオブジェクト付き）', () => {
+  it('errorログが正しく出力される（エラーオブジェクト付き）', () => {
     const testError = new Error('テストエラー');
     logger.error('エラーが発生しました', testError);
 
-    assert.strictEqual(consoleErrors.length, 1, 'errorログが1つ出力されるべき');
-    assert.ok(
-      consoleErrors[0] !== undefined && consoleErrors[0].includes('[ERROR] エラーが発生しました'),
-      'ERROR プレフィックスが含まれるべき',
-    );
-    assert.ok(
-      consoleErrors[0] !== undefined && consoleErrors[0].includes('テストエラー'),
-      'エラーメッセージが含まれるべき',
-    );
+    expect(consoleErrors.length).toBe(1);
+    expect(
+      consoleErrors[0] !== undefined && consoleErrors[0].includes('[ERROR] エラーが発生しました')).toBeTruthy();
+    expect(
+      consoleErrors[0] !== undefined && consoleErrors[0].includes('テストエラー')).toBeTruthy();
   });
 
-  test('errorログが正しく出力される（非Errorオブジェクト付き）', () => {
+  it('errorログが正しく出力される（非Errorオブジェクト付き）', () => {
     logger.error('エラーが発生しました', 'カスタムエラー');
 
-    assert.strictEqual(consoleErrors.length, 1, 'errorログが1つ出力されるべき');
-    assert.ok(
-      consoleErrors[0] !== undefined && consoleErrors[0].includes('[ERROR] エラーが発生しました'),
-      'ERROR プレフィックスが含まれるべき',
-    );
-    assert.ok(
-      consoleErrors[0] !== undefined && consoleErrors[0].includes('カスタムエラー'),
-      'カスタムエラーが含まれるべき',
-    );
+    expect(consoleErrors.length).toBe(1);
+    expect(
+      consoleErrors[0] !== undefined && consoleErrors[0].includes('[ERROR] エラーが発生しました')).toBeTruthy();
+    expect(
+      consoleErrors[0] !== undefined && consoleErrors[0].includes('カスタムエラー')).toBeTruthy();
   });
 
-  test('追加の引数が正しく処理される', () => {
+  it('追加の引数が正しく処理される', () => {
     logger.info('メッセージ', 'arg1', 123, { key: 'value' });
 
-    assert.strictEqual(consoleLogs.length, 1, 'infoログが1つ出力されるべき');
+    expect(consoleLogs.length).toBe(1);
     const output = consoleLogs[0];
-    assert.ok(
-      output !== undefined && output.includes('[INFO] メッセージ'),
-      'メインメッセージが含まれるべき',
-    );
-    assert.ok(output !== undefined && output.includes('arg1'), 'arg1が含まれるべき');
-    assert.ok(output !== undefined && output.includes('123'), '数値引数が含まれるべき');
-    assert.ok(
-      output !== undefined && output.includes('[object Object]'),
-      'オブジェクト引数が含まれるべき',
-    );
+    expect(
+      output !== undefined && output.includes('[INFO] メッセージ')).toBeTruthy();
+    expect(output !== undefined && output.includes('arg1')).toBeTruthy();
+    expect(output !== undefined && output.includes('123')).toBeTruthy();
+    expect(
+      output !== undefined && output.includes('[object Object]')).toBeTruthy();
   });
 });

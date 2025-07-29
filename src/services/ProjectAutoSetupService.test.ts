@@ -1,17 +1,16 @@
-import * as assert from 'assert';
 import { ProjectAutoSetupService } from './ProjectAutoSetupService.js';
 import { TestServiceContainer } from '../di/TestServiceContainer.js';
 import { MockFileRepository } from '../repositories/MockFileRepository.js';
 import { MetaYamlService } from './MetaYamlService.js';
 import { DialogoiYamlService } from './DialogoiYamlService.js';
 
-suite('ProjectAutoSetupService テストスイート', () => {
+describe('ProjectAutoSetupService テストスイート', () => {
   let projectAutoSetupService: ProjectAutoSetupService;
   let mockFileRepository: MockFileRepository;
   let metaYamlService: MetaYamlService;
   let dialogoiYamlService: DialogoiYamlService;
 
-  setup(() => {
+  beforeEach(() => {
     const container = TestServiceContainer.create();
     mockFileRepository = container.getFileRepository() as MockFileRepository;
     metaYamlService = container.getMetaYamlService();
@@ -23,8 +22,8 @@ suite('ProjectAutoSetupService テストスイート', () => {
     );
   });
 
-  suite('setupProjectStructure', () => {
-    test('基本的なプロジェクト構造をセットアップできる', async () => {
+  describe('setupProjectStructure', () => {
+    it('基本的なプロジェクト構造をセットアップできる', async () => {
       const projectRoot = '/test/project';
 
       // テスト環境を準備
@@ -47,34 +46,34 @@ project_settings:
 
       const result = await projectAutoSetupService.setupProjectStructure(projectRoot);
 
-      assert.strictEqual(result.success, true);
-      assert.strictEqual(result.processedDirectories, 3); // プロジェクトルート + 2つのサブディレクトリ
-      assert.strictEqual(result.createdFiles, 6); // 各ディレクトリに.dialogoi-meta.yaml + README.md
+      expect(result.success).toBe(true);
+      expect(result.processedDirectories).toBe(3); // プロジェクトルート + 2つのサブディレクトリ
+      expect(result.createdFiles).toBe(6); // 各ディレクトリに.dialogoi-meta.yaml + README.md
 
       // .dialogoi-meta.yamlが作成されていることを確認
       const metaYamlPath = `${projectRoot}/.dialogoi-meta.yaml`;
       const metaYamlUri = mockFileRepository.createFileUri(metaYamlPath);
-      assert.strictEqual(await mockFileRepository.existsAsync(metaYamlUri), true);
+      expect(await mockFileRepository.existsAsync(metaYamlUri)).toBe(true);
 
       // README.mdが作成されていることを確認
       const readmePath = `${projectRoot}/README.md`;
       const readmeUri = mockFileRepository.createFileUri(readmePath);
-      assert.strictEqual(await mockFileRepository.existsAsync(readmeUri), true);
+      expect(await mockFileRepository.existsAsync(readmeUri)).toBe(true);
     });
 
-    test('Dialogoiプロジェクトでない場合はエラーを返す', async () => {
+    it('Dialogoiプロジェクトでない場合はエラーを返す', async () => {
       const projectRoot = '/test/non-dialogoi-project';
       mockFileRepository.createDirectoryForTest(projectRoot);
 
       const result = await projectAutoSetupService.setupProjectStructure(projectRoot);
 
-      assert.strictEqual(result.success, false);
-      assert.ok(result.message.includes('Dialogoiプロジェクトではありません'));
-      assert.strictEqual(result.processedDirectories, 0);
-      assert.strictEqual(result.createdFiles, 0);
+      expect(result.success).toBe(false);
+      expect(result.message.includes('Dialogoiプロジェクトではありません')).toBeTruthy();
+      expect(result.processedDirectories).toBe(0);
+      expect(result.createdFiles).toBe(0);
     });
 
-    test('既存ファイルを上書きしないオプションが動作する', async () => {
+    it('既存ファイルを上書きしないオプションが動作する', async () => {
       const projectRoot = '/test/existing-project';
 
       // テスト環境を準備
@@ -110,15 +109,15 @@ files:
         overwriteExisting: false,
       });
 
-      assert.strictEqual(result.success, true);
+      expect(result.success).toBe(true);
 
       // 既存のmeta.yamlが変更されていないことを確認
       const metaYamlUri = mockFileRepository.createFileUri(`${projectRoot}/.dialogoi-meta.yaml`);
       const content = await mockFileRepository.readFileAsync(metaYamlUri, 'utf8');
-      assert.ok(content.includes('existing.txt'));
+      expect(content.includes('existing.txt')).toBeTruthy();
     });
 
-    test('最小テンプレートと詳細テンプレートが正しく生成される', async () => {
+    it('最小テンプレートと詳細テンプレートが正しく生成される', async () => {
       const projectRoot = '/test/template-project';
 
       // テスト環境を準備
@@ -138,19 +137,19 @@ updated_at: 2024-01-01T00:00:00.000Z
         readmeTemplate: 'detailed',
       });
 
-      assert.strictEqual(result.success, true);
+      expect(result.success).toBe(true);
 
       // README.mdの内容を確認
       const readmeUri = mockFileRepository.createFileUri(`${projectRoot}/README.md`);
       const readmeContent = await mockFileRepository.readFileAsync(readmeUri, 'utf8');
-      assert.ok(readmeContent.includes('## 概要'));
-      assert.ok(readmeContent.includes('## ファイル一覧'));
-      assert.ok(readmeContent.includes('## 関連情報'));
+      expect(readmeContent.includes('## 概要')).toBeTruthy();
+      expect(readmeContent.includes('## ファイル一覧')).toBeTruthy();
+      expect(readmeContent.includes('## 関連情報')).toBeTruthy();
     });
   });
 
-  suite('registerAllFiles', () => {
-    test('全ファイルを正常に登録する', async () => {
+  describe('registerAllFiles', () => {
+    it('全ファイルを正常に登録する', async () => {
       const projectRoot = '/test/register-project';
 
       // テスト環境を準備
@@ -193,38 +192,38 @@ project_settings:
 
       const result = await projectAutoSetupService.registerAllFiles(projectRoot);
 
-      assert.strictEqual(result.success, true);
-      assert.strictEqual(result.registeredFiles, 3); // chapter1.txt, setting.md, chapter2.txt (README.mdは除外)
+      expect(result.success).toBe(true);
+      expect(result.registeredFiles).toBe(3); // chapter1.txt, setting.md, chapter2.txt (README.mdは除外)
       // skippedFiles: .gitignore, temp.tmp, .dialogoi-meta.yaml(2つ), dialogoi.yaml, README.md = 6ファイル
-      assert.strictEqual(result.skippedFiles, 6); // 管理ファイルと除外ファイル
+      expect(result.skippedFiles).toBe(6); // 管理ファイルと除外ファイル
 
       // meta.yamlが更新されていることを確認
       const updatedMeta = await metaYamlService.loadMetaYamlAsync(projectRoot);
-      assert.notStrictEqual(updatedMeta, null);
-      assert.strictEqual(updatedMeta?.files.length, 3); // chapter1.txt, setting.md, subdirectory'contents'
+      expect(updatedMeta).not.toBe(null);
+      expect(updatedMeta?.files.length).toBe(3); // chapter1.txt, setting.md, subdirectory'contents'
 
       const chapter1Entry = updatedMeta?.files.find((f) => f.name === 'chapter1.txt');
-      assert.notStrictEqual(chapter1Entry, undefined);
-      assert.strictEqual(chapter1Entry?.type, 'content');
+      expect(chapter1Entry).not.toBe(undefined);
+      expect(chapter1Entry?.type).toBe('content');
 
       const settingEntry = updatedMeta?.files.find((f) => f.name === 'setting.md');
-      assert.notStrictEqual(settingEntry, undefined);
-      assert.strictEqual(settingEntry?.type, 'setting');
+      expect(settingEntry).not.toBe(undefined);
+      expect(settingEntry?.type).toBe('setting');
     });
 
-    test('Dialogoiプロジェクトでない場合はエラーを返す', async () => {
+    it('Dialogoiプロジェクトでない場合はエラーを返す', async () => {
       const projectRoot = '/test/non-dialogoi-register';
       mockFileRepository.createDirectoryForTest(projectRoot);
 
       const result = await projectAutoSetupService.registerAllFiles(projectRoot);
 
-      assert.strictEqual(result.success, false);
-      assert.ok(result.message.includes('Dialogoiプロジェクトではありません'));
-      assert.strictEqual(result.registeredFiles, 0);
-      assert.strictEqual(result.skippedFiles, 0);
+      expect(result.success).toBe(false);
+      expect(result.message.includes('Dialogoiプロジェクトではありません')).toBeTruthy();
+      expect(result.registeredFiles).toBe(0);
+      expect(result.skippedFiles).toBe(0);
     });
 
-    test('meta.yamlが存在しないディレクトリは警告してスキップする', async () => {
+    it('meta.yamlが存在しないディレクトリは警告してスキップする', async () => {
       const projectRoot = '/test/no-meta-project';
 
       // テスト環境を準備
@@ -251,23 +250,23 @@ updated_at: 2024-01-01T00:00:00.000Z
 
       const result = await projectAutoSetupService.registerAllFiles(projectRoot);
 
-      assert.strictEqual(result.success, true);
-      assert.strictEqual(result.registeredFiles, 1); // root.txtのみ登録される
+      expect(result.success).toBe(true);
+      expect(result.registeredFiles).toBe(1); // root.txtのみ登録される
 
       // プロジェクトルートのmeta.yamlが更新されていることを確認
       const updatedMeta = await metaYamlService.loadMetaYamlAsync(projectRoot);
-      assert.strictEqual(updatedMeta?.files.length, 2); // root.txt と nometa subdirectory
+      expect(updatedMeta?.files.length).toBe(2); // root.txt と nometa subdirectory
       // root.txtとnometaが登録されていることを確認
       const rootTxtEntry = updatedMeta?.files.find((f) => f.name === 'root.txt');
-      assert.notStrictEqual(rootTxtEntry, undefined);
-      assert.strictEqual(rootTxtEntry?.type, 'content');
+      expect(rootTxtEntry).not.toBe(undefined);
+      expect(rootTxtEntry?.type).toBe('content');
 
       const nometaDirEntry = updatedMeta?.files.find((f) => f.name === 'nometa');
-      assert.notStrictEqual(nometaDirEntry, undefined);
-      assert.strictEqual(nometaDirEntry?.type, 'subdirectory');
+      expect(nometaDirEntry).not.toBe(undefined);
+      expect(nometaDirEntry?.type).toBe('subdirectory');
     });
 
-    test('既に管理対象のファイルはスキップされる', async () => {
+    it('既に管理対象のファイルはスキップされる', async () => {
       const projectRoot = '/test/existing-files-project';
 
       // テスト環境を準備
@@ -302,16 +301,16 @@ files:
 
       const result = await projectAutoSetupService.registerAllFiles(projectRoot);
 
-      assert.strictEqual(result.success, true);
-      assert.strictEqual(result.registeredFiles, 1); // new.txtのみ登録
-      assert.strictEqual(result.skippedFiles, 3); // existing.txt + dialogoi.yaml + .dialogoi-meta.yaml
+      expect(result.success).toBe(true);
+      expect(result.registeredFiles).toBe(1); // new.txtのみ登録
+      expect(result.skippedFiles).toBe(3); // existing.txt + dialogoi.yaml + .dialogoi-meta.yaml
 
       // meta.yamlが更新されていることを確認
       const updatedMeta = await metaYamlService.loadMetaYamlAsync(projectRoot);
-      assert.strictEqual(updatedMeta?.files.length, 2); // existing.txt + new.txt
+      expect(updatedMeta?.files.length).toBe(2); // existing.txt + new.txt
     });
 
-    test('READMEファイルが存在しない場合は自動作成される', async () => {
+    it('READMEファイルが存在しない場合は自動作成される', async () => {
       const projectRoot = '/test/readme-creation-project';
 
       // テスト環境を準備
@@ -337,42 +336,42 @@ updated_at: 2024-01-01T00:00:00.000Z
         createReadmeIfMissing: true,
       });
 
-      assert.strictEqual(result.success, true);
-      assert.strictEqual(result.registeredFiles, 1); // test.txtのみ（README.mdは作成されるが除外される）
+      expect(result.success).toBe(true);
+      expect(result.registeredFiles).toBe(1); // test.txtのみ（README.mdは作成されるが除外される）
       // skippedFiles: dialogoi.yaml + .dialogoi-meta.yaml + README.md = 3ファイル
-      assert.strictEqual(result.skippedFiles, 3);
+      expect(result.skippedFiles).toBe(3);
 
       // README.mdが自動作成されていることを確認
       const readmeUri = mockFileRepository.createFileUri(`${projectRoot}/README.md`);
-      assert.strictEqual(await mockFileRepository.existsAsync(readmeUri), true);
+      expect(await mockFileRepository.existsAsync(readmeUri)).toBe(true);
 
       // README.mdの内容を確認
       const readmeContent = await mockFileRepository.readFileAsync(readmeUri, 'utf8');
-      assert.ok(readmeContent.includes('readme-creation-project'));
+      expect(readmeContent.includes('readme-creation-project')).toBeTruthy();
     });
   });
 
-  suite('エラーハンドリング', () => {
-    test('存在しないディレクトリでsetupProjectStructureを実行するとエラーを返す', async () => {
+  describe('エラーハンドリング', () => {
+    it('存在しないディレクトリでsetupProjectStructureを実行するとエラーを返す', async () => {
       const projectRoot = '/test/nonexistent';
 
       const result = await projectAutoSetupService.setupProjectStructure(projectRoot);
 
-      assert.strictEqual(result.success, false);
-      assert.ok(result.message.includes('Dialogoiプロジェクトではありません'));
-      assert.strictEqual(result.processedDirectories, 0);
-      assert.strictEqual(result.createdFiles, 0);
+      expect(result.success).toBe(false);
+      expect(result.message.includes('Dialogoiプロジェクトではありません')).toBeTruthy();
+      expect(result.processedDirectories).toBe(0);
+      expect(result.createdFiles).toBe(0);
     });
 
-    test('存在しないディレクトリでregisterAllFilesを実行するとエラーを返す', async () => {
+    it('存在しないディレクトリでregisterAllFilesを実行するとエラーを返す', async () => {
       const projectRoot = '/test/nonexistent';
 
       const result = await projectAutoSetupService.registerAllFiles(projectRoot);
 
-      assert.strictEqual(result.success, false);
-      assert.ok(result.message.includes('Dialogoiプロジェクトではありません'));
-      assert.strictEqual(result.registeredFiles, 0);
-      assert.strictEqual(result.skippedFiles, 0);
+      expect(result.success).toBe(false);
+      expect(result.message.includes('Dialogoiプロジェクトではありません')).toBeTruthy();
+      expect(result.registeredFiles).toBe(0);
+      expect(result.skippedFiles).toBe(0);
     });
   });
 });

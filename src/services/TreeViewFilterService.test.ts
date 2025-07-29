@@ -1,5 +1,3 @@
-import { suite, test, setup, teardown } from 'mocha';
-import * as assert from 'assert';
 import { TreeViewFilterService } from './TreeViewFilterService.js';
 import { DialogoiTreeItem } from '../utils/MetaYamlUtils.js';
 import { ReferenceManager } from './ReferenceManager.js';
@@ -12,13 +10,13 @@ import {
   createSubdirectoryItem,
 } from '../test/testHelpers.js';
 
-suite('TreeViewFilterService テストスイート', () => {
+describe('TreeViewFilterService テストスイート', () => {
   let filterService: TreeViewFilterService;
   let referenceManager: ReferenceManager;
   let testContainer: TestServiceContainer;
   let mockFileRepository: MockFileRepository;
 
-  setup(() => {
+  beforeEach(() => {
     // TestServiceContainerを初期化
     testContainer = TestServiceContainer.create();
     ServiceContainer.setTestInstance(testContainer);
@@ -33,92 +31,92 @@ suite('TreeViewFilterService テストスイート', () => {
     filterService = new TreeViewFilterService();
   });
 
-  teardown(() => {
+  afterEach(() => {
     referenceManager.clear();
     mockFileRepository.reset();
     testContainer.cleanup();
     ServiceContainer.clearTestInstance();
   });
 
-  suite('フィルター状態管理', () => {
-    test('初期状態ではフィルターが無効', () => {
+  describe('フィルター状態管理', () => {
+    it('初期状態ではフィルターが無効', () => {
       const filterState = filterService.getFilterState();
-      assert.strictEqual(filterState.isActive, false);
-      assert.strictEqual(filterState.filterType, null);
-      assert.strictEqual(filterState.filterValue, '');
-      assert.strictEqual(filterService.isFilterActive(), false);
+      expect(filterState.isActive).toBe(false);
+      expect(filterState.filterType).toBe(null);
+      expect(filterState.filterValue).toBe('');
+      expect(filterService.isFilterActive()).toBe(false);
     });
 
-    test('タグフィルターを設定できる', () => {
+    it('タグフィルターを設定できる', () => {
       filterService.setTagFilter('主人公');
       const filterState = filterService.getFilterState();
 
-      assert.strictEqual(filterState.isActive, true);
-      assert.strictEqual(filterState.filterType, 'tag');
-      assert.strictEqual(filterState.filterValue, '主人公');
-      assert.strictEqual(filterService.isFilterActive(), true);
+      expect(filterState.isActive).toBe(true);
+      expect(filterState.filterType).toBe('tag');
+      expect(filterState.filterValue).toBe('主人公');
+      expect(filterService.isFilterActive()).toBe(true);
     });
 
-    test('参照関係フィルターを設定できる', () => {
+    it('参照関係フィルターを設定できる', () => {
       filterService.setReferenceFilter('chapter1.md');
       const filterState = filterService.getFilterState();
 
-      assert.strictEqual(filterState.isActive, true);
-      assert.strictEqual(filterState.filterType, 'reference');
-      assert.strictEqual(filterState.filterValue, 'chapter1.md');
-      assert.strictEqual(filterService.isFilterActive(), true);
+      expect(filterState.isActive).toBe(true);
+      expect(filterState.filterType).toBe('reference');
+      expect(filterState.filterValue).toBe('chapter1.md');
+      expect(filterService.isFilterActive()).toBe(true);
     });
 
-    test('ファイル種別フィルターを設定できる', () => {
+    it('ファイル種別フィルターを設定できる', () => {
       filterService.setFileTypeFilter('content');
       const filterState = filterService.getFilterState();
 
-      assert.strictEqual(filterState.isActive, true);
-      assert.strictEqual(filterState.filterType, 'fileType');
-      assert.strictEqual(filterState.filterValue, 'content');
-      assert.strictEqual(filterService.isFilterActive(), true);
+      expect(filterState.isActive).toBe(true);
+      expect(filterState.filterType).toBe('fileType');
+      expect(filterState.filterValue).toBe('content');
+      expect(filterService.isFilterActive()).toBe(true);
     });
 
-    test('フィルターを解除できる', () => {
+    it('フィルターを解除できる', () => {
       filterService.setTagFilter('主人公');
       filterService.clearFilter();
 
       const filterState = filterService.getFilterState();
-      assert.strictEqual(filterState.isActive, false);
-      assert.strictEqual(filterState.filterType, null);
-      assert.strictEqual(filterState.filterValue, '');
-      assert.strictEqual(filterService.isFilterActive(), false);
+      expect(filterState.isActive).toBe(false);
+      expect(filterState.filterType).toBe(null);
+      expect(filterState.filterValue).toBe('');
+      expect(filterService.isFilterActive()).toBe(false);
     });
 
-    test('フィルター設定時に値が正規化される', () => {
+    it('フィルター設定時に値が正規化される', () => {
       filterService.setTagFilter('  主人公  ');
       const filterState = filterService.getFilterState();
-      assert.strictEqual(filterState.filterValue, '主人公');
+      expect(filterState.filterValue).toBe('主人公');
     });
 
-    test('フィルター設定時に大文字小文字が正規化される', () => {
+    it('フィルター設定時に大文字小文字が正規化される', () => {
       filterService.setTagFilter('HERO');
       const filterState = filterService.getFilterState();
-      assert.strictEqual(filterState.filterValue, 'hero');
+      expect(filterState.filterValue).toBe('hero');
     });
 
-    test('getFilterStateは状態のコピーを返す', () => {
+    it('getFilterStateは状態のコピーを返す', () => {
       filterService.setTagFilter('test');
       const state1 = filterService.getFilterState();
       const state2 = filterService.getFilterState();
 
       // 異なるオブジェクトインスタンス
-      assert.notStrictEqual(state1, state2);
+      expect(state1).not.toBe(state2);
       // 同じ内容
-      assert.deepStrictEqual(state1, state2);
+      expect(state1).toEqual(state2);
 
       // 元の状態を変更しても影響しない
       state1.isActive = false;
-      assert.strictEqual(filterService.getFilterState().isActive, true);
+      expect(filterService.getFilterState().isActive).toBe(true);
     });
   });
 
-  suite('タグフィルタリング機能', () => {
+  describe('タグフィルタリング機能', () => {
     const testItems: DialogoiTreeItem[] = [
       createContentItem({
         name: 'chapter1.md',
@@ -152,45 +150,45 @@ suite('TreeViewFilterService テストスイート', () => {
       }),
     ];
 
-    test('フィルターなしで全てのファイルが返される', () => {
+    it('フィルターなしで全てのファイルが返される', () => {
       const result = filterService.applyFilter(testItems);
-      assert.strictEqual(result.length, 6);
+      expect(result.length).toBe(6);
     });
 
-    test('主人公タグでフィルタリング', () => {
+    it('主人公タグでフィルタリング', () => {
       filterService.setTagFilter('主人公');
       const result = filterService.applyFilter(testItems);
 
-      assert.strictEqual(result.length, 2);
+      expect(result.length).toBe(2);
       const fileNames = result.map((item) => item.name);
-      assert.deepStrictEqual(fileNames.sort(), ['chapter1.md', 'character1.md']);
+      expect(fileNames.sort()).toEqual(['chapter1.md', 'character1.md']);
     });
 
-    test('キャラクタータグでフィルタリング', () => {
+    it('キャラクタータグでフィルタリング', () => {
       filterService.setTagFilter('キャラクター');
       const result = filterService.applyFilter(testItems);
 
-      assert.strictEqual(result.length, 2);
+      expect(result.length).toBe(2);
       const fileNames = result.map((item) => item.name);
-      assert.deepStrictEqual(fileNames.sort(), ['character1.md', 'character2.md']);
+      expect(fileNames.sort()).toEqual(['character1.md', 'character2.md']);
     });
 
-    test('存在しないタグでフィルタリングすると空の結果', () => {
+    it('存在しないタグでフィルタリングすると空の結果', () => {
       filterService.setTagFilter('存在しないタグ');
       const result = filterService.applyFilter(testItems);
-      assert.strictEqual(result.length, 0);
+      expect(result.length).toBe(0);
     });
 
-    test('部分一致でフィルタリング', () => {
+    it('部分一致でフィルタリング', () => {
       filterService.setTagFilter('主');
       const result = filterService.applyFilter(testItems);
 
-      assert.strictEqual(result.length, 2);
+      expect(result.length).toBe(2);
       const fileNames = result.map((item) => item.name);
-      assert.deepStrictEqual(fileNames.sort(), ['chapter1.md', 'character1.md']);
+      expect(fileNames.sort()).toEqual(['chapter1.md', 'character1.md']);
     });
 
-    test('大文字小文字を無視してフィルタリング', () => {
+    it('大文字小文字を無視してフィルタリング', () => {
       // 英語の大文字小文字で検証
       const englishTestItems: DialogoiTreeItem[] = [
         createContentItem({
@@ -207,23 +205,23 @@ suite('TreeViewFilterService テストスイート', () => {
       const result2 = filterService.applyFilter(englishTestItems);
 
       // 同じ結果が得られる
-      assert.strictEqual(result1.length, result2.length);
-      assert.strictEqual(result1.length, 1);
+      expect(result1.length).toBe(result2.length);
+      expect(result1.length).toBe(1);
       if (result1.length > 0 && result2.length > 0) {
-        assert.strictEqual(result1[0]?.name, result2[0]?.name);
+        expect(result1[0]?.name).toBe(result2[0]?.name);
       }
     });
 
-    test('タグがないファイルは除外される', () => {
+    it('タグがないファイルは除外される', () => {
       filterService.setTagFilter('主人公');
       const result = filterService.applyFilter(testItems);
 
       const noTagsFile = result.find((item) => item.name === 'noTags.md');
-      assert.strictEqual(noTagsFile, undefined);
+      expect(noTagsFile).toBe(undefined);
     });
   });
 
-  suite('参照関係フィルタリング機能', () => {
+  describe('参照関係フィルタリング機能', () => {
     const testItems: DialogoiTreeItem[] = [
       createContentItem({
         name: 'chapter1.md',
@@ -241,7 +239,7 @@ suite('TreeViewFilterService テストスイート', () => {
       }),
     ];
 
-    test('参照関係でフィルタリング', () => {
+    it('参照関係でフィルタリング', () => {
       // ReferenceManagerに参照データを設定
       referenceManager.updateFileReferences('/test/chapter1.md', ['character1.md', 'settings.md']);
       referenceManager.updateFileReferences('/test/chapter2.md', ['character2.md', 'magic.md']);
@@ -249,11 +247,11 @@ suite('TreeViewFilterService テストスイート', () => {
       filterService.setReferenceFilter('character1.md');
       const result = filterService.applyFilter(testItems);
 
-      assert.strictEqual(result.length, 1);
-      assert.strictEqual(result[0]?.name, 'chapter1.md');
+      expect(result.length).toBe(1);
+      expect(result[0]?.name).toBe('chapter1.md');
     });
 
-    test('参照関係の部分一致フィルタリング', () => {
+    it('参照関係の部分一致フィルタリング', () => {
       // ReferenceManagerに参照データを設定
       referenceManager.updateFileReferences('/test/chapter1.md', ['character1.md', 'settings.md']);
       referenceManager.updateFileReferences('/test/chapter2.md', ['character2.md', 'magic.md']);
@@ -261,21 +259,21 @@ suite('TreeViewFilterService テストスイート', () => {
       filterService.setReferenceFilter('character');
       const result = filterService.applyFilter(testItems);
 
-      assert.strictEqual(result.length, 2);
+      expect(result.length).toBe(2);
       const fileNames = result.map((item) => item.name);
-      assert.deepStrictEqual(fileNames.sort(), ['chapter1.md', 'chapter2.md']);
+      expect(fileNames.sort()).toEqual(['chapter1.md', 'chapter2.md']);
     });
 
-    test('参照関係がないファイルは除外される', () => {
+    it('参照関係がないファイルは除外される', () => {
       filterService.setReferenceFilter('character1.md');
       const result = filterService.applyFilter(testItems);
 
       const noRefsFile = result.find((item) => item.name === 'character1.md');
-      assert.strictEqual(noRefsFile, undefined);
+      expect(noRefsFile).toBe(undefined);
     });
   });
 
-  suite('ファイル種別フィルタリング機能', () => {
+  describe('ファイル種別フィルタリング機能', () => {
     const testItems: DialogoiTreeItem[] = [
       createContentItem({
         name: 'chapter1.md',
@@ -291,48 +289,48 @@ suite('TreeViewFilterService テストスイート', () => {
       }),
     ];
 
-    test('contentタイプでフィルタリング', () => {
+    it('contentタイプでフィルタリング', () => {
       filterService.setFileTypeFilter('content');
       const result = filterService.applyFilter(testItems);
 
-      assert.strictEqual(result.length, 1);
-      assert.strictEqual(result[0]?.name, 'chapter1.md');
+      expect(result.length).toBe(1);
+      expect(result[0]?.name).toBe('chapter1.md');
     });
 
-    test('settingタイプでフィルタリング', () => {
+    it('settingタイプでフィルタリング', () => {
       filterService.setFileTypeFilter('setting');
       const result = filterService.applyFilter(testItems);
 
-      assert.strictEqual(result.length, 1);
-      assert.strictEqual(result[0]?.name, 'character1.md');
+      expect(result.length).toBe(1);
+      expect(result[0]?.name).toBe('character1.md');
     });
 
-    test('部分一致でフィルタリング', () => {
+    it('部分一致でフィルタリング', () => {
       filterService.setFileTypeFilter('sub');
       const result = filterService.applyFilter(testItems);
 
-      assert.strictEqual(result.length, 1);
-      assert.strictEqual(result[0]?.name, 'subdir');
+      expect(result.length).toBe(1);
+      expect(result[0]?.name).toBe('subdir');
     });
   });
 
-  suite('複合テストケース', () => {
-    test('空の配列を渡しても問題なし', () => {
+  describe('複合テストケース', () => {
+    it('空の配列を渡しても問題なし', () => {
       filterService.setTagFilter('test');
       const result = filterService.applyFilter([]);
-      assert.strictEqual(result.length, 0);
+      expect(result.length).toBe(0);
     });
 
-    test('空のフィルター値では全てのアイテムが返される', () => {
+    it('空のフィルター値では全てのアイテムが返される', () => {
       filterService.setTagFilter('');
       const testItems: DialogoiTreeItem[] = [
         createContentItem({ name: 'test.md', path: '/test.md', tags: ['tag1'] }),
       ];
       const result = filterService.applyFilter(testItems);
-      assert.strictEqual(result.length, 1);
+      expect(result.length).toBe(1);
     });
 
-    test('フィルター種別を変更しても正しく動作する', () => {
+    it('フィルター種別を変更しても正しく動作する', () => {
       const testItems: DialogoiTreeItem[] = [
         createContentItem({
           name: 'test.md',
@@ -345,18 +343,18 @@ suite('TreeViewFilterService テストスイート', () => {
       // タグフィルター
       filterService.setTagFilter('hero');
       let result = filterService.applyFilter(testItems);
-      assert.strictEqual(result.length, 1);
+      expect(result.length).toBe(1);
 
       // 参照関係フィルターに変更
       referenceManager.updateFileReferences('/test.md', ['char.md']);
       filterService.setReferenceFilter('char.md');
       result = filterService.applyFilter(testItems);
-      assert.strictEqual(result.length, 1);
+      expect(result.length).toBe(1);
 
       // ファイル種別フィルターに変更
       filterService.setFileTypeFilter('content');
       result = filterService.applyFilter(testItems);
-      assert.strictEqual(result.length, 1);
+      expect(result.length).toBe(1);
     });
   });
 });

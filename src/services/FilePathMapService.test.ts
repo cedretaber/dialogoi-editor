@@ -1,27 +1,25 @@
-import { suite, test, setup, teardown } from 'mocha';
-import * as assert from 'assert';
 import { FilePathMapService } from './FilePathMapService.js';
 import { TestServiceContainer } from '../di/TestServiceContainer.js';
 import { MockFileRepository } from '../repositories/MockFileRepository.js';
 import { DialogoiTreeItem } from '../utils/MetaYamlUtils.js';
 
-suite('FilePathMapService テストスイート', () => {
+describe('FilePathMapService テストスイート', () => {
   let service: FilePathMapService;
   let container: TestServiceContainer;
   let mockFileRepo: MockFileRepository;
 
-  setup(() => {
+  beforeEach(() => {
     container = TestServiceContainer.create();
     mockFileRepo = container.getFileRepository() as MockFileRepository;
     // FilePathMapServiceは具体的なnovelRootPathが必要なので、テストごとに個別作成
   });
 
-  teardown(() => {
+  afterEach(() => {
     container.cleanup();
   });
 
-  suite('buildFileMap', () => {
-    test('プロジェクト全体をスキャンしてファイルマップを構築できる', async () => {
+  describe('buildFileMap', () => {
+    it('プロジェクト全体をスキャンしてファイルマップを構築できる', async () => {
       // テストプロジェクト構造を作成
       const novelRoot = '/test/novel';
 
@@ -72,25 +70,25 @@ files:
       await service.buildFileMap(novelRoot);
 
       // マップサイズを確認
-      assert.strictEqual(service.getMapSize(), 5); // 第1章.md, settings, world.md, characters, hero.md
+      expect(service.getMapSize()).toBe(5); // 第1章.md, settings, world.md, characters, hero.md
 
       // 各ファイルの情報を確認
       const chapterEntry = service.getFileEntry('第1章.md');
-      assert.notStrictEqual(chapterEntry, null);
+      expect(chapterEntry).not.toBe(null);
       if (chapterEntry !== null) {
-        assert.strictEqual(chapterEntry.fileType, 'content');
-        assert.strictEqual(chapterEntry.isCharacter, false);
+        expect(chapterEntry.fileType).toBe('content');
+        expect(chapterEntry.isCharacter).toBe(false);
       }
 
       const heroEntry = service.getFileEntry('settings/characters/hero.md');
-      assert.notStrictEqual(heroEntry, null);
+      expect(heroEntry).not.toBe(null);
       if (heroEntry !== null) {
-        assert.strictEqual(heroEntry.fileType, 'setting');
-        assert.strictEqual(heroEntry.isCharacter, true);
+        expect(heroEntry.fileType).toBe('setting');
+        expect(heroEntry.isCharacter).toBe(true);
       }
     });
 
-    test('meta.yamlが存在しないディレクトリはスキップされる', async () => {
+    it('meta.yamlが存在しないディレクトリはスキップされる', async () => {
       const novelRoot = '/test/novel';
 
       // ServiceをnovelRootPathと共に作成
@@ -111,12 +109,12 @@ files:
 
       await service.buildFileMap(novelRoot);
 
-      assert.strictEqual(service.getMapSize(), 1);
+      expect(service.getMapSize()).toBe(1);
     });
   });
 
-  suite('isProjectFile', () => {
-    test('プロジェクト内ファイルを正しく判定できる', async () => {
+  describe('isProjectFile', () => {
+    it('プロジェクト内ファイルを正しく判定できる', async () => {
       // テストプロジェクト構造を作成
       const novelRoot = '/test/novel';
 
@@ -152,23 +150,23 @@ files:
       const currentFile = `${novelRoot}/第1章.md`;
 
       // プロジェクト内ファイル
-      assert.strictEqual(service.isProjectFile('settings/world.md', currentFile), true);
-      assert.strictEqual(service.isProjectFile('./settings/world.md', currentFile), true);
+      expect(service.isProjectFile('settings/world.md', currentFile)).toBe(true);
+      expect(service.isProjectFile('./settings/world.md', currentFile)).toBe(true);
 
       // プロジェクト外ファイル
-      assert.strictEqual(service.isProjectFile('/external/file.md', currentFile), false);
-      assert.strictEqual(service.isProjectFile('../external/file.md', currentFile), false);
+      expect(service.isProjectFile('/external/file.md', currentFile)).toBe(false);
+      expect(service.isProjectFile('../external/file.md', currentFile)).toBe(false);
 
       // 存在しないファイル
-      assert.strictEqual(service.isProjectFile('nonexistent.md', currentFile), false);
+      expect(service.isProjectFile('nonexistent.md', currentFile)).toBe(false);
 
       // 外部リンク
-      assert.strictEqual(service.isProjectFile('https://example.com', currentFile), false);
+      expect(service.isProjectFile('https://example.com', currentFile)).toBe(false);
     });
   });
 
-  suite('resolveFileAbsolutePath', () => {
-    test('相対パスから絶対パスに正しく解決できる', async () => {
+  describe('resolveFileAbsolutePath', () => {
+    it('相対パスから絶対パスに正しく解決できる', async () => {
       // テストプロジェクト構造を作成
       const novelRoot = '/test/novel';
 
@@ -204,16 +202,16 @@ files:
 
       // プロジェクト内ファイルの解決
       const resolved = service.resolveFileAbsolutePath('settings/world.md', currentFile);
-      assert.strictEqual(resolved, `${novelRoot}/settings/world.md`);
+      expect(resolved).toBe(`${novelRoot}/settings/world.md`);
 
       // 存在しないファイル
       const notFound = service.resolveFileAbsolutePath('nonexistent.md', currentFile);
-      assert.strictEqual(notFound, null);
+      expect(notFound).toBe(null);
     });
   });
 
-  suite('updateFile', () => {
-    test('ファイル追加時にマップが更新される', async () => {
+  describe('updateFile', () => {
+    it('ファイル追加時にマップが更新される', async () => {
       const novelRoot = '/test/novel';
 
       // ServiceをnovelRootPathと共に作成
@@ -230,7 +228,7 @@ files: []
       );
 
       await service.buildFileMap(novelRoot);
-      assert.strictEqual(service.getMapSize(), 0);
+      expect(service.getMapSize()).toBe(0);
 
       // ファイルを追加
       const newItem: DialogoiTreeItem = {
@@ -247,16 +245,16 @@ files: []
 
       service.updateFile(`${novelRoot}/new.md`, newItem);
 
-      assert.strictEqual(service.getMapSize(), 1);
+      expect(service.getMapSize()).toBe(1);
       const entry = service.getFileEntry('new.md');
-      assert.notStrictEqual(entry, null);
+      expect(entry).not.toBe(null);
       if (entry !== null) {
-        assert.strictEqual(entry.fileName, 'new.md');
-        assert.strictEqual(entry.fileType, 'content');
+        expect(entry.fileName).toBe('new.md');
+        expect(entry.fileType).toBe('content');
       }
     });
 
-    test('ファイル削除時にマップから除去される', async () => {
+    it('ファイル削除時にマップから除去される', async () => {
       const novelRoot = '/test/novel';
 
       // ServiceをnovelRootPathと共に作成
@@ -275,18 +273,18 @@ files:
       );
 
       await service.buildFileMap(novelRoot);
-      assert.strictEqual(service.getMapSize(), 1);
+      expect(service.getMapSize()).toBe(1);
 
       // ファイルを削除
       service.updateFile(`${novelRoot}/test.md`, null);
 
-      assert.strictEqual(service.getMapSize(), 0);
-      assert.strictEqual(service.getFileEntry('test.md'), null);
+      expect(service.getMapSize()).toBe(0);
+      expect(service.getFileEntry('test.md')).toBe(null);
     });
   });
 
-  suite('getFileEntry', () => {
-    test('存在するファイルの情報を取得できる', async () => {
+  describe('getFileEntry', () => {
+    it('存在するファイルの情報を取得できる', async () => {
       const novelRoot = '/test/novel';
 
       // ServiceをnovelRootPathと共に作成
@@ -314,30 +312,30 @@ files:
 
       // キャラクターファイル
       const characterEntry = service.getFileEntry('character.md');
-      assert.notStrictEqual(characterEntry, null);
+      expect(characterEntry).not.toBe(null);
       if (characterEntry !== null) {
-        assert.strictEqual(characterEntry.fileName, 'character.md');
-        assert.strictEqual(characterEntry.fileType, 'setting');
-        assert.strictEqual(characterEntry.isCharacter, true);
+        expect(characterEntry.fileName).toBe('character.md');
+        expect(characterEntry.fileType).toBe('setting');
+        expect(characterEntry.isCharacter).toBe(true);
       }
 
       // 用語集ファイル
       const glossaryEntry = service.getFileEntry('glossary.md');
-      assert.notStrictEqual(glossaryEntry, null);
+      expect(glossaryEntry).not.toBe(null);
       if (glossaryEntry !== null) {
-        assert.strictEqual(glossaryEntry.fileName, 'glossary.md');
-        assert.strictEqual(glossaryEntry.fileType, 'setting');
-        assert.strictEqual(glossaryEntry.isCharacter, false);
-        assert.strictEqual(glossaryEntry.glossary, true);
+        expect(glossaryEntry.fileName).toBe('glossary.md');
+        expect(glossaryEntry.fileType).toBe('setting');
+        expect(glossaryEntry.isCharacter).toBe(false);
+        expect(glossaryEntry.glossary).toBe(true);
       }
 
       // 存在しないファイル
-      assert.strictEqual(service.getFileEntry('nonexistent.md'), null);
+      expect(service.getFileEntry('nonexistent.md')).toBe(null);
     });
   });
 
-  suite('clear', () => {
-    test('ファイルマップをクリアできる', async () => {
+  describe('clear', () => {
+    it('ファイルマップをクリアできる', async () => {
       const novelRoot = '/test/novel';
 
       // ServiceをnovelRootPathと共に作成
@@ -356,10 +354,10 @@ files:
       );
 
       await service.buildFileMap(novelRoot);
-      assert.strictEqual(service.getMapSize(), 1);
+      expect(service.getMapSize()).toBe(1);
 
       service.clear();
-      assert.strictEqual(service.getMapSize(), 0);
+      expect(service.getMapSize()).toBe(0);
     });
   });
 });

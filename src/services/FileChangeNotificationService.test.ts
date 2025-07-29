@@ -1,5 +1,3 @@
-import { describe, it, beforeEach } from 'mocha';
-import * as assert from 'assert';
 import {
   FileChangeNotificationService,
   FileChangeEvent,
@@ -25,13 +23,13 @@ describe('FileChangeNotificationService', () => {
       service.notifyReferenceUpdated(testFilePath, testMetadata);
 
       const firedEvents = mockEventEmitterRepository.getFiredEvents();
-      assert.strictEqual(firedEvents.length, 1);
+      expect(firedEvents.length).toBe(1);
 
       const event = firedEvents[0];
-      assert.ok(event, 'イベントが存在する');
-      assert.strictEqual(event.type, FileChangeType.REFERENCE_UPDATED);
-      assert.strictEqual(event.filePath, testFilePath);
-      assert.deepStrictEqual(event.metadata, testMetadata);
+      expect(event).toBeTruthy();
+      expect(event?.type).toBe(FileChangeType.REFERENCE_UPDATED);
+      expect(event?.filePath).toBe(testFilePath);
+      expect(event?.metadata).toEqual(testMetadata);
     });
   });
 
@@ -54,8 +52,8 @@ describe('FileChangeNotificationService', () => {
       service.notifyFileChanged(testEvent);
 
       // リスナーがイベントを受信したことを確認
-      assert.strictEqual(receivedEvents.length, 1);
-      assert.deepStrictEqual(receivedEvents[0], testEvent);
+      expect(receivedEvents.length).toBe(1);
+      expect(receivedEvents[0]).toEqual(testEvent);
 
       // リソースクリーンアップ
       disposable.dispose();
@@ -81,7 +79,7 @@ describe('FileChangeNotificationService', () => {
       service.notifyFileChanged(testEvent);
 
       // リスナーがイベントを受信していないことを確認
-      assert.strictEqual(receivedEvents.length, 0);
+      expect(receivedEvents.length).toBe(0);
     });
   });
 
@@ -93,13 +91,13 @@ describe('FileChangeNotificationService', () => {
       service.notifyMetaYamlUpdated(testFilePath, testMetadata);
 
       const firedEvents = mockEventEmitterRepository.getFiredEvents();
-      assert.strictEqual(firedEvents.length, 1);
+      expect(firedEvents.length).toBe(1);
 
       const event = firedEvents[0];
-      assert.ok(event, 'イベントが存在する');
-      assert.strictEqual(event.type, FileChangeType.META_YAML_UPDATED);
-      assert.strictEqual(event.filePath, testFilePath);
-      assert.deepStrictEqual(event.metadata, testMetadata);
+      expect(event).toBeTruthy();
+      expect(event?.type).toBe(FileChangeType.META_YAML_UPDATED);
+      expect(event?.filePath).toBe(testFilePath);
+      expect(event?.metadata).toEqual(testMetadata);
     });
   });
 
@@ -108,9 +106,9 @@ describe('FileChangeNotificationService', () => {
       // インスタンスをクリア
       FileChangeNotificationService['instance'] = null;
 
-      assert.throws(() => {
+      expect(() => {
         FileChangeNotificationService.getInstance();
-      }, /FileChangeNotificationServiceが初期化されていません/);
+      }).toThrow(/FileChangeNotificationServiceが初期化されていません/);
     });
   });
 });

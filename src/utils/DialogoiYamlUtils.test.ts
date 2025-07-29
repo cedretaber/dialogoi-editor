@@ -1,10 +1,8 @@
-import { suite, test } from 'mocha';
-import * as assert from 'assert';
 import { DialogoiYamlUtils, DialogoiYaml } from './DialogoiYamlUtils.js';
 
-suite('DialogoiYamlUtils テストスイート', () => {
-  suite('parseDialogoiYaml', () => {
-    test('正常なYAMLを正しく解析する', () => {
+describe('DialogoiYamlUtils テストスイート', () => {
+  describe('parseDialogoiYaml', () => {
+    it('正常なYAMLを正しく解析する', () => {
       const yamlContent = `title: "テスト小説"
 author: "テスト著者"
 created_at: "2024-01-01T00:00:00Z"
@@ -12,55 +10,55 @@ tags: ["ファンタジー", "冒険"]`;
 
       const result = DialogoiYamlUtils.parseDialogoiYaml(yamlContent);
 
-      assert.notStrictEqual(result, null);
-      assert.strictEqual(result?.title, 'テスト小説');
-      assert.strictEqual(result?.author, 'テスト著者');
-      assert.strictEqual(result?.created_at, '2024-01-01T00:00:00Z');
-      assert.deepStrictEqual(result?.tags, ['ファンタジー', '冒険']);
+      expect(result).not.toBe(null);
+      expect(result?.title).toBe('テスト小説');
+      expect(result?.author).toBe('テスト著者');
+      expect(result?.created_at).toBe('2024-01-01T00:00:00Z');
+      expect(result?.tags).toEqual(['ファンタジー', '冒険']);
     });
 
-    test('最小構成のYAMLを正しく解析する', () => {
+    it('最小構成のYAMLを正しく解析する', () => {
       const yamlContent = `title: "最小テスト"
 author: "著者"
 created_at: "2024-01-01T00:00:00Z"`;
 
       const result = DialogoiYamlUtils.parseDialogoiYaml(yamlContent);
 
-      assert.notStrictEqual(result, null);
-      assert.strictEqual(result?.title, '最小テスト');
-      assert.strictEqual(result?.author, '著者');
-      assert.strictEqual(result?.created_at, '2024-01-01T00:00:00Z');
-      assert.strictEqual(result?.tags, undefined);
+      expect(result).not.toBe(null);
+      expect(result?.title).toBe('最小テスト');
+      expect(result?.author).toBe('著者');
+      expect(result?.created_at).toBe('2024-01-01T00:00:00Z');
+      expect(result?.tags).toBe(undefined);
     });
 
-    test('必須フィールドが欠けている場合nullを返す', () => {
+    it('必須フィールドが欠けている場合nullを返す', () => {
       const yamlContent = `title: "テスト小説"
 author: "テスト著者"`;
 
       const result = DialogoiYamlUtils.parseDialogoiYaml(yamlContent);
 
-      assert.strictEqual(result, null);
+      expect(result).toBe(null);
     });
 
-    test('不正なYAML形式の場合nullを返す', () => {
+    it('不正なYAML形式の場合nullを返す', () => {
       const yamlContent = `title: "テスト小説"
 author: "テスト著者"
 invalid: yaml: syntax`;
 
       const result = DialogoiYamlUtils.parseDialogoiYaml(yamlContent);
 
-      assert.strictEqual(result, null);
+      expect(result).toBe(null);
     });
 
-    test('空の内容の場合nullを返す', () => {
+    it('空の内容の場合nullを返す', () => {
       const result = DialogoiYamlUtils.parseDialogoiYaml('');
 
-      assert.strictEqual(result, null);
+      expect(result).toBe(null);
     });
   });
 
-  suite('stringifyDialogoiYaml', () => {
-    test('DialogoiYamlオブジェクトをYAML文字列に変換する', () => {
+  describe('stringifyDialogoiYaml', () => {
+    it('DialogoiYamlオブジェクトをYAML文字列に変換する', () => {
       const data: DialogoiYaml = {
         title: 'テスト小説',
         author: 'テスト著者',
@@ -75,18 +73,18 @@ invalid: yaml: syntax`;
 
       const result = DialogoiYamlUtils.stringifyDialogoiYaml(data);
 
-      assert.ok(result.includes('title: テスト小説'));
-      assert.ok(result.includes('author: テスト著者'));
-      assert.ok(
+      expect(result.includes('title: テスト小説')).toBeTruthy();
+      expect(result.includes('author: テスト著者')).toBeTruthy();
+      expect(
         result.includes("created_at: '2024-01-01T00:00:00Z'") ||
-          result.includes('created_at: 2024-01-01T00:00:00Z'),
-      );
-      assert.ok(result.includes('tags:'));
-      assert.ok(result.includes('- ファンタジー'));
-      assert.ok(result.includes('- 冒険'));
+          result.includes('created_at: 2024-01-01T00:00:00Z')
+      ).toBeTruthy();
+      expect(result.includes('tags:')).toBeTruthy();
+      expect(result.includes('- ファンタジー')).toBeTruthy();
+      expect(result.includes('- 冒険')).toBeTruthy();
     });
 
-    test('空のtagsでも正しく変換する', () => {
+    it('空のtagsでも正しく変換する', () => {
       const data: DialogoiYaml = {
         title: 'テスト小説',
         author: 'テスト著者',
@@ -101,18 +99,18 @@ invalid: yaml: syntax`;
 
       const result = DialogoiYamlUtils.stringifyDialogoiYaml(data);
 
-      assert.ok(result.includes('title: テスト小説'));
-      assert.ok(result.includes('author: テスト著者'));
-      assert.ok(
+      expect(result.includes('title: テスト小説')).toBeTruthy();
+      expect(result.includes('author: テスト著者')).toBeTruthy();
+      expect(
         result.includes("created_at: '2024-01-01T00:00:00Z'") ||
-          result.includes('created_at: 2024-01-01T00:00:00Z'),
-      );
-      assert.ok(result.includes('tags: []')); // 空のtagsが出力される
+          result.includes('created_at: 2024-01-01T00:00:00Z')
+      ).toBeTruthy();
+      expect(result.includes('tags: []')).toBeTruthy(); // 空のtagsが出力される
     });
   });
 
-  suite('validateDialogoiYaml', () => {
-    test('正常なデータのバリデーションが成功する', () => {
+  describe('validateDialogoiYaml', () => {
+    it('正常なデータのバリデーションが成功する', () => {
       const data: DialogoiYaml = {
         title: 'テスト小説',
         author: 'テスト著者',
@@ -127,11 +125,11 @@ invalid: yaml: syntax`;
 
       const result = DialogoiYamlUtils.validateDialogoiYaml(data);
 
-      assert.strictEqual(result.isValid, true);
-      assert.strictEqual(result.errors.length, 0);
+      expect(result.isValid).toBe(true);
+      expect(result.errors.length).toBe(0);
     });
 
-    test('必須フィールドが欠けている場合エラーを返す', () => {
+    it('必須フィールドが欠けている場合エラーを返す', () => {
       const data = {
         title: '',
         author: 'テスト著者',
@@ -140,11 +138,11 @@ invalid: yaml: syntax`;
 
       const result = DialogoiYamlUtils.validateDialogoiYaml(data);
 
-      assert.strictEqual(result.isValid, false);
-      assert.ok(result.errors.some((error) => error.includes('title')));
+      expect(result.isValid).toBe(false);
+      expect(result.errors.some((error) => error.includes('title'))).toBeTruthy();
     });
 
-    test('不正な日付形式の場合エラーを返す', () => {
+    it('不正な日付形式の場合エラーを返す', () => {
       const data: DialogoiYaml = {
         title: 'テスト小説',
         author: 'テスト著者',
@@ -159,13 +157,13 @@ invalid: yaml: syntax`;
 
       const result = DialogoiYamlUtils.validateDialogoiYaml(data);
 
-      assert.strictEqual(result.isValid, false);
-      assert.strictEqual(result.errors.length, 2); // created_atとupdated_atの両方がエラー
-      assert.ok(result.errors.some((error) => error.includes('created_at')));
-      assert.ok(result.errors.some((error) => error.includes('updated_at')));
+      expect(result.isValid).toBe(false);
+      expect(result.errors.length).toBe(2); // created_atとupdated_atの両方がエラー
+      expect(result.errors.some((error) => error.includes('created_at'))).toBeTruthy();
+      expect(result.errors.some((error) => error.includes('updated_at'))).toBeTruthy();
     });
 
-    test('tagsが配列でない場合エラーを返す', () => {
+    it('tagsが配列でない場合エラーを返す', () => {
       const data = {
         title: 'テスト小説',
         author: 'テスト著者',
@@ -180,11 +178,11 @@ invalid: yaml: syntax`;
 
       const result = DialogoiYamlUtils.validateDialogoiYaml(data);
 
-      assert.strictEqual(result.isValid, false);
-      assert.ok(result.errors.some((error) => error.includes('tags')));
+      expect(result.isValid).toBe(false);
+      expect(result.errors.some((error) => error.includes('tags'))).toBeTruthy();
     });
 
-    test('複数のエラーがある場合すべてのエラーを返す', () => {
+    it('複数のエラーがある場合すべてのエラーを返す', () => {
       const data = {
         title: '',
         author: '',
@@ -199,22 +197,22 @@ invalid: yaml: syntax`;
 
       const result = DialogoiYamlUtils.validateDialogoiYaml(data);
 
-      assert.strictEqual(result.isValid, false);
-      assert.ok(result.errors.length >= 5); // title, author, created_at, updated_at, tags
+      expect(result.isValid).toBe(false);
+      expect(result.errors.length >= 5).toBeTruthy(); // title, author, created_at, updated_at, tags
     });
   });
 
-  suite('createDialogoiYaml', () => {
-    test('基本的なDialogoiYamlオブジェクトを作成する', () => {
+  describe('createDialogoiYaml', () => {
+    it('基本的なDialogoiYamlオブジェクトを作成する', () => {
       const result = DialogoiYamlUtils.createDialogoiYaml('新しい小説', '新しい著者');
 
-      assert.strictEqual(result.title, '新しい小説');
-      assert.strictEqual(result.author, '新しい著者');
-      assert.ok(result.created_at);
-      assert.ok(!isNaN(new Date(result.created_at).getTime()));
-      assert.deepStrictEqual(result.tags, []);
-      assert.strictEqual(result.updated_at, result.created_at);
-      assert.deepStrictEqual(result.project_settings, {
+      expect(result.title).toBe('新しい小説');
+      expect(result.author).toBe('新しい著者');
+      expect(result.created_at).toBeTruthy();
+      expect(!isNaN(new Date(result.created_at).getTime())).toBeTruthy();
+      expect(result.tags).toEqual([]);
+      expect(result.updated_at).toBe(result.created_at);
+      expect(result.project_settings).toEqual({
         readme_filename: 'README.md',
         exclude_patterns: [
           '.*',
@@ -239,16 +237,16 @@ invalid: yaml: syntax`;
       });
     });
 
-    test('タグ付きのDialogoiYamlオブジェクトを作成する', () => {
+    it('タグ付きのDialogoiYamlオブジェクトを作成する', () => {
       const tags = ['ファンタジー', '冒険'];
       const result = DialogoiYamlUtils.createDialogoiYaml('新しい小説', '新しい著者', tags);
 
-      assert.strictEqual(result.title, '新しい小説');
-      assert.strictEqual(result.author, '新しい著者');
-      assert.ok(result.created_at);
-      assert.deepStrictEqual(result.tags, tags);
-      assert.strictEqual(result.updated_at, result.created_at);
-      assert.deepStrictEqual(result.project_settings, {
+      expect(result.title).toBe('新しい小説');
+      expect(result.author).toBe('新しい著者');
+      expect(result.created_at).toBeTruthy();
+      expect(result.tags).toEqual(tags);
+      expect(result.updated_at).toBe(result.created_at);
+      expect(result.project_settings).toEqual({
         readme_filename: 'README.md',
         exclude_patterns: [
           '.*',
@@ -273,14 +271,14 @@ invalid: yaml: syntax`;
       });
     });
 
-    test('created_atが現在時刻に近い値になる', () => {
+    it('created_atが現在時刻に近い値になる', () => {
       const before = new Date().toISOString();
       const result = DialogoiYamlUtils.createDialogoiYaml('テスト', 'テスト');
       const after = new Date().toISOString();
 
-      assert.ok(result.created_at >= before);
-      assert.ok(result.created_at <= after);
-      assert.strictEqual(result.updated_at, result.created_at);
+      expect(result.created_at >= before).toBeTruthy();
+      expect(result.created_at <= after).toBeTruthy();
+      expect(result.updated_at).toBe(result.created_at);
     });
   });
 });

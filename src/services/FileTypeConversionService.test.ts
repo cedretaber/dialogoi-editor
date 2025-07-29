@@ -1,24 +1,23 @@
-import * as assert from 'assert';
 import * as yaml from 'js-yaml';
 import { FileTypeConversionService } from './FileTypeConversionService.js';
 import { TestServiceContainer } from '../di/TestServiceContainer.js';
 import { MockFileRepository } from '../repositories/MockFileRepository.js';
 import { MetaYamlService } from './MetaYamlService.js';
 
-suite('FileTypeConversionService テストスイート', () => {
+describe('FileTypeConversionService テストスイート', () => {
   let service: FileTypeConversionService;
   let mockFileRepository: MockFileRepository;
   let metaYamlService: MetaYamlService;
 
-  setup(() => {
+  beforeEach(() => {
     const container = TestServiceContainer.create();
     mockFileRepository = container.getFileRepository() as MockFileRepository;
     metaYamlService = container.getMetaYamlService();
     service = new FileTypeConversionService(mockFileRepository, metaYamlService);
   });
 
-  suite('convertFileType', () => {
-    test('contentファイルをsettingに変更する', async () => {
+  describe('convertFileType', () => {
+    it('contentファイルをsettingに変更する', async () => {
       const testDir = '/test/project';
       const fileName = 'chapter1.txt';
       const absoluteFilePath = `${testDir}/${fileName}`;
@@ -62,19 +61,19 @@ suite('FileTypeConversionService テストスイート', () => {
       const result = await service.convertFileType(absoluteFilePath, 'setting');
 
       // 結果を検証
-      assert.strictEqual(result.success, true);
-      assert.strictEqual(result.oldType, 'content');
-      assert.strictEqual(result.newType, 'setting');
-      assert.ok(result.message.includes('contentからsettingに変更しました'));
+      expect(result.success).toBe(true);
+      expect(result.oldType).toBe('content');
+      expect(result.newType).toBe('setting');
+      expect(result.message.includes('contentからsettingに変更しました')).toBeTruthy();
 
       // meta.yamlが更新されたことを確認
       const updatedMetaYaml = await metaYamlService.loadMetaYamlAsync(testDir);
-      assert.ok(updatedMetaYaml);
-      const updatedFile = updatedMetaYaml.files.find((file) => file.name === fileName);
-      assert.strictEqual(updatedFile?.type, 'setting');
+      expect(updatedMetaYaml).toBeTruthy();
+      const updatedFile = updatedMetaYaml?.files.find((file) => file.name === fileName);
+      expect(updatedFile?.type).toBe('setting');
     });
 
-    test('settingファイルをcontentに変更する', async () => {
+    it('settingファイルをcontentに変更する', async () => {
       const testDir = '/test/project';
       const fileName = 'character.md';
       const absoluteFilePath = `${testDir}/${fileName}`;
@@ -117,19 +116,19 @@ suite('FileTypeConversionService テストスイート', () => {
       const result = await service.convertFileType(absoluteFilePath, 'content');
 
       // 結果を検証
-      assert.strictEqual(result.success, true);
-      assert.strictEqual(result.oldType, 'setting');
-      assert.strictEqual(result.newType, 'content');
-      assert.ok(result.message.includes('settingからcontentに変更しました'));
+      expect(result.success).toBe(true);
+      expect(result.oldType).toBe('setting');
+      expect(result.newType).toBe('content');
+      expect(result.message.includes('settingからcontentに変更しました')).toBeTruthy();
 
       // meta.yamlが更新されたことを確認
       const updatedMetaYaml = await metaYamlService.loadMetaYamlAsync(testDir);
-      assert.ok(updatedMetaYaml);
-      const updatedFile = updatedMetaYaml.files.find((file) => file.name === fileName);
-      assert.strictEqual(updatedFile?.type, 'content');
+      expect(updatedMetaYaml).toBeTruthy();
+      const updatedFile = updatedMetaYaml?.files.find((file) => file.name === fileName);
+      expect(updatedFile?.type).toBe('content');
     });
 
-    test('既に同じ種別の場合は何もしない', async () => {
+    it('既に同じ種別の場合は何もしない', async () => {
       const testDir = '/test/project';
       const fileName = 'chapter1.txt';
       const absoluteFilePath = `${testDir}/${fileName}`;
@@ -173,25 +172,25 @@ suite('FileTypeConversionService テストスイート', () => {
       const result = await service.convertFileType(absoluteFilePath, 'content');
 
       // 結果を検証
-      assert.strictEqual(result.success, true);
-      assert.strictEqual(result.oldType, 'content');
-      assert.strictEqual(result.newType, 'content');
-      assert.ok(result.message.includes('既にcontent種別です'));
+      expect(result.success).toBe(true);
+      expect(result.oldType).toBe('content');
+      expect(result.newType).toBe('content');
+      expect(result.message.includes('既にcontent種別です')).toBeTruthy();
     });
 
-    test('存在しないファイルの場合はエラーを返す', async () => {
+    it('存在しないファイルの場合はエラーを返す', async () => {
       const absoluteFilePath = '/test/project/nonexistent.txt';
 
       // 種別変更を試行
       const result = await service.convertFileType(absoluteFilePath, 'setting');
 
       // 結果を検証
-      assert.strictEqual(result.success, false);
-      assert.ok(result.message.includes('ファイルが存在しません'));
-      assert.ok(result.errors && result.errors.length > 0);
+      expect(result.success).toBe(false);
+      expect(result.message.includes('ファイルが存在しません')).toBeTruthy();
+      expect(result.errors && result.errors.length > 0).toBeTruthy();
     });
 
-    test('meta.yamlが存在しない場合はエラーを返す', async () => {
+    it('meta.yamlが存在しない場合はエラーを返す', async () => {
       const testDir = '/test/project';
       const fileName = 'chapter1.txt';
       const absoluteFilePath = `${testDir}/${fileName}`;
@@ -214,12 +213,12 @@ suite('FileTypeConversionService テストスイート', () => {
       const result = await service.convertFileType(absoluteFilePath, 'setting');
 
       // 結果を検証
-      assert.strictEqual(result.success, false);
-      assert.ok(result.message.includes('管理対象として登録されていません'));
-      assert.ok(result.errors && result.errors.length > 0);
+      expect(result.success).toBe(false);
+      expect(result.message.includes('管理対象として登録されていません')).toBeTruthy();
+      expect(result.errors && result.errors.length > 0).toBeTruthy();
     });
 
-    test('meta.yamlに登録されていないファイルの場合はエラーを返す', async () => {
+    it('meta.yamlに登録されていないファイルの場合はエラーを返す', async () => {
       const testDir = '/test/project';
       const fileName = 'unregistered.txt';
       const absoluteFilePath = `${testDir}/${fileName}`;
@@ -263,12 +262,12 @@ suite('FileTypeConversionService テストスイート', () => {
       const result = await service.convertFileType(absoluteFilePath, 'setting');
 
       // 結果を検証
-      assert.strictEqual(result.success, false);
-      assert.ok(result.message.includes('管理対象として登録されていません'));
-      assert.ok(result.errors && result.errors.length > 0);
+      expect(result.success).toBe(false);
+      expect(result.message.includes('管理対象として登録されていません')).toBeTruthy();
+      expect(result.errors && result.errors.length > 0).toBeTruthy();
     });
 
-    test('サブディレクトリの種別変更は拒否される', async () => {
+    it('サブディレクトリの種別変更は拒否される', async () => {
       const testDir = '/test/project';
       const dirName = 'subdirectory';
       const absoluteDirPath = `${testDir}/${dirName}`;
@@ -306,14 +305,14 @@ suite('FileTypeConversionService テストスイート', () => {
       const result = await service.convertFileType(absoluteDirPath, 'setting');
 
       // 結果を検証
-      assert.strictEqual(result.success, false);
-      assert.ok(result.message.includes('ディレクトリの種別は変更できません'));
-      assert.ok(result.errors && result.errors.length > 0);
+      expect(result.success).toBe(false);
+      expect(result.message.includes('ディレクトリの種別は変更できません')).toBeTruthy();
+      expect(result.errors && result.errors.length > 0).toBeTruthy();
     });
   });
 
-  suite('getCurrentFileType', () => {
-    test('contentファイルの種別を正しく取得する', async () => {
+  describe('getCurrentFileType', () => {
+    it('contentファイルの種別を正しく取得する', async () => {
       const testDir = '/test/project';
       const fileName = 'chapter1.txt';
       const absoluteFilePath = `${testDir}/${fileName}`;
@@ -341,10 +340,10 @@ suite('FileTypeConversionService テストスイート', () => {
       const type = await service.getCurrentFileType(absoluteFilePath);
 
       // 結果を検証
-      assert.strictEqual(type, 'content');
+      expect(type).toBe('content');
     });
 
-    test('settingファイルの種別を正しく取得する', async () => {
+    it('settingファイルの種別を正しく取得する', async () => {
       const testDir = '/test/project';
       const fileName = 'character.md';
       const absoluteFilePath = `${testDir}/${fileName}`;
@@ -372,20 +371,20 @@ suite('FileTypeConversionService テストスイート', () => {
       const type = await service.getCurrentFileType(absoluteFilePath);
 
       // 結果を検証
-      assert.strictEqual(type, 'setting');
+      expect(type).toBe('setting');
     });
 
-    test('meta.yamlが存在しない場合はnullを返す', async () => {
+    it('meta.yamlが存在しない場合はnullを返す', async () => {
       const absoluteFilePath = '/test/project/chapter1.txt';
 
       // 種別を取得
       const type = await service.getCurrentFileType(absoluteFilePath);
 
       // 結果を検証
-      assert.strictEqual(type, null);
+      expect(type).toBe(null);
     });
 
-    test('ファイルが登録されていない場合はnullを返す', async () => {
+    it('ファイルが登録されていない場合はnullを返す', async () => {
       const testDir = '/test/project';
       const fileName = 'unregistered.txt';
       const absoluteFilePath = `${testDir}/${fileName}`;
@@ -406,10 +405,10 @@ suite('FileTypeConversionService テストスイート', () => {
       const type = await service.getCurrentFileType(absoluteFilePath);
 
       // 結果を検証
-      assert.strictEqual(type, null);
+      expect(type).toBe(null);
     });
 
-    test('サブディレクトリの場合はnullを返す', async () => {
+    it('サブディレクトリの場合はnullを返す', async () => {
       const testDir = '/test/project';
       const dirName = 'subdirectory';
       const absoluteDirPath = `${testDir}/${dirName}`;
@@ -436,12 +435,12 @@ suite('FileTypeConversionService テストスイート', () => {
       const type = await service.getCurrentFileType(absoluteDirPath);
 
       // 結果を検証
-      assert.strictEqual(type, null);
+      expect(type).toBe(null);
     });
   });
 
-  suite('isFileTypeConvertible', () => {
-    test('contentファイルは変更可能', async () => {
+  describe('isFileTypeConvertible', () => {
+    it('contentファイルは変更可能', async () => {
       const testDir = '/test/project';
       const fileName = 'chapter1.txt';
       const absoluteFilePath = `${testDir}/${fileName}`;
@@ -469,10 +468,10 @@ suite('FileTypeConversionService テストスイート', () => {
       const convertible = await service.isFileTypeConvertible(absoluteFilePath);
 
       // 結果を検証
-      assert.strictEqual(convertible, true);
+      expect(convertible).toBe(true);
     });
 
-    test('settingファイルは変更可能', async () => {
+    it('settingファイルは変更可能', async () => {
       const testDir = '/test/project';
       const fileName = 'character.md';
       const absoluteFilePath = `${testDir}/${fileName}`;
@@ -500,20 +499,20 @@ suite('FileTypeConversionService テストスイート', () => {
       const convertible = await service.isFileTypeConvertible(absoluteFilePath);
 
       // 結果を検証
-      assert.strictEqual(convertible, true);
+      expect(convertible).toBe(true);
     });
 
-    test('存在しないファイルは変更不可', async () => {
+    it('存在しないファイルは変更不可', async () => {
       const absoluteFilePath = '/test/project/nonexistent.txt';
 
       // 変更可能性を確認
       const convertible = await service.isFileTypeConvertible(absoluteFilePath);
 
       // 結果を検証
-      assert.strictEqual(convertible, false);
+      expect(convertible).toBe(false);
     });
 
-    test('サブディレクトリは変更不可', async () => {
+    it('サブディレクトリは変更不可', async () => {
       const testDir = '/test/project';
       const dirName = 'subdirectory';
       const absoluteDirPath = `${testDir}/${dirName}`;
@@ -541,10 +540,10 @@ suite('FileTypeConversionService テストスイート', () => {
       const convertible = await service.isFileTypeConvertible(absoluteDirPath);
 
       // 結果を検証
-      assert.strictEqual(convertible, false);
+      expect(convertible).toBe(false);
     });
 
-    test('管理対象外ファイルは変更不可', async () => {
+    it('管理対象外ファイルは変更不可', async () => {
       const testDir = '/test/project';
       const fileName = 'unregistered.txt';
       const absoluteFilePath = `${testDir}/${fileName}`;
@@ -557,7 +556,7 @@ suite('FileTypeConversionService テストスイート', () => {
       const convertible = await service.isFileTypeConvertible(absoluteFilePath);
 
       // 結果を検証
-      assert.strictEqual(convertible, false);
+      expect(convertible).toBe(false);
     });
   });
 });

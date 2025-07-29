@@ -1,4 +1,3 @@
-import * as assert from 'assert';
 import * as path from 'path';
 import { ForeshadowingService, ForeshadowingData } from './ForeshadowingService.js';
 import { MockFileRepository } from '../repositories/MockFileRepository.js';
@@ -6,13 +5,13 @@ import { MetaYamlService } from './MetaYamlService.js';
 import { MockMetaYamlService } from '../repositories/MockMetaYamlService.js';
 import { isForeshadowingItem } from '../utils/MetaYamlUtils.js';
 
-suite('ForeshadowingService', () => {
+describe('ForeshadowingService', () => {
   let mockFileRepository: MockFileRepository;
   let metaYamlService: MetaYamlService;
   let foreshadowingService: ForeshadowingService;
   let novelRootAbsolutePath: string;
 
-  setup(() => {
+  beforeEach(() => {
     // モックサービスを初期化
     mockFileRepository = new MockFileRepository();
     metaYamlService = new MockMetaYamlService();
@@ -46,51 +45,51 @@ suite('ForeshadowingService', () => {
 
   // ===== 非同期版メソッドのテスト =====
 
-  suite('extractDisplayNameAsync', () => {
-    test('マークダウンファイルの見出しから表示名を取得', async () => {
+  describe('extractDisplayNameAsync', () => {
+    it('マークダウンファイルの見出しから表示名を取得', async () => {
       const filePath = path.join(novelRootAbsolutePath, 'settings/foreshadowings/mystery.md');
       const displayName = await foreshadowingService.extractDisplayNameAsync(filePath);
-      assert.strictEqual(displayName, '謎の正体');
+      expect(displayName).toBe('謎の正体');
     });
 
-    test('見出しがない場合はファイル名を返す', async () => {
+    it('見出しがない場合はファイル名を返す', async () => {
       const filePath = path.join(novelRootAbsolutePath, 'contents/chapter1.txt');
       const displayName = await foreshadowingService.extractDisplayNameAsync(filePath);
-      assert.strictEqual(displayName, 'chapter1');
+      expect(displayName).toBe('chapter1');
     });
 
-    test('存在しないファイルの場合はファイル名を返す', async () => {
+    it('存在しないファイルの場合はファイル名を返す', async () => {
       const filePath = path.join(novelRootAbsolutePath, 'nonexistent.txt');
       const displayName = await foreshadowingService.extractDisplayNameAsync(filePath);
-      assert.strictEqual(displayName, 'nonexistent');
+      expect(displayName).toBe('nonexistent');
     });
   });
 
-  suite('validatePathAsync', () => {
-    test('存在するファイルパスは有効', async () => {
+  describe('validatePathAsync', () => {
+    it('存在するファイルパスは有効', async () => {
       const valid = await foreshadowingService.validatePathAsync(
         novelRootAbsolutePath,
         'contents/chapter1.txt',
       );
-      assert.strictEqual(valid, true);
+      expect(valid).toBe(true);
     });
 
-    test('存在しないファイルパスは無効', async () => {
+    it('存在しないファイルパスは無効', async () => {
       const valid = await foreshadowingService.validatePathAsync(
         novelRootAbsolutePath,
         'contents/nonexistent.txt',
       );
-      assert.strictEqual(valid, false);
+      expect(valid).toBe(false);
     });
 
-    test('空文字列は無効', async () => {
+    it('空文字列は無効', async () => {
       const valid = await foreshadowingService.validatePathAsync(novelRootAbsolutePath, '');
-      assert.strictEqual(valid, false);
+      expect(valid).toBe(false);
     });
   });
 
-  suite('validateForeshadowingAsync', () => {
-    test('有効な伏線データの検証', async () => {
+  describe('validateForeshadowingAsync', () => {
+    it('有効な伏線データの検証', async () => {
       const foreshadowingData: ForeshadowingData = {
         plants: [
           { location: 'contents/chapter1.txt', comment: '最初のヒント' },
@@ -103,11 +102,11 @@ suite('ForeshadowingService', () => {
         novelRootAbsolutePath,
         foreshadowingData,
       );
-      assert.strictEqual(result.valid, true);
-      assert.strictEqual(result.errors.length, 0);
+      expect(result.valid).toBe(true);
+      expect(result.errors.length).toBe(0);
     });
 
-    test('埋蔵位置が空の場合エラー', async () => {
+    it('埋蔵位置が空の場合エラー', async () => {
       const foreshadowingData: ForeshadowingData = {
         plants: [], // 空の配列
         payoff: { location: 'contents/chapter2.txt', comment: '回収' },
@@ -117,12 +116,12 @@ suite('ForeshadowingService', () => {
         novelRootAbsolutePath,
         foreshadowingData,
       );
-      assert.strictEqual(result.valid, false);
-      assert.ok(result.errors.length > 0);
-      assert.ok(result.errors.some((error) => error.includes('埋蔵位置')));
+      expect(result.valid).toBe(false);
+      expect(result.errors.length > 0).toBeTruthy();
+      expect(result.errors.some((error) => error.includes('埋蔵位置'))).toBeTruthy();
     });
 
-    test('回収位置が空の場合エラー', async () => {
+    it('回収位置が空の場合エラー', async () => {
       const foreshadowingData: ForeshadowingData = {
         plants: [{ location: 'contents/chapter1.txt', comment: 'ヒント' }],
         payoff: { location: '', comment: '' }, // 空の位置
@@ -132,12 +131,12 @@ suite('ForeshadowingService', () => {
         novelRootAbsolutePath,
         foreshadowingData,
       );
-      assert.strictEqual(result.valid, false);
-      assert.ok(result.errors.length > 0);
-      assert.ok(result.errors.some((error) => error.includes('回収位置')));
+      expect(result.valid).toBe(false);
+      expect(result.errors.length > 0).toBeTruthy();
+      expect(result.errors.some((error) => error.includes('回収位置'))).toBeTruthy();
     });
 
-    test('存在しないファイルパスの場合エラー', async () => {
+    it('存在しないファイルパスの場合エラー', async () => {
       const foreshadowingData: ForeshadowingData = {
         plants: [{ location: 'contents/nonexistent1.txt', comment: 'ヒント1' }],
         payoff: { location: 'contents/nonexistent2.txt', comment: '回収' },
@@ -147,13 +146,13 @@ suite('ForeshadowingService', () => {
         novelRootAbsolutePath,
         foreshadowingData,
       );
-      assert.strictEqual(result.valid, false);
-      assert.ok(result.errors.length >= 2); // 植込み位置と回収位置の両方でエラー
-      assert.ok(result.errors.some((error) => error.includes('埋蔵位置 1')));
-      assert.ok(result.errors.some((error) => error.includes('回収位置')));
+      expect(result.valid).toBe(false);
+      expect(result.errors.length >= 2).toBeTruthy(); // 植込み位置と回収位置の両方でエラー
+      expect(result.errors.some((error) => error.includes('埋蔵位置 1'))).toBeTruthy();
+      expect(result.errors.some((error) => error.includes('回収位置'))).toBeTruthy();
     });
 
-    test('複数埋蔵位置の一部が無効な場合エラー', async () => {
+    it('複数埋蔵位置の一部が無効な場合エラー', async () => {
       const foreshadowingData: ForeshadowingData = {
         plants: [
           { location: 'contents/chapter1.txt', comment: '有効な位置' },
@@ -166,18 +165,18 @@ suite('ForeshadowingService', () => {
         novelRootAbsolutePath,
         foreshadowingData,
       );
-      assert.strictEqual(result.valid, false);
-      assert.ok(result.errors.length > 0);
-      assert.ok(
+      expect(result.valid).toBe(false);
+      expect(result.errors.length > 0).toBeTruthy();
+      expect(
         result.errors.some(
           (error) => error.includes('埋蔵位置 2') && error.includes('nonexistent.txt'),
         ),
-      );
+      ).toBeTruthy();
     });
   });
 
-  suite('getForeshadowingStatusAsync', () => {
-    test('両方のファイルが存在する場合は resolved', async () => {
+  describe('getForeshadowingStatusAsync', () => {
+    it('両方のファイルが存在する場合は resolved', async () => {
       const foreshadowingData: ForeshadowingData = {
         plants: [{ location: 'contents/chapter1.txt', comment: 'ヒント' }],
         payoff: { location: 'contents/chapter2.txt', comment: '回収' },
@@ -187,10 +186,10 @@ suite('ForeshadowingService', () => {
         novelRootAbsolutePath,
         foreshadowingData,
       );
-      assert.strictEqual(status, 'resolved');
+      expect(status).toBe('resolved');
     });
 
-    test('全ての埋蔵位置が存在し回収位置が未作成の場合は fully_planted', async () => {
+    it('全ての埋蔵位置が存在し回収位置が未作成の場合は fully_planted', async () => {
       const foreshadowingData: ForeshadowingData = {
         plants: [
           { location: 'contents/chapter1.txt', comment: 'ヒント1' },
@@ -203,10 +202,10 @@ suite('ForeshadowingService', () => {
         novelRootAbsolutePath,
         foreshadowingData,
       );
-      assert.strictEqual(status, 'fully_planted');
+      expect(status).toBe('fully_planted');
     });
 
-    test('一部の埋蔵位置のみ存在する場合は partially_planted', async () => {
+    it('一部の埋蔵位置のみ存在する場合は partially_planted', async () => {
       const foreshadowingData: ForeshadowingData = {
         plants: [
           { location: 'contents/chapter1.txt', comment: '存在する位置' },
@@ -219,10 +218,10 @@ suite('ForeshadowingService', () => {
         novelRootAbsolutePath,
         foreshadowingData,
       );
-      assert.strictEqual(status, 'partially_planted');
+      expect(status).toBe('partially_planted');
     });
 
-    test('回収位置のみ存在する場合は planned', async () => {
+    it('回収位置のみ存在する場合は planned', async () => {
       const foreshadowingData: ForeshadowingData = {
         plants: [{ location: 'contents/nonexistent.txt', comment: '未作成の埋蔵位置' }],
         payoff: { location: 'contents/chapter2.txt', comment: '回収' },
@@ -232,10 +231,10 @@ suite('ForeshadowingService', () => {
         novelRootAbsolutePath,
         foreshadowingData,
       );
-      assert.strictEqual(status, 'planned');
+      expect(status).toBe('planned');
     });
 
-    test('両方とも存在しない場合は error', async () => {
+    it('両方とも存在しない場合は error', async () => {
       const foreshadowingData: ForeshadowingData = {
         plants: [{ location: 'contents/nonexistent1.txt', comment: '埋蔵位置' }],
         payoff: { location: 'contents/nonexistent2.txt', comment: '回収位置' },
@@ -245,10 +244,10 @@ suite('ForeshadowingService', () => {
         novelRootAbsolutePath,
         foreshadowingData,
       );
-      assert.strictEqual(status, 'error');
+      expect(status).toBe('error');
     });
 
-    test('植込み位置が空の場合は error', async () => {
+    it('植込み位置が空の場合は error', async () => {
       const foreshadowingData: ForeshadowingData = {
         plants: [], // 空の配列
         payoff: { location: 'contents/chapter2.txt', comment: '回収' },
@@ -258,13 +257,13 @@ suite('ForeshadowingService', () => {
         novelRootAbsolutePath,
         foreshadowingData,
       );
-      assert.strictEqual(status, 'error');
+      expect(status).toBe('error');
     });
   });
 
-  suite('Phase 2: CRUD操作', () => {
+  describe('Phase 2: CRUD操作', () => {
     // テスト用のmeta.yamlセットアップ
-    setup(() => {
+    beforeEach(() => {
       const metaYamlPath = path.join(novelRootAbsolutePath, '.dialogoi-meta.yaml');
       const metaYamlContent = `readme: README.md
 files:
@@ -284,63 +283,63 @@ files:
       mockFileRepository.addFile(metaYamlPath, metaYamlContent);
     });
 
-    test('addPlant - 植込み位置を正常に追加', async () => {
+    it('addPlant - 植込み位置を正常に追加', async () => {
       const plant = { location: 'contents/chapter1.txt', comment: '最初のヒント' };
 
       const result = await foreshadowingService.addPlant(novelRootAbsolutePath, 'test.md', plant);
 
-      assert.strictEqual(result.success, true);
-      assert.ok(result.message.includes('伏線の植込み位置を追加しました'));
+      expect(result.success).toBe(true);
+      expect(result.message.includes('伏線の植込み位置を追加しました')).toBeTruthy();
 
       // meta.yamlの内容を確認
       const meta = await metaYamlService.loadMetaYamlAsync(novelRootAbsolutePath);
-      assert.notStrictEqual(meta, null);
+      expect(meta).not.toBe(null);
       if (meta === null) {
         return;
       }
       const fileItem = meta.files.find((f) => f.name === 'test.md');
-      assert.notStrictEqual(fileItem, undefined);
+      expect(fileItem).not.toBe(undefined);
       if (fileItem === undefined) {
         return;
       }
 
       // 型ガードを使って安全にforeshadowingプロパティにアクセス
       if (isForeshadowingItem(fileItem)) {
-        assert.strictEqual(fileItem.foreshadowing.plants.length, 1);
-        assert.strictEqual(fileItem.foreshadowing.plants[0]?.location, 'contents/chapter1.txt');
-        assert.strictEqual(fileItem.foreshadowing.plants[0]?.comment, '最初のヒント');
+        expect(fileItem.foreshadowing.plants.length).toBe(1);
+        expect(fileItem.foreshadowing.plants[0]?.location).toBe('contents/chapter1.txt');
+        expect(fileItem.foreshadowing.plants[0]?.comment).toBe('最初のヒント');
       } else {
-        assert.fail('fileItemにforeshadowingプロパティが存在しません');
+        fail('fileItemにforeshadowingプロパティが存在しません');
       }
     });
 
-    test('removePlant - 植込み位置を正常に削除', async () => {
+    it('removePlant - 植込み位置を正常に削除', async () => {
       // 先に植込み位置を追加
       const plant = { location: 'contents/chapter1.txt', comment: '削除予定' };
       await foreshadowingService.addPlant(novelRootAbsolutePath, 'test.md', plant);
 
       const result = await foreshadowingService.removePlant(novelRootAbsolutePath, 'test.md', 0);
 
-      assert.strictEqual(result.success, true);
-      assert.ok(result.message.includes('伏線の植込み位置を削除しました'));
+      expect(result.success).toBe(true);
+      expect(result.message.includes('伏線の植込み位置を削除しました')).toBeTruthy();
 
       // meta.yamlの内容を確認
       const meta = await metaYamlService.loadMetaYamlAsync(novelRootAbsolutePath);
-      assert.notStrictEqual(meta, null);
+      expect(meta).not.toBe(null);
       if (meta === null) {
         return;
       }
       const fileItem = meta.files.find((f) => f.name === 'test.md');
-      assert.notStrictEqual(fileItem, undefined);
+      expect(fileItem).not.toBe(undefined);
 
       if (fileItem && isForeshadowingItem(fileItem)) {
-        assert.strictEqual(fileItem.foreshadowing.plants.length, 0);
+        expect(fileItem.foreshadowing.plants.length).toBe(0);
       } else {
-        assert.fail('fileItemにforeshadowingプロパティが存在しません');
+        fail('fileItemにforeshadowingプロパティが存在しません');
       }
     });
 
-    test('updatePlant - 植込み位置を正常に更新', async () => {
+    it('updatePlant - 植込み位置を正常に更新', async () => {
       // 先に植込み位置を追加
       const initialPlant = { location: 'contents/chapter1.txt', comment: '初期' };
       await foreshadowingService.addPlant(novelRootAbsolutePath, 'test.md', initialPlant);
@@ -353,8 +352,8 @@ files:
         updatedPlant,
       );
 
-      assert.strictEqual(result.success, true);
-      assert.ok(result.message.includes('伏線の植込み位置を更新しました'));
+      expect(result.success).toBe(true);
+      expect(result.message.includes('伏線の植込み位置を更新しました')).toBeTruthy();
 
       // meta.yamlの内容を確認
       const meta = await metaYamlService.loadMetaYamlAsync(novelRootAbsolutePath);
@@ -362,23 +361,23 @@ files:
         return;
       }
       const fileItem = meta.files.find((f) => f.name === 'test.md');
-      assert.notStrictEqual(fileItem, undefined);
+      expect(fileItem).not.toBe(undefined);
 
       if (fileItem && isForeshadowingItem(fileItem)) {
-        assert.strictEqual(fileItem.foreshadowing.plants[0]?.location, 'contents/chapter2.txt');
-        assert.strictEqual(fileItem.foreshadowing.plants[0]?.comment, '更新後');
+        expect(fileItem.foreshadowing.plants[0]?.location).toBe('contents/chapter2.txt');
+        expect(fileItem.foreshadowing.plants[0]?.comment).toBe('更新後');
       } else {
-        assert.fail('fileItemにforeshadowingプロパティが存在しません');
+        fail('fileItemにforeshadowingプロパティが存在しません');
       }
     });
 
-    test('setPayoff - 回収位置を正常に設定', async () => {
+    it('setPayoff - 回収位置を正常に設定', async () => {
       const payoff = { location: 'contents/chapter5.txt', comment: '真相明示' };
 
       const result = await foreshadowingService.setPayoff(novelRootAbsolutePath, 'test.md', payoff);
 
-      assert.strictEqual(result.success, true);
-      assert.ok(result.message.includes('伏線の回収位置を設定しました'));
+      expect(result.success).toBe(true);
+      expect(result.message.includes('伏線の回収位置を設定しました')).toBeTruthy();
 
       // meta.yamlの内容を確認
       const meta = await metaYamlService.loadMetaYamlAsync(novelRootAbsolutePath);
@@ -386,25 +385,25 @@ files:
         return;
       }
       const fileItem = meta.files.find((f) => f.name === 'test.md');
-      assert.notStrictEqual(fileItem, undefined);
+      expect(fileItem).not.toBe(undefined);
 
       if (fileItem && isForeshadowingItem(fileItem)) {
-        assert.strictEqual(fileItem.foreshadowing.payoff.location, 'contents/chapter5.txt');
-        assert.strictEqual(fileItem.foreshadowing.payoff.comment, '真相明示');
+        expect(fileItem.foreshadowing.payoff.location).toBe('contents/chapter5.txt');
+        expect(fileItem.foreshadowing.payoff.comment).toBe('真相明示');
       } else {
-        assert.fail('fileItemにforeshadowingプロパティが存在しません');
+        fail('fileItemにforeshadowingプロパティが存在しません');
       }
     });
 
-    test('removePayoff - 回収位置を正常に削除', async () => {
+    it('removePayoff - 回収位置を正常に削除', async () => {
       // 先に回収位置を設定
       const payoff = { location: 'contents/chapter5.txt', comment: '削除予定' };
       await foreshadowingService.setPayoff(novelRootAbsolutePath, 'test.md', payoff);
 
       const result = await foreshadowingService.removePayoff(novelRootAbsolutePath, 'test.md');
 
-      assert.strictEqual(result.success, true);
-      assert.ok(result.message.includes('伏線の回収位置を削除しました'));
+      expect(result.success).toBe(true);
+      expect(result.message.includes('伏線の回収位置を削除しました')).toBeTruthy();
 
       // meta.yamlの内容を確認
       const meta = await metaYamlService.loadMetaYamlAsync(novelRootAbsolutePath);
@@ -412,17 +411,17 @@ files:
         return;
       }
       const fileItem = meta.files.find((f) => f.name === 'test.md');
-      assert.notStrictEqual(fileItem, undefined);
+      expect(fileItem).not.toBe(undefined);
 
       if (fileItem && isForeshadowingItem(fileItem)) {
-        assert.strictEqual(fileItem.foreshadowing.payoff.location, '');
-        assert.strictEqual(fileItem.foreshadowing.payoff.comment, '');
+        expect(fileItem.foreshadowing.payoff.location).toBe('');
+        expect(fileItem.foreshadowing.payoff.comment).toBe('');
       } else {
-        assert.fail('fileItemにforeshadowingプロパティが存在しません');
+        fail('fileItemにforeshadowingプロパティが存在しません');
       }
     });
 
-    test('エラーケース - 存在しないファイル', async () => {
+    it('エラーケース - 存在しないファイル', async () => {
       const plant = { location: 'contents/chapter1.txt', comment: 'テスト' };
 
       const result = await foreshadowingService.addPlant(
@@ -431,15 +430,15 @@ files:
         plant,
       );
 
-      assert.strictEqual(result.success, false);
-      assert.ok(result.message.includes('ファイル nonexistent.md が見つかりません'));
+      expect(result.success).toBe(false);
+      expect(result.message.includes('ファイル nonexistent.md が見つかりません')).toBeTruthy();
     });
 
-    test('エラーケース - 無効なインデックス', async () => {
+    it('エラーケース - 無効なインデックス', async () => {
       const result = await foreshadowingService.removePlant(novelRootAbsolutePath, 'test.md', 999);
 
-      assert.strictEqual(result.success, false);
-      assert.ok(result.message.includes('無効なインデックス'));
+      expect(result.success).toBe(false);
+      expect(result.message.includes('無効なインデックス')).toBeTruthy();
     });
   });
 });

@@ -1,27 +1,25 @@
-import { suite, test, setup, teardown } from 'mocha';
-import * as assert from 'assert';
 import { HyperlinkExtractorService } from './HyperlinkExtractorService.js';
 import { FilePathMapService } from './FilePathMapService.js';
 import { TestServiceContainer } from '../di/TestServiceContainer.js';
 import { MockFileRepository } from '../repositories/MockFileRepository.js';
 
-suite('HyperlinkExtractorService テストスイート', () => {
+describe('HyperlinkExtractorService テストスイート', () => {
   let service: HyperlinkExtractorService;
   let container: TestServiceContainer;
   let mockFileRepo: MockFileRepository;
 
-  setup(() => {
+  beforeEach(() => {
     container = TestServiceContainer.create();
     mockFileRepo = container.getFileRepository() as MockFileRepository;
     // HyperlinkExtractorServiceは具体的なnovelRootPathが必要なので、テストごとに個別作成
   });
 
-  teardown(() => {
+  afterEach(() => {
     container.cleanup();
   });
 
-  suite('parseMarkdownLinks', () => {
-    test('基本的なマークダウンリンクを抽出できる', () => {
+  describe('parseMarkdownLinks', () => {
+    it('基本的なマークダウンリンクを抽出できる', () => {
       // サービスを作成
       const metaYamlService = container.getMetaYamlService();
       const coreFileService = container.getCoreFileService();
@@ -37,14 +35,14 @@ suite('HyperlinkExtractorService テストスイート', () => {
 
       const links = service.parseMarkdownLinks(content);
 
-      assert.strictEqual(links.length, 2);
-      assert.strictEqual(links[0]?.text, 'テストリンク');
-      assert.strictEqual(links[0]?.url, 'test.md');
-      assert.strictEqual(links[1]?.text, 'リンク');
-      assert.strictEqual(links[1]?.url, '../settings/world.md');
+      expect(links.length).toBe(2);
+      expect(links[0]?.text).toBe('テストリンク');
+      expect(links[0]?.url).toBe('test.md');
+      expect(links[1]?.text).toBe('リンク');
+      expect(links[1]?.url).toBe('../settings/world.md');
     });
 
-    test('タイトル付きマークダウンリンクを抽出できる', () => {
+    it('タイトル付きマークダウンリンクを抽出できる', () => {
       // サービスを作成
       const metaYamlService = container.getMetaYamlService();
       const coreFileService = container.getCoreFileService();
@@ -58,16 +56,16 @@ suite('HyperlinkExtractorService テストスイート', () => {
 
       const links = service.parseMarkdownLinks(content);
 
-      assert.strictEqual(links.length, 2);
-      assert.strictEqual(links[0]?.text, 'リンク');
-      assert.strictEqual(links[0]?.url, 'test.md');
-      assert.strictEqual(links[0]?.title, 'タイトル');
-      assert.strictEqual(links[1]?.text, '別のリンク');
-      assert.strictEqual(links[1]?.url, 'world.md');
-      assert.strictEqual(links[1]?.title, '世界設定');
+      expect(links.length).toBe(2);
+      expect(links[0]?.text).toBe('リンク');
+      expect(links[0]?.url).toBe('test.md');
+      expect(links[0]?.title).toBe('タイトル');
+      expect(links[1]?.text).toBe('別のリンク');
+      expect(links[1]?.url).toBe('world.md');
+      expect(links[1]?.title).toBe('世界設定');
     });
 
-    test('外部リンクも抽出される', () => {
+    it('外部リンクも抽出される', () => {
       // サービスを作成
       const metaYamlService = container.getMetaYamlService();
       const coreFileService = container.getCoreFileService();
@@ -82,13 +80,13 @@ suite('HyperlinkExtractorService テストスイート', () => {
 
       const links = service.parseMarkdownLinks(content);
 
-      assert.strictEqual(links.length, 3);
-      assert.strictEqual(links[0]?.url, 'https://github.com');
-      assert.strictEqual(links[1]?.url, './test.md');
-      assert.strictEqual(links[2]?.url, 'mailto:test@example.com');
+      expect(links.length).toBe(3);
+      expect(links[0]?.url).toBe('https://github.com');
+      expect(links[1]?.url).toBe('./test.md');
+      expect(links[2]?.url).toBe('mailto:test@example.com');
     });
 
-    test('空のテキストやURLも処理される', () => {
+    it('空のテキストやURLも処理される', () => {
       // サービスを作成
       const metaYamlService = container.getMetaYamlService();
       const coreFileService = container.getCoreFileService();
@@ -102,16 +100,16 @@ suite('HyperlinkExtractorService テストスイート', () => {
 
       const links = service.parseMarkdownLinks(content);
 
-      assert.strictEqual(links.length, 2);
-      assert.strictEqual(links[0]?.text, '');
-      assert.strictEqual(links[0]?.url, 'empty-url.md');
-      assert.strictEqual(links[1]?.text, '空のURL');
-      assert.strictEqual(links[1]?.url, '');
+      expect(links.length).toBe(2);
+      expect(links[0]?.text).toBe('');
+      expect(links[0]?.url).toBe('empty-url.md');
+      expect(links[1]?.text).toBe('空のURL');
+      expect(links[1]?.url).toBe('');
     });
   });
 
-  suite('filterProjectLinks', () => {
-    test('プロジェクト内リンクのみをフィルタリングできる', async () => {
+  describe('filterProjectLinks', () => {
+    it('プロジェクト内リンクのみをフィルタリングできる', async () => {
       // テストプロジェクト構造を作成
       const novelRoot = '/test/novel';
 
@@ -159,12 +157,12 @@ files:
       const currentFile = `${novelRoot}/第1章.md`;
       const projectLinks = service.filterProjectLinks(links, currentFile);
 
-      assert.strictEqual(projectLinks.length, 2);
-      assert.strictEqual(projectLinks.includes('settings/world.md'), true);
-      assert.strictEqual(projectLinks.includes('settings/character.md'), true);
+      expect(projectLinks.length).toBe(2);
+      expect(projectLinks.includes('settings/world.md')).toBe(true);
+      expect(projectLinks.includes('settings/character.md')).toBe(true);
     });
 
-    test('相対パスも正しく処理される', async () => {
+    it('相対パスも正しく処理される', async () => {
       const novelRoot = '/test/novel';
 
       // サービスを作成
@@ -206,13 +204,13 @@ files:
       const projectLinks = service.filterProjectLinks(links, currentFile);
 
       // 全て同じファイルを指しているので、重複除去されて1つになる
-      assert.strictEqual(projectLinks.length, 1);
-      assert.strictEqual(projectLinks[0], 'settings/world.md');
+      expect(projectLinks.length).toBe(1);
+      expect(projectLinks[0]).toBe('settings/world.md');
     });
   });
 
-  suite('extractProjectLinksAsync', () => {
-    test('ファイルからプロジェクト内リンクを抽出できる', async () => {
+  describe('extractProjectLinksAsync', () => {
+    it('ファイルからプロジェクト内リンクを抽出できる', async () => {
       // テストプロジェクト構造を作成
       const novelRoot = '/test/novel';
 
@@ -264,17 +262,17 @@ files:
 
       const projectLinks = await service.extractProjectLinksAsync(`${novelRoot}/第1章.md`);
 
-      assert.strictEqual(projectLinks.length, 2);
-      assert.strictEqual(projectLinks.includes('settings/world.md'), true);
-      assert.strictEqual(projectLinks.includes('settings/character.md'), true);
+      expect(projectLinks.length).toBe(2);
+      expect(projectLinks.includes('settings/world.md')).toBe(true);
+      expect(projectLinks.includes('settings/character.md')).toBe(true);
     });
 
-    test('存在しないファイルは空配列を返す', async () => {
+    it('存在しないファイルは空配列を返す', async () => {
       const projectLinks = await service.extractProjectLinksAsync('/nonexistent/file.md');
-      assert.strictEqual(projectLinks.length, 0);
+      expect(projectLinks.length).toBe(0);
     });
 
-    test('リンクが含まれていないファイルは空配列を返す', async () => {
+    it('リンクが含まれていないファイルは空配列を返す', async () => {
       const novelRoot = '/test/novel';
 
       mockFileRepo.createFileForTest(
@@ -287,12 +285,12 @@ files:
       );
 
       const projectLinks = await service.extractProjectLinksAsync(`${novelRoot}/simple.md`);
-      assert.strictEqual(projectLinks.length, 0);
+      expect(projectLinks.length).toBe(0);
     });
   });
 
-  suite('refreshFileLinksAsync', () => {
-    test('ファイルのリンクを再抽出できる', async () => {
+  describe('refreshFileLinksAsync', () => {
+    it('ファイルのリンクを再抽出できる', async () => {
       // テストプロジェクト構造を作成
       const novelRoot = '/test/novel';
 
@@ -325,13 +323,13 @@ files:
 
       const projectLinks = await service.refreshFileLinksAsync(`${novelRoot}/test.md`);
 
-      assert.strictEqual(projectLinks.length, 1);
-      assert.strictEqual(projectLinks[0], 'target.md');
+      expect(projectLinks.length).toBe(1);
+      expect(projectLinks[0]).toBe('target.md');
     });
   });
 
-  suite('extractProjectLinksFromFilesAsync', () => {
-    test('複数ファイルのリンクを一括抽出できる', async () => {
+  describe('extractProjectLinksFromFilesAsync', () => {
+    it('複数ファイルのリンクを一括抽出できる', async () => {
       // テストプロジェクト構造を作成
       const novelRoot = '/test/novel';
 
@@ -375,24 +373,24 @@ files:
       const filePaths = [`${novelRoot}/file1.md`, `${novelRoot}/file2.md`];
       const result = await service.extractProjectLinksFromFilesAsync(filePaths);
 
-      assert.strictEqual(result.size, 2);
+      expect(result.size).toBe(2);
 
       const file1Links = result.get(`${novelRoot}/file1.md`);
-      assert.notStrictEqual(file1Links, undefined);
+      expect(file1Links).not.toBe(undefined);
       if (file1Links !== undefined) {
-        assert.strictEqual(file1Links.length, 1);
-        assert.strictEqual(file1Links[0], 'target.md');
+        expect(file1Links.length).toBe(1);
+        expect(file1Links[0]).toBe('target.md');
       }
 
       const file2Links = result.get(`${novelRoot}/file2.md`);
-      assert.notStrictEqual(file2Links, undefined);
+      expect(file2Links).not.toBe(undefined);
       if (file2Links !== undefined) {
-        assert.strictEqual(file2Links.length, 1);
-        assert.strictEqual(file2Links[0], 'target.md');
+        expect(file2Links.length).toBe(1);
+        expect(file2Links[0]).toBe('target.md');
       }
     });
 
-    test('ユーザケース：設定ファイルから本文ファイルへのリンクを抽出（デバッグ版）', async () => {
+    it('ユーザケース：設定ファイルから本文ファイルへのリンクを抽出（デバッグ版）', async () => {
       // テストプロジェクト構造を作成
       const novelRoot = '/test/novel';
 
@@ -458,22 +456,14 @@ files:
         'contents/01_prologue.txt',
         `${novelRoot}/settings/character.md`,
       );
-      assert.strictEqual(
-        isProjectFile,
-        true,
-        'contents/01_prologue.txt がプロジェクトファイルとして認識されていない',
-      );
+      expect(isProjectFile).toBe(true);
 
       // パス解決もテスト
       const resolvedPath = filePathMapService.resolveFileAbsolutePath(
         'contents/01_prologue.txt',
         `${novelRoot}/settings/character.md`,
       );
-      assert.strictEqual(
-        resolvedPath,
-        `${novelRoot}/contents/01_prologue.txt`,
-        'パス解決が正しく動作していない',
-      );
+      expect(resolvedPath).toBe(`${novelRoot}/contents/01_prologue.txt`);
 
       // デバッグ：パースされるリンクを確認
       const content = await mockFileRepo.readFileAsync(
@@ -482,9 +472,9 @@ files:
       );
 
       const allLinks = service.parseMarkdownLinks(content);
-      assert.strictEqual(allLinks.length, 1, 'マークダウンリンクのパースが失敗');
-      assert.strictEqual(allLinks[0]?.text, '01_prologue.txt', 'リンクテキストが正しくない');
-      assert.strictEqual(allLinks[0]?.url, 'contents/01_prologue.txt', 'リンクURLが正しくない');
+      expect(allLinks.length).toBe(1);
+      expect(allLinks[0]?.text).toBe('01_prologue.txt');
+      expect(allLinks[0]?.url).toBe('contents/01_prologue.txt');
 
       // プロジェクト内リンクを抽出
       const projectLinks = await service.extractProjectLinksAsync(
@@ -492,21 +482,13 @@ files:
       );
 
       // 検証
-      assert.strictEqual(
-        projectLinks.length,
-        1,
-        `期待: 1個のリンク, 実際: ${projectLinks.length}個`,
-      );
-      assert.strictEqual(
-        projectLinks[0],
-        'contents/01_prologue.txt',
-        `期待: contents/01_prologue.txt, 実際: ${projectLinks[0]}`,
-      );
+      expect(projectLinks.length).toBe(1);
+      expect(projectLinks[0]).toBe('contents/01_prologue.txt');
     });
   });
 
-  suite('非同期メソッドテスト', () => {
-    test('ファイルからプロジェクト内リンクを抽出（非同期版）できる', async () => {
+  describe('非同期メソッドテスト', () => {
+    it('ファイルからプロジェクト内リンクを抽出（非同期版）できる', async () => {
       const novelRoot = '/test/novel';
 
       const metaYamlService = container.getMetaYamlService();
@@ -547,11 +529,11 @@ files:
 
       const links = await service.extractProjectLinksAsync(`${novelRoot}/chapter1.md`);
 
-      assert.strictEqual(links.length, 1);
-      assert.strictEqual(links[0], 'settings/world.md');
+      expect(links.length).toBe(1);
+      expect(links[0]).toBe('settings/world.md');
     });
 
-    test('複数ファイルのリンクを一括抽出（非同期版）できる', async () => {
+    it('複数ファイルのリンクを一括抽出（非同期版）できる', async () => {
       const novelRoot = '/test/novel';
 
       const metaYamlService = container.getMetaYamlService();
@@ -582,24 +564,24 @@ files:
       const filePaths = [`${novelRoot}/file1.md`, `${novelRoot}/file2.md`];
       const result = await service.extractProjectLinksFromFilesAsync(filePaths);
 
-      assert.strictEqual(result.size, 2);
+      expect(result.size).toBe(2);
 
       const file1Links = result.get(`${novelRoot}/file1.md`);
-      assert.notStrictEqual(file1Links, undefined);
+      expect(file1Links).not.toBe(undefined);
       if (file1Links !== undefined) {
-        assert.strictEqual(file1Links.length, 1);
-        assert.strictEqual(file1Links[0], 'target.md');
+        expect(file1Links.length).toBe(1);
+        expect(file1Links[0]).toBe('target.md');
       }
 
       const file2Links = result.get(`${novelRoot}/file2.md`);
-      assert.notStrictEqual(file2Links, undefined);
+      expect(file2Links).not.toBe(undefined);
       if (file2Links !== undefined) {
-        assert.strictEqual(file2Links.length, 1);
-        assert.strictEqual(file2Links[0], 'target.md');
+        expect(file2Links.length).toBe(1);
+        expect(file2Links[0]).toBe('target.md');
       }
     });
 
-    test('refreshFileLinksAsync で更新されたリンクを取得できる', async () => {
+    it('refreshFileLinksAsync で更新されたリンクを取得できる', async () => {
       const novelRoot = '/test/novel';
 
       const metaYamlService = container.getMetaYamlService();
@@ -625,8 +607,8 @@ files:
 
       const refreshedLinks = await service.refreshFileLinksAsync(`${novelRoot}/chapter.md`);
 
-      assert.strictEqual(refreshedLinks.length, 1);
-      assert.strictEqual(refreshedLinks[0], 'target.md');
+      expect(refreshedLinks.length).toBe(1);
+      expect(refreshedLinks[0]).toBe('target.md');
     });
   });
 });

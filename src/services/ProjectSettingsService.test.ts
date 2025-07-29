@@ -1,16 +1,15 @@
-import { strict as assert } from 'assert';
 import { ProjectSettingsService, ProjectSettingsUpdateData } from './ProjectSettingsService.js';
 import { DialogoiYaml } from '../utils/DialogoiYamlUtils.js';
 import { TestServiceContainer } from '../di/TestServiceContainer.js';
 import { MockFileRepository } from '../repositories/MockFileRepository.js';
 import { Logger } from '../utils/Logger.js';
 
-suite('ProjectSettingsService テストスイート', () => {
+describe('ProjectSettingsService テストスイート', () => {
   let service: ProjectSettingsService;
   let mockFileRepository: MockFileRepository;
   let logger: Logger;
 
-  setup(() => {
+  beforeEach(() => {
     const container = TestServiceContainer.create();
     mockFileRepository = container.getFileRepository() as MockFileRepository;
     logger = Logger.getInstance();
@@ -21,12 +20,12 @@ suite('ProjectSettingsService テストスイート', () => {
     );
   });
 
-  teardown(() => {
+  afterEach(() => {
     mockFileRepository.reset();
   });
 
-  suite('プロジェクト設定の読み込み', () => {
-    test('有効なDialogoiプロジェクトの設定を正しく読み込める', async () => {
+  describe('プロジェクト設定の読み込み', () => {
+    it('有効なDialogoiプロジェクトの設定を正しく読み込める', async () => {
       const projectRoot = '/test/project';
       const dialogoiYaml: DialogoiYaml = {
         title: 'テスト小説',
@@ -58,24 +57,23 @@ project_settings:
 
       // 設定が正しく読み込まれることを確認
       const loadedSettings = await service.loadProjectSettings(projectRoot);
-      assert.notStrictEqual(loadedSettings, null);
-      assert.strictEqual(loadedSettings?.title, dialogoiYaml.title);
-      assert.strictEqual(loadedSettings?.author, dialogoiYaml.author);
-      assert.deepStrictEqual(loadedSettings?.tags, dialogoiYaml.tags);
-      assert.strictEqual(
-        loadedSettings?.project_settings?.readme_filename,
-        dialogoiYaml.project_settings?.readme_filename,
+      expect(loadedSettings).not.toBe(null);
+      expect(loadedSettings?.title).toBe(dialogoiYaml.title);
+      expect(loadedSettings?.author).toBe(dialogoiYaml.author);
+      expect(loadedSettings?.tags).toEqual(dialogoiYaml.tags);
+      expect(
+        loadedSettings?.project_settings?.readme_filename).toBe(dialogoiYaml.project_settings?.readme_filename,
       );
     });
 
-    test('Dialogoiプロジェクトが存在しない場合はnullを返す', async () => {
+    it('Dialogoiプロジェクトが存在しない場合はnullを返す', async () => {
       const projectRoot = '/test/non-project';
 
       const loadedSettings = await service.loadProjectSettings(projectRoot);
-      assert.strictEqual(loadedSettings, null);
+      expect(loadedSettings).toBe(null);
     });
 
-    test('dialogoi.yamlファイルが不正な場合はnullを返す', async () => {
+    it('dialogoi.yamlファイルが不正な場合はnullを返す', async () => {
       const projectRoot = '/test/invalid-project';
 
       // 不正なYAMLファイルをモック
@@ -85,12 +83,12 @@ project_settings:
       );
 
       const loadedSettings = await service.loadProjectSettings(projectRoot);
-      assert.strictEqual(loadedSettings, null);
+      expect(loadedSettings).toBe(null);
     });
   });
 
-  suite('バリデーション機能', () => {
-    test('有効な更新データはバリデーションを通過する', () => {
+  describe('バリデーション機能', () => {
+    it('有効な更新データはバリデーションを通過する', () => {
       const updateData: ProjectSettingsUpdateData = {
         title: 'テスト小説',
         author: 'テスト著者',
@@ -102,23 +100,23 @@ project_settings:
       };
 
       const validation = service.validateUpdateData(updateData);
-      assert.strictEqual(validation.isValid, true);
-      assert.strictEqual(Object.keys(validation.errors).length, 0);
+      expect(validation.isValid).toBe(true);
+      expect(Object.keys(validation.errors).length).toBe(0);
     });
 
-    test('必須フィールドが空の場合はバリデーションエラーになる', () => {
+    it('必須フィールドが空の場合はバリデーションエラーになる', () => {
       const updateData: ProjectSettingsUpdateData = {
         title: '',
         author: '',
       };
 
       const validation = service.validateUpdateData(updateData);
-      assert.strictEqual(validation.isValid, false);
-      assert.strictEqual(validation.errors['title'], 'タイトルは必須です');
-      assert.strictEqual(validation.errors['author'], '著者は必須です');
+      expect(validation.isValid).toBe(false);
+      expect(validation.errors['title']).toBe('タイトルは必須です');
+      expect(validation.errors['author']).toBe('著者は必須です');
     });
 
-    test('重複するタグはエラーになる', () => {
+    it('重複するタグはエラーになる', () => {
       const updateData: ProjectSettingsUpdateData = {
         title: 'テスト小説',
         author: 'テスト著者',
@@ -126,12 +124,12 @@ project_settings:
       };
 
       const validation = service.validateUpdateData(updateData);
-      assert.strictEqual(validation.isValid, false);
-      assert.ok(validation.errors['tags']?.includes('重複するタグがあります') === true);
-      assert.ok(validation.errors['tags']?.includes('ファンタジー') === true);
+      expect(validation.isValid).toBe(false);
+      expect(validation.errors['tags']?.includes('重複するタグがあります')).toBeTruthy();
+      expect(validation.errors['tags']?.includes('ファンタジー')).toBeTruthy();
     });
 
-    test('重複する除外パターンはエラーになる', () => {
+    it('重複する除外パターンはエラーになる', () => {
       const updateData: ProjectSettingsUpdateData = {
         title: 'テスト小説',
         author: 'テスト著者',
@@ -141,16 +139,15 @@ project_settings:
       };
 
       const validation = service.validateUpdateData(updateData);
-      assert.strictEqual(validation.isValid, false);
-      assert.ok(
-        validation.errors['exclude_patterns']?.includes('重複する除外パターンがあります') === true,
-      );
-      assert.ok(validation.errors['exclude_patterns']?.includes('*.tmp') === true);
+      expect(validation.isValid).toBe(false);
+      expect(
+        validation.errors['exclude_patterns']?.includes('重複する除外パターンがあります')).toBeTruthy();
+      expect(validation.errors['exclude_patterns']?.includes('*.tmp')).toBeTruthy();
     });
   });
 
-  suite('プロジェクト設定の更新', () => {
-    test('有効な更新データで設定を正しく更新できる', async () => {
+  describe('プロジェクト設定の更新', () => {
+    it('有効な更新データで設定を正しく更新できる', async () => {
       const projectRoot = '/test/project';
 
       // 既存の設定を作成
@@ -192,28 +189,26 @@ project_settings:
 
       // 更新実行
       const success = await service.updateProjectSettings(projectRoot, updateData);
-      assert.strictEqual(success, true);
+      expect(success).toBe(true);
 
       // 更新後の設定を確認
       const updatedSettings = await service.loadProjectSettings(projectRoot);
-      assert.notStrictEqual(updatedSettings, null);
-      assert.strictEqual(updatedSettings?.['title'], updateData['title']);
-      assert.strictEqual(updatedSettings?.['author'], updateData['author']);
-      assert.deepStrictEqual(updatedSettings?.tags, updateData['tags']);
-      assert.strictEqual(
-        updatedSettings?.project_settings?.readme_filename,
-        updateData.project_settings?.readme_filename,
+      expect(updatedSettings).not.toBe(null);
+      expect(updatedSettings?.['title']).toBe(updateData['title']);
+      expect(updatedSettings?.['author']).toBe(updateData['author']);
+      expect(updatedSettings?.tags).toEqual(updateData['tags']);
+      expect(
+        updatedSettings?.project_settings?.readme_filename).toBe(updateData.project_settings?.readme_filename,
       );
-      assert.deepStrictEqual(
-        updatedSettings?.project_settings?.exclude_patterns,
-        updateData.project_settings?.exclude_patterns,
+      expect(
+        updatedSettings?.project_settings?.exclude_patterns).toEqual(updateData.project_settings?.exclude_patterns,
       );
 
       // 元の必須フィールドが保持されることを確認
-      assert.strictEqual(updatedSettings?.created_at, existingSettings.created_at);
+      expect(updatedSettings?.created_at).toBe(existingSettings.created_at);
     });
 
-    test('バリデーションエラーがある場合は更新が失敗する', async () => {
+    it('バリデーションエラーがある場合は更新が失敗する', async () => {
       const projectRoot = '/test/project';
 
       // 既存の設定を作成
@@ -244,16 +239,16 @@ created_at: "${existingSettings.created_at}"`,
 
       // 更新実行
       const success = await service.updateProjectSettings(projectRoot, updateData);
-      assert.strictEqual(success, false);
+      expect(success).toBe(false);
 
       // 元の設定が変更されていないことを確認
       const unchangedSettings = await service.loadProjectSettings(projectRoot);
-      assert.notStrictEqual(unchangedSettings, null);
-      assert.strictEqual(unchangedSettings?.['title'], existingSettings['title']);
-      assert.strictEqual(unchangedSettings?.['author'], existingSettings['author']);
+      expect(unchangedSettings).not.toBe(null);
+      expect(unchangedSettings?.['title']).toBe(existingSettings['title']);
+      expect(unchangedSettings?.['author']).toBe(existingSettings['author']);
     });
 
-    test('プロジェクトが存在しない場合は更新が失敗する', async () => {
+    it('プロジェクトが存在しない場合は更新が失敗する', async () => {
       const projectRoot = '/test/non-project';
 
       const updateData: ProjectSettingsUpdateData = {
@@ -262,10 +257,10 @@ created_at: "${existingSettings.created_at}"`,
       };
 
       const success = await service.updateProjectSettings(projectRoot, updateData);
-      assert.strictEqual(success, false);
+      expect(success).toBe(false);
     });
 
-    test('空のタグと除外パターンはundefinedとして保存される', async () => {
+    it('空のタグと除外パターンはundefinedとして保存される', async () => {
       const projectRoot = '/test/project';
 
       // 既存の設定を作成
@@ -308,21 +303,21 @@ project_settings:
 
       // 更新実行
       const success = await service.updateProjectSettings(projectRoot, updateData);
-      assert.strictEqual(success, true);
+      expect(success).toBe(true);
 
       // 更新後の設定を確認
       const updatedSettings = await service.loadProjectSettings(projectRoot);
-      assert.notStrictEqual(updatedSettings, null);
-      assert.deepStrictEqual(updatedSettings?.tags, []); // 空配列になる
-      assert.deepStrictEqual(updatedSettings?.project_settings, {
+      expect(updatedSettings).not.toBe(null);
+      expect(updatedSettings?.tags).toEqual([]); // 空配列になる
+      expect(updatedSettings?.project_settings).toEqual({
         readme_filename: 'OLD.md', // 既存の値が保持される
         exclude_patterns: ['*.old'], // 既存の値が保持される
       });
     });
   });
 
-  suite('プロジェクト存在チェック', () => {
-    test('Dialogoiプロジェクトが存在する場合はtrueを返す', async () => {
+  describe('プロジェクト存在チェック', () => {
+    it('Dialogoiプロジェクトが存在する場合はtrueを返す', async () => {
       const projectRoot = '/test/project';
 
       await mockFileRepository.writeFileAsync(
@@ -338,22 +333,22 @@ project_settings:
       );
 
       const exists = await service.isDialogoiProject(projectRoot);
-      assert.strictEqual(exists, true);
+      expect(exists).toBe(true);
     });
 
-    test('Dialogoiプロジェクトが存在しない場合はfalseを返す', async () => {
+    it('Dialogoiプロジェクトが存在しない場合はfalseを返す', async () => {
       const projectRoot = '/test/non-project';
 
       const exists = await service.isDialogoiProject(projectRoot);
-      assert.strictEqual(exists, false);
+      expect(exists).toBe(false);
     });
   });
 
-  suite('dialogoi.yamlパス取得', () => {
-    test('正しいパスを返す', () => {
+  describe('dialogoi.yamlパス取得', () => {
+    it('正しいパスを返す', () => {
       const projectRoot = '/test/project';
       const yamlPath = service.getDialogoiYamlPath(projectRoot);
-      assert.strictEqual(yamlPath, '/test/project/dialogoi.yaml');
+      expect(yamlPath).toBe('/test/project/dialogoi.yaml');
     });
   });
 });

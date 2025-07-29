@@ -1,156 +1,154 @@
-import { suite, test } from 'mocha';
-import * as assert from 'assert';
 import { FileTypeDetector } from './FileTypeDetector.js';
 
-suite('FileTypeDetector テストスイート', () => {
-  suite('detectByExtension', () => {
-    test('.txt ファイルは content 種別として判定される', () => {
+describe('FileTypeDetector テストスイート', () => {
+  describe('detectByExtension', () => {
+    it('.txt ファイルは content 種別として判定される', () => {
       const result = FileTypeDetector.detectByExtension('chapter1.txt');
-      assert.strictEqual(result, 'content');
+      expect(result).toBe('content');
     });
 
-    test('.TXT ファイル（大文字）も content 種別として判定される', () => {
+    it('.TXT ファイル（大文字）も content 種別として判定される', () => {
       const result = FileTypeDetector.detectByExtension('chapter1.TXT');
-      assert.strictEqual(result, 'content');
+      expect(result).toBe('content');
     });
 
-    test('.md ファイルは setting 種別として判定される', () => {
+    it('.md ファイルは setting 種別として判定される', () => {
       const result = FileTypeDetector.detectByExtension('character.md');
-      assert.strictEqual(result, 'setting');
+      expect(result).toBe('setting');
     });
 
-    test('.MD ファイル（大文字）も setting 種別として判定される', () => {
+    it('.MD ファイル（大文字）も setting 種別として判定される', () => {
       const result = FileTypeDetector.detectByExtension('character.MD');
-      assert.strictEqual(result, 'setting');
+      expect(result).toBe('setting');
     });
 
-    test('.json ファイルは setting 種別として判定される', () => {
+    it('.json ファイルは setting 種別として判定される', () => {
       const result = FileTypeDetector.detectByExtension('config.json');
-      assert.strictEqual(result, 'setting');
+      expect(result).toBe('setting');
     });
 
-    test('.yaml ファイルは setting 種別として判定される', () => {
+    it('.yaml ファイルは setting 種別として判定される', () => {
       const result = FileTypeDetector.detectByExtension('metadata.yaml');
-      assert.strictEqual(result, 'setting');
+      expect(result).toBe('setting');
     });
 
-    test('.yml ファイルは setting 種別として判定される', () => {
+    it('.yml ファイルは setting 種別として判定される', () => {
       const result = FileTypeDetector.detectByExtension('config.yml');
-      assert.strictEqual(result, 'setting');
+      expect(result).toBe('setting');
     });
 
-    test('拡張子がない場合は setting 種別として判定される', () => {
+    it('拡張子がない場合は setting 種別として判定される', () => {
       const result = FileTypeDetector.detectByExtension('README');
-      assert.strictEqual(result, 'setting');
+      expect(result).toBe('setting');
     });
 
-    test('未知の拡張子は setting 種別として判定される', () => {
+    it('未知の拡張子は setting 種別として判定される', () => {
       const result = FileTypeDetector.detectByExtension('script.py');
-      assert.strictEqual(result, 'setting');
+      expect(result).toBe('setting');
     });
 
-    test('複数のドットを含むファイル名でも正しく判定される', () => {
+    it('複数のドットを含むファイル名でも正しく判定される', () => {
       const result = FileTypeDetector.detectByExtension('file.backup.txt');
-      assert.strictEqual(result, 'content');
+      expect(result).toBe('content');
     });
 
-    test('パス付きファイル名でも正しく判定される', () => {
+    it('パス付きファイル名でも正しく判定される', () => {
       const txtResult = FileTypeDetector.detectByExtension('/path/to/chapter.txt');
-      assert.strictEqual(txtResult, 'content');
+      expect(txtResult).toBe('content');
 
       const mdResult = FileTypeDetector.detectByExtension('/path/to/character.md');
-      assert.strictEqual(mdResult, 'setting');
+      expect(mdResult).toBe('setting');
     });
 
-    test('Windows パス区切り文字でも正しく判定される', () => {
+    it('Windows パス区切り文字でも正しく判定される', () => {
       const result = FileTypeDetector.detectByExtension('C:\\Users\\Documents\\chapter.txt');
-      assert.strictEqual(result, 'content');
+      expect(result).toBe('content');
     });
 
-    test('相対パスでも正しく判定される', () => {
+    it('相対パスでも正しく判定される', () => {
       const result = FileTypeDetector.detectByExtension('./contents/chapter1.txt');
-      assert.strictEqual(result, 'content');
+      expect(result).toBe('content');
     });
 
-    test('空文字列の場合は setting 種別として判定される', () => {
+    it('空文字列の場合は setting 種別として判定される', () => {
       const result = FileTypeDetector.detectByExtension('');
-      assert.strictEqual(result, 'setting');
+      expect(result).toBe('setting');
     });
 
-    test('日本語ファイル名でも正しく判定される', () => {
+    it('日本語ファイル名でも正しく判定される', () => {
       const txtResult = FileTypeDetector.detectByExtension('第一章.txt');
-      assert.strictEqual(txtResult, 'content');
+      expect(txtResult).toBe('content');
 
       const mdResult = FileTypeDetector.detectByExtension('キャラクター設定.md');
-      assert.strictEqual(mdResult, 'setting');
+      expect(mdResult).toBe('setting');
     });
   });
 
-  suite('detectFileType', () => {
-    test('拡張子ベース判定（デフォルト）が正しく動作する', () => {
+  describe('detectFileType', () => {
+    it('拡張子ベース判定（デフォルト）が正しく動作する', () => {
       const txtResult = FileTypeDetector.detectFileType('/project/anywhere/chapter.txt');
-      assert.strictEqual(txtResult, 'content');
+      expect(txtResult).toBe('content');
 
       const mdResult = FileTypeDetector.detectFileType('/project/anywhere/setting.md');
-      assert.strictEqual(mdResult, 'setting');
+      expect(mdResult).toBe('setting');
     });
 
-    test('拡張子ベース判定を明示的に指定した場合が正しく動作する', () => {
+    it('拡張子ベース判定を明示的に指定した場合が正しく動作する', () => {
       const result = FileTypeDetector.detectFileType('/project/contents/chapter.txt', 'extension');
-      assert.strictEqual(result, 'content');
+      expect(result).toBe('content');
     });
 
-    test('手動選択を指定した場合はsettingが返される', () => {
+    it('手動選択を指定した場合はsettingが返される', () => {
       const result = FileTypeDetector.detectFileType('/project/chapter.txt', 'manual');
-      assert.strictEqual(result, 'setting');
+      expect(result).toBe('setting');
     });
   });
 
-  suite('isExcluded', () => {
-    test('完全一致パターンで除外される', () => {
+  describe('isExcluded', () => {
+    it('完全一致パターンで除外される', () => {
       const result = FileTypeDetector.isExcluded('file.txt', ['file.txt']);
-      assert.strictEqual(result, true);
+      expect(result).toBe(true);
     });
 
-    test('ドットファイル専用パターン（.*）でマッチする', () => {
+    it('ドットファイル専用パターン（.*）でマッチする', () => {
       const result = FileTypeDetector.isExcluded('.gitignore', ['.*']);
-      assert.strictEqual(result, true);
+      expect(result).toBe(true);
     });
 
-    test('ワイルドカードパターンでマッチする', () => {
+    it('ワイルドカードパターンでマッチする', () => {
       const result = FileTypeDetector.isExcluded('test.tmp', ['*.tmp']);
-      assert.strictEqual(result, true);
+      expect(result).toBe(true);
     });
 
-    test('完全一致のパスでマッチする', () => {
+    it('完全一致のパスでマッチする', () => {
       // ファイル名または相対パス全体がパターンと完全一致する場合
       const result1 = FileTypeDetector.isExcluded('node_modules', ['node_modules']);
-      assert.strictEqual(result1, true);
+      expect(result1).toBe(true);
 
       // パスの一部だけではマッチしない（完全一致のみ）
       const result2 = FileTypeDetector.isExcluded('path/node_modules/package.json', [
         'node_modules',
       ]);
-      assert.strictEqual(result2, false);
+      expect(result2).toBe(false);
     });
 
-    test('除外パターンにマッチしない場合はfalse', () => {
+    it('除外パターンにマッチしない場合はfalse', () => {
       const result = FileTypeDetector.isExcluded('chapter1.txt', ['*.tmp', '.gitignore']);
-      assert.strictEqual(result, false);
+      expect(result).toBe(false);
     });
 
-    test('空の除外パターンでは何もマッチしない', () => {
+    it('空の除外パターンでは何もマッチしない', () => {
       const result = FileTypeDetector.isExcluded('file.txt', []);
-      assert.strictEqual(result, false);
+      expect(result).toBe(false);
     });
 
-    test('複数のパターンでいずれかがマッチすれば除外される', () => {
+    it('複数のパターンでいずれかがマッチすれば除外される', () => {
       const patterns = ['*.tmp', '.*', 'node_modules'];
 
-      assert.strictEqual(FileTypeDetector.isExcluded('test.tmp', patterns), true);
-      assert.strictEqual(FileTypeDetector.isExcluded('.gitignore', patterns), true);
-      assert.strictEqual(FileTypeDetector.isExcluded('node_modules', patterns), true);
-      assert.strictEqual(FileTypeDetector.isExcluded('chapter1.txt', patterns), false);
+      expect(FileTypeDetector.isExcluded('test.tmp', patterns)).toBe(true);
+      expect(FileTypeDetector.isExcluded('.gitignore', patterns)).toBe(true);
+      expect(FileTypeDetector.isExcluded('node_modules', patterns)).toBe(true);
+      expect(FileTypeDetector.isExcluded('chapter1.txt', patterns)).toBe(false);
     });
   });
 });

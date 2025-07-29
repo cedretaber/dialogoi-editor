@@ -1,17 +1,16 @@
-import assert from 'assert';
 import { CoreFileService } from './CoreFileService.js';
 import { CoreFileServiceImpl } from './CoreFileServiceImpl.js';
 import { TestServiceContainer } from '../di/TestServiceContainer.js';
 import { MockFileRepository } from '../repositories/MockFileRepository.js';
 import { MockProjectLinkUpdateService } from '../repositories/MockProjectLinkUpdateService.js';
 
-suite('CoreFileService テストスイート', () => {
+describe('CoreFileService テストスイート', () => {
   let coreFileService: CoreFileService;
   let mockFileRepository: MockFileRepository;
   let mockLinkUpdateService: MockProjectLinkUpdateService;
   let container: TestServiceContainer;
 
-  setup(async () => {
+  beforeEach(async () => {
     container = TestServiceContainer.create();
     mockFileRepository = container.getFileRepository() as MockFileRepository;
     mockLinkUpdateService = container.getMockProjectLinkUpdateService();
@@ -53,8 +52,8 @@ suite('CoreFileService テストスイート', () => {
     );
   });
 
-  suite('ファイル作成', () => {
-    test('新しいファイルを作成できる', async () => {
+  describe('ファイル作成', () => {
+    it('新しいファイルを作成できる', async () => {
       const result = await coreFileService.createFile(
         '/test',
         'newfile.txt',
@@ -63,39 +62,39 @@ suite('CoreFileService テストスイート', () => {
         ['tag1', 'tag2'],
       );
 
-      assert.strictEqual(result.success, true);
-      assert(result.message.includes('ファイル "newfile.txt" を作成しました'));
-      assert(result.updatedItems);
+      expect(result.success).toBe(true);
+      expect(result.message.includes('ファイル "newfile.txt" を作成しました')).toBeTruthy();
+      expect(result.updatedItems).toBeTruthy();
 
       // ファイルが物理的に作成されているか確認
       const fileContent = await mockFileRepository.readFileAsync(
         mockFileRepository.createFileUri('/test/newfile.txt'),
         'utf8',
       );
-      assert.strictEqual(fileContent, 'Initial content');
+      expect(fileContent).toBe('Initial content');
 
       // メタデータが更新されているか確認
       const metaContent = await mockFileRepository.readFileAsync(
         mockFileRepository.createFileUri('/test/.dialogoi-meta.yaml'),
         'utf8',
       );
-      assert(metaContent.includes('newfile.txt'));
-      assert(metaContent.includes('tag1'));
-      assert(metaContent.includes('tag2'));
+      expect(metaContent.includes('newfile.txt')).toBeTruthy();
+      expect(metaContent.includes('tag1')).toBeTruthy();
+      expect(metaContent.includes('tag2')).toBeTruthy();
     });
 
-    test('サブディレクトリを作成できる', async () => {
+    it('サブディレクトリを作成できる', async () => {
       const result = await coreFileService.createFile('/test', 'newdir', 'subdirectory');
 
-      assert.strictEqual(result.success, true);
-      assert(result.message.includes('ディレクトリ "newdir" を作成しました'));
+      expect(result.success).toBe(true);
+      expect(result.message.includes('ディレクトリ "newdir" を作成しました')).toBeTruthy();
 
       // ディレクトリが作成されているか確認
       const dirUri = mockFileRepository.createDirectoryUri('/test/newdir');
-      assert(await mockFileRepository.existsAsync(dirUri));
+      expect((await mockFileRepository.existsAsync(dirUri))).toBeTruthy();
     });
 
-    test('キャラクターサブタイプでファイルを作成できる', async () => {
+    it('キャラクターサブタイプでファイルを作成できる', async () => {
       const result = await coreFileService.createFile(
         '/test',
         'character.txt',
@@ -105,55 +104,55 @@ suite('CoreFileService テストスイート', () => {
         'character',
       );
 
-      assert.strictEqual(result.success, true);
+      expect(result.success).toBe(true);
 
       // メタデータにキャラクター情報が含まれているか確認
       const metaContent = await mockFileRepository.readFileAsync(
         mockFileRepository.createFileUri('/test/.dialogoi-meta.yaml'),
         'utf8',
       );
-      assert(metaContent.includes('character:'));
-      assert(metaContent.includes('importance: sub'));
-      assert(metaContent.includes('multiple_characters: false'));
+      expect(metaContent.includes('character:')).toBeTruthy();
+      expect(metaContent.includes('importance: sub')).toBeTruthy();
+      expect(metaContent.includes('multiple_characters: false')).toBeTruthy();
     });
 
-    test('既存ファイル名での作成はエラー', async () => {
+    it('既存ファイル名での作成はエラー', async () => {
       const result = await coreFileService.createFile('/test', 'existing.txt', 'content');
 
-      assert.strictEqual(result.success, false);
-      assert(result.message.includes('既に存在します'));
+      expect(result.success).toBe(false);
+      expect(result.message.includes('既に存在します')).toBeTruthy();
     });
   });
 
-  suite('ファイル削除', () => {
-    test('ファイルを削除できる', async () => {
+  describe('ファイル削除', () => {
+    it('ファイルを削除できる', async () => {
       const result = await coreFileService.deleteFile('/test', 'existing.txt');
 
-      assert.strictEqual(result.success, true);
-      assert(result.message.includes('ファイル "existing.txt" を削除しました'));
+      expect(result.success).toBe(true);
+      expect(result.message.includes('ファイル "existing.txt" を削除しました')).toBeTruthy();
 
       // ファイルが物理的に削除されているか確認
       const fileUri = mockFileRepository.createFileUri('/test/existing.txt');
-      assert(!(await mockFileRepository.existsAsync(fileUri)));
+      expect((await mockFileRepository.existsAsync(fileUri))).toBeFalsy();
 
       // メタデータからも削除されているか確認
       const metaContent = await mockFileRepository.readFileAsync(
         mockFileRepository.createFileUri('/test/.dialogoi-meta.yaml'),
         'utf8',
       );
-      assert(!metaContent.includes('existing.txt'));
+      expect(metaContent.includes('existing.txt')).toBeFalsy();
     });
 
-    test('存在しないファイルの削除はエラー', async () => {
+    it('存在しないファイルの削除はエラー', async () => {
       const result = await coreFileService.deleteFile('/test', 'nonexistent.txt');
 
-      assert.strictEqual(result.success, false);
-      assert(result.message.includes('見つかりません'));
+      expect(result.success).toBe(false);
+      expect(result.message.includes('見つかりません')).toBeTruthy();
     });
   });
 
-  suite('ファイル名変更', () => {
-    test('ファイル名を変更できる', async () => {
+  describe('ファイル名変更', () => {
+    it('ファイル名を変更できる', async () => {
       // モックの呼び出し履歴をクリア
       mockLinkUpdateService.clearUpdateCalls();
 
@@ -162,18 +161,17 @@ suite('CoreFileService テストスイート', () => {
       if (!result.success) {
         console.error('Rename failed:', result.message);
       }
-      assert.strictEqual(result.success, true);
-      assert(
-        result.message.includes('ファイル名を "existing.txt" から "renamed.txt" に変更しました'),
-      );
+      expect(result.success).toBe(true);
+      expect(
+        result.message.includes('ファイル名を "existing.txt" から "renamed.txt" に変更しました')).toBeTruthy();
 
       // 新しい名前でファイルが存在するか確認
       const newFileUri = mockFileRepository.createFileUri('/test/renamed.txt');
-      assert(await mockFileRepository.existsAsync(newFileUri));
+      expect((await mockFileRepository.existsAsync(newFileUri))).toBeTruthy();
 
       // 旧ファイルが存在しないか確認
       const oldFileUri = mockFileRepository.createFileUri('/test/existing.txt');
-      assert(!(await mockFileRepository.existsAsync(oldFileUri)));
+      expect((await mockFileRepository.existsAsync(oldFileUri))).toBeFalsy();
 
       // メタデータが更新されているか確認
       try {
@@ -181,60 +179,60 @@ suite('CoreFileService テストスイート', () => {
           mockFileRepository.createFileUri('/test/.dialogoi-meta.yaml'),
           'utf8',
         );
-        assert(metaContent.includes('renamed.txt'));
-        assert(!metaContent.includes('existing.txt'));
+        expect(metaContent.includes('renamed.txt')).toBeTruthy();
+        expect(metaContent.includes('existing.txt')).toBeFalsy();
       } catch {
         console.error('Meta file read failed, but rename operation succeeded');
       }
 
       // リンク更新サービスが適切に呼ばれたことを検証
       const updateCalls = mockLinkUpdateService.getUpdateCalls();
-      assert.strictEqual(updateCalls.length, 1);
-      assert.strictEqual(updateCalls[0]?.oldPath, '/test/existing.txt');
-      assert.strictEqual(updateCalls[0]?.newPath, '/test/renamed.txt');
+      expect(updateCalls.length).toBe(1);
+      expect(updateCalls[0]?.oldPath).toBe('/test/existing.txt');
+      expect(updateCalls[0]?.newPath).toBe('/test/renamed.txt');
     });
 
-    test('存在しないファイルの名前変更はエラー', async () => {
+    it('存在しないファイルの名前変更はエラー', async () => {
       const result = await coreFileService.renameFile('/test', 'nonexistent.txt', 'new.txt');
 
-      assert.strictEqual(result.success, false);
-      assert(result.message.includes('見つかりません'));
+      expect(result.success).toBe(false);
+      expect(result.message.includes('見つかりません')).toBeTruthy();
     });
 
-    test('既存ファイル名への変更はエラー', async () => {
+    it('既存ファイル名への変更はエラー', async () => {
       // 追加テストファイルを作成
       await coreFileService.createFile('/test', 'another.txt', 'content');
 
       const result = await coreFileService.renameFile('/test', 'existing.txt', 'another.txt');
 
-      assert.strictEqual(result.success, false);
-      assert(result.message.includes('既に使用されています'));
+      expect(result.success).toBe(false);
+      expect(result.message.includes('既に使用されています')).toBeTruthy();
     });
   });
 
-  suite('ファイル順序変更', () => {
-    test('ファイル順序を変更できる', async () => {
+  describe('ファイル順序変更', () => {
+    it('ファイル順序を変更できる', async () => {
       // テスト用ファイルを追加
       await coreFileService.createFile('/test', 'file1.txt', 'content');
       await coreFileService.createFile('/test', 'file2.txt', 'content');
 
       const result = await coreFileService.reorderFiles('/test', 0, 2);
 
-      assert.strictEqual(result.success, true);
-      assert(result.message.includes('ファイルの順序を変更しました'));
-      assert(result.updatedItems);
+      expect(result.success).toBe(true);
+      expect(result.message.includes('ファイルの順序を変更しました')).toBeTruthy();
+      expect(result.updatedItems).toBeTruthy();
     });
 
-    test('無効なインデックスでの順序変更はエラー', async () => {
+    it('無効なインデックスでの順序変更はエラー', async () => {
       const result = await coreFileService.reorderFiles('/test', 0, 100);
 
-      assert.strictEqual(result.success, false);
-      assert(result.message.includes('無効なインデックス'));
+      expect(result.success).toBe(false);
+      expect(result.message.includes('無効なインデックス')).toBeTruthy();
     });
   });
 
-  suite('ファイル移動', () => {
-    setup(async () => {
+  describe('ファイル移動', () => {
+    beforeEach(async () => {
       // 移動先ディレクトリを準備
       mockFileRepository.createDirectoryForTest('/target');
       await mockFileRepository.writeFileAsync(
@@ -243,54 +241,54 @@ suite('CoreFileService テストスイート', () => {
       );
     });
 
-    test('ファイルを別ディレクトリに移動できる', async () => {
+    it('ファイルを別ディレクトリに移動できる', async () => {
       // モックの呼び出し履歴をクリア
       mockLinkUpdateService.clearUpdateCalls();
 
       const result = await coreFileService.moveFile('/test', 'existing.txt', '/target');
 
-      assert.strictEqual(result.success, true);
-      assert(result.message.includes('ファイル "existing.txt" を移動しました'));
+      expect(result.success).toBe(true);
+      expect(result.message.includes('ファイル "existing.txt" を移動しました')).toBeTruthy();
 
       // 移動先にファイルが存在することを確認
       const targetFileUri = mockFileRepository.createFileUri('/target/existing.txt');
-      assert(await mockFileRepository.existsAsync(targetFileUri));
+      expect((await mockFileRepository.existsAsync(targetFileUri))).toBeTruthy();
 
       // 移動元からファイルが削除されていることを確認
       const sourceFileUri = mockFileRepository.createFileUri('/test/existing.txt');
-      assert(!(await mockFileRepository.existsAsync(sourceFileUri)));
+      expect((await mockFileRepository.existsAsync(sourceFileUri))).toBeFalsy();
 
       // メタデータが更新されていることを確認
       const targetMetaContent = await mockFileRepository.readFileAsync(
         mockFileRepository.createFileUri('/target/.dialogoi-meta.yaml'),
         'utf8',
       );
-      assert(targetMetaContent.includes('existing.txt'));
+      expect(targetMetaContent.includes('existing.txt')).toBeTruthy();
 
       // リンク更新サービスが適切に呼ばれたことを検証
       const updateCalls = mockLinkUpdateService.getUpdateCalls();
-      assert.strictEqual(updateCalls.length, 1);
-      assert.strictEqual(updateCalls[0]?.oldPath, '/test/existing.txt');
-      assert.strictEqual(updateCalls[0]?.newPath, '/target/existing.txt');
+      expect(updateCalls.length).toBe(1);
+      expect(updateCalls[0]?.oldPath).toBe('/test/existing.txt');
+      expect(updateCalls[0]?.newPath).toBe('/target/existing.txt');
     });
 
-    test('同じディレクトリ内での移動（順序変更）', async () => {
+    it('同じディレクトリ内での移動（順序変更）', async () => {
       const result = await coreFileService.moveFile('/test', 'existing.txt', '/test', 1);
 
-      assert.strictEqual(result.success, true);
-      assert(result.message.includes('ファイルの順序を変更しました'));
+      expect(result.success).toBe(true);
+      expect(result.message.includes('ファイルの順序を変更しました')).toBeTruthy();
     });
 
-    test('存在しないファイルの移動はエラー', async () => {
+    it('存在しないファイルの移動はエラー', async () => {
       const result = await coreFileService.moveFile('/test', 'nonexistent.txt', '/target');
 
-      assert.strictEqual(result.success, false);
-      assert(result.message.includes('見つかりません'));
+      expect(result.success).toBe(false);
+      expect(result.message.includes('見つかりません')).toBeTruthy();
     });
   });
 
-  suite('ディレクトリ移動', () => {
-    setup(async () => {
+  describe('ディレクトリ移動', () => {
+    beforeEach(async () => {
       // 移動先親ディレクトリを準備
       mockFileRepository.createDirectoryForTest('/targetparent');
       await mockFileRepository.writeFileAsync(
@@ -299,90 +297,90 @@ suite('CoreFileService テストスイート', () => {
       );
     });
 
-    test('ディレクトリを移動できる', async () => {
+    it('ディレクトリを移動できる', async () => {
       const result = await coreFileService.moveDirectory('/test', 'testdir', '/targetparent');
 
-      assert.strictEqual(result.success, true);
-      assert(result.message.includes('ディレクトリ "testdir" を移動しました'));
+      expect(result.success).toBe(true);
+      expect(result.message.includes('ディレクトリ "testdir" を移動しました')).toBeTruthy();
 
       // 移動先にディレクトリが存在することを確認
       const targetDirUri = mockFileRepository.createDirectoryUri('/targetparent/testdir');
-      assert(await mockFileRepository.existsAsync(targetDirUri));
+      expect((await mockFileRepository.existsAsync(targetDirUri))).toBeTruthy();
 
       // 移動元からディレクトリが削除されていることを確認
       const sourceDirUri = mockFileRepository.createDirectoryUri('/test/testdir');
-      assert(!(await mockFileRepository.existsAsync(sourceDirUri)));
+      expect((await mockFileRepository.existsAsync(sourceDirUri))).toBeFalsy();
     });
 
-    test('存在しないディレクトリの移動はエラー', async () => {
+    it('存在しないディレクトリの移動はエラー', async () => {
       const result = await coreFileService.moveDirectory('/test', 'nonexistent', '/targetparent');
 
-      assert.strictEqual(result.success, false);
-      assert(result.message.includes('見つかりません'));
+      expect(result.success).toBe(false);
+      expect(result.message.includes('見つかりません')).toBeTruthy();
     });
   });
 
-  suite('ディレクトリ削除', () => {
-    test('ディレクトリを削除できる', async () => {
+  describe('ディレクトリ削除', () => {
+    it('ディレクトリを削除できる', async () => {
       const result = await coreFileService.deleteDirectory('/test', 'testdir');
 
-      assert.strictEqual(result.success, true);
-      assert(result.message.includes('ディレクトリ "testdir" を削除しました'));
+      expect(result.success).toBe(true);
+      expect(result.message.includes('ディレクトリ "testdir" を削除しました')).toBeTruthy();
 
       // ディレクトリが物理的に削除されているか確認
       const dirUri = mockFileRepository.createDirectoryUri('/test/testdir');
-      assert(!(await mockFileRepository.existsAsync(dirUri)));
+      expect((await mockFileRepository.existsAsync(dirUri))).toBeFalsy();
 
       // メタデータからも削除されているか確認
       const metaContent = await mockFileRepository.readFileAsync(
         mockFileRepository.createFileUri('/test/.dialogoi-meta.yaml'),
         'utf8',
       );
-      assert(!metaContent.includes('testdir'));
+      expect(metaContent.includes('testdir')).toBeFalsy();
     });
 
-    test('存在しないディレクトリの削除はエラー', async () => {
+    it('存在しないディレクトリの削除はエラー', async () => {
       const result = await coreFileService.deleteDirectory('/test', 'nonexistent');
 
-      assert.strictEqual(result.success, false);
-      assert(result.message.includes('見つかりません'));
+      expect(result.success).toBe(false);
+      expect(result.message.includes('見つかりません')).toBeTruthy();
     });
   });
 
-  suite('低レベルファイル操作', () => {
-    test('ファイルを読み込める', async () => {
+  describe('低レベルファイル操作', () => {
+    it('ファイルを読み込める', async () => {
       const content = await coreFileService.readFile('/test/existing.txt');
-      assert.strictEqual(content, 'existing content');
+      expect(content).toBe('existing content');
     });
 
-    test('ファイルに書き込める', async () => {
+    it('ファイルに書き込める', async () => {
       await coreFileService.writeFile('/test/existing.txt', 'new content');
 
       const content = await mockFileRepository.readFileAsync(
         mockFileRepository.createFileUri('/test/existing.txt'),
         'utf8',
       );
-      assert.strictEqual(content, 'new content');
+      expect(content).toBe('new content');
     });
 
-    test('ファイルの存在確認ができる', async () => {
+    it('ファイルの存在確認ができる', async () => {
       const exists1 = await coreFileService.exists('/test/existing.txt');
-      assert.strictEqual(exists1, true);
+      expect(exists1).toBe(true);
 
       const exists2 = await coreFileService.exists('/test/nonexistent.txt');
-      assert.strictEqual(exists2, false);
+      expect(exists2).toBe(false);
     });
   });
 
-  suite('エラーハンドリング', () => {
-    test('メタデータファイルが存在しない場合のエラー', async () => {
+  describe('エラーハンドリング', () => {
+    it('メタデータファイルが存在しない場合のエラー', async () => {
       const result = await coreFileService.createFile('/nonexistent', 'file.txt', 'content');
 
-      assert.strictEqual(result.success, false);
-      assert(result.message.includes('.dialogoi-meta.yamlが見つから'));
+      expect(result.success).toBe(false);
+      expect(result.message.includes('.dialogoi-meta.yamlが見つから')).toBeTruthy();
     });
 
-    test('相対パス使用時のエラー（ノベルルートパス未設定）', async () => {
+    it('相対パス使用時のエラー（ノベルルートパス未設定）', async () => {
       // ノベルルートパスが設定されていないCoreFileServiceを作成
       const container = TestServiceContainer.create();
       const fileRepo = container.getFileRepository();
@@ -391,16 +389,16 @@ suite('CoreFileService テストスイート', () => {
 
       const result = await serviceWithoutRoot.createFile('relative/path', 'file.txt', 'content');
 
-      assert.strictEqual(result.success, false);
-      assert(result.message.includes('ノベルルートパスが設定されていません'));
+      expect(result.success).toBe(false);
+      expect(result.message.includes('ノベルルートパスが設定されていません')).toBeTruthy();
     });
   });
 
-  suite('ユーティリティメソッド', () => {
-    test('ノベルルートパスを取得できる', () => {
+  describe('ユーティリティメソッド', () => {
+    it('ノベルルートパスを取得できる', () => {
       const rootPath = coreFileService.getNovelRootPath();
       // TestServiceContainerではノベルルートパスが設定されていることを確認
-      assert.strictEqual(typeof rootPath, 'string');
+      expect(typeof rootPath).toBe('string');
     });
   });
 });

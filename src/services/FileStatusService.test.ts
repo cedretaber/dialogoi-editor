@@ -1,51 +1,50 @@
-import * as assert from 'assert';
 import { FileStatusService, FileStatus, FileStatusInfo } from './FileStatusService.js';
 import { TestServiceContainer } from '../di/TestServiceContainer.js';
 import { MockFileRepository } from '../repositories/MockFileRepository.js';
 import { MetaYamlService } from './MetaYamlService.js';
 import { DialogoiTreeItem } from '../utils/MetaYamlUtils.js';
 
-suite('FileStatusService テストスイート', () => {
+describe('FileStatusService テストスイート', () => {
   let fileStatusService: FileStatusService;
   let mockFileRepository: MockFileRepository;
   let metaYamlService: MetaYamlService;
 
-  setup(() => {
+  beforeEach(() => {
     const container = TestServiceContainer.create();
     mockFileRepository = container.getFileRepository() as MockFileRepository;
     metaYamlService = container.getMetaYamlService();
     fileStatusService = new FileStatusService(mockFileRepository, metaYamlService);
   });
 
-  suite('getFileStatusList', () => {
-    test('空のディレクトリの場合、空の配列を返す', async () => {
+  describe('getFileStatusList', () => {
+    it('空のディレクトリの場合、空の配列を返す', async () => {
       const directoryPath = '/test/empty';
       mockFileRepository.createDirectoryForTest(directoryPath);
 
       const result = await fileStatusService.getFileStatusList(directoryPath);
-      assert.strictEqual(result.length, 0);
+      expect(result.length).toBe(0);
     });
 
-    test('meta.yamlが存在しない場合、全てのファイルが未追跡として表示される', async () => {
+    it('meta.yamlが存在しない場合、全てのファイルが未追跡として表示される', async () => {
       const directoryPath = '/test/no-meta';
       mockFileRepository.createDirectoryForTest(directoryPath);
       mockFileRepository.createFileForTest('/test/no-meta/test.txt', 'test content');
       mockFileRepository.createFileForTest('/test/no-meta/another.md', 'markdown content');
 
       const result = await fileStatusService.getFileStatusList(directoryPath);
-      assert.strictEqual(result.length, 2);
+      expect(result.length).toBe(2);
 
       const testFile = result.find((f) => f.name === 'test.txt');
-      assert.notStrictEqual(testFile, undefined);
-      assert.strictEqual(testFile?.status, FileStatus.Untracked);
-      assert.strictEqual(testFile?.metaEntry, undefined);
+      expect(testFile).not.toBe(undefined);
+      expect(testFile?.status).toBe(FileStatus.Untracked);
+      expect(testFile?.metaEntry).toBe(undefined);
 
       const markdownFile = result.find((f) => f.name === 'another.md');
-      assert.notStrictEqual(markdownFile, undefined);
-      assert.strictEqual(markdownFile?.status, FileStatus.Untracked);
+      expect(markdownFile).not.toBe(undefined);
+      expect(markdownFile?.status).toBe(FileStatus.Untracked);
     });
 
-    test('管理対象ファイルが存在する場合、Managedとして表示される', async () => {
+    it('管理対象ファイルが存在する場合、Managedとして表示される', async () => {
       const directoryPath = '/test/managed';
       mockFileRepository.createDirectoryForTest(directoryPath);
 
@@ -73,23 +72,23 @@ files:
       mockFileRepository.createDirectoryForTest('/test/managed/settings');
 
       const result = await fileStatusService.getFileStatusList(directoryPath);
-      assert.strictEqual(result.length, 2);
+      expect(result.length).toBe(2);
 
       const chapterFile = result.find((f) => f.name === 'chapter1.txt');
-      assert.notStrictEqual(chapterFile, undefined);
-      assert.strictEqual(chapterFile?.status, FileStatus.Managed);
-      assert.strictEqual(chapterFile?.isDirectory, false);
-      assert.notStrictEqual(chapterFile?.metaEntry, undefined);
-      assert.strictEqual(chapterFile?.metaEntry?.type, 'content');
-      assert.deepStrictEqual(chapterFile?.metaEntry?.tags, ['重要']);
+      expect(chapterFile).not.toBe(undefined);
+      expect(chapterFile?.status).toBe(FileStatus.Managed);
+      expect(chapterFile?.isDirectory).toBe(false);
+      expect(chapterFile?.metaEntry).not.toBe(undefined);
+      expect(chapterFile?.metaEntry?.type).toBe('content');
+      expect((chapterFile?.metaEntry as any)?.tags).toEqual(['重要']);
 
       const settingsDir = result.find((f) => f.name === 'settings');
-      assert.notStrictEqual(settingsDir, undefined);
-      assert.strictEqual(settingsDir?.status, FileStatus.Managed);
-      assert.strictEqual(settingsDir?.isDirectory, true);
+      expect(settingsDir).not.toBe(undefined);
+      expect(settingsDir?.status).toBe(FileStatus.Managed);
+      expect(settingsDir?.isDirectory).toBe(true);
     });
 
-    test('管理対象だが実際には存在しないファイルはMissingとして表示される', async () => {
+    it('管理対象だが実際には存在しないファイルはMissingとして表示される', async () => {
       const directoryPath = '/test/missing';
       mockFileRepository.createDirectoryForTest(directoryPath);
 
@@ -119,20 +118,20 @@ files:
       // missing.txtは作成しない
 
       const result = await fileStatusService.getFileStatusList(directoryPath);
-      assert.strictEqual(result.length, 2);
+      expect(result.length).toBe(2);
 
       const missingFile = result.find((f) => f.name === 'missing.txt');
-      assert.notStrictEqual(missingFile, undefined);
-      assert.strictEqual(missingFile?.status, FileStatus.Missing);
-      assert.strictEqual(missingFile?.isDirectory, undefined);
+      expect(missingFile).not.toBe(undefined);
+      expect(missingFile?.status).toBe(FileStatus.Missing);
+      expect(missingFile?.isDirectory).toBe(undefined);
 
       const existingFile = result.find((f) => f.name === 'existing.txt');
-      assert.notStrictEqual(existingFile, undefined);
-      assert.strictEqual(existingFile?.status, FileStatus.Managed);
-      assert.strictEqual(existingFile?.isDirectory, false);
+      expect(existingFile).not.toBe(undefined);
+      expect(existingFile?.status).toBe(FileStatus.Managed);
+      expect(existingFile?.isDirectory).toBe(false);
     });
 
-    test('READMEファイルは管理対象として隠される', async () => {
+    it('READMEファイルは管理対象として隠される', async () => {
       const directoryPath = '/test/readme';
       mockFileRepository.createDirectoryForTest(directoryPath);
 
@@ -155,17 +154,17 @@ files:
       const result = await fileStatusService.getFileStatusList(directoryPath);
 
       // README.mdは表示されない（管理対象として隠される）
-      assert.strictEqual(result.length, 1);
+      expect(result.length).toBe(1);
       const chapterFile = result.find((f) => f.name === 'chapter1.txt');
-      assert.notStrictEqual(chapterFile, undefined);
-      assert.strictEqual(chapterFile?.status, FileStatus.Managed);
+      expect(chapterFile).not.toBe(undefined);
+      expect(chapterFile?.status).toBe(FileStatus.Managed);
 
       // README.mdが結果に含まれていないことを確認
       const readmeFile = result.find((f) => f.name === 'README.md');
-      assert.strictEqual(readmeFile, undefined);
+      expect(readmeFile).toBe(undefined);
     });
 
-    test('コメントファイルは管理対象として隠される', async () => {
+    it('コメントファイルは管理対象として隠される', async () => {
       const directoryPath = '/test/comments';
       mockFileRepository.createDirectoryForTest(directoryPath);
 
@@ -201,22 +200,22 @@ files:
       const result = await fileStatusService.getFileStatusList(directoryPath);
 
       // コメントファイルは表示されない（管理対象として隠される）
-      assert.strictEqual(result.length, 2);
+      expect(result.length).toBe(2);
 
       const chapter1 = result.find((f) => f.name === 'chapter1.txt');
-      assert.notStrictEqual(chapter1, undefined);
-      assert.strictEqual(chapter1?.status, FileStatus.Managed);
+      expect(chapter1).not.toBe(undefined);
+      expect(chapter1?.status).toBe(FileStatus.Managed);
 
       const chapter2 = result.find((f) => f.name === 'chapter2.txt');
-      assert.notStrictEqual(chapter2, undefined);
-      assert.strictEqual(chapter2?.status, FileStatus.Managed);
+      expect(chapter2).not.toBe(undefined);
+      expect(chapter2?.status).toBe(FileStatus.Managed);
 
       // コメントファイルが結果に含まれていないことを確認
       const commentFile = result.find((f) => f.name === '.chapter1.txt.comments.yaml');
-      assert.strictEqual(commentFile, undefined);
+      expect(commentFile).toBe(undefined);
     });
 
-    test('管理ファイル(.dialogoi-meta.yaml, dialogoi.yaml)は除外される', async () => {
+    it('管理ファイル(.dialogoi-meta.yaml, dialogoi.yaml)は除外される', async () => {
       const directoryPath = '/test/management';
       mockFileRepository.createDirectoryForTest(directoryPath);
 
@@ -239,36 +238,36 @@ files:
       const result = await fileStatusService.getFileStatusList(directoryPath);
 
       // 管理ファイルは除外され、test.txtのみ表示される
-      assert.strictEqual(result.length, 1);
+      expect(result.length).toBe(1);
       const testFile = result.find((f) => f.name === 'test.txt');
-      assert.notStrictEqual(testFile, undefined);
-      assert.strictEqual(testFile?.status, FileStatus.Managed);
+      expect(testFile).not.toBe(undefined);
+      expect(testFile?.status).toBe(FileStatus.Managed);
 
       // 管理ファイルが結果に含まれていないことを確認
       const metaFile = result.find((f) => f.name === '.dialogoi-meta.yaml');
-      assert.strictEqual(metaFile, undefined);
+      expect(metaFile).toBe(undefined);
       const dialogoiFile = result.find((f) => f.name === 'dialogoi.yaml');
-      assert.strictEqual(dialogoiFile, undefined);
+      expect(dialogoiFile).toBe(undefined);
     });
 
-    test('ディレクトリが存在しない場合、空の配列を返す', async () => {
+    it('ディレクトリが存在しない場合、空の配列を返す', async () => {
       const directoryPath = '/test/nonexistent';
 
       const result = await fileStatusService.getFileStatusList(directoryPath);
-      assert.strictEqual(result.length, 0);
+      expect(result.length).toBe(0);
     });
 
-    test('ディレクトリ読み込みエラーが発生した場合、空の配列を返す', async () => {
+    it('ディレクトリ読み込みエラーが発生した場合、空の配列を返す', async () => {
       const directoryPath = '/test/nonexistent-for-error';
       // ディレクトリを作成しない
 
       const result = await fileStatusService.getFileStatusList(directoryPath);
 
       // エラーが発生しても空の配列を返す
-      assert.strictEqual(result.length, 0);
+      expect(result.length).toBe(0);
     });
 
-    test('結果がディレクトリ優先、ファイルはmeta.yaml順でソートされる', async () => {
+    it('結果がディレクトリ優先、ファイルはmeta.yaml順でソートされる', async () => {
       const directoryPath = '/test/sorting';
       mockFileRepository.createDirectoryForTest(directoryPath);
 
@@ -305,22 +304,22 @@ files:
       mockFileRepository.createFileForTest('/test/sorting/b-untracked.txt', 'untracked content');
 
       const result = await fileStatusService.getFileStatusList(directoryPath);
-      assert.strictEqual(result.length, 4);
+      expect(result.length).toBe(4);
 
       // ディレクトリが最初、その後ファイルがmeta.yaml順（meta.yamlに含まれていないファイルは名前順で末尾）
-      assert.strictEqual(result[0]?.name, 'm-dir');
-      assert.strictEqual(result[0]?.isDirectory, true);
-      assert.strictEqual(result[1]?.name, 'z-file.txt'); // meta.yamlの最初
-      assert.strictEqual(result[1]?.isDirectory, false);
-      assert.strictEqual(result[2]?.name, 'a-file.txt'); // meta.yamlの2番目
-      assert.strictEqual(result[2]?.isDirectory, false);
-      assert.strictEqual(result[3]?.name, 'b-untracked.txt'); // meta.yamlに含まれていない
-      assert.strictEqual(result[3]?.isDirectory, false);
+      expect(result[0]?.name).toBe('m-dir');
+      expect(result[0]?.isDirectory).toBe(true);
+      expect(result[1]?.name).toBe('z-file.txt'); // meta.yamlの最初
+      expect(result[1]?.isDirectory).toBe(false);
+      expect(result[2]?.name).toBe('a-file.txt'); // meta.yamlの2番目
+      expect(result[2]?.isDirectory).toBe(false);
+      expect(result[3]?.name).toBe('b-untracked.txt'); // meta.yamlに含まれていない
+      expect(result[3]?.isDirectory).toBe(false);
     });
   });
 
-  suite('statusInfoToTreeItem', () => {
-    test('管理対象ファイルのStatusInfoを正しくTreeItemに変換する', () => {
+  describe('statusInfoToTreeItem', () => {
+    it('管理対象ファイルのStatusInfoを正しくTreeItemに変換する', () => {
       const metaEntry: DialogoiTreeItem = {
         name: 'test.txt',
         type: 'content',
@@ -343,16 +342,16 @@ files:
 
       const result = fileStatusService.statusInfoToTreeItem(statusInfo);
 
-      assert.strictEqual(result.name, 'test.txt');
-      assert.strictEqual(result.type, 'content');
-      assert.strictEqual(result.path, '/test/test.txt');
-      assert.deepStrictEqual(result.tags, ['重要']);
-      assert.strictEqual(result.comments, '.test.txt.comments.yaml');
-      assert.strictEqual(result.isMissing, false);
-      assert.strictEqual(result.isUntracked, false);
+      expect(result.name).toBe('test.txt');
+      expect(result.type).toBe('content');
+      expect(result.path).toBe('/test/test.txt');
+      expect((result as any).tags).toEqual(['重要']);
+      expect((result as any).comments).toBe('.test.txt.comments.yaml');
+      expect(result.isMissing).toBe(false);
+      expect(result.isUntracked).toBe(false);
     });
 
-    test('欠損ファイルのStatusInfoを正しくTreeItemに変換する', () => {
+    it('欠損ファイルのStatusInfoを正しくTreeItemに変換する', () => {
       const metaEntry: DialogoiTreeItem = {
         name: 'missing.txt',
         type: 'content',
@@ -374,14 +373,14 @@ files:
 
       const result = fileStatusService.statusInfoToTreeItem(statusInfo);
 
-      assert.strictEqual(result.name, 'missing.txt');
-      assert.strictEqual(result.type, 'content');
-      assert.strictEqual(result.path, '/test/missing.txt');
-      assert.strictEqual(result.isMissing, true);
-      assert.strictEqual(result.isUntracked, false);
+      expect(result.name).toBe('missing.txt');
+      expect(result.type).toBe('content');
+      expect(result.path).toBe('/test/missing.txt');
+      expect(result.isMissing).toBe(true);
+      expect(result.isUntracked).toBe(false);
     });
 
-    test('未追跡ファイルのStatusInfoを正しくTreeItemに変換する', () => {
+    it('未追跡ファイルのStatusInfoを正しくTreeItemに変換する', () => {
       const statusInfo: FileStatusInfo = {
         name: 'untracked.txt',
         absolutePath: '/test/untracked.txt',
@@ -391,14 +390,14 @@ files:
 
       const result = fileStatusService.statusInfoToTreeItem(statusInfo);
 
-      assert.strictEqual(result.name, 'untracked.txt');
-      assert.strictEqual(result.type, 'setting'); // デフォルト
-      assert.strictEqual(result.path, '/test/untracked.txt');
-      assert.strictEqual(result.isUntracked, true);
-      assert.strictEqual(result.isMissing, false);
+      expect(result.name).toBe('untracked.txt');
+      expect(result.type).toBe('setting'); // デフォルト
+      expect(result.path).toBe('/test/untracked.txt');
+      expect(result.isUntracked).toBe(true);
+      expect(result.isMissing).toBe(false);
     });
 
-    test('未追跡ディレクトリのStatusInfoを正しくTreeItemに変換する', () => {
+    it('未追跡ディレクトリのStatusInfoを正しくTreeItemに変換する', () => {
       const statusInfo: FileStatusInfo = {
         name: 'untracked-dir',
         absolutePath: '/test/untracked-dir',
@@ -408,63 +407,63 @@ files:
 
       const result = fileStatusService.statusInfoToTreeItem(statusInfo);
 
-      assert.strictEqual(result.name, 'untracked-dir');
-      assert.strictEqual(result.type, 'subdirectory');
-      assert.strictEqual(result.path, '/test/untracked-dir');
-      assert.strictEqual(result.isUntracked, true);
+      expect(result.name).toBe('untracked-dir');
+      expect(result.type).toBe('subdirectory');
+      expect(result.path).toBe('/test/untracked-dir');
+      expect(result.isUntracked).toBe(true);
     });
   });
 
-  suite('isExcluded', () => {
-    test('完全一致パターンでマッチする', () => {
+  describe('isExcluded', () => {
+    it('完全一致パターンでマッチする', () => {
       const excludePatterns = ['node_modules', 'dist', '.git'];
 
-      assert.strictEqual(fileStatusService.isExcluded('node_modules', excludePatterns), true);
-      assert.strictEqual(fileStatusService.isExcluded('dist', excludePatterns), true);
-      assert.strictEqual(fileStatusService.isExcluded('.git', excludePatterns), true);
-      assert.strictEqual(fileStatusService.isExcluded('src', excludePatterns), false);
+      expect(fileStatusService.isExcluded('node_modules', excludePatterns)).toBe(true);
+      expect(fileStatusService.isExcluded('dist', excludePatterns)).toBe(true);
+      expect(fileStatusService.isExcluded('.git', excludePatterns)).toBe(true);
+      expect(fileStatusService.isExcluded('src', excludePatterns)).toBe(false);
     });
 
-    test('ドットファイル専用パターン（.*）でマッチする', () => {
+    it('ドットファイル専用パターン（.*）でマッチする', () => {
       const excludePatterns = ['.*'];
 
-      assert.strictEqual(fileStatusService.isExcluded('.gitignore', excludePatterns), true);
-      assert.strictEqual(fileStatusService.isExcluded('.env', excludePatterns), true);
-      assert.strictEqual(fileStatusService.isExcluded('.hidden', excludePatterns), true);
-      assert.strictEqual(fileStatusService.isExcluded('normal.txt', excludePatterns), false);
-      assert.strictEqual(fileStatusService.isExcluded('dot.in.middle', excludePatterns), false);
+      expect(fileStatusService.isExcluded('.gitignore', excludePatterns)).toBe(true);
+      expect(fileStatusService.isExcluded('.env', excludePatterns)).toBe(true);
+      expect(fileStatusService.isExcluded('.hidden', excludePatterns)).toBe(true);
+      expect(fileStatusService.isExcluded('normal.txt', excludePatterns)).toBe(false);
+      expect(fileStatusService.isExcluded('dot.in.middle', excludePatterns)).toBe(false);
     });
 
-    test('ワイルドカードパターンでマッチする', () => {
+    it('ワイルドカードパターンでマッチする', () => {
       const excludePatterns = ['*.log', 'temp*', '*cache*'];
 
-      assert.strictEqual(fileStatusService.isExcluded('app.log', excludePatterns), true);
-      assert.strictEqual(fileStatusService.isExcluded('error.log', excludePatterns), true);
-      assert.strictEqual(fileStatusService.isExcluded('temp-file', excludePatterns), true);
-      assert.strictEqual(fileStatusService.isExcluded('tempdir', excludePatterns), true);
-      assert.strictEqual(fileStatusService.isExcluded('my-cache-dir', excludePatterns), true);
-      assert.strictEqual(fileStatusService.isExcluded('cache-backup', excludePatterns), true);
+      expect(fileStatusService.isExcluded('app.log', excludePatterns)).toBe(true);
+      expect(fileStatusService.isExcluded('error.log', excludePatterns)).toBe(true);
+      expect(fileStatusService.isExcluded('temp-file', excludePatterns)).toBe(true);
+      expect(fileStatusService.isExcluded('tempdir', excludePatterns)).toBe(true);
+      expect(fileStatusService.isExcluded('my-cache-dir', excludePatterns)).toBe(true);
+      expect(fileStatusService.isExcluded('cache-backup', excludePatterns)).toBe(true);
 
-      assert.strictEqual(fileStatusService.isExcluded('app.txt', excludePatterns), false);
-      assert.strictEqual(fileStatusService.isExcluded('not-temp', excludePatterns), false);
-      assert.strictEqual(fileStatusService.isExcluded('normal', excludePatterns), false);
+      expect(fileStatusService.isExcluded('app.txt', excludePatterns)).toBe(false);
+      expect(fileStatusService.isExcluded('not-temp', excludePatterns)).toBe(false);
+      expect(fileStatusService.isExcluded('normal', excludePatterns)).toBe(false);
     });
 
-    test('複数パターンでの除外チェック', () => {
+    it('複数パターンでの除外チェック', () => {
       const excludePatterns = ['node_modules', '.*', '*.log'];
 
-      assert.strictEqual(fileStatusService.isExcluded('node_modules', excludePatterns), true);
-      assert.strictEqual(fileStatusService.isExcluded('.gitignore', excludePatterns), true);
-      assert.strictEqual(fileStatusService.isExcluded('debug.log', excludePatterns), true);
-      assert.strictEqual(fileStatusService.isExcluded('src/main.ts', excludePatterns), false);
+      expect(fileStatusService.isExcluded('node_modules', excludePatterns)).toBe(true);
+      expect(fileStatusService.isExcluded('.gitignore', excludePatterns)).toBe(true);
+      expect(fileStatusService.isExcluded('debug.log', excludePatterns)).toBe(true);
+      expect(fileStatusService.isExcluded('src/main.ts', excludePatterns)).toBe(false);
     });
 
-    test('空のパターン配列では何もマッチしない', () => {
+    it('空のパターン配列では何もマッチしない', () => {
       const excludePatterns: string[] = [];
 
-      assert.strictEqual(fileStatusService.isExcluded('anything', excludePatterns), false);
-      assert.strictEqual(fileStatusService.isExcluded('.hidden', excludePatterns), false);
-      assert.strictEqual(fileStatusService.isExcluded('file.log', excludePatterns), false);
+      expect(fileStatusService.isExcluded('anything', excludePatterns)).toBe(false);
+      expect(fileStatusService.isExcluded('.hidden', excludePatterns)).toBe(false);
+      expect(fileStatusService.isExcluded('file.log', excludePatterns)).toBe(false);
     });
   });
 });

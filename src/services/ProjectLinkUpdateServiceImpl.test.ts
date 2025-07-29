@@ -1,17 +1,16 @@
-import * as assert from 'assert';
 import * as path from 'path';
 import { ProjectLinkUpdateServiceImpl } from './ProjectLinkUpdateServiceImpl.js';
 import { MockFileRepository } from '../repositories/MockFileRepository.js';
 import { TestServiceContainer } from '../di/TestServiceContainer.js';
 import { ServiceContainer } from '../di/ServiceContainer.js';
 
-suite('ProjectLinkUpdateServiceImpl テストスイート', () => {
+describe('ProjectLinkUpdateServiceImpl テストスイート', () => {
   let service: ProjectLinkUpdateServiceImpl;
   let mockFileRepository: MockFileRepository;
   let testContainer: TestServiceContainer;
   let testProjectRoot: string;
 
-  setup(() => {
+  beforeEach(() => {
     // TestServiceContainerを初期化
     testContainer = TestServiceContainer.create();
     mockFileRepository = testContainer.getFileRepository() as MockFileRepository;
@@ -34,7 +33,7 @@ suite('ProjectLinkUpdateServiceImpl テストスイート', () => {
     createTestProject();
   });
 
-  teardown(() => {
+  afterEach(() => {
     ServiceContainer.clearTestInstance();
     mockFileRepository.reset();
   });
@@ -140,51 +139,51 @@ files:
     );
   }
 
-  test('ファイル名変更時のマークダウンリンク更新', async () => {
+  it('ファイル名変更時のマークダウンリンク更新', async () => {
     const result = await service.updateLinksAfterFileOperation(
       'settings/character1.md',
       'settings/character1_renamed.md',
     );
 
-    assert.strictEqual(result.success, true);
-    assert.strictEqual(result.updatedFiles.length, 2); // chapter1.md, chapter2.md
+    expect(result.success).toBe(true);
+    expect(result.updatedFiles.length).toBe(2); // chapter1.md, chapter2.md
 
     // chapter1.mdの内容確認
     const chapter1Path = path.join(testProjectRoot, 'contents', 'chapter1.md');
     const chapter1Uri = mockFileRepository.createFileUri(chapter1Path);
     const chapter1Content = await mockFileRepository.readFileAsync(chapter1Uri, 'utf8');
 
-    assert.ok(chapter1Content.includes('../settings/character1_renamed.md'));
-    assert.ok(!chapter1Content.includes('../settings/character1.md'));
+    expect(chapter1Content.includes('../settings/character1_renamed.md')).toBeTruthy();
+    expect(!chapter1Content.includes('../settings/character1.md')).toBeTruthy();
     // 外部リンクは変更されない
-    assert.ok(chapter1Content.includes('https://example.com'));
+    expect(chapter1Content.includes('https://example.com')).toBeTruthy();
 
     // chapter2.mdの内容確認
     const chapter2Path = path.join(testProjectRoot, 'contents', 'chapter2.md');
     const chapter2Uri = mockFileRepository.createFileUri(chapter2Path);
     const chapter2Content = await mockFileRepository.readFileAsync(chapter2Uri, 'utf8');
 
-    assert.ok(chapter2Content.includes('../settings/character1_renamed.md'));
+    expect(chapter2Content.includes('../settings/character1_renamed.md')).toBeTruthy();
   });
 
-  test('meta.yamlファイルのreferences更新', async () => {
+  it('meta.yamlファイルのreferences更新', async () => {
     const result = await service.updateLinksAfterFileOperation(
       'settings/character1.md',
       'settings/character1_moved.md',
     );
 
-    assert.strictEqual(result.success, true);
+    expect(result.success).toBe(true);
 
     // contents/.dialogoi-meta.yamlの確認
     const contentsMetaPath = path.join(testProjectRoot, 'contents', '.dialogoi-meta.yaml');
     const contentsMetaUri = mockFileRepository.createFileUri(contentsMetaPath);
     const metaContent = await mockFileRepository.readFileAsync(contentsMetaUri, 'utf8');
 
-    assert.ok(metaContent.includes('settings/character1_moved.md'));
-    assert.ok(!metaContent.includes('settings/character1.md'));
+    expect(metaContent.includes('settings/character1_moved.md')).toBeTruthy();
+    expect(!metaContent.includes('settings/character1.md')).toBeTruthy();
   });
 
-  test('ファイル移動時の複数リンク更新', async () => {
+  it('ファイル移動時の複数リンク更新', async () => {
     // chapter1.mdに更に多くのリンクを追加
     const chapter1Path = path.join(testProjectRoot, 'contents', 'chapter1.md');
     const moreLinksContent = `# 第1章
@@ -201,19 +200,19 @@ files:
       'settings/heroes/character1.md',
     );
 
-    assert.strictEqual(result.success, true);
+    expect(result.success).toBe(true);
 
     // chapter1.mdの内容確認（複数のリンクが全て更新される）
     const updatedContent = await mockFileRepository.readFileAsync(chapter1Uri, 'utf8');
     const character1Links = (updatedContent.match(/\.\.\/settings\/heroes\/character1\.md/g) || [])
       .length;
-    assert.strictEqual(character1Links, 2); // 2箇所のリンクが更新されている
+    expect(character1Links).toBe(2); // 2箇所のリンクが更新されている
 
     // character2.mdのリンクは変更されない
-    assert.ok(updatedContent.includes('../settings/character2.md'));
+    expect(updatedContent.includes('../settings/character2.md')).toBeTruthy();
   });
 
-  test('プロジェクト外リンクは更新しない', async () => {
+  it('プロジェクト外リンクは更新しない', async () => {
     // 外部リンクを含むファイルを作成
     const externalLinksContent = `# テスト
 
@@ -230,19 +229,19 @@ files:
       'settings/character1_new.md',
     );
 
-    assert.strictEqual(result.success, true);
+    expect(result.success).toBe(true);
 
     // 外部リンクテストファイルの確認
     const updatedContent = await mockFileRepository.readFileAsync(testFileUri, 'utf8');
 
     // 内部リンクのみ更新される
-    assert.ok(updatedContent.includes('../settings/character1_new.md'));
+    expect(updatedContent.includes('../settings/character1_new.md')).toBeTruthy();
     // 外部リンクは変更されない
-    assert.ok(updatedContent.includes('https://example.com/character1.md'));
-    assert.ok(updatedContent.includes('/absolute/path/character1.md'));
+    expect(updatedContent.includes('https://example.com/character1.md')).toBeTruthy();
+    expect(updatedContent.includes('/absolute/path/character1.md')).toBeTruthy();
   });
 
-  test('存在しないファイルの更新は無視', async () => {
+  it('存在しないファイルの更新は無視', async () => {
     // 存在しないファイルのリンクを含む設定で実行
     const result = await service.updateLinksAfterFileOperation(
       'nonexistent/file.md',
@@ -250,22 +249,22 @@ files:
     );
 
     // 処理は成功するが、更新されるファイルはない
-    assert.strictEqual(result.success, true);
-    assert.strictEqual(result.updatedFiles.length, 0);
+    expect(result.success).toBe(true);
+    expect(result.updatedFiles.length).toBe(0);
   });
 
-  test('scanFileForProjectLinks デバッグ機能', async () => {
+  it('scanFileForProjectLinks デバッグ機能', async () => {
     const chapter1Path = path.join(testProjectRoot, 'contents', 'chapter1.md');
     const projectLinks = await service.scanFileForProjectLinks(chapter1Path);
 
     // プロジェクト内リンクのみが抽出される
-    assert.ok(projectLinks.includes('settings/character1.md'));
-    assert.ok(projectLinks.includes('settings/character2.md'));
+    expect(projectLinks.includes('settings/character1.md')).toBeTruthy();
+    expect(projectLinks.includes('settings/character2.md')).toBeTruthy();
     // 外部リンクは含まれない
-    assert.ok(!projectLinks.some((link) => link.includes('example.com')));
+    expect(projectLinks.some((link) => link.includes('example.com'))).toBeFalsy();
   });
 
-  test('複雑なマークダウンリンクパターンの処理', async () => {
+  it('複雑なマークダウンリンクパターンの処理', async () => {
     const complexContent = `# 複雑なテスト
 
 [通常リンク](../settings/character1.md)
@@ -284,23 +283,23 @@ files:
       'settings/new_character1.md',
     );
 
-    assert.strictEqual(result.success, true);
+    expect(result.success).toBe(true);
 
     const updatedContent = await mockFileRepository.readFileAsync(testUri, 'utf8');
 
     // 各パターンが正しく更新されているかチェック
-    assert.ok(updatedContent.includes('[通常リンク](../settings/new_character1.md)'));
-    assert.ok(
+    expect(updatedContent.includes('[通常リンク](../settings/new_character1.md)).toBeTruthy()'));
+    expect(
       updatedContent.includes(
-        '[タイトル付きリンク](../settings/new_character1.md "キャラクター1の説明")',
+        '[タイトル付きリンク](../settings/new_character1.md "キャラクター1の説明").toBeTruthy()',
       ),
     );
-    assert.ok(updatedContent.includes('[空テキスト](../settings/new_character1.md)'));
-    assert.ok(updatedContent.includes('[特殊文字#含む](../settings/new_character1.md#section)'));
-    assert.ok(updatedContent.includes('[  空白あり  ](../settings/new_character1.md)'));
+    expect(updatedContent.includes('[空テキスト](../settings/new_character1.md)).toBeTruthy()'));
+    expect(updatedContent.includes('[特殊文字#含む](../settings/new_character1.md#section)).toBeTruthy()'));
+    expect(updatedContent.includes('[  空白あり  ](../settings/new_character1.md)).toBeTruthy()'));
   });
 
-  test('パフォーマンステスト（大量ファイル）', async () => {
+  it('パフォーマンステスト（大量ファイル）', async () => {
     // 大量のファイルとリンクを作成
     const largeProjectPath = '/tmp/large-project';
     const fileCount = 50;
@@ -327,8 +326,8 @@ files:
     );
     const endTime = Date.now();
 
-    assert.strictEqual(result.success, true);
+    expect(result.success).toBe(true);
     // 処理時間が合理的範囲内であることを確認（10秒以内）
-    assert.ok(endTime - startTime < 10000, `処理時間が長すぎます: ${endTime - startTime}ms`);
+    expect(endTime - startTime < 10000).toBeTruthy();
   });
 });

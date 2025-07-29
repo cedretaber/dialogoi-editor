@@ -1,12 +1,10 @@
-import { suite, test, beforeEach } from 'mocha';
-import * as assert from 'assert';
 import * as path from 'path';
 import { DialogoiYamlService } from './DialogoiYamlService.js';
 import { DialogoiYamlServiceImpl } from './DialogoiYamlServiceImpl.js';
 import { MockFileRepository } from '../repositories/MockFileRepository.js';
 import { TestServiceContainer } from '../di/TestServiceContainer.js';
 
-suite('DialogoiYamlServiceImpl テストスイート', () => {
+describe('DialogoiYamlServiceImpl テストスイート', () => {
   let service: DialogoiYamlService;
   let mockFileRepository: MockFileRepository;
 
@@ -16,39 +14,39 @@ suite('DialogoiYamlServiceImpl テストスイート', () => {
     service = new DialogoiYamlServiceImpl(mockFileRepository);
   });
 
-  suite('getDialogoiYamlPath', () => {
-    test('dialogoi.yamlファイルのパスを取得する', () => {
+  describe('getDialogoiYamlPath', () => {
+    it('dialogoi.yamlファイルのパスを取得する', () => {
       const projectRoot = '/test/project';
       const expectedPath = path.join(projectRoot, 'dialogoi.yaml');
 
       const result = service.getDialogoiYamlPath(projectRoot);
-      assert.strictEqual(result, expectedPath);
+      expect(result).toBe(expectedPath);
     });
   });
 
   // ===== 非同期版メソッドのテスト =====
 
-  suite('isDialogoiProjectRootAsync', () => {
-    test('dialogoi.yamlが存在する場合trueを返す', async () => {
+  describe('isDialogoiProjectRootAsync', () => {
+    it('dialogoi.yamlが存在する場合trueを返す', async () => {
       const projectRoot = '/test/project';
       const dialogoiYamlPath = path.join(projectRoot, 'dialogoi.yaml');
 
       mockFileRepository.createFileForTest(dialogoiYamlPath, 'test content');
 
       const result = await service.isDialogoiProjectRootAsync(projectRoot);
-      assert.strictEqual(result, true);
+      expect(result).toBe(true);
     });
 
-    test('dialogoi.yamlが存在しない場合falseを返す', async () => {
+    it('dialogoi.yamlが存在しない場合falseを返す', async () => {
       const projectRoot = '/test/project';
 
       const result = await service.isDialogoiProjectRootAsync(projectRoot);
-      assert.strictEqual(result, false);
+      expect(result).toBe(false);
     });
   });
 
-  suite('loadDialogoiYamlAsync', () => {
-    test('正常なdialogoi.yamlを読み込む', async () => {
+  describe('loadDialogoiYamlAsync', () => {
+    it('正常なdialogoi.yamlを読み込む', async () => {
       const projectRoot = '/test/project';
       const dialogoiYamlPath = path.join(projectRoot, 'dialogoi.yaml');
       const yamlContent = `title: "テスト小説"
@@ -60,21 +58,21 @@ tags: ["ファンタジー"]`;
 
       const result = await service.loadDialogoiYamlAsync(projectRoot);
 
-      assert.notStrictEqual(result, null);
-      assert.strictEqual(result?.title, 'テスト小説');
-      assert.strictEqual(result?.author, 'テスト著者');
-      assert.strictEqual(result?.created_at, '2024-01-01T00:00:00Z');
-      assert.deepStrictEqual(result?.tags, ['ファンタジー']);
+      expect(result).not.toBe(null);
+      expect(result?.title).toBe('テスト小説');
+      expect(result?.author).toBe('テスト著者');
+      expect(result?.created_at).toBe('2024-01-01T00:00:00Z');
+      expect(result?.tags).toEqual(['ファンタジー']);
     });
 
-    test('ファイルが存在しない場合nullを返す', async () => {
+    it('ファイルが存在しない場合nullを返す', async () => {
       const projectRoot = '/test/project';
 
       const result = await service.loadDialogoiYamlAsync(projectRoot);
-      assert.strictEqual(result, null);
+      expect(result).toBe(null);
     });
 
-    test('不正なYAMLの場合nullを返す', async () => {
+    it('不正なYAMLの場合nullを返す', async () => {
       const projectRoot = '/test/project';
       const dialogoiYamlPath = path.join(projectRoot, 'dialogoi.yaml');
 
@@ -84,12 +82,12 @@ tags: ["ファンタジー"]`;
       );
 
       const result = await service.loadDialogoiYamlAsync(projectRoot);
-      assert.strictEqual(result, null);
+      expect(result).toBe(null);
     });
   });
 
-  suite('saveDialogoiYamlAsync', () => {
-    test('正常なデータを保存する', async () => {
+  describe('saveDialogoiYamlAsync', () => {
+    it('正常なデータを保存する', async () => {
       const projectRoot = '/test/project';
       const dialogoiYamlPath = path.join(projectRoot, 'dialogoi.yaml');
       const data = {
@@ -106,21 +104,21 @@ tags: ["ファンタジー"]`;
 
       const result = await service.saveDialogoiYamlAsync(projectRoot, data);
 
-      assert.strictEqual(result, true);
-      assert.ok(
-        await mockFileRepository.existsAsync(mockFileRepository.createFileUri(dialogoiYamlPath)),
-      );
+      expect(result).toBe(true);
+      expect(
+        await mockFileRepository.existsAsync(mockFileRepository.createFileUri(dialogoiYamlPath))
+      ).toBeTruthy();
 
       const savedContent = await mockFileRepository.readFileAsync(
         mockFileRepository.createFileUri(dialogoiYamlPath),
         'utf8',
       );
-      assert.ok(savedContent.includes('title: テスト小説'));
-      assert.ok(savedContent.includes('author: テスト著者'));
-      assert.ok(savedContent.includes('updated_at:'));
+      expect(savedContent.includes('title: テスト小説')).toBeTruthy();
+      expect(savedContent.includes('author: テスト著者')).toBeTruthy();
+      expect(savedContent.includes('updated_at:')).toBeTruthy();
     });
 
-    test('不正なデータの場合falseを返す', async () => {
+    it('不正なデータの場合falseを返す', async () => {
       const projectRoot = '/test/project';
       const data = {
         title: '',
@@ -135,10 +133,10 @@ tags: ["ファンタジー"]`;
       };
 
       const result = await service.saveDialogoiYamlAsync(projectRoot, data);
-      assert.strictEqual(result, false);
+      expect(result).toBe(false);
     });
 
-    test('updated_atが自動で追加される', async () => {
+    it('updated_atが自動で追加される', async () => {
       const projectRoot = '/test/project';
       const dialogoiYamlPath = path.join(projectRoot, 'dialogoi.yaml');
       const data = {
@@ -157,26 +155,26 @@ tags: ["ファンタジー"]`;
       const result = await service.saveDialogoiYamlAsync(projectRoot, data);
       const after = new Date().toISOString();
 
-      assert.strictEqual(result, true);
+      expect(result).toBe(true);
 
       const savedContent = await mockFileRepository.readFileAsync(
         mockFileRepository.createFileUri(dialogoiYamlPath),
         'utf8',
       );
-      assert.ok(savedContent.includes('updated_at:'));
+      expect(savedContent.includes('updated_at:')).toBeTruthy();
 
       // 保存されたファイルから updated_at を読み取って確認
       const savedData = await service.loadDialogoiYamlAsync(projectRoot);
-      assert.ok(savedData?.updated_at !== undefined);
+      expect(savedData?.updated_at !== undefined).toBeTruthy();
       if (savedData?.updated_at !== undefined) {
-        assert.ok(savedData.updated_at >= before);
-        assert.ok(savedData.updated_at <= after);
+        expect(savedData.updated_at >= before).toBeTruthy();
+        expect(savedData.updated_at <= after).toBeTruthy();
       }
     });
   });
 
-  suite('createDialogoiProjectAsync', () => {
-    test('新しいプロジェクトを作成する', async () => {
+  describe('createDialogoiProjectAsync', () => {
+    it('新しいプロジェクトを作成する', async () => {
       const projectRoot = '/test/new-project';
 
       const result = await service.createDialogoiProjectAsync(
@@ -186,17 +184,17 @@ tags: ["ファンタジー"]`;
         ['ファンタジー'],
       );
 
-      assert.strictEqual(result, true);
-      assert.ok(await service.isDialogoiProjectRootAsync(projectRoot));
+      expect(result).toBe(true);
+      expect((await service.isDialogoiProjectRootAsync(projectRoot))).toBeTruthy();
 
       const data = await service.loadDialogoiYamlAsync(projectRoot);
-      assert.notStrictEqual(data, null);
-      assert.strictEqual(data?.title, '新しい小説');
-      assert.strictEqual(data?.author, '新しい著者');
-      assert.deepStrictEqual(data?.tags, ['ファンタジー']);
+      expect(data).not.toBe(null);
+      expect(data?.title).toBe('新しい小説');
+      expect(data?.author).toBe('新しい著者');
+      expect(data?.tags).toEqual(['ファンタジー']);
     });
 
-    test('既にプロジェクトが存在する場合は作成しない', async () => {
+    it('既にプロジェクトが存在する場合は作成しない', async () => {
       const projectRoot = '/test/existing-project';
       const dialogoiYamlPath = path.join(projectRoot, 'dialogoi.yaml');
 
@@ -207,10 +205,10 @@ tags: ["ファンタジー"]`;
         '新しい小説',
         '新しい著者',
       );
-      assert.strictEqual(result, false);
+      expect(result).toBe(false);
     });
 
-    test('プロジェクトディレクトリが存在しない場合は作成する', async () => {
+    it('プロジェクトディレクトリが存在しない場合は作成する', async () => {
       const projectRoot = '/test/non-existing-dir';
 
       const result = await service.createDialogoiProjectAsync(
@@ -219,16 +217,16 @@ tags: ["ファンタジー"]`;
         '新しい著者',
       );
 
-      assert.strictEqual(result, true);
-      assert.ok(
-        await mockFileRepository.existsAsync(mockFileRepository.createDirectoryUri(projectRoot)),
-      );
-      assert.ok(await service.isDialogoiProjectRootAsync(projectRoot));
+      expect(result).toBe(true);
+      expect(
+        await mockFileRepository.existsAsync(mockFileRepository.createDirectoryUri(projectRoot))
+      ).toBeTruthy();
+      expect((await service.isDialogoiProjectRootAsync(projectRoot))).toBeTruthy();
     });
   });
 
-  suite('updateDialogoiYamlAsync', () => {
-    test('既存のプロジェクトを更新する', async () => {
+  describe('updateDialogoiYamlAsync', () => {
+    it('既存のプロジェクトを更新する', async () => {
       const projectRoot = '/test/project';
       const dialogoiYamlPath = path.join(projectRoot, 'dialogoi.yaml');
       const originalContent = `title: "元のタイトル"
@@ -247,27 +245,27 @@ project_settings:
         tags: ['新しいタグ'],
       });
 
-      assert.strictEqual(result, true);
+      expect(result).toBe(true);
 
       const updatedData = await service.loadDialogoiYamlAsync(projectRoot);
-      assert.strictEqual(updatedData?.title, '新しいタイトル');
-      assert.strictEqual(updatedData?.author, '元の著者');
-      assert.deepStrictEqual(updatedData?.tags, ['新しいタグ']);
+      expect(updatedData?.title).toBe('新しいタイトル');
+      expect(updatedData?.author).toBe('元の著者');
+      expect(updatedData?.tags).toEqual(['新しいタグ']);
     });
 
-    test('プロジェクトが存在しない場合はfalseを返す', async () => {
+    it('プロジェクトが存在しない場合はfalseを返す', async () => {
       const projectRoot = '/test/non-existing-project';
 
       const result = await service.updateDialogoiYamlAsync(projectRoot, {
         title: '新しいタイトル',
       });
 
-      assert.strictEqual(result, false);
+      expect(result).toBe(false);
     });
   });
 
-  suite('findProjectRootAsync', () => {
-    test('プロジェクトルートを見つける', async () => {
+  describe('findProjectRootAsync', () => {
+    it('プロジェクトルートを見つける', async () => {
       const projectRoot = '/test/project';
       const subDir = '/test/project/contents';
       const dialogoiYamlPath = path.join(projectRoot, 'dialogoi.yaml');
@@ -275,27 +273,27 @@ project_settings:
       mockFileRepository.createFileForTest(dialogoiYamlPath, 'test content');
 
       const result = await service.findProjectRootAsync(subDir);
-      assert.strictEqual(result, projectRoot);
+      expect(result).toBe(projectRoot);
     });
 
-    test('プロジェクトルート自体から開始する場合', async () => {
+    it('プロジェクトルート自体から開始する場合', async () => {
       const projectRoot = '/test/project';
       const dialogoiYamlPath = path.join(projectRoot, 'dialogoi.yaml');
 
       mockFileRepository.createFileForTest(dialogoiYamlPath, 'test content');
 
       const result = await service.findProjectRootAsync(projectRoot);
-      assert.strictEqual(result, projectRoot);
+      expect(result).toBe(projectRoot);
     });
 
-    test('プロジェクトルートが見つからない場合nullを返す', async () => {
+    it('プロジェクトルートが見つからない場合nullを返す', async () => {
       const someDir = '/test/no-project';
 
       const result = await service.findProjectRootAsync(someDir);
-      assert.strictEqual(result, null);
+      expect(result).toBe(null);
     });
 
-    test('深い階層からプロジェクトルートを見つける', async () => {
+    it('深い階層からプロジェクトルートを見つける', async () => {
       const projectRoot = '/test/project';
       const deepDir = '/test/project/contents/chapter1/subsection';
       const dialogoiYamlPath = path.join(projectRoot, 'dialogoi.yaml');
@@ -303,10 +301,10 @@ project_settings:
       mockFileRepository.createFileForTest(dialogoiYamlPath, 'test content');
 
       const result = await service.findProjectRootAsync(deepDir);
-      assert.strictEqual(result, projectRoot);
+      expect(result).toBe(projectRoot);
     });
 
-    test('ファイルパスを渡してもプロジェクトルートを見つける', async () => {
+    it('ファイルパスを渡してもプロジェクトルートを見つける', async () => {
       const projectRoot = '/test/project';
       const filePath = '/test/project/settings/characters/hero.md';
       const dialogoiYamlPath = path.join(projectRoot, 'dialogoi.yaml');
@@ -317,10 +315,10 @@ project_settings:
       mockFileRepository.createFileForTest(filePath, '# ヒーロー');
 
       const result = await service.findProjectRootAsync(filePath);
-      assert.strictEqual(result, projectRoot);
+      expect(result).toBe(projectRoot);
     });
 
-    test('存在しないファイルパスでもプロジェクトルートを見つける', async () => {
+    it('存在しないファイルパスでもプロジェクトルートを見つける', async () => {
       const projectRoot = '/test/project';
       const nonExistentFilePath = '/test/project/settings/characters/villain.md';
       const dialogoiYamlPath = path.join(projectRoot, 'dialogoi.yaml');
@@ -329,7 +327,7 @@ project_settings:
       mockFileRepository.createFileForTest(dialogoiYamlPath, 'test content');
 
       const result = await service.findProjectRootAsync(nonExistentFilePath);
-      assert.strictEqual(result, projectRoot);
+      expect(result).toBe(projectRoot);
     });
   });
 });
