@@ -5,6 +5,7 @@ import { ForeshadowingService } from '../services/ForeshadowingService.js';
 import { ReferenceManager } from '../services/ReferenceManager.js';
 import { CommentService } from '../services/CommentService.js';
 import { DialogoiYamlService } from '../services/DialogoiYamlService.js';
+import { DialogoiYamlServiceImpl } from '../services/DialogoiYamlServiceImpl.js';
 import { MetaYamlService } from '../services/MetaYamlService.js';
 import { MetaYamlServiceImpl } from '../services/MetaYamlServiceImpl.js';
 import { MetadataService } from '../services/MetadataService.js';
@@ -29,6 +30,7 @@ import { ProjectAutoSetupService } from '../services/ProjectAutoSetupService.js'
 import { ProjectSetupService } from '../services/ProjectSetupService.js';
 import { ProjectPathService } from '../services/ProjectPathService.js';
 import { CoreFileService } from '../services/CoreFileService.js';
+import { CoreFileServiceImpl } from '../services/CoreFileServiceImpl.js';
 import { Logger } from '../utils/Logger.js';
 import { MockProjectLinkUpdateService } from '../repositories/MockProjectLinkUpdateService.js';
 import { ProjectLinkUpdateService } from '../services/ProjectLinkUpdateService.js';
@@ -133,7 +135,7 @@ export class TestServiceContainer implements IServiceContainer {
    */
   getDialogoiYamlService(): DialogoiYamlService {
     if (!this.dialogoiYamlService) {
-      this.dialogoiYamlService = new DialogoiYamlService(this.fileRepository);
+      this.dialogoiYamlService = new DialogoiYamlServiceImpl(this.fileRepository);
     }
     return this.dialogoiYamlService;
   }
@@ -319,7 +321,7 @@ export class TestServiceContainer implements IServiceContainer {
       const fileRepository = this.getFileRepository();
       const metaYamlService = this.getMetaYamlService();
       const linkUpdateService = this.getMockProjectLinkUpdateService();
-      this.coreFileService = new CoreFileService(
+      this.coreFileService = new CoreFileServiceImpl(
         fileRepository,
         metaYamlService,
         linkUpdateService,
@@ -337,13 +339,6 @@ export class TestServiceContainer implements IServiceContainer {
       this.mockProjectLinkUpdateService = new MockProjectLinkUpdateService();
     }
     return this.mockProjectLinkUpdateService as MockProjectLinkUpdateService;
-  }
-
-  /**
-   * MockFileRepositoryを取得（テスト用）
-   */
-  getMockFileRepository(): MockFileRepository {
-    return this.fileRepository as MockFileRepository;
   }
 
   /**

@@ -12,7 +12,7 @@ suite('FileStatusService テストスイート', () => {
 
   setup(() => {
     const container = TestServiceContainer.create();
-    mockFileRepository = container.getMockFileRepository();
+    mockFileRepository = container.getFileRepository() as MockFileRepository;
     metaYamlService = container.getMetaYamlService();
     fileStatusService = new FileStatusService(mockFileRepository, metaYamlService);
   });

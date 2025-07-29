@@ -13,12 +13,11 @@ describe('CommentService テストスイート', () => {
   let mockFileRepository: MockFileRepository;
 
   beforeEach(() => {
-    // テスト用サービスコンテナを初期化
-    const container = TestServiceContainer.getInstance();
-    container.reset();
+    // テスト用サービスコンテナを作成
+    const container = TestServiceContainer.create();
 
     // モックファイルサービスを取得
-    mockFileRepository = container.getMockFileRepository();
+    mockFileRepository = container.getFileRepository() as MockFileRepository;
 
     // テスト用のワークスペースを設定
     workspaceRootPath = '/workspace';
@@ -33,7 +32,7 @@ describe('CommentService テストスイート', () => {
 
   afterEach(() => {
     // テスト用サービスコンテナをリセット
-    TestServiceContainer.getInstance().reset();
+    TestServiceContainer.create().reset();
   });
 
   describe('addCommentAsync', () => {

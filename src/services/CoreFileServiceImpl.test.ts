@@ -1,5 +1,6 @@
 import assert from 'assert';
 import { CoreFileService } from './CoreFileService.js';
+import { CoreFileServiceImpl } from './CoreFileServiceImpl.js';
 import { TestServiceContainer } from '../di/TestServiceContainer.js';
 import { MockFileRepository } from '../repositories/MockFileRepository.js';
 import { MockProjectLinkUpdateService } from '../repositories/MockProjectLinkUpdateService.js';
@@ -386,7 +387,7 @@ suite('CoreFileService テストスイート', () => {
       const container = TestServiceContainer.create();
       const fileRepo = container.getFileRepository();
       const metaYamlService = container.getMetaYamlService();
-      const serviceWithoutRoot = new CoreFileService(fileRepo, metaYamlService);
+      const serviceWithoutRoot = new CoreFileServiceImpl(fileRepo, metaYamlService);
 
       const result = await serviceWithoutRoot.createFile('relative/path', 'file.txt', 'content');
 

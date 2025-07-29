@@ -3,69 +3,66 @@ import * as assert from 'assert';
 import * as path from 'path';
 import { TestServiceContainer } from '../di/TestServiceContainer.js';
 import { MockFileRepository } from '../repositories/MockFileRepository.js';
+import { MockDialogoiYamlService } from '../repositories/MockDialogoiYamlService.js';
 import { ProjectPathService } from './ProjectPathService.js';
 
 describe('ProjectPathService テストスイート', () => {
   let projectPathService: ProjectPathService;
   let mockFileRepository: MockFileRepository;
+  let mockDialogoiYamlService: MockDialogoiYamlService;
   let workspaceRootPath: string;
   let testProjectPath: string;
 
   beforeEach(() => {
-    // テスト用サービスコンテナを初期化
-    const container = TestServiceContainer.getInstance();
-    container.reset();
+    // テスト用サービスコンテナを作成（getInstance非推奨のため）
+    const container = TestServiceContainer.create();
 
-    // モックファイルサービスを取得
-    mockFileRepository = container.getMockFileRepository();
+    // モックサービスを取得
+    mockFileRepository = container.getFileRepository() as MockFileRepository;
+    mockDialogoiYamlService = new MockDialogoiYamlService();
 
-    // サービスを取得
-    const dialogoiYamlService = container.getDialogoiYamlService();
-    projectPathService = new ProjectPathService(dialogoiYamlService);
+    // ProjectPathServiceを直接作成（DIパターン準拠）
+    projectPathService = new ProjectPathService(mockDialogoiYamlService);
 
     // テスト用のワークスペースとプロジェクトを設定
     workspaceRootPath = '/workspace';
     testProjectPath = path.join(workspaceRootPath, 'novel');
 
     // テスト用プロジェクト構造を作成
-    const dialogoiYamlContent = `title: テスト小説
-author: テスト著者
-version: 1.0.0
-created_at: '2024-01-01T00:00:00Z'`;
+    const dialogoiYamlData = {
+      title: 'テスト小説',
+      author: 'テスト著者',
+      created_at: '2024-01-01T00:00:00Z',
+      updated_at: '2024-01-01T00:00:00Z',
+      tags: [],
+      project_settings: {
+        readme_filename: 'README.md',
+        exclude_patterns: [],
+      },
+    };
 
-    const metaYamlContent = `readme: README.md
-files:
-  - name: chapter1.txt
-    type: content
-    path: /workspace/novel/chapter1.txt
-    hash: hash1
-    tags: []
-    references: []
-    comments: ''
-    isUntracked: false
-    isMissing: false
-  - name: chapter2.txt
-    type: content
-    path: /workspace/novel/chapter2.txt
-    hash: hash2
-    tags: []
-    references: []
-    comments: ''
-    isUntracked: false
-    isMissing: false`;
+    // MockDialogoiYamlServiceにデータを設定
+    mockDialogoiYamlService.setDialogoiYaml(testProjectPath, dialogoiYamlData);
 
-    mockFileRepository.addFile(path.join(testProjectPath, 'dialogoi.yaml'), dialogoiYamlContent);
-    mockFileRepository.addFile(path.join(testProjectPath, '.dialogoi-meta.yaml'), metaYamlContent);
-    mockFileRepository.addFile(
+    // ファイルシステム構造をMockFileRepositoryに設定
+    mockFileRepository.createFileForTest(
+      path.join(testProjectPath, 'dialogoi.yaml'),
+      'yaml content',
+    );
+    mockFileRepository.createFileForTest(
       path.join(testProjectPath, 'chapter1.txt'),
       'これはテスト章です。\n2行目の内容。\n3行目の内容。',
     );
-    mockFileRepository.addFile(path.join(testProjectPath, 'chapter2.txt'), '別の章の内容です。');
+    mockFileRepository.createFileForTest(
+      path.join(testProjectPath, 'chapter2.txt'),
+      '別の章の内容です。',
+    );
   });
 
   afterEach(() => {
-    // テスト用サービスコンテナをリセット
-    TestServiceContainer.getInstance().reset();
+    // モックサービスをクリア
+    mockDialogoiYamlService.clear();
+    mockFileRepository.reset();
   });
 
   describe('getRelativePathFromProject', () => {

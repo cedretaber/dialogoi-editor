@@ -5,6 +5,7 @@ import { ForeshadowingService } from '../services/ForeshadowingService.js';
 import { ReferenceManager } from '../services/ReferenceManager.js';
 import { CommentService } from '../services/CommentService.js';
 import { DialogoiYamlService } from '../services/DialogoiYamlService.js';
+import { DialogoiYamlServiceImpl } from '../services/DialogoiYamlServiceImpl.js';
 import { MetaYamlService } from '../services/MetaYamlService.js';
 import { MetaYamlServiceImpl } from '../services/MetaYamlServiceImpl.js';
 import { MetadataService } from '../services/MetadataService.js';
@@ -21,6 +22,7 @@ import { ProjectPathService } from '../services/ProjectPathService.js';
 import { ProjectAutoSetupService } from '../services/ProjectAutoSetupService.js';
 import { ProjectSetupService } from '../services/ProjectSetupService.js';
 import { CoreFileService } from '../services/CoreFileService.js';
+import { CoreFileServiceImpl } from '../services/CoreFileServiceImpl.js';
 import { ProjectLinkUpdateServiceImpl } from '../services/ProjectLinkUpdateServiceImpl.js';
 import { Logger } from '../utils/Logger.js';
 import { Uri } from '../interfaces/Uri.js';
@@ -84,6 +86,10 @@ export class ServiceContainer implements IServiceContainer {
 
   protected constructor() {}
 
+  /**
+   * ServiceContainerのインスタンスを取得
+   * @deprecated テスト用オーバーロード機能は非推奨。新しいテストではTestServiceContainer.create()を使用
+   */
   static getInstance(): IServiceContainer {
     // テスト用のインスタンスが設定されている場合はそれを返す
     if (ServiceContainer.testInstance !== null) {
@@ -179,7 +185,7 @@ export class ServiceContainer implements IServiceContainer {
    */
   getDialogoiYamlService(): DialogoiYamlService {
     if (!this.dialogoiYamlService) {
-      this.dialogoiYamlService = new DialogoiYamlService(this.getFileRepository());
+      this.dialogoiYamlService = new DialogoiYamlServiceImpl(this.getFileRepository());
     }
     return this.dialogoiYamlService;
   }
@@ -386,7 +392,7 @@ export class ServiceContainer implements IServiceContainer {
         this.getMetaYamlService(),
         novelRootAbsolutePath,
       );
-      return new CoreFileService(
+      return new CoreFileServiceImpl(
         this.getFileRepository(),
         this.getMetaYamlService(),
         linkUpdateService,
@@ -396,7 +402,7 @@ export class ServiceContainer implements IServiceContainer {
 
     // novelRootAbsolutePathが指定されていない場合は、キャッシュされたインスタンスを使用
     if (!this.coreFileService) {
-      this.coreFileService = new CoreFileService(
+      this.coreFileService = new CoreFileServiceImpl(
         this.getFileRepository(),
         this.getMetaYamlService(),
         undefined,
@@ -408,6 +414,8 @@ export class ServiceContainer implements IServiceContainer {
 
   /**
    * テスト用のインスタンスを設定
+   * @deprecated DIパターンに対応していないレガシーサービス（ReferenceManager等）のテストでのみ使用
+   * TODO: 対象サービスをDIパターンに変更後に削除予定
    */
   static setTestInstance(instance: IServiceContainer): void {
     ServiceContainer.testInstance = instance;
@@ -415,6 +423,8 @@ export class ServiceContainer implements IServiceContainer {
 
   /**
    * テスト用のインスタンスをクリア
+   * @deprecated DIパターンに対応していないレガシーサービス（ReferenceManager等）のテストでのみ使用
+   * TODO: 対象サービスをDIパターンに変更後に削除予定
    */
   static clearTestInstance(): void {
     ServiceContainer.testInstance = null;

@@ -13,7 +13,7 @@ suite('ProjectSetupService テストスイート', () => {
 
   setup(() => {
     const container = TestServiceContainer.create();
-    mockFileRepository = container.getMockFileRepository();
+    mockFileRepository = container.getFileRepository() as MockFileRepository;
     dialogoiYamlService = container.getDialogoiYamlService();
     projectAutoSetupService = container.getProjectAutoSetupService();
     projectSetupService = new ProjectSetupService(dialogoiYamlService, projectAutoSetupService);

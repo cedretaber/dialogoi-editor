@@ -117,24 +117,29 @@
    - FilePathMapService, CharacterService, ProjectSetupService (各1回依存)
 
 #### インターフェイス分離作業進捗
-- [ ] **1. MetaYamlService** → IMetaYamlService + DefaultMetaYamlService
-  - [ ] インターフェイス定義作成
-  - [ ] 実装クラス分離
-  - [ ] MockMetaYamlService作成
-  - [ ] ServiceContainer/TestServiceContainer更新
-- [ ] **2. DialogoiYamlService** → IDialogoiYamlService + DefaultDialogoiYamlService  
+- [x] **1. MetaYamlService** → MetaYamlService + MetaYamlServiceImpl ✅ **完了**
+  - [x] インターフェイス定義作成 (MetaYamlService.ts)
+  - [x] 実装クラス分離 (MetaYamlServiceImpl.ts)
+  - [x] MockMetaYamlService作成
+  - [x] ServiceContainer/TestServiceContainer更新
+- [x] **1.2. ProjectLinkUpdateService** → ProjectLinkUpdateService + ProjectLinkUpdateServiceImpl ✅ **完了**
+  - [x] インターフェイス定義作成 (ProjectLinkUpdateService.ts)
+  - [x] 実装クラス分離 (ProjectLinkUpdateServiceImpl.ts)
+  - [x] MockProjectLinkUpdateService作成
+  - [x] ServiceContainer/TestServiceContainer更新
+- [ ] **2. DialogoiYamlService** → DialogoiYamlService + DialogoiYamlServiceImpl  
   - [ ] インターフェイス定義作成
   - [ ] 実装クラス分離
   - [ ] MockDialogoiYamlService作成
   - [ ] ServiceContainer/TestServiceContainer更新
-- [ ] **3. CoreFileService** → ICoreFileService + DefaultCoreFileService
+- [ ] **3. CoreFileService** → CoreFileService + CoreFileServiceImpl
   - [ ] インターフェイス定義作成
   - [ ] 実装クラス分離
   - [ ] MockCoreFileService作成
   - [ ] ServiceContainer/TestServiceContainer更新
 
 #### その他の作業
-- [ ] **ProjectLinkUpdateService.test.ts** → DefaultProjectLinkUpdateService.test.ts にリネーム
+- [x] **ProjectLinkUpdateService.test.ts** → ProjectLinkUpdateServiceImpl.test.ts にリネーム ✅ **完了**
 
 ### Phase 2: 高優先度ファイルの改善（3-4時間）
 CoreFileService.test.ts から順に：
@@ -236,7 +241,8 @@ CoreFileService.test.ts から順に：
 
 ### 現在のステータス
 - **Phase 1**: ✅ **完了** - 2025-01-29
-- **Phase 1.5**: ⏳ **作業中** - インターフェイス分離の準備
+- **Phase 1.5**: ✅ **完了** - 2025-01-29 (MetaYamlService + ProjectLinkUpdateService分離完了)
+- **Phase 1.6**: ⏳ **作業中** - DialogoiYamlService + CoreFileService分離継続
 - **Phase 2**: 未着手
 - **Phase 3**: 未着手
 - **Phase 4**: 未着手
@@ -248,10 +254,40 @@ CoreFileService.test.ts から順に：
 - 未着手: 21
 
 ### インターフェイス分離進捗
-- ProjectLinkUpdateService: ✅ **完了** (既にインターフェイス分離済み)
-- MetaYamlService: 未着手
-- DialogoiYamlService: 未着手  
+- ProjectLinkUpdateService: ✅ **完了** (2025-01-29)
+- MetaYamlService: ✅ **完了** (2025-01-29)
+- DialogoiYamlService: 未着手
 - CoreFileService: 未着手
+
+## Phase 1.5 完了記録 (2025-01-29)
+
+### 実装完了内容
+**コミット**: 89fd408 - "refactor: implement interface/implementation separation for ProjectLinkUpdateService and MetaYamlService"
+
+#### 完了したサービス分離
+1. **ProjectLinkUpdateService**
+   - インターフェイス: `src/services/ProjectLinkUpdateService.ts`
+   - 実装クラス: `src/services/ProjectLinkUpdateServiceImpl.ts`
+   - モック: `src/repositories/MockProjectLinkUpdateService.ts`
+
+2. **MetaYamlService**
+   - インターフェイス: `src/services/MetaYamlService.ts`
+   - 実装クラス: `src/services/MetaYamlServiceImpl.ts`
+   - モック: `src/repositories/MockMetaYamlService.ts`
+
+#### 確立した命名規則
+- **インターフェイス**: サービス名 (例: `MetaYamlService`)
+- **実装クラス**: サービス名 + `Impl` (例: `MetaYamlServiceImpl`)
+- **モッククラス**: `Mock` + サービス名 (例: `MockMetaYamlService`)
+
+#### 技術的成果
+- TypeScriptコンパイルエラー: 全て解決
+- ESLint max-warnings 0: 準拠
+- ServiceContainer/TestServiceContainer: 更新完了
+- ForeshadowingService.test.ts: MockMetaYamlService使用に変更
+
+### 次のタスク
+DialogoiYamlServiceのインターフェイス分離 (5回依存 - 高優先度)
 
 ## Phase 1 分析結果
 

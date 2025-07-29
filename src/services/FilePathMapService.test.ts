@@ -12,7 +12,7 @@ suite('FilePathMapService テストスイート', () => {
 
   setup(() => {
     container = TestServiceContainer.create();
-    mockFileRepo = container.getMockFileRepository();
+    mockFileRepo = container.getFileRepository() as MockFileRepository;
     // FilePathMapServiceは具体的なnovelRootPathが必要なので、テストごとに個別作成
   });
 

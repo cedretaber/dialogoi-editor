@@ -2,17 +2,18 @@ import { suite, test, beforeEach } from 'mocha';
 import * as assert from 'assert';
 import * as path from 'path';
 import { DialogoiYamlService } from './DialogoiYamlService.js';
+import { DialogoiYamlServiceImpl } from './DialogoiYamlServiceImpl.js';
 import { MockFileRepository } from '../repositories/MockFileRepository.js';
 import { TestServiceContainer } from '../di/TestServiceContainer.js';
 
-suite('DialogoiYamlService テストスイート', () => {
+suite('DialogoiYamlServiceImpl テストスイート', () => {
   let service: DialogoiYamlService;
   let mockFileRepository: MockFileRepository;
 
   beforeEach(() => {
     const container = TestServiceContainer.create();
     mockFileRepository = container.getFileRepository() as MockFileRepository;
-    service = new DialogoiYamlService(mockFileRepository);
+    service = new DialogoiYamlServiceImpl(mockFileRepository);
   });
 
   suite('getDialogoiYamlPath', () => {

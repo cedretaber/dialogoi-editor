@@ -11,7 +11,7 @@ suite('DropHandlerService テストスイート', () => {
 
   setup(() => {
     container = TestServiceContainer.create();
-    mockFileRepository = container.getMockFileRepository();
+    mockFileRepository = container.getFileRepository() as MockFileRepository;
     dropHandlerService = container.getDropHandlerService();
   });
 
