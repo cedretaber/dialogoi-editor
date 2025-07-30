@@ -64,7 +64,7 @@ files:
     hash: hash1
     tags: []
     references: ["settings/character1.md"]
-    comments: ""
+    comments: ".chapter1.md.comments.yaml"
     isUntracked: false
     isMissing: false
   - name: chapter2.md
@@ -73,7 +73,7 @@ files:
     hash: hash2
     tags: []
     references: []
-    comments: ""
+    comments: ".chapter2.md.comments.yaml"
     isUntracked: false
     isMissing: false
   - name: sub1
@@ -146,15 +146,15 @@ files:
     );
 
     expect(result.success).toBe(true);
-    expect(result.updatedFiles.length).toBe(2); // chapter1.md, chapter2.md
+    expect(result.updatedFiles.length).toBe(3); // chapter1.md, chapter2.md, .dialogoi-meta.yaml
 
     // chapter1.mdの内容確認
     const chapter1Path = path.join(testProjectRoot, 'contents', 'chapter1.md');
     const chapter1Uri = mockFileRepository.createFileUri(chapter1Path);
     const chapter1Content = await mockFileRepository.readFileAsync(chapter1Uri, 'utf8');
 
-    expect(chapter1Content.includes('../settings/character1_renamed.md')).toBeTruthy();
-    expect(!chapter1Content.includes('../settings/character1.md')).toBeTruthy();
+    expect(chapter1Content.includes('settings/character1_renamed.md')).toBeTruthy();
+    expect(!chapter1Content.includes('settings/character1.md')).toBeTruthy();
     // 外部リンクは変更されない
     expect(chapter1Content.includes('https://example.com')).toBeTruthy();
 
@@ -163,7 +163,7 @@ files:
     const chapter2Uri = mockFileRepository.createFileUri(chapter2Path);
     const chapter2Content = await mockFileRepository.readFileAsync(chapter2Uri, 'utf8');
 
-    expect(chapter2Content.includes('../settings/character1_renamed.md')).toBeTruthy();
+    expect(chapter2Content.includes('settings/character1_renamed.md')).toBeTruthy();
   });
 
   it('meta.yamlファイルのreferences更新', async () => {
@@ -204,7 +204,7 @@ files:
 
     // chapter1.mdの内容確認（複数のリンクが全て更新される）
     const updatedContent = await mockFileRepository.readFileAsync(chapter1Uri, 'utf8');
-    const character1Links = (updatedContent.match(/\.\.\/settings\/heroes\/character1\.md/g) || [])
+    const character1Links = (updatedContent.match(/settings\/heroes\/character1\.md/g) || [])
       .length;
     expect(character1Links).toBe(2); // 2箇所のリンクが更新されている
 
@@ -235,7 +235,7 @@ files:
     const updatedContent = await mockFileRepository.readFileAsync(testFileUri, 'utf8');
 
     // 内部リンクのみ更新される
-    expect(updatedContent.includes('../settings/character1_new.md')).toBeTruthy();
+    expect(updatedContent.includes('settings/character1_new.md')).toBeTruthy();
     // 外部リンクは変更されない
     expect(updatedContent.includes('https://example.com/character1.md')).toBeTruthy();
     expect(updatedContent.includes('/absolute/path/character1.md')).toBeTruthy();
@@ -288,19 +288,16 @@ files:
     const updatedContent = await mockFileRepository.readFileAsync(testUri, 'utf8');
 
     // 各パターンが正しく更新されているかチェック
-    expect(updatedContent.includes('[通常リンク](../settings/new_character1.md)).toBeTruthy()'));
+    expect(updatedContent.includes('[通常リンク](settings/new_character1.md)')).toBeTruthy();
     expect(
-      updatedContent.includes(
-        '[タイトル付きリンク](../settings/new_character1.md "キャラクター1の説明").toBeTruthy()',
-      ),
-    );
-    expect(updatedContent.includes('[空テキスト](../settings/new_character1.md)).toBeTruthy()'));
+      updatedContent.includes('[タイトル付きリンク](settings/new_character1.md)'),
+    ).toBeTruthy();
+    expect(updatedContent.includes('[空テキスト](settings/new_character1.md)')).toBeTruthy();
+    // 特殊文字#含むリンクは更新されない（フラグメント付きのため）
     expect(
-      updatedContent.includes(
-        '[特殊文字#含む](../settings/new_character1.md#section)).toBeTruthy()',
-      ),
-    );
-    expect(updatedContent.includes('[  空白あり  ](../settings/new_character1.md)).toBeTruthy()'));
+      updatedContent.includes('[特殊文字#含む](../settings/character1.md#section)'),
+    ).toBeTruthy();
+    expect(updatedContent.includes('[  空白あり  ](settings/new_character1.md)')).toBeTruthy();
   });
 
   it('パフォーマンステスト（大量ファイル）', async () => {

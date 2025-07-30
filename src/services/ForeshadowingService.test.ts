@@ -3,7 +3,7 @@ import { ForeshadowingService, ForeshadowingData } from './ForeshadowingService.
 import { MockFileRepository } from '../repositories/MockFileRepository.js';
 import { MetaYamlService } from './MetaYamlService.js';
 import { MockMetaYamlService } from '../repositories/MockMetaYamlService.js';
-import { isForeshadowingItem } from '../utils/MetaYamlUtils.js';
+import { isForeshadowingItem, MetaYamlUtils } from '../utils/MetaYamlUtils.js';
 
 describe('ForeshadowingService', () => {
   let mockFileRepository: MockFileRepository;
@@ -281,6 +281,12 @@ files:
         location: ""
         comment: ""`;
       mockFileRepository.addFile(metaYamlPath, metaYamlContent);
+
+      // YAMLをパースしてMockMetaYamlServiceに設定
+      const parsedMeta = MetaYamlUtils.parseMetaYaml(metaYamlContent);
+      if (parsedMeta) {
+        (metaYamlService as MockMetaYamlService).setMetaYaml(novelRootAbsolutePath, parsedMeta);
+      }
     });
 
     it('addPlant - 植込み位置を正常に追加', async () => {

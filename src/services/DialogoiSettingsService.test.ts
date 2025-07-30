@@ -22,7 +22,7 @@ describe('DialogoiSettingsService テストスイート', () => {
       // 検証
       expect(result).toBe(true);
 
-      const currentExclude = mockRepository.get<{ [key: string]: boolean }>('files.exclude');
+      const currentExclude = mockRepository.get<{ [key: string]: boolean }>('files', 'exclude');
       expect(currentExclude?.['**/dialogoi.yaml']).toBe(true);
       expect(currentExclude?.['**/.dialogoi-meta.yaml']).toBe(true);
       expect(currentExclude?.['**/.dialogoi-reviews/**']).toBe(true);
@@ -42,7 +42,7 @@ describe('DialogoiSettingsService テストスイート', () => {
       // 検証
       expect(result).toBe(true);
 
-      const currentExclude = mockRepository.get<{ [key: string]: boolean }>('files.exclude');
+      const currentExclude = mockRepository.get<{ [key: string]: boolean }>('files', 'exclude');
       // 既存設定が保持されている
       expect(currentExclude?.['node_modules']).toBe(true);
       expect(currentExclude?.['dist']).toBe(true);
@@ -70,7 +70,7 @@ describe('DialogoiSettingsService テストスイート', () => {
       // 検証
       expect(result).toBe(true);
 
-      const currentExclude = mockRepository.get<{ [key: string]: boolean }>('files.exclude');
+      const currentExclude = mockRepository.get<{ [key: string]: boolean }>('files', 'exclude');
       // 既存設定が保持されている
       expect(currentExclude?.['node_modules']).toBe(true);
       // Dialogoi関連パターンが削除されている
