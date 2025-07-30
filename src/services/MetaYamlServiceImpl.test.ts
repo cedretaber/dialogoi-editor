@@ -1,24 +1,118 @@
+import { mock, MockProxy } from 'jest-mock-extended';
 import { MetaYamlServiceImpl } from './MetaYamlServiceImpl.js';
 import { MetaYaml } from '../utils/MetaYamlUtils.js';
-import { TestServiceContainer } from '../di/TestServiceContainer.js';
-import { MockFileRepository } from '../repositories/MockFileRepository.js';
+import { FileRepository } from '../repositories/FileRepository.js';
+import { Uri } from '../interfaces/Uri.js';
 import { createContentItem, createSubdirectoryItem } from '../test/testHelpers.js';
 
 describe('MetaYamlServiceImpl テストスイート', () => {
   let service: MetaYamlServiceImpl;
-  let mockFileRepository: MockFileRepository;
-  let testContainer: TestServiceContainer;
+  let mockFileRepository: MockProxy<FileRepository>;
+  let fileSystem: Map<string, string>;
+  let directories: Set<string>;
 
   beforeEach(() => {
-    testContainer = TestServiceContainer.create();
-    mockFileRepository = testContainer.getFileRepository() as MockFileRepository;
-    service = testContainer.getMetaYamlService() as MetaYamlServiceImpl;
+    jest.clearAllMocks();
+    
+    // ファイルシステムの初期化
+    fileSystem = new Map<string, string>();
+    directories = new Set<string>();
+    
+    // jest-mock-extendedでモック作成
+    mockFileRepository = mock<FileRepository>();
+    
+    // サービスインスタンス作成
+    service = new MetaYamlServiceImpl(mockFileRepository);
+    
+    // ファイルシステムモックの設定
+    setupFileSystemMocks();
   });
-
-  afterEach(() => {
-    mockFileRepository.reset();
-    testContainer.cleanup();
-  });
+  
+  function setupFileSystemMocks(): void {
+    // createFileUriのモック
+    mockFileRepository.createFileUri.mockImplementation((filePath: string) => {
+      return { path: filePath } as Uri;
+    });
+    
+    // existsAsyncのモック
+    mockFileRepository.existsAsync.mockImplementation(async (uri: Uri) => {
+      return fileSystem.has(uri.path) || directories.has(uri.path);
+    });
+    
+    // readFileAsyncのモック
+    mockFileRepository.readFileAsync.mockImplementation(async (uri: Uri, _encoding?: any): Promise<any> => {
+      const content = fileSystem.get(uri.path);
+      if (!content) throw new Error(`File not found: ${uri.path}`);
+      return content;
+    });
+    
+    // writeFileAsyncのモック
+    mockFileRepository.writeFileAsync.mockImplementation(async (uri: Uri, data: string | Uint8Array) => {
+      const content = typeof data === 'string' ? data : new TextDecoder().decode(data);
+      fileSystem.set(uri.path, content);
+    });
+    
+    // createDirectoryAsyncのモック
+    mockFileRepository.createDirectoryAsync.mockImplementation(async (uri: Uri) => {
+      directories.add(uri.path);
+    });
+    
+    // readdirAsyncのモック
+    mockFileRepository.readdirAsync.mockImplementation(async (uri: Uri) => {
+      const dirPath = uri.path;
+      if (!directories.has(dirPath)) {
+        throw new Error(`Directory not found: ${dirPath}`);
+      }
+      
+      // ディレクトリ内のファイルとサブディレクトリを返す
+      const entries: any[] = [];
+      const dirPrefix = dirPath.endsWith('/') ? dirPath : dirPath + '/';
+      
+      // ファイルを検索
+      for (const [filePath] of fileSystem) {
+        if (filePath.startsWith(dirPrefix) && !filePath.slice(dirPrefix.length).includes('/')) {
+          const name = filePath.slice(dirPrefix.length);
+          entries.push({
+            name,
+            isFile: () => true,
+            isDirectory: () => false
+          });
+        }
+      }
+      
+      // サブディレクトリを検索
+      for (const dir of directories) {
+        if (dir.startsWith(dirPrefix) && dir !== dirPath) {
+          const remaining = dir.slice(dirPrefix.length);
+          const firstSlash = remaining.indexOf('/');
+          const name = firstSlash === -1 ? remaining : remaining.slice(0, firstSlash);
+          if (!entries.some(e => e.name === name)) {
+            entries.push({
+              name,
+              isFile: () => false,
+              isDirectory: () => true
+            });
+          }
+        }
+      }
+      
+      return entries;
+    });
+    
+    // createDirectoryUriのモック
+    mockFileRepository.createDirectoryUri.mockImplementation((dirPath: string) => {
+      return { path: dirPath } as Uri;
+    });
+  }
+  
+  // テスト用ヘルパー関数
+  function addFile(filePath: string, content: string): void {
+    fileSystem.set(filePath, content);
+  }
+  
+  function addDirectory(dirPath: string): void {
+    directories.add(dirPath);
+  }
 
   describe('loadMetaYamlAsync', () => {
     it('正常な.dialogoi-meta.yamlファイルを読み込む', async () => {
@@ -54,8 +148,8 @@ files:
     isUntracked: ${subdirItem.isUntracked}
     isMissing: ${subdirItem.isMissing}`;
 
-      mockFileRepository.addDirectory(testDir);
-      mockFileRepository.addFile(`${testDir}/.dialogoi-meta.yaml`, metaContent);
+      addDirectory(testDir);
+      addFile(`${testDir}/.dialogoi-meta.yaml`, metaContent);
 
       const result = await service.loadMetaYamlAsync(testDir);
 
@@ -76,7 +170,7 @@ files:
 
     it('.dialogoi-meta.yamlファイルが存在しない場合nullを返す', async () => {
       const testDir = '/test/project';
-      mockFileRepository.addDirectory(testDir);
+      addDirectory(testDir);
 
       const result = await service.loadMetaYamlAsync(testDir);
       expect(result).toBe(null);
@@ -97,8 +191,8 @@ files:
     isMissing: false
   - invalid: yaml: content`;
 
-      mockFileRepository.addDirectory(testDir);
-      mockFileRepository.addFile(`${testDir}/.dialogoi-meta.yaml`, invalidYaml);
+      addDirectory(testDir);
+      addFile(`${testDir}/.dialogoi-meta.yaml`, invalidYaml);
 
       const result = await service.loadMetaYamlAsync(testDir);
       expect(result).toBe(null);
@@ -106,8 +200,8 @@ files:
 
     it('空の.dialogoi-meta.yamlファイルの場合nullを返す', async () => {
       const testDir = '/test/project';
-      mockFileRepository.addDirectory(testDir);
-      mockFileRepository.addFile(`${testDir}/.dialogoi-meta.yaml`, '');
+      addDirectory(testDir);
+      addFile(`${testDir}/.dialogoi-meta.yaml`, '');
 
       const result = await service.loadMetaYamlAsync(testDir);
       expect(result).toBe(null);
@@ -117,8 +211,8 @@ files:
       const testDir = '/test/project';
       const metaContent = `files: []`;
 
-      mockFileRepository.addDirectory(testDir);
-      mockFileRepository.addFile(`${testDir}/.dialogoi-meta.yaml`, metaContent);
+      addDirectory(testDir);
+      addFile(`${testDir}/.dialogoi-meta.yaml`, metaContent);
 
       const result = await service.loadMetaYamlAsync(testDir);
 
@@ -155,7 +249,7 @@ files:
         ],
       };
 
-      mockFileRepository.addDirectory(testDir);
+      addDirectory(testDir);
 
       const result = await service.saveMetaYamlAsync(testDir, meta);
       expect(result).toBe(true);
@@ -179,7 +273,7 @@ files:
         files: [],
       };
 
-      mockFileRepository.addDirectory(testDir);
+      addDirectory(testDir);
 
       const result = await service.saveMetaYamlAsync(testDir, meta);
       expect(result).toBe(true);
@@ -205,7 +299,7 @@ files:
         ],
       };
 
-      mockFileRepository.addDirectory(testDir);
+      addDirectory(testDir);
 
       const result = await service.saveMetaYamlAsync(testDir, meta);
       expect(result).toBe(true);
@@ -232,7 +326,7 @@ files:
         ],
       } as MetaYaml;
 
-      mockFileRepository.addDirectory(testDir);
+      addDirectory(testDir);
 
       const result = await service.saveMetaYamlAsync(testDir, invalidMeta);
       expect(result).toBe(false);
@@ -259,7 +353,7 @@ files:
         ],
       } as unknown as MetaYaml;
 
-      mockFileRepository.addDirectory(testDir);
+      addDirectory(testDir);
 
       const result = await service.saveMetaYamlAsync(testDir, invalidMeta);
       expect(result).toBe(false);
@@ -272,9 +366,9 @@ files:
       const metaContent = `readme: README.md
 files: []`;
 
-      mockFileRepository.addDirectory(testDir);
-      mockFileRepository.addFile(`${testDir}/.dialogoi-meta.yaml`, metaContent);
-      mockFileRepository.addFile(`${testDir}/README.md`, '# Test Project');
+      addDirectory(testDir);
+      addFile(`${testDir}/.dialogoi-meta.yaml`, metaContent);
+      addFile(`${testDir}/README.md`, '# Test Project');
 
       const result = await service.getReadmeFilePathAsync(testDir);
       expect(result).toBe(`${testDir}/README.md`);
@@ -285,8 +379,8 @@ files: []`;
       const metaContent = `readme: README.md
 files: []`;
 
-      mockFileRepository.addDirectory(testDir);
-      mockFileRepository.addFile(`${testDir}/.dialogoi-meta.yaml`, metaContent);
+      addDirectory(testDir);
+      addFile(`${testDir}/.dialogoi-meta.yaml`, metaContent);
       // README.mdファイルは作成しない
 
       const result = await service.getReadmeFilePathAsync(testDir);
@@ -297,8 +391,8 @@ files: []`;
       const testDir = '/test/project';
       const metaContent = `files: []`;
 
-      mockFileRepository.addDirectory(testDir);
-      mockFileRepository.addFile(`${testDir}/.dialogoi-meta.yaml`, metaContent);
+      addDirectory(testDir);
+      addFile(`${testDir}/.dialogoi-meta.yaml`, metaContent);
 
       const result = await service.getReadmeFilePathAsync(testDir);
       expect(result).toBe(null);
@@ -306,7 +400,7 @@ files: []`;
 
     it('.dialogoi-meta.yamlが存在しない場合nullを返す', async () => {
       const testDir = '/test/project';
-      mockFileRepository.addDirectory(testDir);
+      addDirectory(testDir);
 
       const result = await service.getReadmeFilePathAsync(testDir);
       expect(result).toBe(null);
@@ -317,10 +411,10 @@ files: []`;
       const metaContent = `readme: docs/README.md
 files: []`;
 
-      mockFileRepository.addDirectory(testDir);
-      mockFileRepository.addDirectory(`${testDir}/docs`);
-      mockFileRepository.addFile(`${testDir}/.dialogoi-meta.yaml`, metaContent);
-      mockFileRepository.addFile(`${testDir}/docs/README.md`, '# Test Project');
+      addDirectory(testDir);
+      addDirectory(`${testDir}/docs`);
+      addFile(`${testDir}/.dialogoi-meta.yaml`, metaContent);
+      addFile(`${testDir}/docs/README.md`, '# Test Project');
 
       const result = await service.getReadmeFilePathAsync(testDir);
       expect(result).toBe(`${testDir}/docs/README.md`);
@@ -332,9 +426,9 @@ files: []`;
       const workspaceRoot = '/test/workspace';
       const novelRoot = '/test/workspace/novel';
 
-      mockFileRepository.addDirectory(workspaceRoot);
-      mockFileRepository.addDirectory(novelRoot);
-      mockFileRepository.addFile(`${novelRoot}/dialogoi.yaml`, 'version: 1.0');
+      addDirectory(workspaceRoot);
+      addDirectory(novelRoot);
+      addFile(`${novelRoot}/dialogoi.yaml`, 'version: 1.0');
 
       const result = await service.findNovelRootAsync(workspaceRoot);
       expect(result).toBe(novelRoot);
@@ -344,11 +438,11 @@ files: []`;
       const workspaceRoot = '/test/workspace';
       const novelRoot = '/test/workspace/projects/novel/src';
 
-      mockFileRepository.addDirectory(workspaceRoot);
-      mockFileRepository.addDirectory(`${workspaceRoot}/projects`);
-      mockFileRepository.addDirectory(`${workspaceRoot}/projects/novel`);
-      mockFileRepository.addDirectory(novelRoot);
-      mockFileRepository.addFile(`${novelRoot}/dialogoi.yaml`, 'version: 1.0');
+      addDirectory(workspaceRoot);
+      addDirectory(`${workspaceRoot}/projects`);
+      addDirectory(`${workspaceRoot}/projects/novel`);
+      addDirectory(novelRoot);
+      addFile(`${novelRoot}/dialogoi.yaml`, 'version: 1.0');
 
       const result = await service.findNovelRootAsync(workspaceRoot);
       expect(result).toBe(novelRoot);
@@ -359,11 +453,11 @@ files: []`;
       const novelRoot1 = '/test/workspace/project1';
       const novelRoot2 = '/test/workspace/project2';
 
-      mockFileRepository.addDirectory(workspaceRoot);
-      mockFileRepository.addDirectory(novelRoot1);
-      mockFileRepository.addDirectory(novelRoot2);
-      mockFileRepository.addFile(`${novelRoot1}/dialogoi.yaml`, 'version: 1.0');
-      mockFileRepository.addFile(`${novelRoot2}/dialogoi.yaml`, 'version: 1.0');
+      addDirectory(workspaceRoot);
+      addDirectory(novelRoot1);
+      addDirectory(novelRoot2);
+      addFile(`${novelRoot1}/dialogoi.yaml`, 'version: 1.0');
+      addFile(`${novelRoot2}/dialogoi.yaml`, 'version: 1.0');
 
       const result = await service.findNovelRootAsync(workspaceRoot);
       // どちらか一方が返されることを確認（実装に依存）
@@ -372,9 +466,9 @@ files: []`;
 
     it('dialogoi.yamlが存在しない場合nullを返す', async () => {
       const workspaceRoot = '/test/workspace';
-      mockFileRepository.addDirectory(workspaceRoot);
-      mockFileRepository.addDirectory(`${workspaceRoot}/project1`);
-      mockFileRepository.addDirectory(`${workspaceRoot}/project2`);
+      addDirectory(workspaceRoot);
+      addDirectory(`${workspaceRoot}/project1`);
+      addDirectory(`${workspaceRoot}/project2`);
 
       const result = await service.findNovelRootAsync(workspaceRoot);
       expect(result).toBe(null);
@@ -382,8 +476,8 @@ files: []`;
 
     it('ワークスペースルート自体にdialogoiプロジェクトがある場合', async () => {
       const workspaceRoot = '/test/workspace';
-      mockFileRepository.addDirectory(workspaceRoot);
-      mockFileRepository.addFile(`${workspaceRoot}/dialogoi.yaml`, 'version: 1.0');
+      addDirectory(workspaceRoot);
+      addFile(`${workspaceRoot}/dialogoi.yaml`, 'version: 1.0');
 
       const result = await service.findNovelRootAsync(workspaceRoot);
       expect(result).toBe(workspaceRoot);
@@ -391,7 +485,7 @@ files: []`;
 
     it('空のディレクトリの場合nullを返す', async () => {
       const workspaceRoot = '/test/workspace';
-      mockFileRepository.addDirectory(workspaceRoot);
+      addDirectory(workspaceRoot);
 
       const result = await service.findNovelRootAsync(workspaceRoot);
       expect(result).toBe(null);
@@ -418,7 +512,7 @@ files: []`;
         ],
       };
 
-      mockFileRepository.addDirectory(testDir);
+      addDirectory(testDir);
 
       // 保存 -> 読み込み -> 保存 -> 読み込み
       const saveResult1 = await service.saveMetaYamlAsync(testDir, meta);
@@ -461,7 +555,7 @@ files: []`;
         ],
       };
 
-      mockFileRepository.addDirectory(testDir);
+      addDirectory(testDir);
       await service.saveMetaYamlAsync(testDir, meta);
 
       // タグを更新
@@ -503,7 +597,7 @@ files: []`;
         ],
       };
 
-      mockFileRepository.addDirectory(testDir);
+      addDirectory(testDir);
       await service.saveMetaYamlAsync(testDir, meta);
 
       // タグを空にする
@@ -544,7 +638,7 @@ files: []`;
         ],
       };
 
-      mockFileRepository.addDirectory(testDir);
+      addDirectory(testDir);
       await service.saveMetaYamlAsync(testDir, meta);
 
       // 新しいタグを追加
@@ -585,7 +679,7 @@ files: []`;
         ],
       };
 
-      mockFileRepository.addDirectory(testDir);
+      addDirectory(testDir);
       await service.saveMetaYamlAsync(testDir, meta);
 
       // 既存のタグを追加
@@ -626,7 +720,7 @@ files: []`;
         ],
       };
 
-      mockFileRepository.addDirectory(testDir);
+      addDirectory(testDir);
       await service.saveMetaYamlAsync(testDir, meta);
 
       // 新しいタグを追加
@@ -667,7 +761,7 @@ files: []`;
         ],
       };
 
-      mockFileRepository.addDirectory(testDir);
+      addDirectory(testDir);
       await service.saveMetaYamlAsync(testDir, meta);
 
       // タグを削除
@@ -708,7 +802,7 @@ files: []`;
         ],
       };
 
-      mockFileRepository.addDirectory(testDir);
+      addDirectory(testDir);
       await service.saveMetaYamlAsync(testDir, meta);
 
       // 最後のタグを削除
@@ -749,7 +843,7 @@ files: []`;
         ],
       };
 
-      mockFileRepository.addDirectory(testDir);
+      addDirectory(testDir);
       await service.saveMetaYamlAsync(testDir, meta);
 
       // 存在しないタグを削除
@@ -774,7 +868,7 @@ files: []`;
       const testDir = '/test/project';
       const fileName = 'chapter1.txt';
 
-      mockFileRepository.addDirectory(testDir);
+      addDirectory(testDir);
 
       const updateResult = await service.updateFileTags(testDir, fileName, ['タグ']);
       expect(updateResult).toBe(false);
@@ -806,7 +900,7 @@ files: []`;
         ],
       };
 
-      mockFileRepository.addDirectory(testDir);
+      addDirectory(testDir);
       await service.saveMetaYamlAsync(testDir, meta);
 
       const updateResult = await service.updateFileTags(testDir, fileName, ['タグ']);
@@ -862,7 +956,7 @@ files: []`;
         ],
       };
 
-      mockFileRepository.addDirectory(testDir);
+      addDirectory(testDir);
       await service.saveMetaYamlAsync(testDir, meta);
 
       // file1.txt（インデックス0）をインデックス2に移動
@@ -931,8 +1025,8 @@ files: []`;
         ],
       };
 
-      mockFileRepository.addDirectory(sourceDir);
-      mockFileRepository.addDirectory(targetDir);
+      addDirectory(sourceDir);
+      addDirectory(targetDir);
       await service.saveMetaYamlAsync(sourceDir, sourceMeta);
       await service.saveMetaYamlAsync(targetDir, targetMeta);
 
@@ -980,7 +1074,7 @@ files: []`;
         ],
       };
 
-      mockFileRepository.addDirectory(testDir);
+      addDirectory(testDir);
       await service.saveMetaYamlAsync(testDir, meta);
 
       // 同じディレクトリ内で同名ファイルを移動（重複だがエラーにならない）

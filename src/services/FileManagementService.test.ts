@@ -1,22 +1,43 @@
+import { mock, MockProxy } from 'jest-mock-extended';
 import { FileManagementService } from './FileManagementService.js';
 import { ForeshadowingData } from './ForeshadowingService.js';
-import { TestServiceContainer } from '../di/TestServiceContainer.js';
-import { MockFileRepository } from '../repositories/MockFileRepository.js';
+import { FileRepository } from '../repositories/FileRepository.js';
+import { MetaYamlService } from './MetaYamlService.js';
+import { Uri } from '../interfaces/Uri.js';
+import { MetaYaml } from '../utils/MetaYamlUtils.js';
+import * as yaml from 'js-yaml';
 
 describe('FileManagementService テストスイート', () => {
   let fileManagementService: FileManagementService;
-  let mockFileRepository: MockFileRepository;
+  let mockFileRepository: MockProxy<FileRepository>;
+  let mockMetaYamlService: MockProxy<MetaYamlService>;
+  let fileSystem: Map<string, string>;
+  let directories: Set<string>;
 
   beforeEach(async () => {
-    const container = TestServiceContainer.create();
-    mockFileRepository = container.getFileRepository() as MockFileRepository;
-    fileManagementService = container.getFileManagementService();
+    // モックをリセット
+    jest.clearAllMocks();
+    
+    // ファイルシステムの初期化
+    fileSystem = new Map<string, string>();
+    directories = new Set<string>();
+    
+    // jest-mock-extendedでモック作成
+    mockFileRepository = mock<FileRepository>();
+    mockMetaYamlService = mock<MetaYamlService>();
+    
+    // サービスインスタンス作成
+    fileManagementService = new FileManagementService(
+      mockFileRepository,
+      mockMetaYamlService
+    );
+    
+    // ファイルシステムモックの設定
+    setupFileSystemMocks();
 
     // テスト用ディレクトリ構造の準備
-    mockFileRepository.createDirectoryForTest('/test');
-    await mockFileRepository.writeFileAsync(
-      mockFileRepository.createFileUri('/test/.dialogoi-meta.yaml'),
-      `readme: README.md
+    addDirectory('/test');
+    addFile('/test/.dialogoi-meta.yaml', `readme: README.md
 files:
   - name: character.txt
     type: setting
@@ -51,17 +72,71 @@ files:
     comments: '.plain.txt.comments.yaml'
     isUntracked: false
     isMissing: false
-`,
-    );
+`);
   });
+  
+  function setupFileSystemMocks(): void {
+    // createFileUriのモック
+    mockFileRepository.createFileUri.mockImplementation((filePath: string) => {
+      return { path: filePath } as Uri;
+    });
+    
+    // createDirectoryUriのモック
+    mockFileRepository.createDirectoryUri.mockImplementation((dirPath: string) => {
+      return { path: dirPath } as Uri;
+    });
+    
+    // existsAsyncのモック
+    mockFileRepository.existsAsync.mockImplementation(async (uri: Uri) => {
+      return fileSystem.has(uri.path) || directories.has(uri.path);
+    });
+    
+    // readFileAsyncのモック
+    mockFileRepository.readFileAsync.mockImplementation(async (uri: Uri, _encoding?: any): Promise<any> => {
+      const content = fileSystem.get(uri.path);
+      if (!content) throw new Error(`File not found: ${uri.path}`);
+      return content;
+    });
+    
+    // writeFileAsyncのモック
+    mockFileRepository.writeFileAsync.mockImplementation(async (uri: Uri, data: string | Uint8Array) => {
+      const content = typeof data === 'string' ? data : new TextDecoder().decode(data);
+      fileSystem.set(uri.path, content);
+    });
+    
+    // MetaYamlServiceのモック設定
+    mockMetaYamlService.loadMetaYamlAsync.mockImplementation(async (absolutePath: string) => {
+      const metaPath = absolutePath + '/.dialogoi-meta.yaml';
+      const content = fileSystem.get(metaPath);
+      if (!content) return null;
+      try {
+        return yaml.load(content) as MetaYaml;
+      } catch {
+        return null;
+      }
+    });
+    
+    mockMetaYamlService.saveMetaYamlAsync.mockImplementation(async (absolutePath: string, metaData: MetaYaml) => {
+      const metaPath = absolutePath + '/.dialogoi-meta.yaml';
+      const yamlContent = yaml.dump(metaData);
+      fileSystem.set(metaPath, yamlContent);
+      return true;
+    });
+  }
+  
+  // テスト用ヘルパー関数
+  function addFile(filePath: string, content: string): void {
+    fileSystem.set(filePath, content);
+  }
+  
+  function addDirectory(dirPath: string): void {
+    directories.add(dirPath);
+  }
 
   describe('既存機能テスト', () => {
     it('管理対象外ファイルを管理対象に追加できる', async () => {
       // 新しいファイルを作成
-      await mockFileRepository.writeFileAsync(
-        mockFileRepository.createFileUri('/test/new-file.txt'),
-        'New content',
-      );
+      addFile('/test/new-file.txt', 'New content');
 
       const result = await fileManagementService.addFileToManagement(
         '/test/new-file.txt',
@@ -72,11 +147,8 @@ files:
       expect(result.message.includes('管理対象に追加しました')).toBeTruthy();
 
       // メタデータが更新されているか確認
-      const metaContent = await mockFileRepository.readFileAsync(
-        mockFileRepository.createFileUri('/test/.dialogoi-meta.yaml'),
-        'utf8',
-      );
-      expect(metaContent.includes('new-file.txt')).toBeTruthy();
+      const metaContent = fileSystem.get('/test/.dialogoi-meta.yaml');
+      expect(metaContent?.includes('new-file.txt')).toBeTruthy();
     });
 
     it('存在しないファイルの追加はエラー', async () => {
@@ -96,11 +168,8 @@ files:
       expect(result.message.includes('管理対象から削除しました')).toBeTruthy();
 
       // メタデータから削除されているか確認
-      const metaContent = await mockFileRepository.readFileAsync(
-        mockFileRepository.createFileUri('/test/.dialogoi-meta.yaml'),
-        'utf8',
-      );
-      expect(metaContent.includes('plain.txt')).toBeFalsy();
+      const metaContent = fileSystem.get('/test/.dialogoi-meta.yaml');
+      expect(metaContent?.includes('plain.txt')).toBeFalsy();
     });
 
     it('欠損ファイルを作成できる', async () => {
@@ -113,10 +182,7 @@ files:
       expect(result.message.includes('ファイルを作成しました')).toBeTruthy();
 
       // ファイルが作成されているか確認
-      const fileContent = await mockFileRepository.readFileAsync(
-        mockFileRepository.createFileUri('/test/missing.txt'),
-        'utf8',
-      );
+      const fileContent = fileSystem.get('/test/missing.txt');
       expect(fileContent).toBe('Test content');
     });
   });
@@ -134,11 +200,8 @@ files:
       expect(result.updatedItems).toBeTruthy();
 
       // メタデータが更新されているか確認
-      const metaContent = await mockFileRepository.readFileAsync(
-        mockFileRepository.createFileUri('/test/.dialogoi-meta.yaml'),
-        'utf8',
-      );
-      expect(metaContent.includes('importance: main')).toBeTruthy();
+      const metaContent = fileSystem.get('/test/.dialogoi-meta.yaml');
+      expect(metaContent?.includes('importance: main')).toBeTruthy();
     });
 
     it('存在しないファイルにキャラクター重要度を設定するとエラー', async () => {
@@ -166,11 +229,8 @@ files:
       expect(result.updatedItems).toBeTruthy();
 
       // メタデータが更新されているか確認
-      const metaContent = await mockFileRepository.readFileAsync(
-        mockFileRepository.createFileUri('/test/.dialogoi-meta.yaml'),
-        'utf8',
-      );
-      expect(metaContent.includes('multiple_characters: true')).toBeTruthy();
+      const metaContent = fileSystem.get('/test/.dialogoi-meta.yaml');
+      expect(metaContent?.includes('multiple_characters: true')).toBeTruthy();
     });
 
     it('新規ファイルに複数キャラクターフラグを設定できる', async () => {
@@ -182,12 +242,9 @@ files:
       ).toBeTruthy();
 
       // メタデータが更新されているか確認
-      const metaContent = await mockFileRepository.readFileAsync(
-        mockFileRepository.createFileUri('/test/.dialogoi-meta.yaml'),
-        'utf8',
-      );
-      expect(metaContent.includes('importance: sub')).toBeTruthy();
-      expect(metaContent.includes('multiple_characters: false')).toBeTruthy();
+      const metaContent = fileSystem.get('/test/.dialogoi-meta.yaml');
+      expect(metaContent?.includes('importance: sub')).toBeTruthy();
+      expect(metaContent?.includes('multiple_characters: false')).toBeTruthy();
     });
 
     it('キャラクター設定を削除できる', async () => {
@@ -202,11 +259,8 @@ files:
       expect(result.updatedItems).toBeTruthy();
 
       // メタデータからキャラクター設定が削除されているか確認
-      const metaContent = await mockFileRepository.readFileAsync(
-        mockFileRepository.createFileUri('/test/.dialogoi-meta.yaml'),
-        'utf8',
-      );
-      expect(metaContent.includes('character:')).toBeFalsy();
+      const metaContent = fileSystem.get('/test/.dialogoi-meta.yaml');
+      expect(metaContent?.includes('character:')).toBeFalsy();
     });
   });
 
@@ -236,13 +290,10 @@ files:
       expect(result.updatedItems).toBeTruthy();
 
       // メタデータが更新されているか確認
-      const metaContent = await mockFileRepository.readFileAsync(
-        mockFileRepository.createFileUri('/test/.dialogoi-meta.yaml'),
-        'utf8',
-      );
-      expect(metaContent.includes('foreshadowing:')).toBeTruthy();
-      expect(metaContent.includes('Plant 1')).toBeTruthy();
-      expect(metaContent.includes('Payoff')).toBeTruthy();
+      const metaContent = fileSystem.get('/test/.dialogoi-meta.yaml');
+      expect(metaContent?.includes('foreshadowing:')).toBeTruthy();
+      expect(metaContent?.includes('Plant 1')).toBeTruthy();
+      expect(metaContent?.includes('Payoff')).toBeTruthy();
     });
 
     it('存在しないファイルに伏線設定を設定するとエラー', async () => {
@@ -283,11 +334,8 @@ files:
       expect(result.updatedItems).toBeTruthy();
 
       // メタデータから伏線設定が削除されているか確認
-      const metaContent = await mockFileRepository.readFileAsync(
-        mockFileRepository.createFileUri('/test/.dialogoi-meta.yaml'),
-        'utf8',
-      );
-      expect(metaContent.includes('foreshadowing:')).toBeFalsy();
+      const metaContent = fileSystem.get('/test/.dialogoi-meta.yaml');
+      expect(metaContent?.includes('foreshadowing:')).toBeFalsy();
     });
   });
 
