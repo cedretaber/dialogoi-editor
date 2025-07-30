@@ -3,6 +3,7 @@ import typescriptEslint from '@typescript-eslint/eslint-plugin';
 import typescriptParser from '@typescript-eslint/parser';
 import reactPlugin from 'eslint-plugin-react';
 import reactHooksPlugin from 'eslint-plugin-react-hooks';
+import jestPlugin from 'eslint-plugin-jest';
 import globals from 'globals';
 
 export default [
@@ -105,13 +106,88 @@ export default [
       'curly': 'error'
     }
   },
-  // テストファイル用設定（Jest）
+  // srcテストファイル用設定（Jest）
   {
-    files: ['src/**/*.test.ts', 'webview/**/*.test.tsx'],
+    files: ['src/**/*.test.ts'],
     languageOptions: {
+      parser: typescriptParser,
+      parserOptions: {
+        ecmaVersion: 'latest',
+        sourceType: 'module',
+        project: './tsconfig.json'
+      },
       globals: {
         ...globals.jest
       }
+    },
+    plugins: {
+      '@typescript-eslint': typescriptEslint,
+      'jest': jestPlugin
+    },
+    rules: {
+      ...eslint.configs.recommended.rules,
+      ...typescriptEslint.configs.recommended.rules,
+      ...typescriptEslint.configs['recommended-type-checked'].rules,
+      ...jestPlugin.configs.recommended.rules,
+      '@typescript-eslint/unbound-method': 'off',
+      'jest/unbound-method': 'error',
+      '@typescript-eslint/no-unused-vars': ['error', {
+        'vars': 'all',
+        'args': 'after-used',
+        'ignoreRestSiblings': true,
+        'argsIgnorePattern': '^_',
+        'varsIgnorePattern': '^_'
+      }],
+      '@typescript-eslint/explicit-function-return-type': 'error',
+      '@typescript-eslint/no-explicit-any': 'error',
+      '@typescript-eslint/no-non-null-assertion': 'error',
+      '@typescript-eslint/no-deprecated': 'off'
+    }
+  },
+  // webviewテストファイル用設定（Jest）
+  {
+    files: ['webview/**/*.test.tsx'],
+    languageOptions: {
+      parser: typescriptParser,
+      parserOptions: {
+        ecmaVersion: 'latest',
+        sourceType: 'module',
+        project: './webview/tsconfig.json',
+        ecmaFeatures: {
+          jsx: true
+        }
+      },
+      globals: {
+        ...globals.jest,
+        ...globals.browser
+      }
+    },
+    plugins: {
+      '@typescript-eslint': typescriptEslint,
+      'jest': jestPlugin,
+      'react': reactPlugin
+    },
+    rules: {
+      ...eslint.configs.recommended.rules,
+      ...typescriptEslint.configs.recommended.rules,
+      ...typescriptEslint.configs['recommended-type-checked'].rules,
+      ...jestPlugin.configs.recommended.rules,
+      ...reactPlugin.configs.recommended.rules,
+      '@typescript-eslint/unbound-method': 'off',
+      'jest/unbound-method': 'error',
+      '@typescript-eslint/no-unused-vars': ['error', {
+        'vars': 'all',
+        'args': 'after-used',
+        'ignoreRestSiblings': true,
+        'argsIgnorePattern': '^_',
+        'varsIgnorePattern': '^_'
+      }],
+      '@typescript-eslint/explicit-function-return-type': 'error',
+      '@typescript-eslint/no-explicit-any': 'error',
+      '@typescript-eslint/no-non-null-assertion': 'error',
+      '@typescript-eslint/no-deprecated': 'off',
+      'react/prop-types': 'off',
+      'react/react-in-jsx-scope': 'off'
     }
   }
 ];

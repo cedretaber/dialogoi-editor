@@ -1,25 +1,161 @@
+import { mock, MockProxy } from 'jest-mock-extended';
 import { CoreFileService } from './CoreFileService.js';
 import { CoreFileServiceImpl } from './CoreFileServiceImpl.js';
-import { TestServiceContainer } from '../di/TestServiceContainer.js';
-import { MockFileRepository } from '../repositories/MockFileRepository.js';
-import { MockProjectLinkUpdateService } from '../repositories/MockProjectLinkUpdateService.js';
+import { FileRepository } from '../repositories/FileRepository.js';
+import { MetaYamlService } from './MetaYamlService.js';
+import { ProjectLinkUpdateService } from './ProjectLinkUpdateService.js';
+import { Uri } from '../interfaces/Uri.js';
+import { MetaYaml } from '../utils/MetaYamlUtils.js';
+import * as yaml from 'js-yaml';
 
 describe('CoreFileService テストスイート', () => {
   let coreFileService: CoreFileService;
-  let mockFileRepository: MockFileRepository;
-  let mockLinkUpdateService: MockProjectLinkUpdateService;
-  let container: TestServiceContainer;
+  let mockFileRepository: MockProxy<FileRepository>;
+  let mockMetaYamlService: MockProxy<MetaYamlService>;
+  let mockLinkUpdateService: MockProxy<ProjectLinkUpdateService>;
+  let fileSystem: Map<string, string>;
+  let directories: Set<string>;
 
   beforeEach(async () => {
-    container = TestServiceContainer.create();
-    mockFileRepository = container.getFileRepository() as MockFileRepository;
-    mockLinkUpdateService = container.getMockProjectLinkUpdateService();
-    coreFileService = container.getCoreFileService();
+    // モックをリセット
+    jest.clearAllMocks();
+    
+    // ファイルシステムの初期化
+    fileSystem = new Map<string, string>();
+    directories = new Set<string>();
+    
+    // jest-mock-extendedで簡潔なモック作成
+    mockFileRepository = mock<FileRepository>();
+    mockMetaYamlService = mock<MetaYamlService>();
+    mockLinkUpdateService = mock<ProjectLinkUpdateService>();
+    
+    // ノベルルートパスの設定
+    const novelRootPath = '/test-novel-root';
+    
+    // CoreFileServiceインスタンスを作成
+    coreFileService = new CoreFileServiceImpl(
+      mockFileRepository,
+      mockMetaYamlService,
+      mockLinkUpdateService,
+      novelRootPath
+    );
+    
+    // readdirAsyncのモック追加
+    mockFileRepository.readdirAsync.mockImplementation(async (uri: Uri) => {
+      const dirPath = uri.path;
+      if (!directories.has(dirPath)) {
+        throw new Error(`Directory not found: ${dirPath}`);
+      }
+      
+      // ディレクトリ内のファイルとサブディレクトリを返す
+      const entries: any[] = [];
+      const dirPrefix = dirPath.endsWith('/') ? dirPath : dirPath + '/';
+      
+      // ファイルを検索
+      for (const [filePath] of fileSystem) {
+        if (filePath.startsWith(dirPrefix) && !filePath.slice(dirPrefix.length).includes('/')) {
+          const name = filePath.slice(dirPrefix.length);
+          entries.push({
+            name,
+            isFile: () => true,
+            isDirectory: () => false
+          });
+        }
+      }
+      
+      // サブディレクトリを検索
+      for (const dir of directories) {
+        if (dir.startsWith(dirPrefix) && dir !== dirPath) {
+          const remaining = dir.slice(dirPrefix.length);
+          const firstSlash = remaining.indexOf('/');
+          const name = firstSlash === -1 ? remaining : remaining.slice(0, firstSlash);
+          if (!entries.some(e => e.name === name)) {
+            entries.push({
+              name,
+              isFile: () => false,
+              isDirectory: () => true
+            });
+          }
+        }
+      }
+      
+      return entries;
+    });
 
+    // ファイルシステムのモック設定は既にbeforeEach内で初期化済み
+    
+    // createFileUriのモック
+    mockFileRepository.createFileUri.mockImplementation((filePath: string) => {
+      return { path: filePath } as Uri;
+    });
+    
+    // createDirectoryUriのモック
+    mockFileRepository.createDirectoryUri.mockImplementation((dirPath: string) => {
+      return { path: dirPath } as Uri;
+    });
+    
+    // existsAsyncのモック
+    mockFileRepository.existsAsync.mockImplementation(async (uri: Uri) => {
+      return fileSystem.has(uri.path) || directories.has(uri.path);
+    });
+    
+    // readFileAsyncのモック（文字列版）
+    mockFileRepository.readFileAsync.mockImplementation(async (uri: Uri, _encoding?: any): Promise<any> => {
+      const content = fileSystem.get(uri.path);
+      if (!content) throw new Error(`File not found: ${uri.path}`);
+      return content; // テストでは常に文字列を返す
+    });
+    
+    // writeFileAsyncのモック
+    mockFileRepository.writeFileAsync.mockImplementation(async (uri: Uri, data: string | Uint8Array) => {
+      const content = typeof data === 'string' ? data : new TextDecoder().decode(data);
+      fileSystem.set(uri.path, content);
+    });
+    
+    // unlinkAsyncのモック(ファイル削除)
+    mockFileRepository.unlinkAsync.mockImplementation(async (uri: Uri) => {
+      if (!fileSystem.has(uri.path)) throw new Error(`File not found: ${uri.path}`);
+      fileSystem.delete(uri.path);
+    });
+    
+    // createDirectoryAsyncのモック
+    mockFileRepository.createDirectoryAsync.mockImplementation(async (uri: Uri) => {
+      directories.add(uri.path);
+    });
+    
+    // rmAsyncのモック(ディレクトリ削除)
+    mockFileRepository.rmAsync.mockImplementation(async (uri: Uri, options?: { recursive?: boolean }) => {
+      if (!directories.has(uri.path)) throw new Error(`Directory not found: ${uri.path}`);
+      directories.delete(uri.path);
+      // 再帰的削除の場合、サブディレクトリとファイルも削除
+      if (options?.recursive) {
+        const pathPrefix = uri.path + '/';
+        Array.from(directories).forEach(dir => {
+          if (dir.startsWith(pathPrefix)) directories.delete(dir);
+        });
+        Array.from(fileSystem.keys()).forEach(file => {
+          if (file.startsWith(pathPrefix)) fileSystem.delete(file);
+        });
+      }
+    });
+    
+    // renameAsyncのモック
+    mockFileRepository.renameAsync.mockImplementation(async (oldUri: Uri, newUri: Uri) => {
+      const content = fileSystem.get(oldUri.path);
+      if (content) {
+        fileSystem.delete(oldUri.path);
+        fileSystem.set(newUri.path, content);
+      } else if (directories.has(oldUri.path)) {
+        directories.delete(oldUri.path);
+        directories.add(newUri.path);
+      } else {
+        throw new Error(`Path not found: ${oldUri.path}`);
+      }
+    });
+    
     // テスト用ディレクトリ構造の準備
-    mockFileRepository.createDirectoryForTest('/test');
-    await mockFileRepository.writeFileAsync(
-      mockFileRepository.createFileUri('/test/.dialogoi-meta.yaml'),
+    directories.add('/test');
+    fileSystem.set('/test/.dialogoi-meta.yaml',
       `files:
   - name: existing.txt
     type: content
@@ -35,21 +171,50 @@ describe('CoreFileService テストスイート', () => {
     path: /test/testdir
     isUntracked: false
     isMissing: false
-`,
-    );
+`);
 
     // 既存ファイルを作成
-    await mockFileRepository.writeFileAsync(
-      mockFileRepository.createFileUri('/test/existing.txt'),
-      'existing content',
-    );
+    fileSystem.set('/test/existing.txt', 'existing content');
 
     // 既存ディレクトリを作成
-    mockFileRepository.createDirectoryForTest('/test/testdir');
-    await mockFileRepository.writeFileAsync(
-      mockFileRepository.createFileUri('/test/testdir/.dialogoi-meta.yaml'),
-      'files: []',
-    );
+    directories.add('/test/testdir');
+    fileSystem.set('/test/testdir/.dialogoi-meta.yaml', 'files: []');
+    
+    // MetaYamlServiceのモック設定
+    mockMetaYamlService.loadMetaYamlAsync.mockImplementation(async (absolutePath: string) => {
+      const metaPath = absolutePath + '/.dialogoi-meta.yaml';
+      const content = fileSystem.get(metaPath);
+      if (!content) return null;
+      try {
+        return yaml.load(content) as MetaYaml;
+      } catch {
+        return null;
+      }
+    });
+    
+    mockMetaYamlService.saveMetaYamlAsync.mockImplementation(async (absolutePath: string, metaData: MetaYaml) => {
+      const metaPath = absolutePath + '/.dialogoi-meta.yaml';
+      const yamlContent = yaml.dump(metaData);
+      fileSystem.set(metaPath, yamlContent);
+      return true;
+    });
+    
+    // ProjectLinkUpdateServiceのモック設定
+    const updateCalls: Array<{oldPath: string, newPath: string}> = [];
+    mockLinkUpdateService.updateLinksAfterFileOperation.mockImplementation(async (oldPath: string, newPath: string) => {
+      updateCalls.push({ oldPath, newPath });
+      return {
+        success: true,
+        message: 'Links updated',
+        updatedFiles: [],
+        failedFiles: [],
+        totalScannedFiles: 0
+      };
+    });
+    
+    // テスト用に追加したメソッド
+    (mockLinkUpdateService as any).clearUpdateCalls = () => updateCalls.length = 0;
+    (mockLinkUpdateService as any).getUpdateCalls = () => updateCalls;
   });
 
   describe('ファイル作成', () => {
@@ -154,7 +319,7 @@ describe('CoreFileService テストスイート', () => {
   describe('ファイル名変更', () => {
     it('ファイル名を変更できる', async () => {
       // モックの呼び出し履歴をクリア
-      mockLinkUpdateService.clearUpdateCalls();
+      (mockLinkUpdateService as any).clearUpdateCalls();
 
       const result = await coreFileService.renameFile('/test', 'existing.txt', 'renamed.txt');
 
@@ -187,7 +352,7 @@ describe('CoreFileService テストスイート', () => {
       }
 
       // リンク更新サービスが適切に呼ばれたことを検証
-      const updateCalls = mockLinkUpdateService.getUpdateCalls();
+      const updateCalls = (mockLinkUpdateService as any).getUpdateCalls();
       expect(updateCalls.length).toBe(1);
       expect(updateCalls[0]?.oldPath).toBe('/test/existing.txt');
       expect(updateCalls[0]?.newPath).toBe('/test/renamed.txt');
@@ -235,7 +400,9 @@ describe('CoreFileService テストスイート', () => {
   describe('ファイル移動', () => {
     beforeEach(async () => {
       // 移動先ディレクトリを準備
-      mockFileRepository.createDirectoryForTest('/target');
+      await mockFileRepository.createDirectoryAsync(
+        mockFileRepository.createDirectoryUri('/target')
+      );
       await mockFileRepository.writeFileAsync(
         mockFileRepository.createFileUri('/target/.dialogoi-meta.yaml'),
         'files: []',
@@ -244,7 +411,7 @@ describe('CoreFileService テストスイート', () => {
 
     it('ファイルを別ディレクトリに移動できる', async () => {
       // モックの呼び出し履歴をクリア
-      mockLinkUpdateService.clearUpdateCalls();
+      (mockLinkUpdateService as any).clearUpdateCalls();
 
       const result = await coreFileService.moveFile('/test', 'existing.txt', '/target');
 
@@ -267,7 +434,7 @@ describe('CoreFileService テストスイート', () => {
       expect(targetMetaContent.includes('existing.txt')).toBeTruthy();
 
       // リンク更新サービスが適切に呼ばれたことを検証
-      const updateCalls = mockLinkUpdateService.getUpdateCalls();
+      const updateCalls = (mockLinkUpdateService as any).getUpdateCalls();
       expect(updateCalls.length).toBe(1);
       expect(updateCalls[0]?.oldPath).toBe('/test/existing.txt');
       expect(updateCalls[0]?.newPath).toBe('/target/existing.txt');
@@ -291,7 +458,9 @@ describe('CoreFileService テストスイート', () => {
   describe('ディレクトリ移動', () => {
     beforeEach(async () => {
       // 移動先親ディレクトリを準備
-      mockFileRepository.createDirectoryForTest('/targetparent');
+      await mockFileRepository.createDirectoryAsync(
+        mockFileRepository.createDirectoryUri('/targetparent')
+      );
       await mockFileRepository.writeFileAsync(
         mockFileRepository.createFileUri('/targetparent/.dialogoi-meta.yaml'),
         'files: []',
@@ -383,10 +552,12 @@ describe('CoreFileService テストスイート', () => {
 
     it('相対パス使用時のエラー（ノベルルートパス未設定）', async () => {
       // ノベルルートパスが設定されていないCoreFileServiceを作成
-      const container = TestServiceContainer.create();
-      const fileRepo = container.getFileRepository();
-      const metaYamlService = container.getMetaYamlService();
-      const serviceWithoutRoot = new CoreFileServiceImpl(fileRepo, metaYamlService);
+      const serviceWithoutRoot = new CoreFileServiceImpl(
+        mockFileRepository,
+        mockMetaYamlService,
+        mockLinkUpdateService
+        // novelRootPathを指定しない
+      );
 
       const result = await serviceWithoutRoot.createFile('relative/path', 'file.txt', 'content');
 
