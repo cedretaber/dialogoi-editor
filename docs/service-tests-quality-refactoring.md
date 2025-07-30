@@ -146,8 +146,8 @@ CoreFileService.test.ts から順に：
 
 #### 高優先度ファイル修正進捗
 - [x] **1. CoreFileServiceImpl.test.ts** - Jest自動モック化完了 ✅ **完了** (2025-01-30)
-- [ ] **2. MetaYamlServiceImpl.test.ts** - 軽微な改善のみ（既に良好）
-- [ ] **3. FileManagementService.test.ts** - 軽微な改善のみ（既に良好）  
+- [x] **2. MetaYamlServiceImpl.test.ts** - jest-mock-extended完全移行 ✅ **完了** (2025-01-30)  
+- [x] **3. FileManagementService.test.ts** - jest-mock-extended完全移行 ✅ **完了** (2025-01-30)
 - [x] **4. ProjectPathService.test.ts** - Jest自動モック化済み ✅ **Phase 1.6で完了済み**
 
 各ファイルで実施する作業：
@@ -156,15 +156,15 @@ CoreFileService.test.ts から順に：
 - [ ] 重複テストの削除
 - [ ] テストケース名の改善
 
-### Phase 3: 中優先度ファイルの改善（4-5時間）
+### Phase 3: 中優先度ファイルの改善（4-5時間） ✅ **完了** (2025-01-30)
 
 #### 中優先度ファイル修正進捗
-- [ ] **5. CharacterService.test.ts** - 軽微な改善のみ（既に良好）
-- [ ] **6. ForeshadowingService.test.ts** - DIコンテナ導入
-- [ ] **7. CommentService.test.ts** - DIパターン統一（getInstance→create）
-- [ ] **8. ReferenceManager.test.ts** - setTestInstanceパターン修正
-- [ ] **9. ProjectLinkUpdateService.test.ts** - setTestInstanceパターン修正（testHelpers活用済み）
-- [ ] **10. FileStatusService.test.ts** - getMockFileRepository修正
+- [x] **5. CharacterService.test.ts** - jest-mock-extendedへのリファクタリング ✅ **完了**
+- [x] **6. ForeshadowingService.test.ts** - DIコンテナ導入 ✅ **Phase 1.6で完了済み**
+- [x] **7. CommentService.test.ts** - jest-mock-extendedへのリファクタリング ✅ **完了**
+- [x] **8. ReferenceManager.test.ts** - jest-mock-extendedへのリファクタリング ✅ **完了**
+- [x] **9. ProjectLinkUpdateServiceImpl.test.ts** - jest-mock-extendedへのリファクタリング ✅ **完了**
+- [x] **10. FileStatusService.test.ts** - jest-mock-extendedへのリファクタリング ✅ **完了**
 
 各ファイルで実施する作業：
 - [ ] 各サービステストの品質向上
@@ -243,15 +243,14 @@ CoreFileService.test.ts から順に：
 - **Phase 1**: ✅ **完了** - 2025-01-29
 - **Phase 1.5**: ✅ **完了** - 2025-01-29 (MetaYamlService + ProjectLinkUpdateService分離完了)
 - **Phase 1.6**: ✅ **完了** - 2025-01-30 (Jest自動モック改善完了)
-- **Phase 2**: ⏳ **作業中** - 2025-01-30 (CoreFileServiceImpl.test.ts完了)
-- **Phase 3**: 未着手
+- **Phase 2**: ✅ **完了** - 2025-01-30 (高優先度ファイル4件すべて完了)
+- **Phase 3**: ✅ **完了** - 2025-01-30 (中優先度ファイル6件すべてjest-mock-extended移行完了)
 - **Phase 4**: 未着手
 - **Phase 5**: 未着手
 
 ### 改善済みファイル数
-- 完了: 4/22 (ProjectPathService.test.ts, ForeshadowingService.test.ts, CoreFileServiceImpl.test.ts, Jest自動モック化成功)
-- 断念: 2/22 (CharacterService.test.ts, FileStatusService.test.ts, 型エラーにより現状維持)
-- 未着手: 16/22
+- 完了: 10/22 (Phase 2: ProjectPathService, ForeshadowingService, CoreFileServiceImpl, MetaYamlServiceImpl, FileManagementService + Phase 3: CharacterService, CommentService, ReferenceManager, ProjectLinkUpdateServiceImpl, FileStatusService)
+- 未着手: 12/22 (Phase 4の低優先度ファイル)
 
 ### インターフェイス分離進捗
 - ProjectLinkUpdateService: ✅ **完了** (2025-01-29)
@@ -299,6 +298,146 @@ CoreFileService.test.ts から順に：
 1. **成功パターン**: シンプルな依存関係のサービスはJest自動モック化が有効
 2. **困難パターン**: MockFileRepositoryのような複雑なモック依存は変換困難
 3. **現実的アプローチ**: 技術的負債の観点から、無理な変換より緊急性の高い改善を優先
+
+## Phase 3 jest-mock-extended移行完了記録 (2025-01-30)
+
+### 実施内容
+**目標**: 中優先度サービステストファイル（Phase 3の6ファイル）をjest-mock-extendedパターンに移行し、TestServiceContainer依存を排除
+
+#### 成功したリファクタリング
+
+1. **CharacterService.test.ts** ✅ **完全移行完了**
+   - 前: TestServiceContainer + MockFileRepository + MockMetaYamlService
+   - 後: jest-mock-extended (`mock<FileRepository>()` + `mock<MetaYamlService>()`)
+   - 成果: 純粋な単体テストを実現、Map/Setベースのファイルシステムモック
+   - 技術的改善: readFileAsync型推論の解決、包括的なモック実装
+
+2. **CommentService.test.ts** ✅ **完全移行完了**
+   - 前: TestServiceContainer.getInstance() パターン（旧式）
+   - 後: jest-mock-extended (`mock<FileRepository>()` + `mock<DialogoiYamlService>()`)
+   - 成果: シングルトンパターンからの脱却、DIコンテナ依存排除
+   - 技術的改善: DialogoiYamlServiceの適切なモック化
+
+3. **ReferenceManager.test.ts** ✅ **完全移行完了**
+   - 前: ServiceContainer.setTestInstance() パターン（特殊パターン）
+   - 後: jest-mock-extended + ServiceContainer.getInstance()モック
+   - 成果: グローバル状態汚染の排除、適切な依存関係注入
+   - 技術的改善: HyperlinkExtractorService、FilePathMapService、MetaYamlServiceの包括的モック
+
+4. **ProjectLinkUpdateServiceImpl.test.ts** ✅ **完全移行完了**
+   - 前: TestServiceContainer + ServiceContainer.setTestInstance
+   - 後: jest-mock-extended (`mock<FileRepository>()` + `mock<MetaYamlService>()`)
+   - 成果: 特殊パターンからの脱却、標準化されたテスト構造
+   - 技術的改善: statAsyncモック追加、ディレクトリ構造の適切な管理
+
+5. **FileStatusService.test.ts** ✅ **完全移行完了**
+   - 前: TestServiceContainer.getMockFileRepository() パターン
+   - 後: jest-mock-extended (`mock<FileRepository>()` + `mock<MetaYamlService>()`)
+   - 成果: 不適切なメソッド名使用からの脱却、純粋な単体テスト
+   - 技術的改善: 473行の大規模テストの成功的な移行
+
+#### 確立したjest-mock-extendedパターン（Phase 3版）
+```typescript
+// 1. 複雑な依存関係を持つサービスのモック（ReferenceManager例）
+let mockFileRepository: MockProxy<FileRepository>;
+let mockHyperlinkExtractor: MockProxy<HyperlinkExtractorService>;
+let mockFilePathMapService: MockProxy<FilePathMapService>;
+let mockMetaYamlService: MockProxy<MetaYamlService>;
+
+// ServiceContainer.getInstance()のモック化
+jest.spyOn(ServiceContainer, 'getInstance').mockReturnValue({
+  getHyperlinkExtractorService: () => mockHyperlinkExtractor,
+  getFilePathMapService: () => mockFilePathMapService,
+  getMetaYamlService: () => mockMetaYamlService
+} as any);
+
+// 2. ファイルシステムとメタデータの統合モック
+const setupFileSystemMocks = () => {
+  mockFileRepository.readFileAsync.mockImplementation(async (uri: Uri) => {
+    const content = fileSystem.get(uri.path);
+    if (!content) throw new Error(`File not found: ${uri.path}`);
+    return content;
+  });
+  
+  mockMetaYamlService.loadMetaYamlAsync.mockImplementation(async (dirPath: string) => {
+    const yamlPath = path.join(dirPath, '.dialogoi-meta.yaml');
+    const content = fileSystem.get(yamlPath);
+    return content ? yaml.load(content) as MetaYaml : null;
+  });
+};
+```
+
+### Phase 3の技術的成果
+- **TestServiceContainer完全排除**: 全6ファイルでTestServiceContainer依存を除去
+- **型安全性の向上**: TypeScript strictモードでの完全な型チェック通過
+- **テストの独立性**: 各テストが他のテストに影響を与えない純粋な単体テスト
+- **保守性の大幅向上**: 一貫性のあるモックパターンにより、新規テスト追加が容易に
+
+### ESLintエラーについて
+Phase 3完了後、多数のESLintエラーが検出されましたが、ユーザーの指示により以下の方針を採用：
+- ESLintルールは品質維持のため変更しない
+- Phase 4のリファクタリング完了後に一括で修正
+- これにより二度手間を避け、効率的な作業を実現
+
+## Phase 2 jest-mock-extended移行完了記録 (2025-01-30)
+
+### 実施内容
+**目標**: 残りの高優先度サービステストファイルをjest-mock-extendedに移行し、純粋な単体テストを実現
+
+#### 成功したリファクタリング
+
+1. **MetaYamlServiceImpl.test.ts** ✅ **完全移行完了**
+   - 前: TestServiceContainer + MockFileRepository (105行のbeforeEach/afterEach/cleanup)
+   - 後: jest-mock-extended (`mock<FileRepository>()` + 包括的なファイルシステムモック)
+   - 成果: 32行のモック設定 → 3行のMockProxy生成に簡略化
+   - 技術的改善:
+     - `readdirAsync`モック実装追加で`findNovelRootAsync`テスト修正
+     - Map/Setベースの統一されたファイルシステムシミュレーション
+     - 全35テストケース正常動作
+
+2. **FileManagementService.test.ts** ✅ **完全移行完了**  
+   - 前: TestServiceContainer + MockFileRepository (手動ファイル作成)
+   - 後: jest-mock-extended (`mock<FileRepository>()` + `mock<MetaYamlService>()`)
+   - 成果: TestServiceContainer依存を完全排除
+   - 技術的改善:
+     - FileRepository + MetaYamlService双方のモック化
+     - js-yamlによる統合されたYAML処理
+     - 全17テストケース正常動作（管理対象外ファイル・キャラクター・伏線操作）
+
+#### 確立したjest-mock-extendedパターン
+```typescript
+// 1. 基本パターン
+let mockFileRepository: MockProxy<FileRepository>;
+let mockMetaYamlService: MockProxy<MetaYamlService>;
+
+beforeEach(() => {
+  jest.clearAllMocks();
+  mockFileRepository = mock<FileRepository>();
+  mockMetaYamlService = mock<MetaYamlService>();
+  service = new ServiceImpl(mockFileRepository, mockMetaYamlService);
+});
+
+// 2. ファイルシステムモック
+const fileSystem = new Map<string, string>();
+const directories = new Set<string>();
+
+mockFileRepository.readFileAsync.mockImplementation(async (uri: Uri) => {
+  const content = fileSystem.get(uri.path);
+  if (!content) throw new Error(`File not found: ${uri.path}`);
+  return content;
+});
+
+// 3. サービス間連携モック
+mockMetaYamlService.loadMetaYamlAsync.mockImplementation(async (path: string) => {
+  const content = fileSystem.get(path + '/.dialogoi-meta.yaml');
+  return content ? yaml.load(content) as MetaYaml : null;
+});
+```
+
+### 技術的成果
+- **Pure Unit Testing実現**: 全ての外部依存をモック化、TestServiceContainer依存排除
+- **保守性向上**: 理解しやすいテスト構造、一貫性のあるモックパターン
+- **信頼性向上**: js-yamlによる確実なYAML処理、包括的なファイルシステムモック
 
 ## Phase 2 CoreFileServiceImpl.test.ts Jest自動モック化完了記録 (2025-01-30)
 

@@ -1,31 +1,41 @@
 import * as path from 'path';
+import { mock, MockProxy } from 'jest-mock-extended';
 import { ProjectLinkUpdateServiceImpl } from './ProjectLinkUpdateServiceImpl.js';
-import { MockFileRepository } from '../repositories/MockFileRepository.js';
-import { TestServiceContainer } from '../di/TestServiceContainer.js';
-import { ServiceContainer } from '../di/ServiceContainer.js';
+import { FileRepository, DirectoryEntry } from '../repositories/FileRepository.js';
+import { MetaYamlService } from './MetaYamlService.js';
+import { Uri } from '../interfaces/Uri.js';
+import { MetaYaml } from '../utils/MetaYamlUtils.js';
+import * as yaml from 'js-yaml';
 
 describe('ProjectLinkUpdateServiceImpl テストスイート', () => {
   let service: ProjectLinkUpdateServiceImpl;
-  let mockFileRepository: MockFileRepository;
-  let testContainer: TestServiceContainer;
+  let mockFileRepository: MockProxy<FileRepository>;
+  let mockMetaYamlService: MockProxy<MetaYamlService>;
   let testProjectRoot: string;
+  let fileSystem: Map<string, string>;
+  let directories: Set<string>;
 
   beforeEach(() => {
-    // TestServiceContainerを初期化
-    testContainer = TestServiceContainer.create();
-    mockFileRepository = testContainer.getFileRepository() as MockFileRepository;
+    // モックをリセット
+    jest.clearAllMocks();
+    
+    // ファイルシステムの初期化
+    fileSystem = new Map<string, string>();
+    directories = new Set<string>();
+    
+    // jest-mock-extendedでモック作成
+    mockFileRepository = mock<FileRepository>();
+    mockMetaYamlService = mock<MetaYamlService>();
+    
     testProjectRoot = '/tmp/test-project';
-
-    // ServiceContainerをテスト用に設定
-    ServiceContainer.setTestInstance(testContainer);
-
-    // MetaYamlServiceを取得
-    const metaYamlService = testContainer.getMetaYamlService();
+    
+    // ファイルシステムモックの設定
+    setupFileSystemMocks();
 
     // ProjectLinkUpdateServiceを初期化
     service = new ProjectLinkUpdateServiceImpl(
       mockFileRepository,
-      metaYamlService,
+      mockMetaYamlService,
       testProjectRoot,
     );
 
@@ -34,10 +44,121 @@ describe('ProjectLinkUpdateServiceImpl テストスイート', () => {
   });
 
   afterEach(() => {
-    ServiceContainer.clearTestInstance();
-    mockFileRepository.reset();
+    // 特別なクリーンアップは不要
   });
 
+  function setupFileSystemMocks(): void {
+    // createFileUriのモック
+    mockFileRepository.createFileUri.mockImplementation((filePath: string) => {
+      return { path: filePath, fsPath: filePath } as Uri;
+    });
+    
+    // createDirectoryUriのモック
+    mockFileRepository.createDirectoryUri.mockImplementation((dirPath: string) => {
+      return { path: dirPath, fsPath: dirPath } as Uri;
+    });
+    
+    // existsAsyncのモック
+    mockFileRepository.existsAsync.mockImplementation((uri: Uri): Promise<boolean> => {
+      return Promise.resolve(fileSystem.has(uri.path) || directories.has(uri.path));
+    });
+    
+    // readFileAsyncのモック
+    // @ts-expect-error - Mock implementation for testing purposes
+    mockFileRepository.readFileAsync.mockImplementation((uri: Uri, _encoding?: string): Promise<string> => {
+      const content = fileSystem.get(uri.path);
+      if (content === undefined) {
+        return Promise.reject(new Error(`File not found: ${uri.path}`));
+      }
+      return Promise.resolve(content);
+    });
+    
+    // writeFileAsyncのモック
+    mockFileRepository.writeFileAsync.mockImplementation((uri: Uri, data: string | Uint8Array): Promise<void> => {
+      const content = typeof data === 'string' ? data : new TextDecoder().decode(data);
+      fileSystem.set(uri.path, content);
+      return Promise.resolve();
+    });
+    
+    // readdirAsyncのモック
+    mockFileRepository.readdirAsync.mockImplementation((uri: Uri): Promise<DirectoryEntry[]> => {
+      const entries: DirectoryEntry[] = [];
+      const basePath = uri.path;
+      
+      // ファイルを探す
+      for (const filePath of fileSystem.keys()) {
+        if (path.dirname(filePath) === basePath) {
+          const name = path.basename(filePath);
+          entries.push({
+            name,
+            isFile: (): boolean => true,
+            isDirectory: (): boolean => false
+          });
+        }
+      }
+      
+      // ディレクトリを探す
+      for (const dirPath of directories) {
+        if (path.dirname(dirPath) === basePath) {
+          const name = path.basename(dirPath);
+          entries.push({
+            name,
+            isFile: (): boolean => false,
+            isDirectory: (): boolean => true
+          });
+        }
+      }
+      
+      return Promise.resolve(entries);
+    });
+    
+    // statAsyncのモック
+    mockFileRepository.statAsync.mockImplementation((uri: Uri) => {
+      const isDir = directories.has(uri.path);
+      const isFile = fileSystem.has(uri.path);
+      if (!isDir && !isFile) {
+        return Promise.reject(new Error(`Path not found: ${uri.path}`));
+      }
+      return Promise.resolve({
+        isFile: (): boolean => isFile,
+        isDirectory: (): boolean => isDir,
+        size: isFile ? (fileSystem.get(uri.path) ?? '').length : 0,
+        mtime: new Date(),
+        birthtime: new Date()
+      });
+    });
+    
+    // MetaYamlServiceのモック設定
+    mockMetaYamlService.loadMetaYamlAsync.mockImplementation((absolutePath: string): Promise<MetaYaml | null> => {
+      const metaPath = path.join(absolutePath, '.dialogoi-meta.yaml');
+      const content = fileSystem.get(metaPath);
+      if (content === undefined) {
+        return Promise.resolve(null);
+      }
+      try {
+        return Promise.resolve(yaml.load(content) as MetaYaml);
+      } catch {
+        return Promise.resolve(null);
+      }
+    });
+    
+    mockMetaYamlService.saveMetaYamlAsync.mockImplementation((absolutePath: string, metaData: MetaYaml): Promise<boolean> => {
+      const metaPath = path.join(absolutePath, '.dialogoi-meta.yaml');
+      const yamlContent = yaml.dump(metaData);
+      fileSystem.set(metaPath, yamlContent);
+      return Promise.resolve(true);
+    });
+  }
+  
+  // テスト用ヘルパー関数
+  function addFile(filePath: string, content: string): void {
+    fileSystem.set(filePath, content);
+  }
+  
+  function addDirectory(dirPath: string): void {
+    directories.add(dirPath);
+  }
+  
   function createTestProject(): void {
     const projectPath = testProjectRoot;
 
@@ -47,14 +168,14 @@ author: テスト著者
 version: "1.0.0"
 created_at: "2024-01-01T00:00:00Z"
 `;
-    mockFileRepository.addFile(path.join(projectPath, 'dialogoi.yaml'), dialogoiYamlContent);
+    addFile(path.join(projectPath, 'dialogoi.yaml'), dialogoiYamlContent);
 
     // contentsディレクトリ
     const contentsDir = path.join(projectPath, 'contents');
-    mockFileRepository.addDirectory(contentsDir);
+    addDirectory(contentsDir);
 
     // contents/.dialogoi-meta.yaml
-    mockFileRepository.addFile(
+    addFile(
       path.join(contentsDir, '.dialogoi-meta.yaml'),
       `readme: README.md
 files:
@@ -89,20 +210,20 @@ files:
 [キャラクター2](../settings/character2.md) も出てきます。
 [外部リンク](https://example.com) もあります。
 `;
-    mockFileRepository.addFile(path.join(contentsDir, 'chapter1.md'), chapter1Content);
+    addFile(path.join(contentsDir, 'chapter1.md'), chapter1Content);
 
     const chapter2Content = `# 第2章
 
 [キャラクター1](../settings/character1.md) の冒険が続きます。
 `;
-    mockFileRepository.addFile(path.join(contentsDir, 'chapter2.md'), chapter2Content);
+    addFile(path.join(contentsDir, 'chapter2.md'), chapter2Content);
 
     // settingsディレクトリ
     const settingsDir = path.join(projectPath, 'settings');
-    mockFileRepository.addDirectory(settingsDir);
+    addDirectory(settingsDir);
 
     // settings/.dialogoi-meta.yaml
-    mockFileRepository.addFile(
+    addFile(
       path.join(settingsDir, '.dialogoi-meta.yaml'),
       `readme: README.md
 files:
@@ -129,11 +250,11 @@ files:
     );
 
     // 設定ファイル
-    mockFileRepository.addFile(
+    addFile(
       path.join(settingsDir, 'character1.md'),
       '# キャラクター1\n\n主人公です。',
     );
-    mockFileRepository.addFile(
+    addFile(
       path.join(settingsDir, 'character2.md'),
       '# キャラクター2\n\n脇役です。',
     );
@@ -150,20 +271,23 @@ files:
 
     // chapter1.mdの内容確認
     const chapter1Path = path.join(testProjectRoot, 'contents', 'chapter1.md');
-    const chapter1Uri = mockFileRepository.createFileUri(chapter1Path);
-    const chapter1Content = await mockFileRepository.readFileAsync(chapter1Uri, 'utf8');
-
-    expect(chapter1Content.includes('settings/character1_renamed.md')).toBeTruthy();
-    expect(!chapter1Content.includes('settings/character1.md')).toBeTruthy();
+    const chapter1Content = fileSystem.get(chapter1Path);
+    expect(chapter1Content).toBeDefined();
+    
+    // TypeScript assertion to help with type checking
+    const chapter1ContentString = chapter1Content as string;
+    expect(chapter1ContentString.includes('settings/character1_renamed.md')).toBeTruthy();
+    expect(chapter1ContentString.includes('settings/character1.md')).toBeFalsy();
     // 外部リンクは変更されない
-    expect(chapter1Content.includes('https://example.com')).toBeTruthy();
+    expect(chapter1ContentString.includes('https://example.com')).toBeTruthy();
 
     // chapter2.mdの内容確認
     const chapter2Path = path.join(testProjectRoot, 'contents', 'chapter2.md');
-    const chapter2Uri = mockFileRepository.createFileUri(chapter2Path);
-    const chapter2Content = await mockFileRepository.readFileAsync(chapter2Uri, 'utf8');
-
-    expect(chapter2Content.includes('settings/character1_renamed.md')).toBeTruthy();
+    const chapter2Content = fileSystem.get(chapter2Path);
+    expect(chapter2Content).toBeDefined();
+    
+    const chapter2ContentString = chapter2Content as string;
+    expect(chapter2ContentString.includes('settings/character1_renamed.md')).toBeTruthy();
   });
 
   it('meta.yamlファイルのreferences更新', async () => {
@@ -176,11 +300,12 @@ files:
 
     // contents/.dialogoi-meta.yamlの確認
     const contentsMetaPath = path.join(testProjectRoot, 'contents', '.dialogoi-meta.yaml');
-    const contentsMetaUri = mockFileRepository.createFileUri(contentsMetaPath);
-    const metaContent = await mockFileRepository.readFileAsync(contentsMetaUri, 'utf8');
-
-    expect(metaContent.includes('settings/character1_moved.md')).toBeTruthy();
-    expect(!metaContent.includes('settings/character1.md')).toBeTruthy();
+    const metaContent = fileSystem.get(contentsMetaPath);
+    expect(metaContent).toBeDefined();
+    
+    const metaContentString = metaContent as string;
+    expect(metaContentString.includes('settings/character1_moved.md')).toBeTruthy();
+    expect(metaContentString.includes('settings/character1.md')).toBeFalsy();
   });
 
   it('ファイル移動時の複数リンク更新', async () => {
@@ -192,8 +317,7 @@ files:
 [同じキャラクター](../settings/character1.md) が再度言及されます。
 [キャラクター2](../settings/character2.md) も出てきます。
 `;
-    const chapter1Uri = mockFileRepository.createFileUri(chapter1Path);
-    await mockFileRepository.writeFileAsync(chapter1Uri, moreLinksContent);
+    addFile(chapter1Path, moreLinksContent);
 
     const result = await service.updateLinksAfterFileOperation(
       'settings/character1.md',
@@ -203,13 +327,16 @@ files:
     expect(result.success).toBe(true);
 
     // chapter1.mdの内容確認（複数のリンクが全て更新される）
-    const updatedContent = await mockFileRepository.readFileAsync(chapter1Uri, 'utf8');
-    const character1Links = (updatedContent.match(/settings\/heroes\/character1\.md/g) || [])
+    const updatedContent = fileSystem.get(chapter1Path);
+    expect(updatedContent).toBeDefined();
+    
+    const updatedContentString = updatedContent as string;
+    const character1Links = (updatedContentString.match(/settings\/heroes\/character1\.md/g) || [])
       .length;
     expect(character1Links).toBe(2); // 2箇所のリンクが更新されている
 
     // character2.mdのリンクは変更されない
-    expect(updatedContent.includes('../settings/character2.md')).toBeTruthy();
+    expect(updatedContentString.includes('../settings/character2.md')).toBeTruthy();
   });
 
   it('プロジェクト外リンクは更新しない', async () => {
@@ -221,8 +348,7 @@ files:
 [絶対パス](/absolute/path/character1.md)
 `;
     const testFilePath = path.join(testProjectRoot, 'contents', 'external_test.md');
-    const testFileUri = mockFileRepository.createFileUri(testFilePath);
-    await mockFileRepository.writeFileAsync(testFileUri, externalLinksContent);
+    addFile(testFilePath, externalLinksContent);
 
     const result = await service.updateLinksAfterFileOperation(
       'settings/character1.md',
@@ -232,13 +358,15 @@ files:
     expect(result.success).toBe(true);
 
     // 外部リンクテストファイルの確認
-    const updatedContent = await mockFileRepository.readFileAsync(testFileUri, 'utf8');
-
+    const updatedContent = fileSystem.get(testFilePath);
+    expect(updatedContent).toBeDefined();
+    
+    const updatedContentString = updatedContent as string;
     // 内部リンクのみ更新される
-    expect(updatedContent.includes('settings/character1_new.md')).toBeTruthy();
+    expect(updatedContentString.includes('settings/character1_new.md')).toBeTruthy();
     // 外部リンクは変更されない
-    expect(updatedContent.includes('https://example.com/character1.md')).toBeTruthy();
-    expect(updatedContent.includes('/absolute/path/character1.md')).toBeTruthy();
+    expect(updatedContentString.includes('https://example.com/character1.md')).toBeTruthy();
+    expect(updatedContentString.includes('/absolute/path/character1.md')).toBeTruthy();
   });
 
   it('存在しないファイルの更新は無視', async () => {
@@ -275,8 +403,7 @@ files:
 `;
 
     const testPath = path.join(testProjectRoot, 'contents', 'complex_test.md');
-    const testUri = mockFileRepository.createFileUri(testPath);
-    await mockFileRepository.writeFileAsync(testUri, complexContent);
+    addFile(testPath, complexContent);
 
     const result = await service.updateLinksAfterFileOperation(
       'settings/character1.md',
@@ -285,19 +412,21 @@ files:
 
     expect(result.success).toBe(true);
 
-    const updatedContent = await mockFileRepository.readFileAsync(testUri, 'utf8');
-
+    const updatedContent = fileSystem.get(testPath);
+    expect(updatedContent).toBeDefined();
+    
+    const updatedContentString = updatedContent as string;
     // 各パターンが正しく更新されているかチェック
-    expect(updatedContent.includes('[通常リンク](settings/new_character1.md)')).toBeTruthy();
+    expect(updatedContentString.includes('[通常リンク](settings/new_character1.md)')).toBeTruthy();
     expect(
-      updatedContent.includes('[タイトル付きリンク](settings/new_character1.md)'),
+      updatedContentString.includes('[タイトル付きリンク](settings/new_character1.md)'),
     ).toBeTruthy();
-    expect(updatedContent.includes('[空テキスト](settings/new_character1.md)')).toBeTruthy();
+    expect(updatedContentString.includes('[空テキスト](settings/new_character1.md)')).toBeTruthy();
     // 特殊文字#含むリンクは更新されない（フラグメント付きのため）
     expect(
-      updatedContent.includes('[特殊文字#含む](../settings/character1.md#section)'),
+      updatedContentString.includes('[特殊文字#含む](../settings/character1.md#section)'),
     ).toBeTruthy();
-    expect(updatedContent.includes('[  空白あり  ](settings/new_character1.md)')).toBeTruthy();
+    expect(updatedContentString.includes('[  空白あり  ](settings/new_character1.md)')).toBeTruthy();
   });
 
   it('パフォーマンステスト（大量ファイル）', async () => {
@@ -306,17 +435,17 @@ files:
     const fileCount = 50;
 
     // 大量のマークダウンファイルを作成
+    addDirectory(path.join(largeProjectPath, 'contents'));
     for (let i = 1; i <= fileCount; i++) {
       const filePath = path.join(largeProjectPath, 'contents', `file${i}.md`);
       const content = `# ファイル${i}\n[ターゲット](../settings/target.md)\n`;
-      mockFileRepository.addFile(filePath, content);
+      addFile(filePath, content);
     }
 
     // 新しいサービスインスタンスを大きなプロジェクト用に作成
-    const metaYamlService = testContainer.getMetaYamlService();
     const largeProjectService = new ProjectLinkUpdateServiceImpl(
       mockFileRepository,
-      metaYamlService,
+      mockMetaYamlService,
       largeProjectPath,
     );
 

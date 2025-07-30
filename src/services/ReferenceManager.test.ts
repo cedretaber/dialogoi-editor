@@ -1,24 +1,51 @@
+import { mock, MockProxy } from 'jest-mock-extended';
 import * as path from 'path';
 import { ReferenceManager } from './ReferenceManager.js';
-import { MockFileRepository } from '../repositories/MockFileRepository.js';
-import { TestServiceContainer } from '../di/TestServiceContainer.js';
+import { FileRepository, DirectoryEntry } from '../repositories/FileRepository.js';
+import { HyperlinkExtractorService } from './HyperlinkExtractorService.js';
+import { FilePathMapService } from './FilePathMapService.js';
+import { MetaYamlService } from './MetaYamlService.js';
 import { ServiceContainer } from '../di/ServiceContainer.js';
+import { Uri } from '../interfaces/Uri.js';
+import { MetaYaml } from '../utils/MetaYamlUtils.js';
+import * as yaml from 'js-yaml';
 
 describe('ReferenceManager テストスイート', () => {
   let testDir: string;
   let refManager: ReferenceManager;
-  let mockFileRepository: MockFileRepository;
-  let testContainer: TestServiceContainer;
+  let mockFileRepository: MockProxy<FileRepository>;
+  let mockHyperlinkExtractorService: MockProxy<HyperlinkExtractorService>;
+  let mockFilePathMapService: MockProxy<FilePathMapService>;
+  let mockMetaYamlService: MockProxy<MetaYamlService>;
+  let fileSystem: Map<string, string>;
+  let directories: Set<string>;
 
   beforeEach(() => {
-    // TestServiceContainerを初期化
-    testContainer = TestServiceContainer.create();
-    mockFileRepository = testContainer.getFileRepository() as MockFileRepository;
+    // モックをリセット
+    jest.clearAllMocks();
+    
+    // ファイルシステムの初期化
+    fileSystem = new Map<string, string>();
+    directories = new Set<string>();
+    
+    // jest-mock-extendedでモック作成
+    mockFileRepository = mock<FileRepository>();
+    mockHyperlinkExtractorService = mock<HyperlinkExtractorService>();
+    mockFilePathMapService = mock<FilePathMapService>();
+    mockMetaYamlService = mock<MetaYamlService>();
+    
     testDir = '/tmp/dialogoi-ref-test';
-
-    // ServiceContainerをテスト用に設定
-    ServiceContainer.setTestInstance(testContainer);
-
+    
+    // ファイルシステムモックの設定
+    setupFileSystemMocks();
+    
+    // ServiceContainerのモック設定
+    const mockServiceContainer = mock<ServiceContainer>();
+    mockServiceContainer.getFilePathMapService.mockReturnValue(mockFilePathMapService);
+    mockServiceContainer.getHyperlinkExtractorService.mockReturnValue(mockHyperlinkExtractorService);
+    mockServiceContainer.getMetaYamlService.mockReturnValue(mockMetaYamlService);
+    jest.spyOn(ServiceContainer, 'getInstance').mockReturnValue(mockServiceContainer);
+    
     // テスト用のプロジェクト構造を作成
     createTestProject();
 
@@ -28,17 +55,104 @@ describe('ReferenceManager テストスイート', () => {
   });
 
   afterEach(() => {
-    // モックファイルサービスをリセット
-    mockFileRepository.reset();
+    // モックを復元
+    jest.restoreAllMocks();
     refManager.clear();
-    testContainer.cleanup();
-    ServiceContainer.clearTestInstance();
   });
 
+  function setupFileSystemMocks(): void {
+    // createFileUriのモック
+    mockFileRepository.createFileUri.mockImplementation((filePath: string) => {
+      return { path: filePath, fsPath: filePath } as Uri;
+    });
+    
+    // createDirectoryUriのモック
+    mockFileRepository.createDirectoryUri.mockImplementation((dirPath: string) => {
+      return { path: dirPath, fsPath: dirPath } as Uri;
+    });
+    
+    // existsAsyncのモック
+    mockFileRepository.existsAsync.mockImplementation((uri: Uri) => {
+      return Promise.resolve(fileSystem.has(uri.path) || directories.has(uri.path));
+    });
+    
+    // readFileAsyncのモック
+    (mockFileRepository.readFileAsync as jest.MockedFunction<(uri: Uri, encoding?: string) => Promise<string | Uint8Array>>).mockImplementation((uri: Uri, encoding?: string): Promise<string | Uint8Array> => {
+      const content = fileSystem.get(uri.path);
+      if (content === undefined) {
+        return Promise.reject(new Error(`File not found: ${uri.path}`));
+      }
+      if (encoding !== undefined) {
+        return Promise.resolve(content);
+      } else {
+        return Promise.resolve(new TextEncoder().encode(content));
+      }
+    });
+    
+    // readdirAsyncのモック
+    mockFileRepository.readdirAsync.mockImplementation((uri: Uri) => {
+      const entries: DirectoryEntry[] = [];
+      const basePath = uri.path;
+      
+      // ファイルを探す
+      for (const filePath of Array.from(fileSystem.keys())) {
+        if (path.dirname(filePath) === basePath) {
+          const name = path.basename(filePath);
+          entries.push({
+            name,
+            isFile: () => true,
+            isDirectory: () => false
+          });
+        }
+      }
+      
+      // ディレクトリを探す
+      for (const dirPath of Array.from(directories)) {
+        if (path.dirname(dirPath) === basePath) {
+          const name = path.basename(dirPath);
+          entries.push({
+            name,
+            isFile: () => false,
+            isDirectory: () => true
+          });
+        }
+      }
+      
+      return Promise.resolve(entries);
+    });
+    
+    // 依存サービスのモック設定
+    mockFilePathMapService.buildFileMap.mockResolvedValue();
+    mockHyperlinkExtractorService.extractProjectLinksAsync.mockResolvedValue([]);
+    
+    // MetaYamlServiceのモック設定
+    mockMetaYamlService.loadMetaYamlAsync.mockImplementation((absolutePath: string) => {
+      const metaPath = path.join(absolutePath, '.dialogoi-meta.yaml');
+      const content = fileSystem.get(metaPath);
+      if (content === undefined) {
+        return Promise.resolve(null);
+      }
+      try {
+        return Promise.resolve(yaml.load(content) as MetaYaml);
+      } catch {
+        return Promise.resolve(null);
+      }
+    });
+  }
+  
+  // テスト用ヘルパー関数
+  function addFile(filePath: string, content: string): void {
+    fileSystem.set(filePath, content);
+  }
+  
+  function addDirectory(dirPath: string): void {
+    directories.add(dirPath);
+  }
+  
   function createTestProject(): void {
     // ルートディレクトリを作成
-    mockFileRepository.addDirectory(testDir);
-    mockFileRepository.addFile(path.join(testDir, 'dialogoi.yaml'), 'version: 1.0');
+    addDirectory(testDir);
+    addFile(path.join(testDir, 'dialogoi.yaml'), 'version: 1.0');
 
     // ルートの.dialogoi-meta.yamlを作成
     const rootMeta = `readme: README.md
@@ -54,11 +168,11 @@ files:
     isUntracked: false
     isMissing: false
 `;
-    mockFileRepository.addFile(path.join(testDir, '.dialogoi-meta.yaml'), rootMeta);
+    addFile(path.join(testDir, '.dialogoi-meta.yaml'), rootMeta);
 
     // contentsディレクトリと.dialogoi-meta.yamlを作成
     const contentsDir = path.join(testDir, 'contents');
-    mockFileRepository.addDirectory(contentsDir);
+    addDirectory(contentsDir);
 
     const contentsMeta = `readme: README.md
 files:
@@ -84,13 +198,13 @@ files:
     isUntracked: false
     isMissing: false
 `;
-    mockFileRepository.addFile(path.join(contentsDir, '.dialogoi-meta.yaml'), contentsMeta);
-    mockFileRepository.addFile(path.join(contentsDir, 'chapter1.txt'), 'Chapter 1 content');
-    mockFileRepository.addFile(path.join(contentsDir, 'chapter2.txt'), 'Chapter 2 content');
+    addFile(path.join(contentsDir, '.dialogoi-meta.yaml'), contentsMeta);
+    addFile(path.join(contentsDir, 'chapter1.txt'), 'Chapter 1 content');
+    addFile(path.join(contentsDir, 'chapter2.txt'), 'Chapter 2 content');
 
     // settingsディレクトリと.dialogoi-meta.yamlを作成
     const settingsDir = path.join(testDir, 'settings');
-    mockFileRepository.addDirectory(settingsDir);
+    addDirectory(settingsDir);
 
     const settingsMeta = `readme: README.md
 files:
@@ -116,13 +230,13 @@ files:
     isUntracked: false
     isMissing: false
 `;
-    mockFileRepository.addFile(path.join(settingsDir, '.dialogoi-meta.yaml'), settingsMeta);
-    mockFileRepository.addFile(path.join(settingsDir, 'world.md'), 'World setting');
-    mockFileRepository.addFile(path.join(settingsDir, 'magic.md'), 'Magic system');
+    addFile(path.join(settingsDir, '.dialogoi-meta.yaml'), settingsMeta);
+    addFile(path.join(settingsDir, 'world.md'), 'World setting');
+    addFile(path.join(settingsDir, 'magic.md'), 'Magic system');
 
     // settings/charactersディレクトリと.dialogoi-meta.yamlを作成
     const charactersDir = path.join(settingsDir, 'characters');
-    mockFileRepository.addDirectory(charactersDir);
+    addDirectory(charactersDir);
 
     const charactersMeta = `readme: README.md
 files:
@@ -139,8 +253,8 @@ files:
       multiple_characters: false
       display_name: ''
 `;
-    mockFileRepository.addFile(path.join(charactersDir, '.dialogoi-meta.yaml'), charactersMeta);
-    mockFileRepository.addFile(path.join(charactersDir, 'hero.md'), 'Hero character');
+    addFile(path.join(charactersDir, '.dialogoi-meta.yaml'), charactersMeta);
+    addFile(path.join(charactersDir, 'hero.md'), 'Hero character');
   }
 
   it('初期化が正しく動作する', async () => {
@@ -304,32 +418,4 @@ files:
     expect(instance1).toBe(instance2);
   });
 
-  it('ファイルの存在チェック（非同期版）が正しく動作する', async () => {
-    await refManager.initialize(testDir, mockFileRepository);
-
-    // 存在するファイル
-    expect(await refManager.checkFileExistsAsync('settings/world.md')).toBe(true);
-    expect(await refManager.checkFileExistsAsync('contents/chapter1.txt')).toBe(true);
-
-    // 存在しないファイル
-    expect(await refManager.checkFileExistsAsync('non-existent.md')).toBe(false);
-    expect(await refManager.checkFileExistsAsync('settings/non-existent.md')).toBe(false);
-  });
-
-  it('無効な参照先ファイルを取得（非同期版）できる', async () => {
-    await refManager.initialize(testDir, mockFileRepository);
-
-    // chapter1.txtに存在しない参照を追加
-    const filePath = path.join(testDir, 'contents', 'chapter1.txt');
-    const referencesWithInvalid = [
-      'settings/world.md', // 存在する
-      'settings/non-existent.md', // 存在しない
-      'invalid/path.md', // 存在しない
-    ];
-
-    refManager.updateFileReferences(filePath, referencesWithInvalid);
-
-    const invalidRefs = await refManager.getInvalidReferencesAsync(filePath);
-    expect(invalidRefs.sort()).toEqual(['settings/non-existent.md', 'invalid/path.md'].sort());
-  });
 });

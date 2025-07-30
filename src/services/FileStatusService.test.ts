@@ -1,25 +1,151 @@
+import { mock, MockProxy } from 'jest-mock-extended';
+import * as path from 'path';
 import { FileStatusService, FileStatus, FileStatusInfo } from './FileStatusService.js';
-import { TestServiceContainer } from '../di/TestServiceContainer.js';
-import { MockFileRepository } from '../repositories/MockFileRepository.js';
+import { FileRepository, DirectoryEntry } from '../repositories/FileRepository.js';
 import { MetaYamlService } from './MetaYamlService.js';
-import { DialogoiTreeItem } from '../utils/MetaYamlUtils.js';
+import { DialogoiTreeItem, MetaYaml } from '../utils/MetaYamlUtils.js';
+import { Uri } from '../interfaces/Uri.js';
+import * as yaml from 'js-yaml';
+
 
 describe('FileStatusService テストスイート', () => {
   let fileStatusService: FileStatusService;
-  let mockFileRepository: MockFileRepository;
-  let metaYamlService: MetaYamlService;
+  let mockFileRepository: MockProxy<FileRepository>;
+  let mockMetaYamlService: MockProxy<MetaYamlService>;
+  let fileSystem: Map<string, string>;
+  let directories: Set<string>;
 
   beforeEach(() => {
-    const container = TestServiceContainer.create();
-    mockFileRepository = container.getFileRepository() as MockFileRepository;
-    metaYamlService = container.getMetaYamlService();
-    fileStatusService = new FileStatusService(mockFileRepository, metaYamlService);
+    // モックをリセット
+    jest.clearAllMocks();
+    
+    // ファイルシステムの初期化
+    fileSystem = new Map<string, string>();
+    directories = new Set<string>();
+    
+    // jest-mock-extendedでモック作成
+    mockFileRepository = mock<FileRepository>();
+    mockMetaYamlService = mock<MetaYamlService>();
+    
+    // ファイルシステムモックの設定
+    setupFileSystemMocks();
+    
+    fileStatusService = new FileStatusService(mockFileRepository, mockMetaYamlService);
   });
+  
+  function setupFileSystemMocks(): void {
+    // createFileUriのモック
+    mockFileRepository.createFileUri.mockImplementation((filePath: string) => {
+      return { path: filePath, fsPath: filePath } as Uri;
+    });
+    
+    // createDirectoryUriのモック
+    mockFileRepository.createDirectoryUri.mockImplementation((dirPath: string) => {
+      return { path: dirPath, fsPath: dirPath } as Uri;
+    });
+    
+    // existsAsyncのモック
+    mockFileRepository.existsAsync.mockImplementation((uri: Uri): Promise<boolean> => {
+      return Promise.resolve(fileSystem.has(uri.path) || directories.has(uri.path));
+    });
+    
+    // readFileAsyncのモック
+    (mockFileRepository.readFileAsync as jest.MockedFunction<typeof mockFileRepository.readFileAsync>)
+      .mockImplementation((uri: Uri, encoding?: string): Promise<string | Uint8Array> => {
+        const content = fileSystem.get(uri.path);
+        if (content === undefined) {
+          return Promise.reject(new Error(`File not found: ${uri.path}`));
+        }
+        if (encoding !== undefined) {
+          return Promise.resolve(content);
+        } else {
+          return Promise.resolve(new TextEncoder().encode(content));
+        }
+      });
+    
+    // writeFileAsyncのモック
+    mockFileRepository.writeFileAsync.mockImplementation((uri: Uri, data: string | Uint8Array): Promise<void> => {
+      const content = typeof data === 'string' ? data : new TextDecoder().decode(data);
+      fileSystem.set(uri.path, content);
+      return Promise.resolve();
+    });
+    
+    // readdirAsyncのモック
+    mockFileRepository.readdirAsync.mockImplementation((uri: Uri): Promise<DirectoryEntry[]> => {
+      const entries: DirectoryEntry[] = [];
+      const basePath = uri.path;
+      
+      // ファイルを探す
+      for (const filePath of Array.from(fileSystem.keys())) {
+        if (path.dirname(filePath) === basePath) {
+          const name = path.basename(filePath);
+          entries.push({
+            name,
+            isFile: (): boolean => true,
+            isDirectory: (): boolean => false
+          });
+        }
+      }
+      
+      // ディレクトリを探す
+      for (const dirPath of Array.from(directories)) {
+        if (path.dirname(dirPath) === basePath) {
+          const name = path.basename(dirPath);
+          entries.push({
+            name,
+            isFile: (): boolean => false,
+            isDirectory: (): boolean => true
+          });
+        }
+      }
+      
+      return Promise.resolve(entries);
+    });
+    
+    // statAsyncのモック
+    mockFileRepository.statAsync.mockImplementation((uri: Uri): Promise<{ isFile: () => boolean; isDirectory: () => boolean; size: number; mtime: Date; birthtime: Date }> => {
+      const isDir = directories.has(uri.path);
+      const isFile = fileSystem.has(uri.path);
+      if (!isDir && !isFile) {
+        return Promise.reject(new Error(`Path not found: ${uri.path}`));
+      }
+      return Promise.resolve({
+        isFile: (): boolean => isFile,
+        isDirectory: (): boolean => isDir,
+        size: isFile ? (fileSystem.get(uri.path) ?? '').length : 0,
+        mtime: new Date(),
+        birthtime: new Date()
+      });
+    });
+    
+    // MetaYamlServiceのモック設定
+    mockMetaYamlService.loadMetaYamlAsync.mockImplementation((absolutePath: string): Promise<MetaYaml | null> => {
+      const metaPath = path.join(absolutePath, '.dialogoi-meta.yaml');
+      const content = fileSystem.get(metaPath);
+      if (content === undefined) {
+        return Promise.resolve(null);
+      }
+      try {
+        return Promise.resolve(yaml.load(content) as MetaYaml);
+      } catch {
+        return Promise.resolve(null);
+      }
+    });
+  }
+  
+  // テスト用ヘルパー関数
+  function addFile(filePath: string, content: string): void {
+    fileSystem.set(filePath, content);
+  }
+  
+  function addDirectory(dirPath: string): void {
+    directories.add(dirPath);
+  }
 
   describe('getFileStatusList', () => {
     it('空のディレクトリの場合、空の配列を返す', async () => {
       const directoryPath = '/test/empty';
-      mockFileRepository.createDirectoryForTest(directoryPath);
+      addDirectory(directoryPath);
 
       const result = await fileStatusService.getFileStatusList(directoryPath);
       expect(result.length).toBe(0);
@@ -27,26 +153,30 @@ describe('FileStatusService テストスイート', () => {
 
     it('meta.yamlが存在しない場合、全てのファイルが未追跡として表示される', async () => {
       const directoryPath = '/test/no-meta';
-      mockFileRepository.createDirectoryForTest(directoryPath);
-      mockFileRepository.createFileForTest('/test/no-meta/test.txt', 'test content');
-      mockFileRepository.createFileForTest('/test/no-meta/another.md', 'markdown content');
+      addDirectory(directoryPath);
+      addFile('/test/no-meta/test.txt', 'test content');
+      addFile('/test/no-meta/another.md', 'markdown content');
 
       const result = await fileStatusService.getFileStatusList(directoryPath);
       expect(result.length).toBe(2);
 
       const testFile = result.find((f) => f.name === 'test.txt');
-      expect(testFile).not.toBe(undefined);
-      expect(testFile?.status).toBe(FileStatus.Untracked);
-      expect(testFile?.metaEntry).toBe(undefined);
+      if (!testFile) {
+        throw new Error('testFile not found');
+      }
+      expect(testFile.status).toBe(FileStatus.Untracked);
+      expect(testFile.metaEntry).toBe(undefined);
 
       const markdownFile = result.find((f) => f.name === 'another.md');
-      expect(markdownFile).not.toBe(undefined);
-      expect(markdownFile?.status).toBe(FileStatus.Untracked);
+      if (!markdownFile) {
+        throw new Error('markdownFile not found');
+      }
+      expect(markdownFile.status).toBe(FileStatus.Untracked);
     });
 
     it('管理対象ファイルが存在する場合、Managedとして表示される', async () => {
       const directoryPath = '/test/managed';
-      mockFileRepository.createDirectoryForTest(directoryPath);
+      addDirectory(directoryPath);
 
       // meta.yamlを作成
       const metaContent = `readme: README.md
@@ -67,32 +197,38 @@ files:
     isUntracked: false
     isMissing: false`;
 
-      mockFileRepository.createFileForTest('/test/managed/.dialogoi-meta.yaml', metaContent);
-      mockFileRepository.createFileForTest('/test/managed/chapter1.txt', 'chapter content');
-      mockFileRepository.createDirectoryForTest('/test/managed/settings');
+      addFile('/test/managed/.dialogoi-meta.yaml', metaContent);
+      addFile('/test/managed/chapter1.txt', 'chapter content');
+      addDirectory('/test/managed/settings');
 
       const result = await fileStatusService.getFileStatusList(directoryPath);
       expect(result.length).toBe(2);
 
       const chapterFile = result.find((f) => f.name === 'chapter1.txt');
-      expect(chapterFile).not.toBe(undefined);
-      expect(chapterFile?.status).toBe(FileStatus.Managed);
-      expect(chapterFile?.isDirectory).toBe(false);
-      expect(chapterFile?.metaEntry).not.toBe(undefined);
-      expect(chapterFile?.metaEntry?.type).toBe('content');
-      if (chapterFile?.metaEntry?.type === 'content') {
-        expect(chapterFile.metaEntry.tags).toEqual(['重要']);
+      if (!chapterFile) {
+        throw new Error('chapterFile not found');
       }
+      expect(chapterFile.status).toBe(FileStatus.Managed);
+      expect(chapterFile.isDirectory).toBe(false);
+      if (!chapterFile.metaEntry) {
+        throw new Error('chapterFile.metaEntry not found');
+      }
+      expect(chapterFile.metaEntry.type).toBe('content');
+      // Type assertion since we just confirmed the type above
+      const contentEntry = chapterFile.metaEntry as { type: 'content'; tags: string[] };
+      expect(contentEntry.tags).toEqual(['重要']);
 
       const settingsDir = result.find((f) => f.name === 'settings');
-      expect(settingsDir).not.toBe(undefined);
-      expect(settingsDir?.status).toBe(FileStatus.Managed);
-      expect(settingsDir?.isDirectory).toBe(true);
+      if (!settingsDir) {
+        throw new Error('settingsDir not found');
+      }
+      expect(settingsDir.status).toBe(FileStatus.Managed);
+      expect(settingsDir.isDirectory).toBe(true);
     });
 
     it('管理対象だが実際には存在しないファイルはMissingとして表示される', async () => {
       const directoryPath = '/test/missing';
-      mockFileRepository.createDirectoryForTest(directoryPath);
+      addDirectory(directoryPath);
 
       const metaContent = `readme: README.md
 files:
@@ -115,27 +251,31 @@ files:
     isUntracked: false
     isMissing: false`;
 
-      mockFileRepository.createFileForTest('/test/missing/.dialogoi-meta.yaml', metaContent);
-      mockFileRepository.createFileForTest('/test/missing/existing.txt', 'existing content');
+      addFile('/test/missing/.dialogoi-meta.yaml', metaContent);
+      addFile('/test/missing/existing.txt', 'existing content');
       // missing.txtは作成しない
 
       const result = await fileStatusService.getFileStatusList(directoryPath);
       expect(result.length).toBe(2);
 
       const missingFile = result.find((f) => f.name === 'missing.txt');
-      expect(missingFile).not.toBe(undefined);
-      expect(missingFile?.status).toBe(FileStatus.Missing);
-      expect(missingFile?.isDirectory).toBe(undefined);
+      if (!missingFile) {
+        throw new Error('missingFile not found');
+      }
+      expect(missingFile.status).toBe(FileStatus.Missing);
+      expect(missingFile.isDirectory).toBe(undefined);
 
       const existingFile = result.find((f) => f.name === 'existing.txt');
-      expect(existingFile).not.toBe(undefined);
-      expect(existingFile?.status).toBe(FileStatus.Managed);
-      expect(existingFile?.isDirectory).toBe(false);
+      if (!existingFile) {
+        throw new Error('existingFile not found');
+      }
+      expect(existingFile.status).toBe(FileStatus.Managed);
+      expect(existingFile.isDirectory).toBe(false);
     });
 
     it('READMEファイルは管理対象として隠される', async () => {
       const directoryPath = '/test/readme';
-      mockFileRepository.createDirectoryForTest(directoryPath);
+      addDirectory(directoryPath);
 
       const metaContent = `readme: README.md
 files:
@@ -149,17 +289,19 @@ files:
     isUntracked: false
     isMissing: false`;
 
-      mockFileRepository.createFileForTest('/test/readme/.dialogoi-meta.yaml', metaContent);
-      mockFileRepository.createFileForTest('/test/readme/README.md', 'readme content');
-      mockFileRepository.createFileForTest('/test/readme/chapter1.txt', 'chapter content');
+      addFile('/test/readme/.dialogoi-meta.yaml', metaContent);
+      addFile('/test/readme/README.md', 'readme content');
+      addFile('/test/readme/chapter1.txt', 'chapter content');
 
       const result = await fileStatusService.getFileStatusList(directoryPath);
 
       // README.mdは表示されない（管理対象として隠される）
       expect(result.length).toBe(1);
       const chapterFile = result.find((f) => f.name === 'chapter1.txt');
-      expect(chapterFile).not.toBe(undefined);
-      expect(chapterFile?.status).toBe(FileStatus.Managed);
+      if (!chapterFile) {
+        throw new Error('chapterFile not found');
+      }
+      expect(chapterFile.status).toBe(FileStatus.Managed);
 
       // README.mdが結果に含まれていないことを確認
       const readmeFile = result.find((f) => f.name === 'README.md');
@@ -168,7 +310,7 @@ files:
 
     it('コメントファイルは管理対象として隠される', async () => {
       const directoryPath = '/test/comments';
-      mockFileRepository.createDirectoryForTest(directoryPath);
+      addDirectory(directoryPath);
 
       const metaContent = `readme: README.md
 files:
@@ -191,10 +333,10 @@ files:
     isUntracked: false
     isMissing: false`;
 
-      mockFileRepository.createFileForTest('/test/comments/.dialogoi-meta.yaml', metaContent);
-      mockFileRepository.createFileForTest('/test/comments/chapter1.txt', 'chapter1 content');
-      mockFileRepository.createFileForTest('/test/comments/chapter2.txt', 'chapter2 content');
-      mockFileRepository.createFileForTest(
+      addFile('/test/comments/.dialogoi-meta.yaml', metaContent);
+      addFile('/test/comments/chapter1.txt', 'chapter1 content');
+      addFile('/test/comments/chapter2.txt', 'chapter2 content');
+      addFile(
         '/test/comments/.chapter1.txt.comments.yaml',
         'comments content',
       );
@@ -205,12 +347,16 @@ files:
       expect(result.length).toBe(2);
 
       const chapter1 = result.find((f) => f.name === 'chapter1.txt');
-      expect(chapter1).not.toBe(undefined);
-      expect(chapter1?.status).toBe(FileStatus.Managed);
+      if (!chapter1) {
+        throw new Error('chapter1 not found');
+      }
+      expect(chapter1.status).toBe(FileStatus.Managed);
 
       const chapter2 = result.find((f) => f.name === 'chapter2.txt');
-      expect(chapter2).not.toBe(undefined);
-      expect(chapter2?.status).toBe(FileStatus.Managed);
+      if (!chapter2) {
+        throw new Error('chapter2 not found');
+      }
+      expect(chapter2.status).toBe(FileStatus.Managed);
 
       // コメントファイルが結果に含まれていないことを確認
       const commentFile = result.find((f) => f.name === '.chapter1.txt.comments.yaml');
@@ -219,7 +365,7 @@ files:
 
     it('管理ファイル(.dialogoi-meta.yaml, dialogoi.yaml)は除外される', async () => {
       const directoryPath = '/test/management';
-      mockFileRepository.createDirectoryForTest(directoryPath);
+      addDirectory(directoryPath);
 
       const metaContent = `readme: README.md
 files:
@@ -233,17 +379,19 @@ files:
     isUntracked: false
     isMissing: false`;
 
-      mockFileRepository.createFileForTest('/test/management/.dialogoi-meta.yaml', metaContent);
-      mockFileRepository.createFileForTest('/test/management/dialogoi.yaml', 'old config');
-      mockFileRepository.createFileForTest('/test/management/test.txt', 'test content');
+      addFile('/test/management/.dialogoi-meta.yaml', metaContent);
+      addFile('/test/management/dialogoi.yaml', 'old config');
+      addFile('/test/management/test.txt', 'test content');
 
       const result = await fileStatusService.getFileStatusList(directoryPath);
 
       // 管理ファイルは除外され、test.txtのみ表示される
       expect(result.length).toBe(1);
       const testFile = result.find((f) => f.name === 'test.txt');
-      expect(testFile).not.toBe(undefined);
-      expect(testFile?.status).toBe(FileStatus.Managed);
+      if (!testFile) {
+        throw new Error('testFile not found');
+      }
+      expect(testFile.status).toBe(FileStatus.Managed);
 
       // 管理ファイルが結果に含まれていないことを確認
       const metaFile = result.find((f) => f.name === '.dialogoi-meta.yaml');
@@ -271,7 +419,7 @@ files:
 
     it('結果がディレクトリ優先、ファイルはmeta.yaml順でソートされる', async () => {
       const directoryPath = '/test/sorting';
-      mockFileRepository.createDirectoryForTest(directoryPath);
+      addDirectory(directoryPath);
 
       const metaContent = `readme: README.md
 files:
@@ -299,24 +447,27 @@ files:
     isUntracked: false
     isMissing: false`;
 
-      mockFileRepository.createFileForTest('/test/sorting/.dialogoi-meta.yaml', metaContent);
-      mockFileRepository.createFileForTest('/test/sorting/z-file.txt', 'z content');
-      mockFileRepository.createFileForTest('/test/sorting/a-file.txt', 'a content');
-      mockFileRepository.createDirectoryForTest('/test/sorting/m-dir');
-      mockFileRepository.createFileForTest('/test/sorting/b-untracked.txt', 'untracked content');
+      addFile('/test/sorting/.dialogoi-meta.yaml', metaContent);
+      addFile('/test/sorting/z-file.txt', 'z content');
+      addFile('/test/sorting/a-file.txt', 'a content');
+      addDirectory('/test/sorting/m-dir');
+      addFile('/test/sorting/b-untracked.txt', 'untracked content');
 
       const result = await fileStatusService.getFileStatusList(directoryPath);
       expect(result.length).toBe(4);
 
       // ディレクトリが最初、その後ファイルがmeta.yaml順（meta.yamlに含まれていないファイルは名前順で末尾）
-      expect(result[0]?.name).toBe('m-dir');
-      expect(result[0]?.isDirectory).toBe(true);
-      expect(result[1]?.name).toBe('z-file.txt'); // meta.yamlの最初
-      expect(result[1]?.isDirectory).toBe(false);
-      expect(result[2]?.name).toBe('a-file.txt'); // meta.yamlの2番目
-      expect(result[2]?.isDirectory).toBe(false);
-      expect(result[3]?.name).toBe('b-untracked.txt'); // meta.yamlに含まれていない
-      expect(result[3]?.isDirectory).toBe(false);
+      if (!result[0] || !result[1] || !result[2] || !result[3]) {
+        throw new Error('Expected results not found');
+      }
+      expect(result[0].name).toBe('m-dir');
+      expect(result[0].isDirectory).toBe(true);
+      expect(result[1].name).toBe('z-file.txt'); // meta.yamlの最初
+      expect(result[1].isDirectory).toBe(false);
+      expect(result[2].name).toBe('a-file.txt'); // meta.yamlの2番目
+      expect(result[2].isDirectory).toBe(false);
+      expect(result[3].name).toBe('b-untracked.txt'); // meta.yamlに含まれていない
+      expect(result[3].isDirectory).toBe(false);
     });
   });
 
@@ -347,10 +498,10 @@ files:
       expect(result.name).toBe('test.txt');
       expect(result.type).toBe('content');
       expect(result.path).toBe('/test/test.txt');
-      if (result.type === 'content') {
-        expect(result.tags).toEqual(['重要']);
-        expect(result.comments).toBe('.test.txt.comments.yaml');
-      }
+      // Type assertion since we just confirmed the type above
+      const contentResult = result as { type: 'content'; tags: string[]; comments: string };
+      expect(contentResult.tags).toEqual(['重要']);
+      expect(contentResult.comments).toBe('.test.txt.comments.yaml');
       expect(result.isMissing).toBe(false);
       expect(result.isUntracked).toBe(false);
     });
