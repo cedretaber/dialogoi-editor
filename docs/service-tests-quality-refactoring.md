@@ -170,12 +170,13 @@ CoreFileService.test.ts から順に：
 - [ ] 各サービステストの品質向上
 - [ ] 共通パターンの抽出とヘルパー関数化
 
-### Phase 4: 低優先度ファイルの改善（2-3時間）
+### Phase 4: 低優先度ファイルの改善（2-3時間） 🔄 **進行中**
 
 #### 低優先度ファイル修正進捗
-- [ ] **11. DialogoiYamlService.test.ts** - beforeEach→setup統一
-- [ ] **12. ProjectSettingsService.test.ts** - 軽微な改善のみ（既に良好）
-- [ ] **13. ProjectSetupService.test.ts** - getMockFileRepository修正
+- [x] **11. DialogoiYamlServiceImpl.test.ts** - jest-mock-extended移行とdescribe→suite統一 ✅ **完了**
+- [x] **12. ProjectSettingsService.test.ts** - 軽微な改善のみ（既に良好な状態を確認済み） ✅ **完了**
+- [x] **13. ProjectSetupService.test.ts** - jest-mock-extendedパターン移行部分完了 ✅ **基本移行完了**
+- [x] **22. DialogoiSettingsService.test.ts** - jest-mock-extended移行完了（MockSettingsRepository廃止） ✅ **完了**
 - [ ] **14. ProjectAutoSetupService.test.ts** - getMockFileRepository修正
 - [ ] **15. FilePathMapService.test.ts** - getMockFileRepository修正
 - [ ] **16. FileTypeConversionService.test.ts** - getMockFileRepository修正
@@ -184,7 +185,6 @@ CoreFileService.test.ts から順に：
 - [ ] **19. HyperlinkExtractorService.test.ts** - getMockFileRepository修正
 - [ ] **20. DropHandlerService.test.ts** - getMockFileRepository修正
 - [ ] **21. FileChangeNotificationService.test.ts** - DIコンテナ導入、describe→suite統一
-- [ ] **22. DialogoiSettingsService.test.ts** - 軽微な改善のみ（既に良好）
 
 各ファイルで実施する作業：
 - [ ] 軽微な修正と整理
@@ -245,12 +245,12 @@ CoreFileService.test.ts から順に：
 - **Phase 1.6**: ✅ **完了** - 2025-01-30 (Jest自動モック改善完了)
 - **Phase 2**: ✅ **完了** - 2025-01-30 (高優先度ファイル4件すべて完了)
 - **Phase 3**: ✅ **完了** - 2025-01-30 (中優先度ファイル6件すべてjest-mock-extended移行完了)
-- **Phase 4**: 未着手
+- **Phase 4**: 🔄 **進行中** - 2025-01-30 (低優先度ファイル: 4/12件完了)
 - **Phase 5**: 未着手
 
 ### 改善済みファイル数
-- 完了: 10/22 (Phase 2: ProjectPathService, ForeshadowingService, CoreFileServiceImpl, MetaYamlServiceImpl, FileManagementService + Phase 3: CharacterService, CommentService, ReferenceManager, ProjectLinkUpdateServiceImpl, FileStatusService)
-- 未着手: 12/22 (Phase 4の低優先度ファイル)
+- 完了: 14/22 (Phase 2: ProjectPathService, ForeshadowingService, CoreFileServiceImpl, MetaYamlServiceImpl, FileManagementService + Phase 3: CharacterService, CommentService, ReferenceManager, ProjectLinkUpdateServiceImpl, FileStatusService + Phase 4部分: DialogoiYamlServiceImpl, ProjectSettingsService, ProjectSetupService, DialogoiSettingsService)
+- 進行中: 8/22 (Phase 4の残り低優先度ファイル)
 
 ### インターフェイス分離進捗
 - ProjectLinkUpdateService: ✅ **完了** (2025-01-29)
@@ -1010,3 +1010,51 @@ const fileRepo = container.getFileRepository() as MockFileRepository;
 - **バグリスク軽減**: グローバル状態汚染の排除
 
 この計画により、テストコードベースがよりクリーンで保守しやすくなります。
+
+## Phase 4 jest-mock-extended移行進捗記録 (2025-01-30)
+
+### 実施内容
+**目標**: 低優先度サービステストファイル（Phase 4の12ファイル）をjest-mock-extendedパターンに移行し、統一性を確保
+
+#### 完了したリファクタリング
+
+1. **DialogoiYamlServiceImpl.test.ts** ✅ **完全移行完了**
+   - 前: TestServiceContainer + MockFileRepository (beforeEach使用)
+   - 後: jest-mock-extended (`mock<FileRepository>()`) + describe→suite統一
+   - 成果: 非同期メソッド重視のテスト（suite/beforeEach/afterEach → describe/beforeEach）
+   - 技術的改善: 
+     - statAsync、createDirectoryAsyncモック実装追加
+     - findProjectRootAsyncの深い階層テスト強化
+     - ファイルシステムモックの統一
+
+2. **ProjectSettingsService.test.ts** ✅ **現状維持完了**
+   - 現状: TestServiceContainer.create()使用で適切に動作
+   - 判断: 既に良好な状態、無理な変更は不要
+   - 確認済み: DIコンテナ利用、適切なモック、包括的テスト
+
+3. **ProjectSetupService.test.ts** ✅ **基本移行完了**
+   - 前: TestServiceContainer.getMockFileRepository() (不適切メソッド名)
+   - 後: jest-mock-extended (`mock<FileRepository>()` + 複数サービスモック)
+   - 成果: 複雑なモック実装の成功
+   - 技術的改善:
+     - DialogoiYamlService、ProjectAutoSetupServiceの包括的モック
+     - 非同期プロジェクト作成・セットアップのシミュレーション
+     - Map/Setベースの統合ファイルシステム
+
+#### 技術的成果
+- **複雑サービス連携**: 3つのサービス（DialogoiYamlService、ProjectAutoSetupService、FileRepository）の協調モック実装
+- **非同期処理対応**: createDialogoiProjectAsync、setupProjectStructure、registerAllFilesの統合テスト
+- **一貫性向上**: ファイルシステムモックパターンの確立
+
+4. **DialogoiSettingsService.test.ts** ✅ **完全移行完了**
+   - 前: `new MockSettingsRepository()` (手動モックファイル使用)
+   - 後: jest-mock-extended (`mock<SettingsRepository>()`)
+   - 成果: 手動モックファイルの廃止、将来的なモックファイル廃止方針に対応
+   - 技術的改善:
+     - Map/Setベースの設定ストレージシミュレーション
+     - エラーハンドリングテストの強化
+     - VSCode設定APIの完全なモック実装
+
+### 現在の進捗
+**Phase 4完了**: 4/12ファイル完了（DialogoiYamlServiceImpl、ProjectSettingsService、ProjectSetupService、DialogoiSettingsService）
+**残りタスク**: 8ファイル（ProjectAutoSetupService～FileChangeNotificationService）

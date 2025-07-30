@@ -1,18 +1,80 @@
+import { mock, MockProxy } from 'jest-mock-extended';
 import { DialogoiSettingsService } from './DialogoiSettingsService.js';
-import { MockSettingsRepository } from '../repositories/MockSettingsRepository.js';
+import { SettingsRepository, ExcludePatterns } from '../repositories/SettingsRepository.js';
 
 describe('DialogoiSettingsService テストスイート', () => {
   let service: DialogoiSettingsService;
-  let mockRepository: MockSettingsRepository;
+  let mockRepository: MockProxy<SettingsRepository>;
+  let settingsStorage: Map<string, Map<string, unknown>>;
 
   beforeEach(() => {
-    mockRepository = new MockSettingsRepository();
+    jest.clearAllMocks();
+    settingsStorage = new Map<string, Map<string, unknown>>();
+    
+    // jest-mock-extendedでモック作成
+    mockRepository = mock<SettingsRepository>();
+    
+    // SettingsRepositoryモックの設定
+    setupSettingsRepositoryMocks();
+    
     service = new DialogoiSettingsService(mockRepository);
   });
-
-  afterEach(() => {
-    mockRepository.clear();
-  });
+  
+  function setupSettingsRepositoryMocks(): void {
+    mockRepository.get.mockImplementation(<T>(section: string, key?: string): T | undefined => {
+      const sectionStorage = settingsStorage.get(section);
+      if (!sectionStorage) {
+        return undefined;
+      }
+      
+      if (key) {
+        return sectionStorage.get(key) as T | undefined;
+      } else {
+        // セクション全体を返す場合
+        const result: Record<string, unknown> = {};
+        for (const [k, v] of sectionStorage.entries()) {
+          result[k] = v;
+        }
+        return result as T;
+      }
+    });
+    
+    mockRepository.update.mockImplementation(async (
+      section: string,
+      key: string | undefined,
+      value: unknown,
+      _target: 'global' | 'workspace'
+    ): Promise<boolean> => {
+      try {
+        if (!settingsStorage.has(section)) {
+          settingsStorage.set(section, new Map<string, unknown>());
+        }
+        const sectionStorage = settingsStorage.get(section)!;
+        
+        if (key) {
+          sectionStorage.set(key, value);
+        } else {
+          // セクション全体を更新する場合
+          sectionStorage.clear();
+          if (typeof value === 'object' && value !== null) {
+            for (const [k, v] of Object.entries(value)) {
+              sectionStorage.set(k, v);
+            }
+          }
+        }
+        return true;
+      } catch {
+        return false;
+      }
+    });
+  }
+  
+  function setSettings(section: string, key: string, value: unknown): void {
+    if (!settingsStorage.has(section)) {
+      settingsStorage.set(section, new Map<string, unknown>());
+    }
+    settingsStorage.get(section)!.set(key, value);
+  }
 
   describe('addDialogoiExcludePatterns', () => {
     it('Dialogoi関連パターンを正常に追加する', async () => {
@@ -22,7 +84,7 @@ describe('DialogoiSettingsService テストスイート', () => {
       // 検証
       expect(result).toBe(true);
 
-      const currentExclude = mockRepository.get<{ [key: string]: boolean }>('files', 'exclude');
+      const currentExclude = mockRepository.get<ExcludePatterns>('files', 'exclude');
       expect(currentExclude?.['**/dialogoi.yaml']).toBe(true);
       expect(currentExclude?.['**/.dialogoi-meta.yaml']).toBe(true);
       expect(currentExclude?.['**/.dialogoi-reviews/**']).toBe(true);
@@ -34,7 +96,7 @@ describe('DialogoiSettingsService テストスイート', () => {
         node_modules: true,
         dist: true,
       };
-      mockRepository.setSettings('files', 'exclude', existingExclude);
+      setSettings('files', 'exclude', existingExclude);
 
       // 実行
       const result = await service.addDialogoiExcludePatterns();
@@ -42,7 +104,7 @@ describe('DialogoiSettingsService テストスイート', () => {
       // 検証
       expect(result).toBe(true);
 
-      const currentExclude = mockRepository.get<{ [key: string]: boolean }>('files', 'exclude');
+      const currentExclude = mockRepository.get<ExcludePatterns>('files', 'exclude');
       // 既存設定が保持されている
       expect(currentExclude?.['node_modules']).toBe(true);
       expect(currentExclude?.['dist']).toBe(true);
@@ -62,7 +124,7 @@ describe('DialogoiSettingsService テストスイート', () => {
         '**/.dialogoi-meta.yaml': true,
         '**/.dialogoi-reviews/**': true,
       };
-      mockRepository.setSettings('files', 'exclude', existingExclude);
+      setSettings('files', 'exclude', existingExclude);
 
       // 実行
       const result = await service.removeDialogoiExcludePatterns();
@@ -70,7 +132,7 @@ describe('DialogoiSettingsService テストスイート', () => {
       // 検証
       expect(result).toBe(true);
 
-      const currentExclude = mockRepository.get<{ [key: string]: boolean }>('files', 'exclude');
+      const currentExclude = mockRepository.get<ExcludePatterns>('files', 'exclude');
       // 既存設定が保持されている
       expect(currentExclude?.['node_modules']).toBe(true);
       // Dialogoi関連パターンが削除されている
@@ -97,7 +159,7 @@ describe('DialogoiSettingsService テストスイート', () => {
         '**/.dialogoi-meta.yaml': true,
         '**/.dialogoi-reviews/**': true,
       };
-      mockRepository.setSettings('files', 'exclude', excludePatterns);
+      setSettings('files', 'exclude', excludePatterns);
 
       // 実行
       const result = service.hasDialogoiExcludePatterns();
@@ -114,7 +176,7 @@ describe('DialogoiSettingsService テストスイート', () => {
         // '**/.dialogoi-meta.yaml': true,  // 欠けている
         '**/.dialogoi-reviews/**': true,
       };
-      mockRepository.setSettings('files', 'exclude', excludePatterns);
+      setSettings('files', 'exclude', excludePatterns);
 
       // 実行
       const result = service.hasDialogoiExcludePatterns();
@@ -138,7 +200,7 @@ describe('DialogoiSettingsService テストスイート', () => {
         '**/.dialogoi-meta.yaml': true,
         '**/.dialogoi-reviews/**': true,
       };
-      mockRepository.setSettings('files', 'exclude', excludePatterns);
+      setSettings('files', 'exclude', excludePatterns);
 
       // 実行
       const result = service.hasDialogoiExcludePatterns();
@@ -156,7 +218,7 @@ describe('DialogoiSettingsService テストスイート', () => {
         '**/dialogoi.yaml': true,
         test: false,
       };
-      mockRepository.setSettings('files', 'exclude', excludePatterns);
+      setSettings('files', 'exclude', excludePatterns);
 
       // 実行
       const result = service.getCurrentExcludePatterns();
@@ -192,7 +254,7 @@ describe('DialogoiSettingsService テストスイート', () => {
         build: true,
         temp: true,
       };
-      mockRepository.setSettings('files', 'exclude', existingExclude);
+      setSettings('files', 'exclude', existingExclude);
 
       // 実行
       const result = await service.addWorkspaceExcludePatterns();
@@ -203,13 +265,32 @@ describe('DialogoiSettingsService テストスイート', () => {
   });
 
   describe('エラーハンドリング', () => {
-    it('設定更新エラー時にfalseを返す', () => {
-      // MockRepositoryを拡張してエラーを発生させるケースをテスト
-      // 実際の実装では、Mockでエラーを発生させる方法が必要
-
-      // 現在のMockRepositoryはエラーを発生させない設計なので、
-      // この特定のテストは概念的な確認として残す
-      expect(true).toBe(true);
+    it('設定更新エラー時にfalseを返す', async () => {
+      // updateメソッドがエラーを返すように設定
+      mockRepository.update.mockResolvedValue(false);
+      
+      // 実行
+      const result = await service.addDialogoiExcludePatterns();
+      
+      // 検証
+      expect(result).toBe(false);
+    });
+    
+    it('設定取得エラー時の動作確認', () => {
+      // getメソッドがエラーを投げるように設定
+      mockRepository.get.mockImplementation(() => {
+        throw new Error('Settings access error');
+      });
+      
+      // 実行
+      const result = service.hasDialogoiExcludePatterns();
+      
+      // 検証（エラー時はfalseを返す）
+      expect(result).toBe(false);
+      
+      // getCurrentExcludePatterns も同様にエラーハンドリングをテスト
+      const patterns = service.getCurrentExcludePatterns();
+      expect(patterns).toEqual({});
     });
   });
 });
