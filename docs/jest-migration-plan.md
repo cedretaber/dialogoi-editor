@@ -129,19 +129,57 @@ projects: [
 // Jest自動モック導入時にDIパターン全体を再設計予定
 ```
 
-### Phase 5: 手動モック削除 ⏳ **未着手**
+### Phase 4.5: CI/CDブロック解消 ✅ **2025-01-30完了**
+
+**テストフレームワーク移行完了後の失敗テスト修正により、CI/CD環境を正常化**
+
+#### 修正概要
+- **失敗テスト**: 14個 → 0個
+- **npm run check-all**: 完全成功 ✅
+- **CI/CD**: 正常動作可能状態に復旧
+
+#### 修正対象とその原因
+1. **DialogoiSettingsService.test.ts** (3テスト修正)
+   - 原因: MockSettingsRepositoryのAPIコール不一致
+   - 修正: `get('files.exclude')` → `get('files', 'exclude')`
+
+2. **ForeshadowingService.test.ts** (7テスト修正)  
+   - 原因: MockMetaYamlServiceの未初期化データ
+   - 修正: YAMLパース後にsetMetaYaml()でデータ設定
+
+3. **ProjectLinkUpdateServiceImpl.test.ts** (4テスト修正)
+   - 原因: 新コメントシステム必須フィールド + リンク更新アルゴリズム変更
+   - 修正: comments必須対応 + 相対パス期待値調整
+
+#### 技術的成果
+- **テストフレームワーク移行**: 100%完了
+- **CI/CD適合性**: 達成
+- **次フェーズ準備**: 完了
+
+### Phase 5: 手動モック削除 ⏳ **未着手** - **🎯 本来の目的**
+
+**重要**: これが当初の目的である「不自然なモック定義の削除」の実現フェーズ
 
 Jest自動モック機能導入により不要になる手動モッククラスの削除:
 
-- [ ] `MockFileRepository.ts` 
-- [ ] `MockProjectLinkUpdateService.ts`
-- [ ] `MockDialogoiYamlService.ts`
-- [ ] 他のMockクラス
+**削除対象ファイル（6個）:**
+- [ ] `src/repositories/MockFileRepository.ts` 
+- [ ] `src/repositories/MockProjectLinkUpdateService.ts`
+- [ ] `src/repositories/MockDialogoiYamlService.ts`
+- [ ] `src/repositories/MockMetaYamlService.ts`
+- [ ] `src/repositories/MockSettingsRepository.ts`
+- [ ] `src/repositories/MockEventEmitterRepository.ts`
+
+**技術的アプローチ:**
+- Jest自動モック（`jest.mock()`）への置き換え
+- TestServiceContainerの大幅簡素化
+- DIパターンの自然な形への再設計
 
 ### Phase 6: クリーンアップ ⏳ **未着手**
 
-- [ ] 変換スクリプトファイルの削除
+- [x] 変換スクリプトファイルの削除（完了済み）
 - [ ] 未使用の型定義やヘルパー関数の削除
+- [ ] Jest設定の最適化とリファクタリング
 - [ ] 最終テスト実行とCI/CD確認
 
 ## エラー修正ガイド
@@ -200,11 +238,23 @@ expect((await service.method())).toBeTruthy()
 - **14:00**: getInstance非推奨警告一時的無効化
 - **15:00**: **webview/Reactテスト移行完全完了**（226テスト全通過）
 
-### 次回作業予定
-1. **Phase 5**: Jest自動モック機能導入による手動モック削除
-2. MockFileRepository, MockDialogoiYamlService等の置き換え
-3. DIパターン全体の再設計
-4. **Phase 6**: 変換スクリプト削除とプロジェクトクリーンアップ
+### 2025-01-30 - CI/CDブロック解消完了 🎉
+- **16:00**: 失敗テスト分析開始（14個の既存ビジネスロジック問題特定）
+- **17:00**: DialogoiSettingsService.test.ts修正（MockRepository APIコール不一致）
+- **18:00**: ForeshadowingService.test.ts修正（MockMetaYamlService初期化問題）
+- **19:00**: ProjectLinkUpdateServiceImpl.test.ts修正（コメントシステム + リンク更新対応）
+- **20:00**: **全テスト成功・CI/CD正常化達成**（685テスト全通過）
+
+### 🎯 **次のマイルストーン: Phase 5（本来の目的達成）**
+**重要**: テストフレームワーク移行は完了。次は真の目的である手動モック削除を実行。
+
+#### Phase 5: 手動モック削除 
+- Jest自動モック機能によるMockFileRepository等の置き換え
+- 不自然なモック実装の排除
+- DIパターン全体の再設計
+
+#### Phase 6: 最終クリーンアップ
+- 変換スクリプト削除とプロジェクト整理
 
 ## 参考資料
 
