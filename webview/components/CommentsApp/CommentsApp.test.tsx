@@ -1,8 +1,6 @@
-import { suite, test, setup } from 'mocha';
 import { render, screen, fireEvent, waitFor } from '../../test-utils';
 import { CommentsApp } from './CommentsApp';
 import { resetGlobalReadyMessageSent } from '../../hooks/useVSCodeApi';
-import assert from 'assert';
 
 // モックメッセージイベントを作成するヘルパー関数
 const createMessageEvent = (data: unknown): MessageEvent => {
@@ -24,11 +22,11 @@ const isMessageWithType = (msg: unknown, type: string): boolean => {
   );
 };
 
-suite('CommentsApp コンポーネント', () => {
+describe('CommentsApp コンポーネント', () => {
   let mockPostMessage: (message: unknown) => void;
   let postedMessages: unknown[];
 
-  setup(() => {
+  beforeEach(() => {
     // 各テスト前にVSCode APIモックをリセット
     resetGlobalReadyMessageSent();
     postedMessages = [];
@@ -55,30 +53,30 @@ suite('CommentsApp コンポーネント', () => {
     global.confirm = (): boolean => true;
   });
 
-  suite('初期表示とマウント', () => {
-    test('初期状態では適切な要素が表示される', () => {
+  describe('初期表示とマウント', () => {
+    it('初期状態では適切な要素が表示される', () => {
       render(<CommentsApp />);
 
       // ヘッダーの確認
-      assert(screen.getByText('コメント・TODO'));
+      expect(screen.getByText('コメント・TODO')).toBeInTheDocument();
       // ファイル未選択状態の確認
-      assert(screen.getByText('ファイルを選択してください'));
+      expect(screen.getByText('ファイルを選択してください')).toBeInTheDocument();
       // コメント追加ボタンの確認
-      assert(screen.getByText('+ コメントを追加'));
+      expect(screen.getByText('+ コメントを追加')).toBeInTheDocument();
     });
 
-    test('コンポーネントマウント時にreadyメッセージが送信される', async () => {
+    it('コンポーネントマウント時にreadyメッセージが送信される', async () => {
       render(<CommentsApp />);
 
       await waitFor(() => {
-        assert.strictEqual(postedMessages.length, 1);
-        assert.deepStrictEqual(postedMessages[0], { type: 'ready' });
+        expect(postedMessages.length).toBe(1);
+        expect(postedMessages[0]).toEqual({ type: 'ready' });
       });
     });
   });
 
-  suite('VSCodeメッセージ受信処理', () => {
-    test('updateCommentsメッセージを受信してファイル情報を表示', async () => {
+  describe('VSCodeメッセージ受信処理', () => {
+    it('updateCommentsメッセージを受信してファイル情報を表示', async () => {
       render(<CommentsApp />);
 
       const updateMessage = {
@@ -106,15 +104,15 @@ suite('CommentsApp コンポーネント', () => {
       // 状態更新を待つ
       await waitFor(() => {
         // ファイル名の表示確認
-        assert(screen.getByText('test.md'));
+        expect(screen.getByText('test.md')).toBeInTheDocument();
         // コメント内容の表示確認
-        assert(screen.getByText('テストコメント'));
+        expect(screen.getByText('テストコメント')).toBeInTheDocument();
         // 行番号の表示確認
-        assert(screen.getByText('行1'));
+        expect(screen.getByText('行1')).toBeInTheDocument();
       });
     });
 
-    test('コメントがない場合の表示', async () => {
+    it('コメントがない場合の表示', async () => {
       render(<CommentsApp />);
 
       const updateMessage = {
@@ -131,13 +129,13 @@ suite('CommentsApp コンポーネント', () => {
 
       await waitFor(() => {
         // ファイル名の表示確認
-        assert(screen.getByText('empty.md'));
+        expect(screen.getByText('empty.md')).toBeInTheDocument();
         // コメントなしの表示確認
-        assert(screen.getByText('コメントはありません'));
+        expect(screen.getByText('コメントはありません')).toBeInTheDocument();
       });
     });
 
-    test('複数行コメントの表示', async () => {
+    it('複数行コメントの表示', async () => {
       render(<CommentsApp />);
 
       const updateMessage = {
@@ -164,11 +162,11 @@ suite('CommentsApp コンポーネント', () => {
 
       await waitFor(() => {
         // 複数行の行番号表示確認
-        assert(screen.getByText('行5-8'));
+        expect(screen.getByText('行5-8')).toBeInTheDocument();
       });
     });
 
-    test('解決済みコメントの表示', async () => {
+    it('解決済みコメントの表示', async () => {
       render(<CommentsApp />);
 
       const updateMessage = {
@@ -195,13 +193,13 @@ suite('CommentsApp コンポーネント', () => {
 
       await waitFor(() => {
         // 解決済みアイコンの確認
-        assert(screen.getByText('✅'));
+        expect(screen.getByText('✅')).toBeInTheDocument();
         // ボタンテキストの確認
-        assert(screen.getByText('未完了に戻す'));
+        expect(screen.getByText('未完了に戻す')).toBeInTheDocument();
       });
     });
 
-    test('エラーメッセージの表示', async () => {
+    it('エラーメッセージの表示', async () => {
       render(<CommentsApp />);
 
       const errorMessage = {
@@ -213,26 +211,26 @@ suite('CommentsApp コンポーネント', () => {
 
       await waitFor(() => {
         // エラーメッセージの表示確認
-        assert(screen.getByText('エラー: テストエラーメッセージ'));
+        expect(screen.getByText('エラー: テストエラーメッセージ')).toBeInTheDocument();
       });
     });
   });
 
-  suite('コメント追加機能', () => {
-    test('コメント追加ボタンをクリックするとフォームが表示される', () => {
+  describe('コメント追加機能', () => {
+    it('コメント追加ボタンをクリックするとフォームが表示される', () => {
       render(<CommentsApp />);
 
       const addButton = screen.getByText('+ コメントを追加');
       fireEvent.click(addButton);
 
       // フォーム要素の確認
-      assert(screen.getByLabelText('行番号'));
-      assert(screen.getByLabelText('コメント'));
-      assert(screen.getByText('追加'));
-      assert(screen.getByText('キャンセル'));
+      expect(screen.getByLabelText('行番号')).toBeInTheDocument();
+      expect(screen.getByLabelText('コメント')).toBeInTheDocument();
+      expect(screen.getByText('追加')).toBeInTheDocument();
+      expect(screen.getByText('キャンセル')).toBeInTheDocument();
     });
 
-    test('有効な値でコメント追加を実行', async () => {
+    it('有効な値でコメント追加を実行', async () => {
       render(<CommentsApp />);
 
       // フォームを表示
@@ -254,18 +252,18 @@ suite('CommentsApp コンポーネント', () => {
         const addCommentMessage = postedMessages.find((msg: unknown) =>
           isMessageWithType(msg, 'addComment'),
         ) as { type: string; payload: { line: number; content: string } };
-        assert(addCommentMessage);
-        assert.deepStrictEqual(addCommentMessage.payload, {
+        expect(addCommentMessage).toBeTruthy();
+        expect(addCommentMessage.payload).toEqual({
           line: 42,
           content: '新しいコメント',
         });
       });
 
       // フォームがリセットされることを確認
-      assert.strictEqual(screen.queryByLabelText('行番号'), null);
+      expect(screen.queryByLabelText('行番号')).toBe(null);
     });
 
-    test('無効な行番号でエラー表示', () => {
+    it('無効な行番号でエラー表示', () => {
       render(<CommentsApp />);
 
       // フォームを表示
@@ -283,10 +281,10 @@ suite('CommentsApp コンポーネント', () => {
       fireEvent.click(submitButton);
 
       // エラーメッセージの確認
-      assert(screen.getByText('エラー: 有効な行番号を入力してください'));
+      expect(screen.getByText('エラー: 有効な行番号を入力してください')).toBeInTheDocument();
     });
 
-    test('空のコメント内容でエラー表示', () => {
+    it('空のコメント内容でエラー表示', () => {
       render(<CommentsApp />);
 
       // フォームを表示
@@ -302,10 +300,10 @@ suite('CommentsApp コンポーネント', () => {
       fireEvent.click(submitButton);
 
       // エラーメッセージの確認
-      assert(screen.getByText('エラー: コメント内容を入力してください'));
+      expect(screen.getByText('エラー: コメント内容を入力してください')).toBeInTheDocument();
     });
 
-    test('キャンセルボタンでフォームが閉じる', () => {
+    it('キャンセルボタンでフォームが閉じる', () => {
       render(<CommentsApp />);
 
       // フォームを表示
@@ -323,13 +321,13 @@ suite('CommentsApp コンポーネント', () => {
       fireEvent.click(cancelButton);
 
       // フォームが非表示になることを確認
-      assert.strictEqual(screen.queryByLabelText('行番号'), null);
+      expect(screen.queryByLabelText('行番号')).toBe(null);
       // 追加ボタンが再表示されることを確認
-      assert(screen.getByText('+ コメントを追加'));
+      expect(screen.getByText('+ コメントを追加')).toBeInTheDocument();
     });
   });
 
-  suite('コメント操作機能', () => {
+  describe('コメント操作機能', () => {
     const setupCommentsUI = async (): Promise<void> => {
       render(<CommentsApp />);
 
@@ -366,12 +364,12 @@ suite('CommentsApp コンポーネント', () => {
 
       // 状態更新を待つ
       await waitFor(() => {
-        assert(screen.getByText('test.md'));
-        assert(screen.getByText('最初のコメント'));
+        expect(screen.getByText('test.md')).toBeInTheDocument();
+        expect(screen.getByText('最初のコメント')).toBeInTheDocument();
       });
     };
 
-    test('行ジャンプボタンをクリックしてメッセージ送信', async () => {
+    it('行ジャンプボタンをクリックしてメッセージ送信', async () => {
       await setupCommentsUI();
 
       const jumpButtons = screen.getAllByText(/行\d/);
@@ -381,15 +379,15 @@ suite('CommentsApp コンポーネント', () => {
         const jumpMessage = postedMessages.find((msg: unknown) =>
           isMessageWithType(msg, 'jumpToLine'),
         ) as { type: string; payload: { line: number; endLine?: number } };
-        assert(jumpMessage);
-        assert.deepStrictEqual(jumpMessage.payload, {
+        expect(jumpMessage).toBeTruthy();
+        expect(jumpMessage.payload).toEqual({
           line: 1,
           endLine: undefined,
         });
       });
     });
 
-    test('ステータス切り替えボタンをクリック', async () => {
+    it('ステータス切り替えボタンをクリック', async () => {
       await setupCommentsUI();
 
       const toggleButtons = screen.getAllByText(/完了にする|未完了に戻す/);
@@ -399,14 +397,14 @@ suite('CommentsApp コンポーネント', () => {
         const toggleMessage = postedMessages.find((msg: unknown) =>
           isMessageWithType(msg, 'toggleCommentStatus'),
         ) as { type: string; payload: { commentIndex: number } };
-        assert(toggleMessage);
-        assert.deepStrictEqual(toggleMessage.payload, {
+        expect(toggleMessage).toBeTruthy();
+        expect(toggleMessage.payload).toEqual({
           commentIndex: 0,
         });
       });
     });
 
-    test('削除ボタンをクリック', async () => {
+    it('削除ボタンをクリック', async () => {
       await setupCommentsUI();
 
       const deleteButtons = screen.getAllByText('削除');
@@ -416,16 +414,16 @@ suite('CommentsApp コンポーネント', () => {
         const deleteMessage = postedMessages.find((msg: unknown) =>
           isMessageWithType(msg, 'deleteComment'),
         ) as { type: string; payload: { commentIndex: number } };
-        assert(deleteMessage);
-        assert.deepStrictEqual(deleteMessage.payload, {
+        expect(deleteMessage).toBeTruthy();
+        expect(deleteMessage.payload).toEqual({
           commentIndex: 0,
         });
       });
     });
   });
 
-  suite('日付表示機能', () => {
-    test('作成日時が正しく表示される', async () => {
+  describe('日付表示機能', () => {
+    it('作成日時が正しく表示される', async () => {
       render(<CommentsApp />);
 
       const updateMessage = {
@@ -453,18 +451,18 @@ suite('CommentsApp コンポーネント', () => {
       await waitFor(() => {
         // 日付が表示されることを確認（具体的な形式は環境依存のため存在のみ確認）
         // コメント内容が表示されていることを確認
-        assert(screen.getByText('日付テスト'));
+        expect(screen.getByText('日付テスト')).toBeInTheDocument();
       });
 
       // comment-metaクラスの要素が存在することを確認（waitFor外で実行）
       const commentMeta = document.querySelector('.comment-meta');
-      assert(commentMeta);
-      assert(commentMeta.textContent && commentMeta.textContent.length > 0);
+      expect(commentMeta).toBeTruthy();
+      expect(commentMeta?.textContent && commentMeta.textContent.length > 0).toBeTruthy();
     });
   });
 
-  suite('エラーハンドリング', () => {
-    test('不正なメッセージタイプを受信してもエラーにならない', () => {
+  describe('エラーハンドリング', () => {
+    it('不正なメッセージタイプを受信してもエラーにならない', () => {
       render(<CommentsApp />);
 
       const invalidMessage = {
@@ -473,12 +471,12 @@ suite('CommentsApp コンポーネント', () => {
       };
 
       // エラーが発生しないことを確認
-      assert.doesNotThrow(() => {
+      expect(() => {
         window.dispatchEvent(createMessageEvent(invalidMessage));
-      });
+      }).not.toThrow();
     });
 
-    test('メッセージデータが不完全でもエラーにならない', () => {
+    it('メッセージデータが不完全でもエラーにならない', () => {
       render(<CommentsApp />);
 
       const incompleteMessage = {
@@ -489,14 +487,14 @@ suite('CommentsApp コンポーネント', () => {
         },
       };
 
-      assert.doesNotThrow(() => {
+      expect(() => {
         window.dispatchEvent(createMessageEvent(incompleteMessage));
-      });
+      }).not.toThrow();
     });
   });
 
-  suite('入力値バリデーション', () => {
-    test('負の行番号は拒否される', () => {
+  describe('入力値バリデーション', () => {
+    it('負の行番号は拒否される', () => {
       render(<CommentsApp />);
 
       const addButton = screen.getByText('+ コメントを追加');
@@ -510,10 +508,10 @@ suite('CommentsApp コンポーネント', () => {
       const submitButton = screen.getByText('追加');
       fireEvent.click(submitButton);
 
-      assert(screen.getByText('エラー: 有効な行番号を入力してください'));
+      expect(screen.getByText('エラー: 有効な行番号を入力してください')).toBeInTheDocument();
     });
 
-    test('非数値の行番号は拒否される', () => {
+    it('非数値の行番号は拒否される', () => {
       render(<CommentsApp />);
 
       const addButton = screen.getByText('+ コメントを追加');
@@ -527,10 +525,10 @@ suite('CommentsApp コンポーネント', () => {
       const submitButton = screen.getByText('追加');
       fireEvent.click(submitButton);
 
-      assert(screen.getByText('エラー: 有効な行番号を入力してください'));
+      expect(screen.getByText('エラー: 有効な行番号を入力してください')).toBeInTheDocument();
     });
 
-    test('空白のみのコメント内容は拒否される', () => {
+    it('空白のみのコメント内容は拒否される', () => {
       render(<CommentsApp />);
 
       const addButton = screen.getByText('+ コメントを追加');
@@ -544,12 +542,12 @@ suite('CommentsApp コンポーネント', () => {
       const submitButton = screen.getByText('追加');
       fireEvent.click(submitButton);
 
-      assert(screen.getByText('エラー: コメント内容を入力してください'));
+      expect(screen.getByText('エラー: コメント内容を入力してください')).toBeInTheDocument();
     });
   });
 
-  suite('UI状態管理', () => {
-    test('エラー表示後にコメント追加が成功するとエラーがクリアされる', async () => {
+  describe('UI状態管理', () => {
+    it('エラー表示後にコメント追加が成功するとエラーがクリアされる', async () => {
       render(<CommentsApp />);
 
       const addButton = screen.getByText('+ コメントを追加');
@@ -564,7 +562,7 @@ suite('CommentsApp コンポーネント', () => {
       let submitButton = screen.getByText('追加');
       fireEvent.click(submitButton);
 
-      assert(screen.getByText('エラー: 有効な行番号を入力してください'));
+      expect(screen.getByText('エラー: 有効な行番号を入力してください')).toBeInTheDocument();
 
       // 正しい値で再試行
       fireEvent.change(lineInput, { target: { value: '1' } });
@@ -573,11 +571,11 @@ suite('CommentsApp コンポーネント', () => {
 
       // エラーがクリアされることを確認
       await waitFor(() => {
-        assert.strictEqual(screen.queryByText('エラー: 有効な行番号を入力してください'), null);
+        expect(screen.queryByText('エラー: 有効な行番号を入力してください')).toBe(null);
       });
     });
 
-    test('updateCommentsメッセージ受信後にエラーがクリアされる', async () => {
+    it('updateCommentsメッセージ受信後にエラーがクリアされる', async () => {
       render(<CommentsApp />);
 
       // エラーメッセージを表示
@@ -589,7 +587,7 @@ suite('CommentsApp コンポーネント', () => {
 
       // エラーメッセージが表示されることを確認
       await waitFor(() => {
-        assert(screen.getByText('エラー: テストエラー'));
+        expect(screen.getByText('エラー: テストエラー')).toBeInTheDocument();
       });
 
       // updateCommentsメッセージを送信
@@ -607,11 +605,11 @@ suite('CommentsApp コンポーネント', () => {
       // エラーがクリアされることを確認（waitForの代わりに直接確認）
       await waitFor(() => {
         // ファイル名が表示されることでupdateCommentsメッセージが処理されたことを確認
-        assert(screen.getByText('test.md'));
+        expect(screen.getByText('test.md')).toBeInTheDocument();
       });
 
       // この時点でエラーがクリアされているはず
-      assert.strictEqual(screen.queryByText('エラー: テストエラー'), null);
+      expect(screen.queryByText('エラー: テストエラー')).toBe(null);
     });
   });
 });

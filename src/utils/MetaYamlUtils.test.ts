@@ -247,7 +247,7 @@ files:
         expect(
           firstError.includes(
             'type フィールドは content, setting, subdirectory のいずれかである必要があります',
-          )
+          ),
         ).toBeTruthy();
       }
     });

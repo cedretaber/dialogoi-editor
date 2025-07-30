@@ -19,8 +19,7 @@ export default [
         project: './tsconfig.json'
       },
       globals: {
-        ...globals.node,
-        ...globals.mocha
+        ...globals.node
       }
     },
     plugins: {
@@ -41,7 +40,7 @@ export default [
       '@typescript-eslint/no-explicit-any': 'error',
       '@typescript-eslint/no-non-null-assertion': 'error',
       '@typescript-eslint/strict-boolean-expressions': 'error',
-      '@typescript-eslint/no-deprecated': 'warn', // Phase 4完了、同期メソッド削除完了
+      '@typescript-eslint/no-deprecated': 'off', // 一時的に無効化: Jest自動モック導入時にDIパターン全体を再設計予定
       'no-console': ['warn', { allow: ['warn', 'error'] }],
       'eqeqeq': 'error',
       'curly': 'error'
@@ -94,7 +93,7 @@ export default [
       '@typescript-eslint/explicit-function-return-type': 'error',
       '@typescript-eslint/no-explicit-any': 'error',
       '@typescript-eslint/no-non-null-assertion': 'error',
-      '@typescript-eslint/no-deprecated': 'warn', // Phase 4完了、同期メソッド削除完了
+      '@typescript-eslint/no-deprecated': 'off', // 一時的に無効化: Jest自動モック導入時にDIパターン全体を再設計予定
       
       // React関連
       'react/prop-types': 'off', // TypeScriptを使用するためprop-typesは不要
@@ -104,6 +103,15 @@ export default [
       'no-console': 'warn',
       'eqeqeq': 'error',
       'curly': 'error'
+    }
+  },
+  // テストファイル用設定（Jest）
+  {
+    files: ['src/**/*.test.ts', 'webview/**/*.test.tsx'],
+    languageOptions: {
+      globals: {
+        ...globals.jest
+      }
     }
   }
 ];

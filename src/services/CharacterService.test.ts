@@ -211,7 +211,7 @@ files:
       if (fileInfo !== null && hasCharacterProperty(fileInfo)) {
         expect(fileInfo.character.importance).toBe('main');
       } else {
-        fail('fileInfoにcharacterプロパティが存在しません');
+        throw new Error('fileInfoにcharacterプロパティが存在しません');
       }
 
       expect(fileInfo?.tags).toEqual(['主人公', '戦士']);

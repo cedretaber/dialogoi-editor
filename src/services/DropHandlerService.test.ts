@@ -242,8 +242,8 @@ tags: []`,
 
       // 結果を検証
       expect(result.success).toBe(false);
-      expect(
-        result.message).toBe('ドロップ先のファイルがDialogoiプロジェクトのファイルではありません。',
+      expect(result.message).toBe(
+        'ドロップ先のファイルがDialogoiプロジェクトのファイルではありません。',
       );
     });
 
@@ -282,8 +282,8 @@ tags: []`,
 
       // 結果を検証
       expect(result.success).toBe(false);
-      expect(
-        result.message).toBe('ドロップ先のファイルがDialogoiプロジェクトのファイルではありません。',
+      expect(result.message).toBe(
+        'ドロップ先のファイルがDialogoiプロジェクトのファイルではありません。',
       );
     });
   });

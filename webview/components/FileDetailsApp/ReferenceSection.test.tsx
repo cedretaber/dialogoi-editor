@@ -1,11 +1,11 @@
+import '@testing-library/jest-dom';
+
 import React from 'react';
-import { suite, test, setup } from 'mocha';
 import { render, screen, fireEvent } from '../../test-utils';
 import { ReferenceSection } from './ReferenceSection';
-import assert from 'assert';
 import type { FileDetailsData } from '../../types/FileDetails';
 
-suite('ReferenceSection コンポーネント', () => {
+describe('ReferenceSection コンポーネント', () => {
   let mockOnReferenceOpen: (reference: string) => void;
   let mockOnReferenceRemove: (reference: string) => void;
   let mockOnReverseReferenceRemove: (reference: string) => void;
@@ -13,7 +13,7 @@ suite('ReferenceSection コンポーネント', () => {
   let removedReferences: string[];
   let removedReverseReferences: string[];
 
-  setup(() => {
+  beforeEach(() => {
     // 各テスト前にモック関数をリセット
     openedReferences = [];
     removedReferences = [];
@@ -32,8 +32,8 @@ suite('ReferenceSection コンポーネント', () => {
     };
   });
 
-  suite('参照データが存在しない場合', () => {
-    test('referenceDataがundefinedの場合は何も表示されない', () => {
+  describe('参照データが存在しない場合', () => {
+    it('referenceDataがundefinedの場合は何も表示されない', () => {
       const fileDataWithoutRef: FileDetailsData = {
         type: 'content',
         referenceData: undefined,
@@ -49,10 +49,10 @@ suite('ReferenceSection コンポーネント', () => {
       );
 
       // コンポーネントが何も描画されない
-      assert.strictEqual(container.firstChild, null);
+      expect(container.firstChild).toBe(null);
     });
 
-    test('referenceDataがnullの場合は何も表示されない', () => {
+    it('referenceDataがnullの場合は何も表示されない', () => {
       const fileDataWithNullRef: FileDetailsData = {
         type: 'content',
         referenceData: null as unknown as undefined,
@@ -67,12 +67,12 @@ suite('ReferenceSection コンポーネント', () => {
         />,
       );
 
-      assert.strictEqual(container.firstChild, null);
+      expect(container.firstChild).toBe(null);
     });
   });
 
-  suite('本文ファイル（content）の場合', () => {
-    test('キャラクター参照のみがある場合', () => {
+  describe('本文ファイル（content）の場合', () => {
+    it('キャラクター参照のみがある場合', () => {
       const contentFileData: FileDetailsData = {
         type: 'content',
         referenceData: {
@@ -91,12 +91,12 @@ suite('ReferenceSection コンポーネント', () => {
         />,
       );
 
-      assert(screen.getByText('登場人物 (1)'));
-      assert(screen.getByText('hero.md'));
-      assert(!screen.queryByText('関連設定'));
+      expect(screen.getByText('登場人物 (1)')).toBeInTheDocument();
+      expect(screen.getByText('hero.md')).toBeInTheDocument();
+      expect(screen.queryByText('関連設定')).toBeNull();
     });
 
-    test('設定参照のみがある場合', () => {
+    it('設定参照のみがある場合', () => {
       const contentFileData: FileDetailsData = {
         type: 'content',
         referenceData: {
@@ -115,12 +115,12 @@ suite('ReferenceSection コンポーネント', () => {
         />,
       );
 
-      assert(!screen.queryByText('登場人物'));
-      assert(screen.getByText('関連設定 (1)'));
-      assert(screen.getByText('world.md'));
+      expect(screen.queryByText('登場人物')).toBeNull();
+      expect(screen.getByText('関連設定 (1)')).toBeInTheDocument();
+      expect(screen.getByText('world.md')).toBeInTheDocument();
     });
 
-    test('キャラクターと設定両方の参照がある場合', () => {
+    it('キャラクターと設定両方の参照がある場合', () => {
       const contentFileData: FileDetailsData = {
         type: 'content',
         referenceData: {
@@ -142,18 +142,18 @@ suite('ReferenceSection コンポーネント', () => {
         />,
       );
 
-      assert(screen.getByText('登場人物 (1)'));
-      assert(screen.getByText('関連設定 (1)'));
-      assert(screen.getByText('hero.md'));
+      expect(screen.getByText('登場人物 (1)')).toBeInTheDocument();
+      expect(screen.getByText('関連設定 (1)')).toBeInTheDocument();
+      expect(screen.getByText('hero.md')).toBeInTheDocument();
       // ハイパーリンクアイコン付きのテキストを検索
-      assert(
+      expect(
         screen.getByText((content, element) => {
           return element?.tagName.toLowerCase() === 'a' && content.includes('world.md');
         }),
-      );
+      ).toBeInTheDocument();
     });
 
-    test('参照が空の場合は何も表示されない', () => {
+    it('参照が空の場合は何も表示されない', () => {
       const contentFileData: FileDetailsData = {
         type: 'content',
         referenceData: {
@@ -172,10 +172,10 @@ suite('ReferenceSection コンポーネント', () => {
         />,
       );
 
-      assert.strictEqual(container.firstChild, null);
+      expect(container.firstChild).toBe(null);
     });
 
-    test('展開・折りたたみ機能が正しく動作する（登場人物）', () => {
+    it('展開・折りたたみ機能が正しく動作する（登場人物）', () => {
       const contentFileData: FileDetailsData = {
         type: 'content',
         referenceData: {
@@ -199,22 +199,24 @@ suite('ReferenceSection コンポーネント', () => {
         .getByText('登場人物 (1)')
         .closest('.section')
         ?.querySelector('.section-content');
-      assert(!initialContent?.classList.contains('collapsed'));
+      expect(initialContent?.classList.contains('collapsed')).toBeFalsy();
 
       const header = screen.getByText('登場人物 (1)').closest('button');
-      assert(header);
+      expect(header).toBeTruthy();
 
-      fireEvent.click(header);
+      if (header) {
+        fireEvent.click(header);
+      }
 
       // 折りたたみ状態の確認
       const content = screen
         .getByText('登場人物 (1)')
         .closest('.section')
         ?.querySelector('.section-content');
-      assert(content?.classList.contains('collapsed'));
+      expect(content?.classList.contains('collapsed')).toBeTruthy();
     });
 
-    test('展開・折りたたみ機能が正しく動作する（関連設定）', () => {
+    it('展開・折りたたみ機能が正しく動作する（関連設定）', () => {
       const contentFileData: FileDetailsData = {
         type: 'content',
         referenceData: {
@@ -238,24 +240,26 @@ suite('ReferenceSection コンポーネント', () => {
         .getByText('関連設定 (1)')
         .closest('.section')
         ?.querySelector('.section-content');
-      assert(!initialContent?.classList.contains('collapsed'));
+      expect(initialContent?.classList.contains('collapsed')).toBeFalsy();
 
       const header = screen.getByText('関連設定 (1)').closest('button');
-      assert(header);
+      expect(header).toBeTruthy();
 
-      fireEvent.click(header);
+      if (header) {
+        fireEvent.click(header);
+      }
 
       // 折りたたみ状態の確認
       const content = screen
         .getByText('関連設定 (1)')
         .closest('.section')
         ?.querySelector('.section-content');
-      assert(content?.classList.contains('collapsed'));
+      expect(content?.classList.contains('collapsed')).toBeTruthy();
     });
   });
 
-  suite('その他ファイル（setting/subdirectory）の場合', () => {
-    test('参照関係がある場合の基本表示', () => {
+  describe('その他ファイル（setting/subdirectory）の場合', () => {
+    it('参照関係がある場合の基本表示', () => {
       const settingFileData: FileDetailsData = {
         type: 'setting',
         referenceData: {
@@ -274,19 +278,19 @@ suite('ReferenceSection コンポーネント', () => {
         />,
       );
 
-      assert(screen.getByText('参照関係'));
-      assert(screen.getByText('このファイルが参照:'));
-      assert(screen.getByText('このファイルを参照:'));
-      assert(screen.getByText('chapter1.md'));
+      expect(screen.getByText('参照関係')).toBeInTheDocument();
+      expect(screen.getByText('このファイルが参照:')).toBeInTheDocument();
+      expect(screen.getByText('このファイルを参照:')).toBeInTheDocument();
+      expect(screen.getByText('chapter1.md')).toBeInTheDocument();
       // ハイパーリンクアイコン付きのテキストを検索
-      assert(
+      expect(
         screen.getByText((content, element) => {
           return element?.tagName.toLowerCase() === 'a' && content.includes('chapter2.md');
         }),
-      );
+      ).toBeInTheDocument();
     });
 
-    test('参照関係がない場合', () => {
+    it('参照関係がない場合', () => {
       const settingFileData: FileDetailsData = {
         type: 'setting',
         referenceData: {
@@ -305,11 +309,11 @@ suite('ReferenceSection コンポーネント', () => {
         />,
       );
 
-      assert(screen.getByText('参照関係'));
-      assert(screen.getByText('参照関係がありません'));
+      expect(screen.getByText('参照関係')).toBeInTheDocument();
+      expect(screen.getByText('参照関係がありません')).toBeInTheDocument();
     });
 
-    test('このファイルが参照のみの場合', () => {
+    it('このファイルが参照のみの場合', () => {
       const settingFileData: FileDetailsData = {
         type: 'setting',
         referenceData: {
@@ -328,12 +332,12 @@ suite('ReferenceSection コンポーネント', () => {
         />,
       );
 
-      assert(screen.getByText('このファイルが参照:'));
-      assert(!screen.queryByText('このファイルを参照:'));
-      assert(screen.getByText('chapter1.md'));
+      expect(screen.getByText('このファイルが参照:')).toBeInTheDocument();
+      expect(screen.queryByText('このファイルを参照:')).toBeNull();
+      expect(screen.getByText('chapter1.md')).toBeInTheDocument();
     });
 
-    test('このファイルを参照のみの場合', () => {
+    it('このファイルを参照のみの場合', () => {
       const settingFileData: FileDetailsData = {
         type: 'setting',
         referenceData: {
@@ -352,17 +356,17 @@ suite('ReferenceSection コンポーネント', () => {
         />,
       );
 
-      assert(!screen.queryByText('このファイルが参照:'));
-      assert(screen.getByText('このファイルを参照:'));
+      expect(screen.queryByText('このファイルが参照:')).toBeNull();
+      expect(screen.getByText('このファイルを参照:')).toBeInTheDocument();
       // ハイパーリンクアイコン付きのテキストを検索
-      assert(
+      expect(
         screen.getByText((content, element) => {
           return element?.tagName.toLowerCase() === 'a' && content.includes('chapter1.md');
         }),
-      );
+      ).toBeInTheDocument();
     });
 
-    test('展開・折りたたみ機能が正しく動作する', () => {
+    it('展開・折りたたみ機能が正しく動作する', () => {
       const settingFileData: FileDetailsData = {
         type: 'setting',
         referenceData: {
@@ -382,21 +386,23 @@ suite('ReferenceSection コンポーネント', () => {
       );
 
       const header = screen.getByText('参照関係').closest('button');
-      assert(header);
+      expect(header).toBeTruthy();
 
-      fireEvent.click(header);
+      if (header) {
+        fireEvent.click(header);
+      }
 
       // 折りたたみ状態の確認
       const content = screen
         .getByText('参照関係')
         .closest('.section')
         ?.querySelector('.section-content');
-      assert(content?.classList.contains('collapsed'));
+      expect(content?.classList.contains('collapsed')).toBeTruthy();
     });
   });
 
-  suite('ReferenceItem個別テスト', () => {
-    test('手動参照アイテムの表示と削除ボタン', () => {
+  describe('ReferenceItem個別テスト', () => {
+    it('手動参照アイテムの表示と削除ボタン', () => {
       const settingFileData: FileDetailsData = {
         type: 'setting',
         referenceData: {
@@ -416,15 +422,15 @@ suite('ReferenceSection コンポーネント', () => {
       );
 
       const referenceLink = screen.getByText('chapter1.md');
-      assert(referenceLink);
-      assert(referenceLink.classList.contains('manual-ref'));
+      expect(referenceLink).toBeTruthy();
+      expect(referenceLink.classList.contains('manual-ref')).toBeTruthy();
 
       // 削除ボタンが存在する（手動参照なので）
       const deleteButton = screen.getByTitle('手動参照を削除');
-      assert(deleteButton);
+      expect(deleteButton).toBeTruthy();
     });
 
-    test('ハイパーリンク参照アイテムの表示（削除ボタンなし）', () => {
+    it('ハイパーリンク参照アイテムの表示（削除ボタンなし）', () => {
       const settingFileData: FileDetailsData = {
         type: 'setting',
         referenceData: {
@@ -445,14 +451,14 @@ suite('ReferenceSection コンポーネント', () => {
 
       // hyperlink-ref クラスを持つ要素を検索
       const hyperlinkRef = screen.getByRole('button', { name: /chapter1.md/ });
-      assert(hyperlinkRef);
-      assert(hyperlinkRef.classList.contains('hyperlink-ref'));
+      expect(hyperlinkRef).toBeTruthy();
+      expect(hyperlinkRef.classList.contains('hyperlink-ref')).toBeTruthy();
 
       // 削除ボタンが存在しない（ハイパーリンク参照なので）
-      assert(!screen.queryByTitle('手動参照を削除'));
+      expect(screen.queryByTitle('手動参照を削除')).toBeFalsy();
     });
 
-    test('参照アイテムクリック時にonReferenceOpenが呼ばれる', () => {
+    it('参照アイテムクリック時にonReferenceOpenが呼ばれる', () => {
       const settingFileData: FileDetailsData = {
         type: 'setting',
         referenceData: {
@@ -474,11 +480,11 @@ suite('ReferenceSection コンポーネント', () => {
       const referenceLink = screen.getByText('chapter1.md');
       fireEvent.click(referenceLink);
 
-      assert.strictEqual(openedReferences.length, 1);
-      assert.strictEqual(openedReferences[0], 'contents/chapter1.md');
+      expect(openedReferences.length).toBe(1);
+      expect(openedReferences[0]).toBe('contents/chapter1.md');
     });
 
-    test('Enterキーでも参照が開ける', () => {
+    it('Enterキーでも参照が開ける', () => {
       const settingFileData: FileDetailsData = {
         type: 'setting',
         referenceData: {
@@ -500,11 +506,11 @@ suite('ReferenceSection コンポーネント', () => {
       const referenceLink = screen.getByText('chapter1.md');
       fireEvent.keyDown(referenceLink, { key: 'Enter' });
 
-      assert.strictEqual(openedReferences.length, 1);
-      assert.strictEqual(openedReferences[0], 'contents/chapter1.md');
+      expect(openedReferences.length).toBe(1);
+      expect(openedReferences[0]).toBe('contents/chapter1.md');
     });
 
-    test('削除ボタンクリック時にonReferenceRemoveが呼ばれる', () => {
+    it('削除ボタンクリック時にonReferenceRemoveが呼ばれる', () => {
       const settingFileData: FileDetailsData = {
         type: 'setting',
         referenceData: {
@@ -526,11 +532,11 @@ suite('ReferenceSection コンポーネント', () => {
       const deleteButton = screen.getByTitle('手動参照を削除');
       fireEvent.click(deleteButton);
 
-      assert.strictEqual(removedReferences.length, 1);
-      assert.strictEqual(removedReferences[0], 'contents/chapter1.md');
+      expect(removedReferences.length).toBe(1);
+      expect(removedReferences[0]).toBe('contents/chapter1.md');
     });
 
-    test('逆参照の削除時にonReverseReferenceRemoveが呼ばれる', () => {
+    it('逆参照の削除時にonReverseReferenceRemoveが呼ばれる', () => {
       const settingFileData: FileDetailsData = {
         type: 'setting',
         referenceData: {
@@ -552,11 +558,11 @@ suite('ReferenceSection コンポーネント', () => {
       const deleteButton = screen.getByTitle('手動参照を削除');
       fireEvent.click(deleteButton);
 
-      assert.strictEqual(removedReverseReferences.length, 1);
-      assert.strictEqual(removedReverseReferences[0], 'contents/chapter1.md');
+      expect(removedReverseReferences.length).toBe(1);
+      expect(removedReverseReferences[0]).toBe('contents/chapter1.md');
     });
 
-    test('ファイル名の抽出が正しく動作する', () => {
+    it('ファイル名の抽出が正しく動作する', () => {
       const settingFileData: FileDetailsData = {
         type: 'setting',
         referenceData: {
@@ -576,16 +582,16 @@ suite('ReferenceSection コンポーネント', () => {
       );
 
       // フルパスではなくファイル名のみが表示される
-      assert(screen.getByText('file.md'));
+      expect(screen.getByText('file.md')).toBeInTheDocument();
 
       // title属性にはフルパスが設定される
       const referenceLink = screen.getByText('file.md');
-      assert.strictEqual(referenceLink.getAttribute('title'), 'path/to/deep/file.md');
+      expect(referenceLink.getAttribute('title')).toBe('path/to/deep/file.md');
     });
   });
 
-  suite('アクセシビリティ', () => {
-    test('参照リンクが適切にマークアップされている', () => {
+  describe('アクセシビリティ', () => {
+    it('参照リンクが適切にマークアップされている', () => {
       const settingFileData: FileDetailsData = {
         type: 'setting',
         referenceData: {
@@ -605,12 +611,12 @@ suite('ReferenceSection コンポーネント', () => {
       );
 
       const referenceLink = screen.getByText('chapter1.md');
-      assert.strictEqual(referenceLink.getAttribute('role'), 'button');
-      assert.strictEqual(referenceLink.getAttribute('tabIndex'), '0');
-      assert.strictEqual(referenceLink.getAttribute('title'), 'contents/chapter1.md');
+      expect(referenceLink.getAttribute('role')).toBe('button');
+      expect(referenceLink.getAttribute('tabIndex')).toBe('0');
+      expect(referenceLink.getAttribute('title')).toBe('contents/chapter1.md');
     });
 
-    test('削除ボタンが適切にマークアップされている', () => {
+    it('削除ボタンが適切にマークアップされている', () => {
       const settingFileData: FileDetailsData = {
         type: 'setting',
         referenceData: {
@@ -630,14 +636,14 @@ suite('ReferenceSection コンポーネント', () => {
       );
 
       const deleteButton = screen.getByTitle('手動参照を削除');
-      assert.strictEqual(deleteButton.tagName, 'BUTTON');
-      assert.strictEqual(deleteButton.getAttribute('type'), 'button');
-      assert.strictEqual(deleteButton.getAttribute('title'), '手動参照を削除');
+      expect(deleteButton.tagName).toBe('BUTTON');
+      expect(deleteButton.getAttribute('type')).toBe('button');
+      expect(deleteButton.getAttribute('title')).toBe('手動参照を削除');
     });
   });
 
-  suite('エッジケース', () => {
-    test('キャラクター判定が正しく機能する', () => {
+  describe('エッジケース', () => {
+    it('キャラクター判定が正しく機能する', () => {
       const contentFileData: FileDetailsData = {
         type: 'content',
         referenceData: {
@@ -660,12 +666,12 @@ suite('ReferenceSection コンポーネント', () => {
       );
 
       // characterを含むパスは登場人物に分類
-      assert(screen.getByText('登場人物 (1)'));
+      expect(screen.getByText('登場人物 (1)')).toBeInTheDocument();
       // それ以外は関連設定に分類
-      assert(screen.getByText('関連設定 (1)'));
+      expect(screen.getByText('関連設定 (1)')).toBeInTheDocument();
     });
 
-    test('参照パスが空文字の場合も正常に処理される', () => {
+    it('参照パスが空文字の場合も正常に処理される', () => {
       const settingFileData: FileDetailsData = {
         type: 'setting',
         referenceData: {
@@ -687,10 +693,10 @@ suite('ReferenceSection コンポーネント', () => {
       // 空文字の場合もファイル名として扱われる（split('/').pop()の結果）
       // 複数の空要素がある可能性があるため、getAllByTextを使用
       const referenceLinks = screen.getAllByText('');
-      assert(referenceLinks.length > 0, '空文字のリンクが見つからない');
+      expect(referenceLinks.length > 0).toBeTruthy();
       // 少なくとも1つのrole="button"要素があることを確認
       const buttonLinks = referenceLinks.filter((link) => link.getAttribute('role') === 'button');
-      assert(buttonLinks.length > 0, 'role="button"を持つ空文字のリンクが見つからない');
+      expect(buttonLinks.length > 0).toBeTruthy();
     });
   });
 });

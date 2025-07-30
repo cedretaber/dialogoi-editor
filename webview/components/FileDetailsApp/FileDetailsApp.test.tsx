@@ -6,14 +6,24 @@
  * - 重複要素がある場合は getAllByText() や特定セレクタを使用
  * - 詳細は CLAUDE.md の "Reactコンポーネントテストの注意事項" を参照
  */
-import { suite, test, beforeEach, afterEach } from 'mocha';
-import { strict as assert } from 'assert';
+import '@testing-library/jest-dom';
+
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { FileDetailsApp } from './FileDetailsApp';
 import { resetGlobalReadyMessageSent } from '../../hooks/useVSCodeApi';
 import type { FileDetailsData, UpdateFileMessage, WebViewMessage } from '../../types/FileDetails';
 
-suite('FileDetailsApp コンポーネント', () => {
+// モックメッセージイベントを作成するヘルパー関数
+const createMessageEvent = (data: unknown): MessageEvent => {
+  const event = new MessageEvent('message', {
+    data,
+    origin: 'vscode-webview://',
+    source: window,
+  });
+  return event;
+};
+
+describe('FileDetailsApp コンポーネント', () => {
   let mockPostMessage: (message: WebViewMessage) => void;
   let messageCallbacks: ((event: MessageEvent<UpdateFileMessage>) => void)[];
   let originalAddEventListener: typeof window.addEventListener;
@@ -108,40 +118,40 @@ suite('FileDetailsApp コンポーネント', () => {
     },
   };
 
-  suite('初期状態', () => {
-    test('ファイルが選択されていない場合のメッセージが表示される', async () => {
+  describe('初期状態', () => {
+    it('ファイルが選択されていない場合のメッセージが表示される', async () => {
       render(<FileDetailsApp />);
-      assert(screen.getByText('ファイルまたはディレクトリを選択してください'));
+      expect(screen.getByText('ファイルまたはディレクトリを選択してください')).toBeInTheDocument();
       // VSCode APIの状態は非同期で更新されるため、waitForで待つ
       await waitFor(() => {
-        assert(screen.getByText('VSCode API: 準備完了'));
+        expect(screen.getByText('VSCode API: 準備完了')).toBeInTheDocument();
       });
     });
 
-    test('メッセージリスナーが登録される', () => {
+    it('メッセージリスナーが登録される', () => {
       render(<FileDetailsApp />);
-      assert.strictEqual(messageCallbacks.length, 1);
+      expect(messageCallbacks.length).toBe(1);
     });
 
-    test('readyメッセージが送信される', async () => {
+    it('readyメッセージが送信される', async () => {
       const spy = createPostMessageSpy();
       render(<FileDetailsApp />);
 
       await waitFor(() => {
-        assert(spy.wasCalledWith({ type: 'ready' }));
+        expect(spy.wasCalledWith({ type: 'ready' })).toBeTruthy();
       });
     });
 
-    test('コンポーネントのクリーンアップ時にリスナーが削除される', () => {
+    it('コンポーネントのクリーンアップ時にリスナーが削除される', () => {
       const { unmount } = render(<FileDetailsApp />);
       const initialCallbackCount = messageCallbacks.length;
       unmount();
-      assert.strictEqual(messageCallbacks.length, initialCallbackCount - 1);
+      expect(messageCallbacks.length).toBe(initialCallbackCount - 1);
     });
   });
 
-  suite('ファイルデータの更新', () => {
-    test('updateFileメッセージでファイルデータが更新される', async () => {
+  describe('ファイルデータの更新', () => {
+    it('updateFileメッセージでファイルデータが更新される', async () => {
       render(<FileDetailsApp />);
 
       // ファイルデータ更新メッセージを送信
@@ -156,32 +166,32 @@ suite('FileDetailsApp コンポーネント', () => {
         // ファイル名が表示されることを直接確認しない（特定の要素が複数あるため）
         // 代わりにコンポーネントが正しくレンダリングされているかを確認
         // 各セクションが表示される
-        assert(screen.getByText('タグ'));
+        expect(screen.getByText('タグ')).toBeInTheDocument();
         // contentタイプの場合は「登場人物」と「関連設定」が表示される
-        assert(screen.getByText('登場人物 (1)'));
-        assert(screen.getByText('基本情報'));
+        expect(screen.getByText('登場人物 (1)')).toBeInTheDocument();
+        expect(screen.getByText('基本情報')).toBeInTheDocument();
       });
     });
 
-    test('異なるtypeのメッセージは無視される', () => {
+    it('異なるtypeのメッセージは無視される', () => {
       render(<FileDetailsApp />);
 
       // 無関係なメッセージを送信（型安全性のため正しい型で）
       sendMessage({ type: 'updateFile', data: null });
 
       // ファイル未選択のメッセージが表示されたまま
-      assert(screen.getByText('ファイルまたはディレクトリを選択してください'));
+      expect(screen.getByText('ファイルまたはディレクトリを選択してください')).toBeInTheDocument();
     });
   });
 
-  suite('条件付きセクション表示', () => {
-    test('キャラクター情報がある場合のみCharacterSectionが表示される', async () => {
+  describe('条件付きセクション表示', () => {
+    it('キャラクター情報がある場合のみCharacterSectionが表示される', async () => {
       render(<FileDetailsApp />);
 
       // キャラクター情報なし
       sendMessage({ type: 'updateFile', data: mockFileData });
       await waitFor(() => {
-        assert(!screen.queryByText('キャラクター情報'));
+        expect(screen.queryByText('キャラクター情報')).toBeNull();
       });
 
       // キャラクター情報あり
@@ -195,11 +205,11 @@ suite('FileDetailsApp コンポーネント', () => {
       };
       sendMessage({ type: 'updateFile', data: dataWithCharacter });
       await waitFor(() => {
-        assert(screen.getByText('キャラクター情報'));
+        expect(expect(screen.getByText('キャラクター情報')).toBeInTheDocument());
       });
     });
 
-    test('伏線情報は設定ファイルの場合のみ表示される', async () => {
+    it('伏線情報は設定ファイルの場合のみ表示される', async () => {
       render(<FileDetailsApp />);
 
       // contentタイプでは表示されない
@@ -210,7 +220,7 @@ suite('FileDetailsApp コンポーネント', () => {
       };
       sendMessage({ type: 'updateFile', data: contentData });
       await waitFor(() => {
-        assert(!screen.queryByText('🔮 伏線管理'));
+        expect(screen.queryByText('🔮 伏線管理')).toBeNull();
       });
 
       // settingタイプでは表示される
@@ -221,11 +231,11 @@ suite('FileDetailsApp コンポーネント', () => {
       };
       sendMessage({ type: 'updateFile', data: settingData });
       await waitFor(() => {
-        assert(screen.getByText('🔮 伏線管理'));
+        expect(expect(screen.getByText('🔮 伏線管理')).toBeInTheDocument());
       });
     });
 
-    test('レビュー情報が空の場合は表示されない', () => {
+    it('レビュー情報が空の場合は表示されない', () => {
       render(<FileDetailsApp />);
 
       // レビュー情報が空
@@ -235,19 +245,19 @@ suite('FileDetailsApp コンポーネント', () => {
       };
 
       sendMessage({ type: 'updateFile', data: dataWithoutReview });
-      assert(!screen.queryByText('レビュー情報'));
+      expect(screen.queryByText('レビュー情報')).toBeNull();
     });
   });
 
-  suite('タグ操作', () => {
-    test('タグ追加時に正しいメッセージが送信される', async () => {
+  describe('タグ操作', () => {
+    it('タグ追加時に正しいメッセージが送信される', async () => {
       const spy = createPostMessageSpy();
       render(<FileDetailsApp />);
       sendMessage({ type: 'updateFile', data: mockFileData });
 
       // 状態更新を待つ - タグセクションが表示されることを確認
       await waitFor(() => {
-        assert(screen.getByText('タグ'));
+        expect(expect(screen.getByText('タグ')).toBeInTheDocument());
       });
 
       // タグ入力フィールドに入力
@@ -255,15 +265,15 @@ suite('FileDetailsApp コンポーネント', () => {
       fireEvent.change(input, { target: { value: '新タグ' } });
       fireEvent.keyDown(input, { key: 'Enter' });
 
-      assert(
+      expect(
         spy.wasCalledWith({
           type: 'addTag',
           payload: { tag: '新タグ' },
         }),
-      );
+      ).toBeTruthy();
     });
 
-    test('タグ削除時に正しいメッセージが送信される', async () => {
+    it('タグ削除時に正しいメッセージが送信される', async () => {
       const spy = createPostMessageSpy();
       render(<FileDetailsApp />);
       sendMessage({ type: 'updateFile', data: mockFileData });
@@ -271,24 +281,24 @@ suite('FileDetailsApp コンポーネント', () => {
       // タグが表示されるまで待つ
       await waitFor(() => {
         // タグが表示されていることを確認
-        assert(screen.getByText('#タグ1'));
+        expect(expect(screen.getByText('#タグ1')).toBeInTheDocument());
       });
 
       // 削除ボタンをクリック
       const deleteButtons = screen.getAllByTitle('タグを削除');
       fireEvent.click(deleteButtons[0]);
 
-      assert(
+      expect(
         spy.wasCalledWith({
           type: 'removeTag',
           payload: { tag: 'タグ1' },
         }),
-      );
+      ).toBeTruthy();
     });
   });
 
-  suite('参照操作', () => {
-    test('参照を開く時に正しいメッセージが送信される', async () => {
+  describe('参照操作', () => {
+    it('参照を開く時に正しいメッセージが送信される', async () => {
       const spy = createPostMessageSpy();
       render(<FileDetailsApp />);
       sendMessage({ type: 'updateFile', data: mockFileData });
@@ -303,15 +313,15 @@ suite('FileDetailsApp コンポーネント', () => {
       const referenceLink = screen.getByText('hero.md');
       fireEvent.click(referenceLink);
 
-      assert(
+      expect(
         spy.wasCalledWith({
           type: 'openReference',
           payload: { reference: 'characters/hero.md' },
         }),
-      );
+      ).toBeTruthy();
     });
 
-    test('参照削除時に正しいメッセージが送信される', async () => {
+    it('参照削除時に正しいメッセージが送信される', async () => {
       const spy = createPostMessageSpy();
       render(<FileDetailsApp />);
       sendMessage({ type: 'updateFile', data: mockFileData });
@@ -326,15 +336,15 @@ suite('FileDetailsApp コンポーネント', () => {
       const deleteButton = screen.getByTitle('手動参照を削除');
       fireEvent.click(deleteButton);
 
-      assert(
+      expect(
         spy.wasCalledWith({
           type: 'removeReference',
           payload: { reference: 'characters/hero.md' },
         }),
-      );
+      ).toBeTruthy();
     });
 
-    test('逆参照削除時に正しいメッセージが送信される', async () => {
+    it('逆参照削除時に正しいメッセージが送信される', async () => {
       const spy = createPostMessageSpy();
       render(<FileDetailsApp />);
       const dataWithReversRef = {
@@ -358,17 +368,17 @@ suite('FileDetailsApp コンポーネント', () => {
       const deleteButton = screen.getByTitle('手動参照を削除');
       fireEvent.click(deleteButton);
 
-      assert(
+      expect(
         spy.wasCalledWith({
           type: 'removeReverseReference',
           payload: { reference: 'contents/chapter1.md' },
         }),
-      );
+      ).toBeTruthy();
     });
   });
 
-  suite('キャラクター操作', () => {
-    test('キャラクター削除時に正しいメッセージが送信される', async () => {
+  describe('キャラクター操作', () => {
+    it('キャラクター削除時に正しいメッセージが送信される', async () => {
       const spy = createPostMessageSpy();
       render(<FileDetailsApp />);
       const dataWithCharacter = {
@@ -382,22 +392,22 @@ suite('FileDetailsApp コンポーネント', () => {
 
       // 状態更新を待つ - キャラクター情報セクションが表示されるまで待機
       await waitFor(() => {
-        assert(screen.getByText('キャラクター情報'));
+        expect(expect(screen.getByText('キャラクター情報')).toBeInTheDocument());
       });
 
       // 削除ボタンをクリック
       const deleteButton = screen.getByTitle('キャラクター情報を削除');
       fireEvent.click(deleteButton);
 
-      assert(
+      expect(
         spy.wasCalledWith({
           type: 'removeCharacter',
         }),
-      );
+      ).toBeTruthy();
     });
   });
 
-  suite('伏線操作', () => {
+  describe('伏線操作', () => {
     const dataWithForeshadowing = {
       ...mockFileData,
       type: 'setting' as const,
@@ -407,7 +417,7 @@ suite('FileDetailsApp コンポーネント', () => {
       },
     };
 
-    test('植込み位置追加時に正しいメッセージが送信される', async () => {
+    it('植込み位置追加時に正しいメッセージが送信される', async () => {
       const spy = createPostMessageSpy();
       render(<FileDetailsApp />);
       sendMessage({ type: 'updateFile', data: dataWithForeshadowing });
@@ -416,7 +426,7 @@ suite('FileDetailsApp コンポーネント', () => {
       await waitFor(() => {
         // ファイル名が表示されることを直接確認しない（特定の要素が複数あるため）
         // 代わりにコンポーネントが正しくレンダリングされているかを確認
-        assert(screen.getByText('🔮 伏線管理'));
+        expect(expect(screen.getByText('🔮 伏線管理')).toBeInTheDocument());
       });
 
       // 追加ボタンをクリック
@@ -427,7 +437,7 @@ suite('FileDetailsApp コンポーネント', () => {
       await waitFor(() => {
         // 正しいプレースホルダーテキストでフォームを確認
         const input = screen.getByPlaceholderText('例: contents/chapter1.txt');
-        assert(input);
+        expect(input).toBeInTheDocument();
       });
 
       // フォームに入力（location のみでもOK）
@@ -438,15 +448,15 @@ suite('FileDetailsApp コンポーネント', () => {
       const submitButton = screen.getByText('追加');
       fireEvent.click(submitButton);
 
-      assert(
+      expect(
         spy.wasCalledWith({
           type: 'addForeshadowingPlant',
           payload: { plant: { location: 'chapter2.md', comment: '' } },
         }),
-      );
+      ).toBeTruthy();
     });
 
-    test('植込み位置削除時に正しいメッセージが送信される', async () => {
+    it('植込み位置削除時に正しいメッセージが送信される', async () => {
       const spy = createPostMessageSpy();
       render(<FileDetailsApp />);
       sendMessage({ type: 'updateFile', data: dataWithForeshadowing });
@@ -455,22 +465,22 @@ suite('FileDetailsApp コンポーネント', () => {
       await waitFor(() => {
         // ファイル名が表示されることを直接確認しない（特定の要素が複数あるため）
         // 代わりにコンポーネントが正しくレンダリングされているかを確認
-        assert(screen.getByText('🔮 伏線管理'));
+        expect(expect(screen.getByText('🔮 伏線管理')).toBeInTheDocument());
       });
 
       // 削除ボタンをクリック
       const deleteButtons = screen.getAllByText('削除');
       fireEvent.click(deleteButtons[0]);
 
-      assert(
+      expect(
         spy.wasCalledWith({
           type: 'removeForeshadowingPlant',
           payload: { plantIndex: 0 },
         }),
-      );
+      ).toBeTruthy();
     });
 
-    test('植込み位置更新時に正しいメッセージが送信される', async () => {
+    it('植込み位置更新時に正しいメッセージが送信される', async () => {
       const spy = createPostMessageSpy();
       render(<FileDetailsApp />);
       sendMessage({ type: 'updateFile', data: dataWithForeshadowing });
@@ -479,7 +489,7 @@ suite('FileDetailsApp コンポーネント', () => {
       await waitFor(() => {
         // ファイル名が表示されることを直接確認しない（特定の要素が複数あるため）
         // 代わりにコンポーネントが正しくレンダリングされているかを確認
-        assert(screen.getByText('🔮 伏線管理'));
+        expect(expect(screen.getByText('🔮 伏線管理')).toBeInTheDocument());
       });
 
       // 編集ボタンをクリック
@@ -494,15 +504,15 @@ suite('FileDetailsApp コンポーネント', () => {
       const updateButton = screen.getByText('更新');
       fireEvent.click(updateButton);
 
-      assert(
+      expect(
         spy.wasCalledWith({
           type: 'updateForeshadowingPlant',
           payload: { plantIndex: 0, plant: { location: 'chapter2.md', comment: '' } },
         }),
-      );
+      ).toBeTruthy();
     });
 
-    test('回収位置設定時に正しいメッセージが送信される', async () => {
+    it('回収位置設定時に正しいメッセージが送信される', async () => {
       const spy = createPostMessageSpy();
       render(<FileDetailsApp />);
       const dataWithoutPayoff = {
@@ -515,7 +525,7 @@ suite('FileDetailsApp コンポーネント', () => {
       await waitFor(() => {
         // ファイル名が表示されることを直接確認しない（特定の要素が複数あるため）
         // 代わりにコンポーネントが正しくレンダリングされているかを確認
-        assert(screen.getByText('🔮 伏線管理'));
+        expect(expect(screen.getByText('🔮 伏線管理')).toBeInTheDocument());
       });
 
       // 設定ボタンをクリック
@@ -525,7 +535,7 @@ suite('FileDetailsApp コンポーネント', () => {
       // フォームが表示されるのを待つ
       await waitFor(() => {
         const input = screen.getByPlaceholderText('例: contents/chapter5.txt');
-        assert(input);
+        expect(input).toBeInTheDocument();
       });
 
       // フォームに入力（location のみでもOK）
@@ -536,15 +546,15 @@ suite('FileDetailsApp コンポーネント', () => {
       const submitButton = screen.getByText('設定');
       fireEvent.click(submitButton);
 
-      assert(
+      expect(
         spy.wasCalledWith({
           type: 'setForeshadowingPayoff',
           payload: { payoff: { location: 'chapter10.md', comment: '' } },
         }),
-      );
+      ).toBeTruthy();
     });
 
-    test('回収位置削除時に正しいメッセージが送信される', async () => {
+    it('回収位置削除時に正しいメッセージが送信される', async () => {
       const spy = createPostMessageSpy();
       render(<FileDetailsApp />);
       sendMessage({ type: 'updateFile', data: dataWithForeshadowing });
@@ -553,33 +563,33 @@ suite('FileDetailsApp コンポーネント', () => {
       await waitFor(() => {
         // ファイル名が表示されることを直接確認しない（特定の要素が複数あるため）
         // 代わりにコンポーネントが正しくレンダリングされているかを確認
-        assert(screen.getByText('🔮 伏線管理'));
+        expect(expect(screen.getByText('🔮 伏線管理')).toBeInTheDocument());
       });
 
       // 削除ボタンをクリック（2番目の削除ボタンが回収位置）
       const deleteButtons = screen.getAllByText('削除');
       fireEvent.click(deleteButtons[1]);
 
-      assert(
+      expect(
         spy.wasCalledWith({
           type: 'removeForeshadowingPayoff',
         }),
-      );
+      ).toBeTruthy();
     });
   });
 
-  suite('エッジケース', () => {
-    test('ファイル名が空の場合のフォールバック', async () => {
+  describe('エッジケース', () => {
+    it('ファイル名が空の場合のフォールバック', async () => {
       render(<FileDetailsApp />);
       const dataWithoutName = { ...mockFileData, name: '' };
       sendMessage({ type: 'updateFile', data: dataWithoutName });
 
       await waitFor(() => {
-        assert(screen.getByText('Unknown File'));
+        expect(expect(screen.getByText('Unknown File')).toBeInTheDocument());
       });
     });
 
-    test('複数の操作が連続して行われる場合', async () => {
+    it('複数の操作が連続して行われる場合', async () => {
       const spy = createPostMessageSpy();
       render(<FileDetailsApp />);
       sendMessage({ type: 'updateFile', data: mockFileData });
@@ -602,21 +612,22 @@ suite('FileDetailsApp コンポーネント', () => {
       fireEvent.click(referenceLink);
 
       // 両方のメッセージが送信されていることを確認
-      assert(
+      expect(
         spy.wasCalledWith({
           type: 'addTag',
           payload: { tag: 'タグ3' },
         }),
-      );
-      assert(
+      ).toBeTruthy();
+
+      expect(
         spy.wasCalledWith({
           type: 'openReference',
           payload: { reference: 'characters/hero.md' },
         }),
-      );
+      ).toBeTruthy();
     });
 
-    test('nullやundefinedのデータでも正常に処理される', async () => {
+    it('nullやundefinedのデータでも正常に処理される', async () => {
       render(<FileDetailsApp />);
       const dataWithNulls = {
         ...mockFileData,
@@ -626,14 +637,20 @@ suite('FileDetailsApp コンポーネント', () => {
       };
 
       // エラーが発生しないことを確認
-      assert.doesNotThrow(() => {
-        sendMessage({ type: 'updateFile', data: dataWithNulls });
-      });
+      expect(() => {
+        const event = createMessageEvent({
+          type: 'updateFile',
+          data: dataWithNulls,
+        }) as MessageEvent<UpdateFileMessage>;
+        // messageCallbacksを手動実行（window.dispatchEventのモックが不完全なため）
+        messageCallbacks.forEach((callback) => callback(event));
+      }).not.toThrow();
 
       // 状態更新を待つ
       await waitFor(() => {
         // ファイル名が表示されることを直接確認しない（特定の要素が複数あるため）
         // 代わりにコンポーネントが正しくレンダリングされているかを確認
+        expect(screen.getByText('基本情報')).toBeInTheDocument();
       });
     });
   });

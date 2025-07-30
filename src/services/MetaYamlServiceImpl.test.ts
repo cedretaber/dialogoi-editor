@@ -64,7 +64,12 @@ files:
       expect(result?.files.length).toBe(2);
       expect(result?.files[0]?.name).toBe('chapter1.txt');
       expect(result?.files[0]?.type).toBe('content');
-      expect((result?.files[0] as any)?.tags).toEqual(['重要', '序章']);
+      const firstFile = result?.files[0];
+      if (firstFile && firstFile.type === 'content') {
+        expect(firstFile.tags).toEqual(['重要', '序章']);
+      } else {
+        throw new Error('最初のファイルはContentItemである必要があります');
+      }
       expect(result?.files[1]?.name).toBe('settings');
       expect(result?.files[1]?.type).toBe('subdirectory');
     });

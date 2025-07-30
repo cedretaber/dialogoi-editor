@@ -160,7 +160,9 @@ files:
       );
 
       expect(result.success).toBe(true);
-      expect(result.message.includes('複数キャラクターフラグを "有効" に設定しました')).toBeTruthy();
+      expect(
+        result.message.includes('複数キャラクターフラグを "有効" に設定しました'),
+      ).toBeTruthy();
       expect(result.updatedItems).toBeTruthy();
 
       // メタデータが更新されているか確認
@@ -175,7 +177,9 @@ files:
       const result = await fileManagementService.setMultipleCharacters('/test', 'plain.txt', false);
 
       expect(result.success).toBe(true);
-      expect(result.message.includes('複数キャラクターフラグを "無効" に設定しました')).toBeTruthy();
+      expect(
+        result.message.includes('複数キャラクターフラグを "無効" に設定しました'),
+      ).toBeTruthy();
 
       // メタデータが更新されているか確認
       const metaContent = await mockFileRepository.readFileAsync(

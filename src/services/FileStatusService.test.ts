@@ -80,7 +80,9 @@ files:
       expect(chapterFile?.isDirectory).toBe(false);
       expect(chapterFile?.metaEntry).not.toBe(undefined);
       expect(chapterFile?.metaEntry?.type).toBe('content');
-      expect((chapterFile?.metaEntry as any)?.tags).toEqual(['重要']);
+      if (chapterFile?.metaEntry?.type === 'content') {
+        expect(chapterFile.metaEntry.tags).toEqual(['重要']);
+      }
 
       const settingsDir = result.find((f) => f.name === 'settings');
       expect(settingsDir).not.toBe(undefined);
@@ -345,8 +347,10 @@ files:
       expect(result.name).toBe('test.txt');
       expect(result.type).toBe('content');
       expect(result.path).toBe('/test/test.txt');
-      expect((result as any).tags).toEqual(['重要']);
-      expect((result as any).comments).toBe('.test.txt.comments.yaml');
+      if (result.type === 'content') {
+        expect(result.tags).toEqual(['重要']);
+        expect(result.comments).toBe('.test.txt.comments.yaml');
+      }
       expect(result.isMissing).toBe(false);
       expect(result.isUntracked).toBe(false);
     });

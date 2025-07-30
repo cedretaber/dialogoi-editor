@@ -17,9 +17,7 @@ describe('HashCalculator テストスイート', () => {
 
       expect(typeof hash).toBe('string');
       expect(hash.startsWith('sha256:')).toBeTruthy();
-      expect(
-        hash).toBe('sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855',
-      );
+      expect(hash).toBe('sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855');
     });
 
     it('同じ内容からは同じハッシュが生成される', () => {
@@ -102,9 +100,7 @@ describe('HashCalculator テストスイート', () => {
 
       expect(typeof hash).toBe('string');
       expect(hash.startsWith('sha256:')).toBeTruthy();
-      expect(
-        hash).toBe('sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855',
-      );
+      expect(hash).toBe('sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855');
     });
 
     it('同じバイナリデータからは同じハッシュが生成される', () => {

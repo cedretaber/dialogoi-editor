@@ -61,8 +61,8 @@ project_settings:
       expect(loadedSettings?.title).toBe(dialogoiYaml.title);
       expect(loadedSettings?.author).toBe(dialogoiYaml.author);
       expect(loadedSettings?.tags).toEqual(dialogoiYaml.tags);
-      expect(
-        loadedSettings?.project_settings?.readme_filename).toBe(dialogoiYaml.project_settings?.readme_filename,
+      expect(loadedSettings?.project_settings?.readme_filename).toBe(
+        dialogoiYaml.project_settings?.readme_filename,
       );
     });
 
@@ -141,7 +141,8 @@ project_settings:
       const validation = service.validateUpdateData(updateData);
       expect(validation.isValid).toBe(false);
       expect(
-        validation.errors['exclude_patterns']?.includes('重複する除外パターンがあります')).toBeTruthy();
+        validation.errors['exclude_patterns']?.includes('重複する除外パターンがあります'),
+      ).toBeTruthy();
       expect(validation.errors['exclude_patterns']?.includes('*.tmp')).toBeTruthy();
     });
   });
@@ -197,11 +198,11 @@ project_settings:
       expect(updatedSettings?.['title']).toBe(updateData['title']);
       expect(updatedSettings?.['author']).toBe(updateData['author']);
       expect(updatedSettings?.tags).toEqual(updateData['tags']);
-      expect(
-        updatedSettings?.project_settings?.readme_filename).toBe(updateData.project_settings?.readme_filename,
+      expect(updatedSettings?.project_settings?.readme_filename).toBe(
+        updateData.project_settings?.readme_filename,
       );
-      expect(
-        updatedSettings?.project_settings?.exclude_patterns).toEqual(updateData.project_settings?.exclude_patterns,
+      expect(updatedSettings?.project_settings?.exclude_patterns).toEqual(
+        updateData.project_settings?.exclude_patterns,
       );
 
       // 元の必須フィールドが保持されることを確認

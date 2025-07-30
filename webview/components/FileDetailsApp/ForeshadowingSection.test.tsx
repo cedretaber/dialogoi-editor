@@ -1,11 +1,11 @@
+import '@testing-library/jest-dom';
+
 import React from 'react';
-import { suite, test, setup } from 'mocha';
 import { render, screen, fireEvent } from '../../test-utils';
 import { ForeshadowingSection } from './ForeshadowingSection';
-import assert from 'assert';
 import type { ForeshadowingData, ForeshadowingPoint } from '../../types/FileDetails';
 
-suite('ForeshadowingSection コンポーネント', () => {
+describe('ForeshadowingSection コンポーネント', () => {
   let mockOnPlantAdd: (plant: ForeshadowingPoint) => void;
   let mockOnPlantRemove: (index: number) => void;
   let mockOnPlantUpdate: (index: number, plant: ForeshadowingPoint) => void;
@@ -19,7 +19,7 @@ suite('ForeshadowingSection コンポーネント', () => {
   let setPayoffs: ForeshadowingPoint[];
   let payoffRemoveCount: number;
 
-  setup(() => {
+  beforeEach(() => {
     // 各テスト前にモック関数と履歴をリセット
     addedPlants = [];
     removedPlantIndices = [];
@@ -48,8 +48,8 @@ suite('ForeshadowingSection コンポーネント', () => {
     };
   });
 
-  suite('基本表示', () => {
-    test('セクションヘッダーが正しく表示される', () => {
+  describe('基本表示', () => {
+    it('セクションヘッダーが正しく表示される', () => {
       render(
         <ForeshadowingSection
           onPlantAdd={mockOnPlantAdd}
@@ -60,10 +60,10 @@ suite('ForeshadowingSection コンポーネント', () => {
         />,
       );
 
-      assert(screen.getByText('🔮 伏線管理'));
+      expect(screen.getByText('🔮 伏線管理')).toBeInTheDocument();
     });
 
-    test('植込み位置セクションが表示される', () => {
+    it('植込み位置セクションが表示される', () => {
       render(
         <ForeshadowingSection
           onPlantAdd={mockOnPlantAdd}
@@ -74,10 +74,10 @@ suite('ForeshadowingSection コンポーネント', () => {
         />,
       );
 
-      assert(screen.getByText('📍 伏線設置 (0件)'));
+      expect(screen.getByText('📍 伏線設置 (0件)')).toBeInTheDocument();
     });
 
-    test('回収位置セクションが表示される', () => {
+    it('回収位置セクションが表示される', () => {
       render(
         <ForeshadowingSection
           onPlantAdd={mockOnPlantAdd}
@@ -88,10 +88,10 @@ suite('ForeshadowingSection コンポーネント', () => {
         />,
       );
 
-      assert(screen.getByText('🎯 伏線回収 (未設定)'));
+      expect(screen.getByText('🎯 伏線回収 (未設定)')).toBeInTheDocument();
     });
 
-    test('初期状態では追加ボタンが表示される', () => {
+    it('初期状態では追加ボタンが表示される', () => {
       render(
         <ForeshadowingSection
           onPlantAdd={mockOnPlantAdd}
@@ -102,13 +102,13 @@ suite('ForeshadowingSection コンポーネント', () => {
         />,
       );
 
-      assert(screen.getByText('+ 位置を追加'));
-      assert(screen.getByText('+ 回収位置を設定'));
+      expect(screen.getByText('+ 位置を追加')).toBeInTheDocument();
+      expect(screen.getByText('+ 回収位置を設定')).toBeInTheDocument();
     });
   });
 
-  suite('植込み位置の表示', () => {
-    test('植込み位置がある場合は件数が表示される', () => {
+  describe('植込み位置の表示', () => {
+    it('植込み位置がある場合は件数が表示される', () => {
       const foreshadowingData: ForeshadowingData = {
         plants: [
           { location: 'chapter1.txt', comment: 'テスト伏線1' },
@@ -127,10 +127,10 @@ suite('ForeshadowingSection コンポーネント', () => {
         />,
       );
 
-      assert(screen.getByText('📍 伏線設置 (2件)'));
+      expect(screen.getByText('📍 伏線設置 (2件)')).toBeInTheDocument();
     });
 
-    test('植込み位置の詳細が表示される', () => {
+    it('植込み位置の詳細が表示される', () => {
       const foreshadowingData: ForeshadowingData = {
         plants: [{ location: 'chapter1.txt', comment: 'テスト伏線の説明' }],
       };
@@ -146,11 +146,11 @@ suite('ForeshadowingSection コンポーネント', () => {
         />,
       );
 
-      assert(screen.getByText('chapter1.txt'));
-      assert(screen.getByText('テスト伏線の説明'));
+      expect(screen.getByText('chapter1.txt')).toBeInTheDocument();
+      expect(screen.getByText('テスト伏線の説明')).toBeInTheDocument();
     });
 
-    test('植込み位置の編集・削除ボタンが表示される', () => {
+    it('植込み位置の編集・削除ボタンが表示される', () => {
       const foreshadowingData: ForeshadowingData = {
         plants: [{ location: 'chapter1.txt', comment: 'テスト伏線' }],
       };
@@ -170,13 +170,13 @@ suite('ForeshadowingSection コンポーネント', () => {
       const deleteButtons = screen.getAllByText('削除');
 
       // 植込み位置の編集・削除ボタン
-      assert(editButtons.length >= 1);
-      assert(deleteButtons.length >= 1);
+      expect(editButtons.length >= 1).toBeTruthy();
+      expect(deleteButtons.length >= 1).toBeTruthy();
     });
   });
 
-  suite('回収位置の表示', () => {
-    test('回収位置が設定されている場合は「設定済み」と表示される', () => {
+  describe('回収位置の表示', () => {
+    it('回収位置が設定されている場合は「設定済み」と表示される', () => {
       const foreshadowingData: ForeshadowingData = {
         payoff: { location: 'chapter5.txt', comment: '伏線の回収' },
       };
@@ -192,10 +192,10 @@ suite('ForeshadowingSection コンポーネント', () => {
         />,
       );
 
-      assert(screen.getByText('🎯 伏線回収 (設定済み)'));
+      expect(screen.getByText('🎯 伏線回収 (設定済み)')).toBeInTheDocument();
     });
 
-    test('回収位置の詳細が表示される', () => {
+    it('回収位置の詳細が表示される', () => {
       const foreshadowingData: ForeshadowingData = {
         payoff: { location: 'chapter5.txt', comment: '伏線の回収説明' },
       };
@@ -211,11 +211,11 @@ suite('ForeshadowingSection コンポーネント', () => {
         />,
       );
 
-      assert(screen.getByText('chapter5.txt'));
-      assert(screen.getByText('伏線の回収説明'));
+      expect(screen.getByText('chapter5.txt')).toBeInTheDocument();
+      expect(screen.getByText('伏線の回収説明')).toBeInTheDocument();
     });
 
-    test('回収位置の編集・削除ボタンが表示される', () => {
+    it('回収位置の編集・削除ボタンが表示される', () => {
       const foreshadowingData: ForeshadowingData = {
         payoff: { location: 'chapter5.txt', comment: '伏線の回収' },
       };
@@ -235,11 +235,11 @@ suite('ForeshadowingSection コンポーネント', () => {
       const deleteButtons = screen.getAllByText('削除');
 
       // 回収位置の編集・削除ボタン
-      assert(editButtons.length >= 1);
-      assert(deleteButtons.length >= 1);
+      expect(editButtons.length >= 1).toBeTruthy();
+      expect(deleteButtons.length >= 1).toBeTruthy();
     });
 
-    test('回収位置が未設定の場合は設定ボタンが表示される', () => {
+    it('回収位置が未設定の場合は設定ボタンが表示される', () => {
       render(
         <ForeshadowingSection
           onPlantAdd={mockOnPlantAdd}
@@ -250,12 +250,12 @@ suite('ForeshadowingSection コンポーネント', () => {
         />,
       );
 
-      assert(screen.getByText('+ 回収位置を設定'));
+      expect(screen.getByText('+ 回収位置を設定')).toBeInTheDocument();
     });
   });
 
-  suite('展開・折りたたみ機能', () => {
-    test('植込み位置セクションの展開・折りたたみ', () => {
+  describe('展開・折りたたみ機能', () => {
+    it('植込み位置セクションの展開・折りたたみ', () => {
       const foreshadowingData: ForeshadowingData = {
         plants: [{ location: 'chapter1.txt', comment: 'テスト' }],
       };
@@ -272,22 +272,24 @@ suite('ForeshadowingSection コンポーネント', () => {
       );
 
       const plantsHeader = screen.getByText('📍 伏線設置 (1件)').closest('.subsection-header');
-      assert(plantsHeader);
+      expect(plantsHeader).not.toBeNull();
 
       // 初期状態では展開されている（▼アイコン）
-      const initialIcon = plantsHeader.querySelector('.collapse-icon');
-      assert(initialIcon);
-      assert.strictEqual(initialIcon.textContent, '▼');
+      const initialIcon = plantsHeader?.querySelector('.collapse-icon');
+      expect(initialIcon).not.toBeNull();
+      expect(initialIcon?.textContent).toBe('▼');
 
-      fireEvent.click(plantsHeader);
+      if (plantsHeader) {
+        fireEvent.click(plantsHeader);
+      }
 
       // 折りたたまれた状態（▶アイコン）
-      const collapsedIcon = plantsHeader.querySelector('.collapse-icon');
-      assert(collapsedIcon);
-      assert.strictEqual(collapsedIcon.textContent, '▶');
+      const collapsedIcon = plantsHeader?.querySelector('.collapse-icon');
+      expect(collapsedIcon).not.toBeNull();
+      expect(collapsedIcon?.textContent).toBe('▶');
     });
 
-    test('回収位置セクションの展開・折りたたみ', () => {
+    it('回収位置セクションの展開・折りたたみ', () => {
       const foreshadowingData: ForeshadowingData = {
         payoff: { location: 'chapter5.txt', comment: 'テスト回収' },
       };
@@ -304,24 +306,26 @@ suite('ForeshadowingSection コンポーネント', () => {
       );
 
       const payoffHeader = screen.getByText('🎯 伏線回収 (設定済み)').closest('.subsection-header');
-      assert(payoffHeader);
+      expect(payoffHeader).not.toBeNull();
 
       // 初期状態では展開されている（▼アイコン）
-      const initialIcon = payoffHeader.querySelector('.collapse-icon');
-      assert(initialIcon);
-      assert.strictEqual(initialIcon.textContent, '▼');
+      const initialIcon = payoffHeader?.querySelector('.collapse-icon');
+      expect(initialIcon).not.toBeNull();
+      expect(initialIcon?.textContent).toBe('▼');
 
-      fireEvent.click(payoffHeader);
+      if (payoffHeader) {
+        fireEvent.click(payoffHeader);
+      }
 
       // 折りたたまれた状態（▶アイコン）
-      const collapsedIcon = payoffHeader.querySelector('.collapse-icon');
-      assert(collapsedIcon);
-      assert.strictEqual(collapsedIcon.textContent, '▶');
+      const collapsedIcon = payoffHeader?.querySelector('.collapse-icon');
+      expect(collapsedIcon).not.toBeNull();
+      expect(collapsedIcon?.textContent).toBe('▶');
     });
   });
 
-  suite('植込み位置の追加', () => {
-    test('追加ボタンをクリックするとフォームが表示される', () => {
+  describe('植込み位置の追加', () => {
+    it('追加ボタンをクリックするとフォームが表示される', () => {
       render(
         <ForeshadowingSection
           onPlantAdd={mockOnPlantAdd}
@@ -335,13 +339,13 @@ suite('ForeshadowingSection コンポーネント', () => {
       const addButton = screen.getByText('+ 位置を追加');
       fireEvent.click(addButton);
 
-      assert(screen.getByPlaceholderText('例: contents/chapter1.txt'));
-      assert(screen.getByPlaceholderText('伏線の内容や目的を説明'));
-      assert(screen.getByText('追加'));
-      assert(screen.getByText('キャンセル'));
+      expect(screen.getByPlaceholderText('例: contents/chapter1.txt')).toBeInTheDocument();
+      expect(screen.getByPlaceholderText('伏線の内容や目的を説明')).toBeInTheDocument();
+      expect(screen.getByText('追加')).toBeInTheDocument();
+      expect(screen.getByText('キャンセル')).toBeInTheDocument();
     });
 
-    test('正常なデータで植込み位置を追加する', () => {
+    it('正常なデータで植込み位置を追加する', () => {
       render(
         <ForeshadowingSection
           onPlantAdd={mockOnPlantAdd}
@@ -364,12 +368,12 @@ suite('ForeshadowingSection コンポーネント', () => {
       const submitButton = screen.getByText('追加');
       fireEvent.click(submitButton);
 
-      assert.strictEqual(addedPlants.length, 1);
-      assert.strictEqual(addedPlants[0].location, 'chapter1.txt');
-      assert.strictEqual(addedPlants[0].comment, 'テスト伏線');
+      expect(addedPlants).toHaveLength(1);
+      expect(addedPlants[0].location).toBe('chapter1.txt');
+      expect(addedPlants[0].comment).toBe('テスト伏線');
     });
 
-    test('位置が空の場合は追加できない', () => {
+    it('位置が空の場合は追加できない', () => {
       render(
         <ForeshadowingSection
           onPlantAdd={mockOnPlantAdd}
@@ -386,10 +390,10 @@ suite('ForeshadowingSection コンポーネント', () => {
       const submitButton = screen.getByText('追加');
       fireEvent.click(submitButton);
 
-      assert.strictEqual(addedPlants.length, 0);
+      expect(addedPlants).toHaveLength(0);
     });
 
-    test('コメントが空でも位置があれば追加できる', () => {
+    it('コメントが空でも位置があれば追加できる', () => {
       render(
         <ForeshadowingSection
           onPlantAdd={mockOnPlantAdd}
@@ -410,12 +414,12 @@ suite('ForeshadowingSection コンポーネント', () => {
       const submitButton = screen.getByText('追加');
       fireEvent.click(submitButton);
 
-      assert.strictEqual(addedPlants.length, 1);
-      assert.strictEqual(addedPlants[0].location, 'chapter1.txt');
-      assert.strictEqual(addedPlants[0].comment, '');
+      expect(addedPlants).toHaveLength(1);
+      expect(addedPlants[0].location).toBe('chapter1.txt');
+      expect(addedPlants[0].comment).toBe('');
     });
 
-    test('キャンセルボタンでフォームを閉じる', () => {
+    it('キャンセルボタンでフォームを閉じる', () => {
       render(
         <ForeshadowingSection
           onPlantAdd={mockOnPlantAdd}
@@ -436,13 +440,13 @@ suite('ForeshadowingSection コンポーネント', () => {
       fireEvent.click(cancelButton);
 
       // フォームが閉じられ、追加ボタンが再表示される
-      assert(screen.getByText('+ 位置を追加'));
-      assert(!screen.queryByPlaceholderText('例: contents/chapter1.txt'));
+      expect(screen.getByText('+ 位置を追加')).toBeInTheDocument();
+      expect(screen.queryByPlaceholderText('例: contents/chapter1.txt')).toBeNull();
     });
   });
 
-  suite('植込み位置の編集・削除', () => {
-    test('編集ボタンでフォームが開く', () => {
+  describe('植込み位置の編集・削除', () => {
+    it('編集ボタンでフォームが開く', () => {
       const foreshadowingData: ForeshadowingData = {
         plants: [{ location: 'chapter1.txt', comment: '既存の伏線' }],
       };
@@ -464,12 +468,12 @@ suite('ForeshadowingSection コンポーネント', () => {
       // フォームが開き、既存データが入力されている
       const locationInput = screen.getByDisplayValue('chapter1.txt');
       const commentTextarea = screen.getByDisplayValue('既存の伏線');
-      assert(locationInput);
-      assert(commentTextarea);
-      assert(screen.getByText('更新'));
+      expect(locationInput).toBeInTheDocument();
+      expect(commentTextarea).toBeInTheDocument();
+      expect(screen.getByText('更新')).toBeInTheDocument();
     });
 
-    test('植込み位置を正常に更新する', () => {
+    it('植込み位置を正常に更新する', () => {
       const foreshadowingData: ForeshadowingData = {
         plants: [{ location: 'chapter1.txt', comment: '既存の伏線' }],
       };
@@ -497,13 +501,13 @@ suite('ForeshadowingSection コンポーネント', () => {
       const updateButton = screen.getByText('更新');
       fireEvent.click(updateButton);
 
-      assert.strictEqual(updatedPlants.length, 1);
-      assert.strictEqual(updatedPlants[0].index, 0);
-      assert.strictEqual(updatedPlants[0].plant.location, 'chapter2.txt');
-      assert.strictEqual(updatedPlants[0].plant.comment, '更新された伏線');
+      expect(updatedPlants).toHaveLength(1);
+      expect(updatedPlants[0].index).toBe(0);
+      expect(updatedPlants[0].plant.location).toBe('chapter2.txt');
+      expect(updatedPlants[0].plant.comment).toBe('更新された伏線');
     });
 
-    test('削除ボタンで植込み位置を削除する', () => {
+    it('削除ボタンで植込み位置を削除する', () => {
       const foreshadowingData: ForeshadowingData = {
         plants: [{ location: 'chapter1.txt', comment: '削除対象の伏線' }],
       };
@@ -522,13 +526,13 @@ suite('ForeshadowingSection コンポーネント', () => {
       const deleteButton = screen.getAllByText('削除')[0]; // 植込み位置の削除ボタン
       fireEvent.click(deleteButton);
 
-      assert.strictEqual(removedPlantIndices.length, 1);
-      assert.strictEqual(removedPlantIndices[0], 0);
+      expect(removedPlantIndices).toHaveLength(1);
+      expect(removedPlantIndices[0]).toBe(0);
     });
   });
 
-  suite('回収位置の設定・編集・削除', () => {
-    test('回収位置設定ボタンでフォームが開く', () => {
+  describe('回収位置の設定・編集・削除', () => {
+    it('回収位置設定ボタンでフォームが開く', () => {
       render(
         <ForeshadowingSection
           onPlantAdd={mockOnPlantAdd}
@@ -542,13 +546,13 @@ suite('ForeshadowingSection コンポーネント', () => {
       const setButton = screen.getByText('+ 回収位置を設定');
       fireEvent.click(setButton);
 
-      assert(screen.getByPlaceholderText('例: contents/chapter5.txt'));
-      assert(screen.getByPlaceholderText('伏線の回収方法や結果を説明'));
-      assert(screen.getByText('設定'));
-      assert(screen.getByText('キャンセル'));
+      expect(screen.getByPlaceholderText('例: contents/chapter5.txt')).toBeInTheDocument();
+      expect(screen.getByPlaceholderText('伏線の回収方法や結果を説明')).toBeInTheDocument();
+      expect(screen.getByText('設定')).toBeInTheDocument();
+      expect(screen.getByText('キャンセル')).toBeInTheDocument();
     });
 
-    test('正常なデータで回収位置を設定する', () => {
+    it('正常なデータで回収位置を設定する', () => {
       render(
         <ForeshadowingSection
           onPlantAdd={mockOnPlantAdd}
@@ -571,12 +575,12 @@ suite('ForeshadowingSection コンポーネント', () => {
       const submitButton = screen.getByText('設定');
       fireEvent.click(submitButton);
 
-      assert.strictEqual(setPayoffs.length, 1);
-      assert.strictEqual(setPayoffs[0].location, 'chapter5.txt');
-      assert.strictEqual(setPayoffs[0].comment, '伏線の回収');
+      expect(setPayoffs).toHaveLength(1);
+      expect(setPayoffs[0].location).toBe('chapter5.txt');
+      expect(setPayoffs[0].comment).toBe('伏線の回収');
     });
 
-    test('コメントが空でも位置があれば回収位置を設定できる', () => {
+    it('コメントが空でも位置があれば回収位置を設定できる', () => {
       render(
         <ForeshadowingSection
           onPlantAdd={mockOnPlantAdd}
@@ -597,12 +601,12 @@ suite('ForeshadowingSection コンポーネント', () => {
       const submitButton = screen.getByText('設定');
       fireEvent.click(submitButton);
 
-      assert.strictEqual(setPayoffs.length, 1);
-      assert.strictEqual(setPayoffs[0].location, 'chapter5.txt');
-      assert.strictEqual(setPayoffs[0].comment, '');
+      expect(setPayoffs).toHaveLength(1);
+      expect(setPayoffs[0].location).toBe('chapter5.txt');
+      expect(setPayoffs[0].comment).toBe('');
     });
 
-    test('回収位置の編集', () => {
+    it('回収位置の編集', () => {
       const foreshadowingData: ForeshadowingData = {
         payoff: { location: 'chapter5.txt', comment: '既存の回収' },
       };
@@ -621,17 +625,19 @@ suite('ForeshadowingSection コンポーネント', () => {
       const editButton = screen
         .getAllByText('編集')
         .find((button) => button.closest('.subsection')?.textContent?.includes('伏線回収'));
-      assert(editButton);
-      fireEvent.click(editButton);
+      expect(editButton).not.toBeNull();
+      if (editButton) {
+        fireEvent.click(editButton);
+      }
 
       // フォームが開き、既存データが入力されている
       const locationInput = screen.getByDisplayValue('chapter5.txt');
       const commentTextarea = screen.getByDisplayValue('既存の回収');
-      assert(locationInput);
-      assert(commentTextarea);
+      expect(locationInput).toBeInTheDocument();
+      expect(commentTextarea).toBeInTheDocument();
     });
 
-    test('回収位置の削除', () => {
+    it('回収位置の削除', () => {
       const foreshadowingData: ForeshadowingData = {
         payoff: { location: 'chapter5.txt', comment: '削除対象の回収' },
       };
@@ -650,15 +656,17 @@ suite('ForeshadowingSection コンポーネント', () => {
       const deleteButton = screen
         .getAllByText('削除')
         .find((button) => button.closest('.subsection')?.textContent?.includes('伏線回収'));
-      assert(deleteButton);
-      fireEvent.click(deleteButton);
+      expect(deleteButton).not.toBeNull();
+      if (deleteButton) {
+        fireEvent.click(deleteButton);
+      }
 
-      assert.strictEqual(payoffRemoveCount, 1);
+      expect(payoffRemoveCount).toBe(1);
     });
   });
 
-  suite('エッジケース', () => {
-    test('foreshadowingがundefinedの場合も正常に動作する', () => {
+  describe('エッジケース', () => {
+    it('foreshadowingがundefinedの場合も正常に動作する', () => {
       render(
         <ForeshadowingSection
           foreshadowing={undefined}
@@ -670,11 +678,11 @@ suite('ForeshadowingSection コンポーネント', () => {
         />,
       );
 
-      assert(screen.getByText('📍 伏線設置 (0件)'));
-      assert(screen.getByText('🎯 伏線回収 (未設定)'));
+      expect(screen.getByText('📍 伏線設置 (0件)')).toBeInTheDocument();
+      expect(screen.getByText('🎯 伏線回収 (未設定)')).toBeInTheDocument();
     });
 
-    test('plants配列が空の場合', () => {
+    it('plants配列が空の場合', () => {
       const foreshadowingData: ForeshadowingData = {
         plants: [],
       };
@@ -690,11 +698,11 @@ suite('ForeshadowingSection コンポーネント', () => {
         />,
       );
 
-      assert(screen.getByText('📍 伏線設置 (0件)'));
-      assert(screen.getByText('+ 位置を追加'));
+      expect(screen.getByText('📍 伏線設置 (0件)')).toBeInTheDocument();
+      expect(screen.getByText('+ 位置を追加')).toBeInTheDocument();
     });
 
-    test('payoffのlocationが空文字の場合は未設定として扱われる', () => {
+    it('payoffのlocationが空文字の場合は未設定として扱われる', () => {
       const foreshadowingData: ForeshadowingData = {
         payoff: { location: '', comment: 'コメントあり' },
       };
@@ -710,11 +718,11 @@ suite('ForeshadowingSection コンポーネント', () => {
         />,
       );
 
-      assert(screen.getByText('🎯 伏線回収 (未設定)'));
-      assert(screen.getByText('+ 回収位置を設定'));
+      expect(screen.getByText('🎯 伏線回収 (未設定)')).toBeInTheDocument();
+      expect(screen.getByText('+ 回収位置を設定')).toBeInTheDocument();
     });
 
-    test('payoffのlocationが空白のみの場合は未設定として扱われる', () => {
+    it('payoffのlocationが空白のみの場合は未設定として扱われる', () => {
       const foreshadowingData: ForeshadowingData = {
         payoff: { location: '   ', comment: 'コメントあり' },
       };
@@ -730,10 +738,10 @@ suite('ForeshadowingSection コンポーネント', () => {
         />,
       );
 
-      assert(screen.getByText('🎯 伏線回収 (未設定)'));
+      expect(screen.getByText('🎯 伏線回収 (未設定)')).toBeInTheDocument();
     });
 
-    test('植込み位置の追加で位置が空白のみの場合は追加されない', () => {
+    it('植込み位置の追加で位置が空白のみの場合は追加されない', () => {
       render(
         <ForeshadowingSection
           onPlantAdd={mockOnPlantAdd}
@@ -754,10 +762,10 @@ suite('ForeshadowingSection コンポーネント', () => {
       const submitButton = screen.getByText('追加');
       fireEvent.click(submitButton);
 
-      assert.strictEqual(addedPlants.length, 0);
+      expect(addedPlants).toHaveLength(0);
     });
 
-    test('回収位置の設定で位置が空白のみの場合は設定されない', () => {
+    it('回収位置の設定で位置が空白のみの場合は設定されない', () => {
       render(
         <ForeshadowingSection
           onPlantAdd={mockOnPlantAdd}
@@ -778,12 +786,12 @@ suite('ForeshadowingSection コンポーネント', () => {
       const submitButton = screen.getByText('設定');
       fireEvent.click(submitButton);
 
-      assert.strictEqual(setPayoffs.length, 0);
+      expect(setPayoffs).toHaveLength(0);
     });
   });
 
-  suite('フォーム状態管理', () => {
-    test('植込み位置追加後にフォーム状態がリセットされる', () => {
+  describe('フォーム状態管理', () => {
+    it('植込み位置追加後にフォーム状態がリセットされる', () => {
       render(
         <ForeshadowingSection
           onPlantAdd={mockOnPlantAdd}
@@ -807,11 +815,11 @@ suite('ForeshadowingSection コンポーネント', () => {
       fireEvent.click(submitButton);
 
       // フォームが閉じられ、追加ボタンが再表示される
-      assert(screen.getByText('+ 位置を追加'));
-      assert(!screen.queryByDisplayValue('chapter1.txt'));
+      expect(screen.getByText('+ 位置を追加')).toBeInTheDocument();
+      expect(screen.queryByDisplayValue('chapter1.txt')).toBeNull();
     });
 
-    test('回収位置設定後にフォーム状態がリセットされる', () => {
+    it('回収位置設定後にフォーム状態がリセットされる', () => {
       render(
         <ForeshadowingSection
           onPlantAdd={mockOnPlantAdd}
@@ -835,11 +843,11 @@ suite('ForeshadowingSection コンポーネント', () => {
       fireEvent.click(submitButton);
 
       // フォームが閉じられる
-      assert(!screen.queryByDisplayValue('chapter5.txt'));
-      assert(!screen.queryByPlaceholderText('例: contents/chapter5.txt'));
+      expect(screen.queryByDisplayValue('chapter5.txt')).toBeNull();
+      expect(screen.queryByPlaceholderText('例: contents/chapter5.txt')).toBeNull();
     });
 
-    test('植込み位置更新後にフォーム状態がリセットされる', () => {
+    it('植込み位置更新後にフォーム状態がリセットされる', () => {
       const foreshadowingData: ForeshadowingData = {
         plants: [{ location: 'chapter1.txt', comment: '既存の伏線' }],
       };
@@ -862,7 +870,7 @@ suite('ForeshadowingSection コンポーネント', () => {
       fireEvent.click(updateButton);
 
       // フォームが閉じられ、追加ボタンが再表示される
-      assert(screen.getByText('+ 位置を追加'));
+      expect(screen.getByText('+ 位置を追加')).toBeInTheDocument();
     });
   });
 });

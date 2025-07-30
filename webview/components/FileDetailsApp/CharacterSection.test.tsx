@@ -1,15 +1,15 @@
-import { suite, test, setup } from 'mocha';
+import '@testing-library/jest-dom';
+
 import { render, screen, fireEvent } from '../../test-utils';
 import { CharacterSection } from './CharacterSection';
-import assert from 'assert';
 import type { CharacterInfo } from '../../types/FileDetails';
 
-suite('CharacterSection コンポーネント', () => {
+describe('CharacterSection コンポーネント', () => {
   let mockCharacter: CharacterInfo;
   let mockOnCharacterRemove: () => void;
   let removeCallCount: number;
 
-  setup(() => {
+  beforeEach(() => {
     // 各テスト前にモックデータをリセット
     mockCharacter = {
       importance: 'main',
@@ -23,8 +23,8 @@ suite('CharacterSection コンポーネント', () => {
     };
   });
 
-  suite('基本表示', () => {
-    test('セクションヘッダーが表示される', () => {
+  describe('基本表示', () => {
+    it('セクションヘッダーが表示される', () => {
       render(
         <CharacterSection
           character={mockCharacter}
@@ -33,10 +33,10 @@ suite('CharacterSection コンポーネント', () => {
         />,
       );
 
-      assert(screen.getByText('キャラクター情報'));
+      expect(screen.getByText('キャラクター情報')).toBeInTheDocument();
     });
 
-    test('削除ボタンが表示される', () => {
+    it('削除ボタンが表示される', () => {
       render(
         <CharacterSection
           character={mockCharacter}
@@ -46,11 +46,11 @@ suite('CharacterSection コンポーネント', () => {
       );
 
       const deleteButton = screen.getByTitle('キャラクター情報を削除');
-      assert(deleteButton);
-      assert.strictEqual(deleteButton.textContent, '×');
+      expect(deleteButton).toBeTruthy();
+      expect(deleteButton.textContent).toBe('×');
     });
 
-    test('キャラクター情報が正しく表示される', () => {
+    it('キャラクター情報が正しく表示される', () => {
       render(
         <CharacterSection
           character={mockCharacter}
@@ -59,15 +59,15 @@ suite('CharacterSection コンポーネント', () => {
         />,
       );
 
-      assert(screen.getByText('重要度:'));
-      assert(screen.getByText('main'));
-      assert(screen.getByText('複数キャラ:'));
-      assert(screen.getByText('いいえ'));
-      assert(screen.getByText('表示名:'));
-      assert(screen.getByText('主人公'));
+      expect(screen.getByText('重要度:')).toBeInTheDocument();
+      expect(screen.getByText('main')).toBeInTheDocument();
+      expect(screen.getByText('複数キャラ:')).toBeInTheDocument();
+      expect(screen.getByText('いいえ')).toBeInTheDocument();
+      expect(screen.getByText('表示名:')).toBeInTheDocument();
+      expect(screen.getByText('主人公')).toBeInTheDocument();
     });
 
-    test('各キャラクター情報フィールドが正しい構造で表示される', () => {
+    it('各キャラクター情報フィールドが正しい構造で表示される', () => {
       render(
         <CharacterSection
           character={mockCharacter}
@@ -77,21 +77,21 @@ suite('CharacterSection コンポーネント', () => {
       );
 
       const importanceField = screen.getByText('重要度:').closest('.character-field');
-      assert(importanceField);
-      assert(importanceField.textContent?.includes('main'));
+      expect(importanceField).not.toBeNull();
+      expect(importanceField?.textContent?.includes('main')).toBeTruthy();
 
       const multipleField = screen.getByText('複数キャラ:').closest('.character-field');
-      assert(multipleField);
-      assert(multipleField.textContent?.includes('いいえ'));
+      expect(multipleField).not.toBeNull();
+      expect(multipleField?.textContent?.includes('いいえ')).toBeTruthy();
 
       const displayNameField = screen.getByText('表示名:').closest('.character-field');
-      assert(displayNameField);
-      assert(displayNameField.textContent?.includes('主人公'));
+      expect(displayNameField).not.toBeNull();
+      expect(displayNameField?.textContent?.includes('主人公')).toBeTruthy();
     });
   });
 
-  suite('展開・折りたたみ機能', () => {
-    test('初期状態では展開されている', () => {
+  describe('展開・折りたたみ機能', () => {
+    it('初期状態では展開されている', () => {
       render(
         <CharacterSection
           character={mockCharacter}
@@ -101,12 +101,12 @@ suite('CharacterSection コンポーネント', () => {
       );
 
       // キャラクター情報が見えている = 展開されている
-      assert(screen.getByText('重要度:'));
-      assert(screen.getByText('複数キャラ:'));
-      assert(screen.getByText('表示名:'));
+      expect(screen.getByText('重要度:')).toBeInTheDocument();
+      expect(screen.getByText('複数キャラ:')).toBeInTheDocument();
+      expect(screen.getByText('表示名:')).toBeInTheDocument();
     });
 
-    test('ヘッダーをクリックすると折りたたまれる', () => {
+    it('ヘッダーをクリックすると折りたたまれる', () => {
       render(
         <CharacterSection
           character={mockCharacter}
@@ -116,19 +116,21 @@ suite('CharacterSection コンポーネント', () => {
       );
 
       const header = screen.getByText('キャラクター情報').closest('button');
-      assert(header);
+      expect(header).not.toBeNull();
 
-      fireEvent.click(header);
+      if (header) {
+        fireEvent.click(header);
+      }
 
       // 折りたたみ状態の確認（classNameで判定）
       const content = screen
         .getByText('キャラクター情報')
         .closest('.section')
         ?.querySelector('.section-content');
-      assert(content?.classList.contains('collapsed'));
+      expect(content?.classList.contains('collapsed')).toBeTruthy();
     });
 
-    test('折りたたみ状態でヘッダーをクリックすると展開される', () => {
+    it('折りたたみ状態でヘッダーをクリックすると展開される', () => {
       render(
         <CharacterSection
           character={mockCharacter}
@@ -138,23 +140,27 @@ suite('CharacterSection コンポーネント', () => {
       );
 
       const header = screen.getByText('キャラクター情報').closest('button');
-      assert(header);
+      expect(header).not.toBeNull();
 
       // 一度折りたたむ
-      fireEvent.click(header);
+      if (header) {
+        fireEvent.click(header);
+      }
 
       // 再度クリックして展開
-      fireEvent.click(header);
+      if (header) {
+        fireEvent.click(header);
+      }
 
       // 展開状態の確認
       const content = screen
         .getByText('キャラクター情報')
         .closest('.section')
         ?.querySelector('.section-content');
-      assert(!content?.classList.contains('collapsed'));
+      expect(content?.classList.contains('collapsed')).toBeFalsy();
     });
 
-    test('シェブロンアイコンの状態が正しく切り替わる', () => {
+    it('シェブロンアイコンの状態が正しく切り替わる', () => {
       render(
         <CharacterSection
           character={mockCharacter}
@@ -167,26 +173,30 @@ suite('CharacterSection コンポーネント', () => {
         .getByText('キャラクター情報')
         .closest('button')
         ?.querySelector('.section-chevron');
-      assert(chevron);
+      expect(chevron).not.toBeNull();
 
       // 初期状態（展開）
-      assert(!chevron.classList.contains('collapsed'));
+      expect(chevron?.classList.contains('collapsed')).toBeFalsy();
 
       const header = screen.getByText('キャラクター情報').closest('button');
-      assert(header);
+      expect(header).not.toBeNull();
 
       // 折りたたみ
-      fireEvent.click(header);
-      assert(chevron.classList.contains('collapsed'));
+      if (header) {
+        fireEvent.click(header);
+      }
+      expect(chevron?.classList.contains('collapsed')).toBeTruthy();
 
       // 再展開
-      fireEvent.click(header);
-      assert(!chevron.classList.contains('collapsed'));
+      if (header) {
+        fireEvent.click(header);
+      }
+      expect(chevron?.classList.contains('collapsed')).toBeFalsy();
     });
   });
 
-  suite('削除機能', () => {
-    test('削除ボタンをクリックするとonCharacterRemoveが呼ばれる', () => {
+  describe('削除機能', () => {
+    it('削除ボタンをクリックするとonCharacterRemoveが呼ばれる', () => {
       render(
         <CharacterSection
           character={mockCharacter}
@@ -198,10 +208,10 @@ suite('CharacterSection コンポーネント', () => {
       const deleteButton = screen.getByTitle('キャラクター情報を削除');
       fireEvent.click(deleteButton);
 
-      assert.strictEqual(removeCallCount, 1);
+      expect(removeCallCount).toBe(1);
     });
 
-    test('削除ボタンのクリックイベントが親要素に伝播しない', () => {
+    it('削除ボタンのクリックイベントが親要素に伝播しない', () => {
       render(
         <CharacterSection
           character={mockCharacter}
@@ -214,16 +224,16 @@ suite('CharacterSection コンポーネント', () => {
       fireEvent.click(deleteButton);
 
       // 削除ボタンがクリックされた
-      assert.strictEqual(removeCallCount, 1);
+      expect(removeCallCount).toBe(1);
 
       // 注意: jsdomでの制限により、実際のstopPropagationの確認は困難
       // 削除機能が動作していることで代用
-      assert.strictEqual(removeCallCount, 1);
+      expect(removeCallCount).toBe(1);
     });
   });
 
-  suite('重要度の種別テスト', () => {
-    test('main重要度が正しく表示される', () => {
+  describe('重要度の種別テスト', () => {
+    it('main重要度が正しく表示される', () => {
       const mainCharacter = { ...mockCharacter, importance: 'main' as const };
       render(
         <CharacterSection
@@ -233,10 +243,10 @@ suite('CharacterSection コンポーネント', () => {
         />,
       );
 
-      assert(screen.getByText('main'));
+      expect(screen.getByText('main')).toBeInTheDocument();
     });
 
-    test('sub重要度が正しく表示される', () => {
+    it('sub重要度が正しく表示される', () => {
       const subCharacter = { ...mockCharacter, importance: 'sub' as const };
       render(
         <CharacterSection
@@ -246,10 +256,10 @@ suite('CharacterSection コンポーネント', () => {
         />,
       );
 
-      assert(screen.getByText('sub'));
+      expect(screen.getByText('sub')).toBeInTheDocument();
     });
 
-    test('background重要度が正しく表示される', () => {
+    it('background重要度が正しく表示される', () => {
       const backgroundCharacter = { ...mockCharacter, importance: 'background' as const };
       render(
         <CharacterSection
@@ -259,10 +269,10 @@ suite('CharacterSection コンポーネント', () => {
         />,
       );
 
-      assert(screen.getByText('background'));
+      expect(screen.getByText('background')).toBeInTheDocument();
     });
 
-    test('重要度がundefinedの場合は「未設定」と表示される', () => {
+    it('重要度がundefinedの場合は「未設定」と表示される', () => {
       const noImportanceCharacter = { ...mockCharacter, importance: undefined };
       render(
         <CharacterSection
@@ -272,12 +282,12 @@ suite('CharacterSection コンポーネント', () => {
         />,
       );
 
-      assert(screen.getByText('未設定'));
+      expect(screen.getByText('未設定')).toBeInTheDocument();
     });
   });
 
-  suite('複数キャラクターフラグのテスト', () => {
-    test('複数キャラクターがtrueの場合は「はい」と表示される', () => {
+  describe('複数キャラクターフラグのテスト', () => {
+    it('複数キャラクターがtrueの場合は「はい」と表示される', () => {
       const multipleCharacter = { ...mockCharacter, multiple_characters: true };
       render(
         <CharacterSection
@@ -287,10 +297,10 @@ suite('CharacterSection コンポーネント', () => {
         />,
       );
 
-      assert(screen.getByText('はい'));
+      expect(screen.getByText('はい')).toBeInTheDocument();
     });
 
-    test('複数キャラクターがfalseの場合は「いいえ」と表示される', () => {
+    it('複数キャラクターがfalseの場合は「いいえ」と表示される', () => {
       const singleCharacter = { ...mockCharacter, multiple_characters: false };
       render(
         <CharacterSection
@@ -300,10 +310,10 @@ suite('CharacterSection コンポーネント', () => {
         />,
       );
 
-      assert(screen.getByText('いいえ'));
+      expect(screen.getByText('いいえ')).toBeInTheDocument();
     });
 
-    test('複数キャラクターがundefinedの場合は「いいえ」と表示される', () => {
+    it('複数キャラクターがundefinedの場合は「いいえ」と表示される', () => {
       const undefinedMultipleCharacter = { ...mockCharacter, multiple_characters: undefined };
       render(
         <CharacterSection
@@ -313,12 +323,12 @@ suite('CharacterSection コンポーネント', () => {
         />,
       );
 
-      assert(screen.getByText('いいえ'));
+      expect(screen.getByText('いいえ')).toBeInTheDocument();
     });
   });
 
-  suite('表示名のフォールバック動作', () => {
-    test('display_nameが設定されている場合はそれが表示される', () => {
+  describe('表示名のフォールバック動作', () => {
+    it('display_nameが設定されている場合はそれが表示される', () => {
       const characterWithDisplayName = { ...mockCharacter, display_name: 'カスタム名前' };
       render(
         <CharacterSection
@@ -328,10 +338,10 @@ suite('CharacterSection コンポーネント', () => {
         />,
       );
 
-      assert(screen.getByText('カスタム名前'));
+      expect(screen.getByText('カスタム名前')).toBeInTheDocument();
     });
 
-    test('display_nameがない場合はfileNameが表示される', () => {
+    it('display_nameがない場合はfileNameが表示される', () => {
       const characterWithoutDisplayName = { ...mockCharacter, display_name: undefined };
       render(
         <CharacterSection
@@ -341,10 +351,10 @@ suite('CharacterSection コンポーネント', () => {
         />,
       );
 
-      assert(screen.getByText('hero.md'));
+      expect(screen.getByText('hero.md')).toBeInTheDocument();
     });
 
-    test('display_nameもfileNameもない場合は空文字が表示される', () => {
+    it('display_nameもfileNameもない場合は空文字が表示される', () => {
       const characterWithoutDisplayName = { ...mockCharacter, display_name: undefined };
       render(
         <CharacterSection
@@ -355,12 +365,12 @@ suite('CharacterSection コンポーネント', () => {
 
       // 表示名フィールドは存在するが、値は空
       const displayNameField = screen.getByText('表示名:').closest('.character-field');
-      assert(displayNameField);
+      expect(displayNameField).toBeTruthy();
       // display_nameもfileNameもない場合は空文字のためスペースが残る
-      assert.strictEqual(displayNameField.textContent, '表示名: ');
+      expect(displayNameField?.textContent).toBe('表示名: ');
     });
 
-    test('空文字のdisplay_nameの場合はfileNameにフォールバック', () => {
+    it('空文字のdisplay_nameの場合はfileNameにフォールバック', () => {
       const characterWithEmptyDisplayName = { ...mockCharacter, display_name: '' };
       render(
         <CharacterSection
@@ -370,15 +380,15 @@ suite('CharacterSection コンポーネント', () => {
         />,
       );
 
-      assert(screen.getByText('fallback.md'));
+      expect(screen.getByText('fallback.md')).toBeInTheDocument();
     });
   });
 
-  suite('エッジケース', () => {
-    test('空のキャラクター情報でも正常に動作する', () => {
+  describe('エッジケース', () => {
+    it('空のキャラクター情報でも正常に動作する', () => {
       const emptyCharacter: CharacterInfo = {};
 
-      assert.doesNotThrow(() => {
+      expect(() => {
         render(
           <CharacterSection
             character={emptyCharacter}
@@ -386,15 +396,15 @@ suite('CharacterSection コンポーネント', () => {
             onCharacterRemove={mockOnCharacterRemove}
           />,
         );
-      });
+      }).not.toThrow();
 
-      assert(screen.getByText('キャラクター情報'));
-      assert(screen.getByText('未設定'));
-      assert(screen.getByText('いいえ'));
-      assert(screen.getByText('test.md'));
+      expect(screen.getByText('キャラクター情報')).toBeInTheDocument();
+      expect(screen.getByText('未設定')).toBeInTheDocument();
+      expect(screen.getByText('いいえ')).toBeInTheDocument();
+      expect(screen.getByText('test.md')).toBeInTheDocument();
     });
 
-    test('すべてのプロパティがundefinedでも正常に動作する', () => {
+    it('すべてのプロパティがundefinedでも正常に動作する', () => {
       const undefinedCharacter: CharacterInfo = {
         importance: undefined,
         multiple_characters: undefined,
@@ -408,14 +418,14 @@ suite('CharacterSection コンポーネント', () => {
         />,
       );
 
-      assert(screen.getByText('未設定'));
-      assert(screen.getByText('いいえ'));
+      expect(screen.getByText('未設定')).toBeInTheDocument();
+      expect(screen.getByText('いいえ')).toBeInTheDocument();
       // 表示名は空になる（どちらも未定義なので）
     });
   });
 
-  suite('アクセシビリティ', () => {
-    test('ヘッダーボタンがbutton要素として正しく実装されている', () => {
+  describe('アクセシビリティ', () => {
+    it('ヘッダーボタンがbutton要素として正しく実装されている', () => {
       render(
         <CharacterSection
           character={mockCharacter}
@@ -425,12 +435,12 @@ suite('CharacterSection コンポーネント', () => {
       );
 
       const header = screen.getByText('キャラクター情報').closest('button');
-      assert(header);
-      assert.strictEqual(header.tagName, 'BUTTON');
-      assert.strictEqual(header.getAttribute('type'), 'button');
+      expect(header).not.toBeNull();
+      expect(header?.tagName).toBe('BUTTON');
+      expect(header?.getAttribute('type')).toBe('button');
     });
 
-    test('削除ボタンがbutton要素として正しく実装されている', () => {
+    it('削除ボタンがbutton要素として正しく実装されている', () => {
       render(
         <CharacterSection
           character={mockCharacter}
@@ -440,12 +450,12 @@ suite('CharacterSection コンポーネント', () => {
       );
 
       const deleteButton = screen.getByTitle('キャラクター情報を削除');
-      assert.strictEqual(deleteButton.tagName, 'BUTTON');
-      assert.strictEqual(deleteButton.getAttribute('type'), 'button');
-      assert.strictEqual(deleteButton.getAttribute('title'), 'キャラクター情報を削除');
+      expect(deleteButton.tagName).toBe('BUTTON');
+      expect(deleteButton.getAttribute('type')).toBe('button');
+      expect(deleteButton.getAttribute('title')).toBe('キャラクター情報を削除');
     });
 
-    test('キャラクター情報の構造が正しい', () => {
+    it('キャラクター情報の構造が正しい', () => {
       render(
         <CharacterSection
           character={mockCharacter}
@@ -456,15 +466,15 @@ suite('CharacterSection コンポーネント', () => {
 
       // .character-info コンテナが存在する
       const infoContainer = screen.getByText('重要度:').closest('.character-info');
-      assert(infoContainer);
+      expect(infoContainer).not.toBeNull();
 
       // 各情報フィールドが .character-field クラスを持つ
       const fieldItems = infoContainer?.querySelectorAll('.character-field');
-      assert.strictEqual(fieldItems?.length, 3);
+      expect(fieldItems?.length).toBe(3);
 
       // 各フィールドに strong 要素（ラベル）が含まれている
       fieldItems?.forEach((field) => {
-        assert(field.querySelector('strong'));
+        expect(field.querySelector('strong')).toBeTruthy();
       });
     });
   });

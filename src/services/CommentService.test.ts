@@ -230,7 +230,7 @@ created_at: '2024-01-01T00:00:00Z'`;
     it('存在しないコメントファイルを更新しようとするとエラーが発生する', async () => {
       try {
         await commentService.updateCommentAsync('nonexistent.txt', 0, { status: 'resolved' });
-        fail('エラーが発生すべきです');
+        throw new Error('エラーが発生すべきです');
       } catch (error) {
         expect((error as Error).message).toContain('更新対象のコメントが見つかりません');
       }
@@ -246,7 +246,7 @@ created_at: '2024-01-01T00:00:00Z'`;
 
       try {
         await commentService.updateCommentAsync(testRelativeFilePath, 999, { status: 'resolved' });
-        fail('エラーが発生すべきです');
+        throw new Error('エラーが発生すべきです');
       } catch (error) {
         expect((error as Error).message).toContain('更新対象のコメントが見つかりません');
       }
@@ -295,7 +295,7 @@ created_at: '2024-01-01T00:00:00Z'`;
     it('存在しないコメントファイルからの削除でエラーが発生する', async () => {
       try {
         await commentService.deleteCommentAsync('nonexistent.txt', 0);
-        fail('エラーが発生すべきです');
+        throw new Error('エラーが発生すべきです');
       } catch (error) {
         expect((error as Error).message).toContain('削除対象のコメントが見つかりません');
       }
@@ -311,7 +311,7 @@ created_at: '2024-01-01T00:00:00Z'`;
 
       try {
         await commentService.deleteCommentAsync(testRelativeFilePath, 999);
-        fail('エラーが発生すべきです');
+        throw new Error('エラーが発生すべきです');
       } catch (error) {
         expect((error as Error).message).toContain('削除対象のコメントが見つかりません');
       }
@@ -453,7 +453,7 @@ created_at: '2024-01-01T00:00:00Z'`;
 
       try {
         await commentService.loadCommentFileAsync(testRelativeFilePath);
-        fail('エラーが発生すべきです');
+        throw new Error('エラーが発生すべきです');
       } catch (error) {
         expect((error as Error).message).toContain('コメントファイル読み込みエラー');
       }
@@ -471,7 +471,7 @@ created_at: '2024-01-01T00:00:00Z'`;
 
       try {
         await commentService.loadCommentFileAsync(testRelativeFilePath);
-        fail('エラーが発生すべきです');
+        throw new Error('エラーが発生すべきです');
       } catch (error) {
         expect((error as Error).message).toContain('コメントファイルの形式が正しくありません');
       }

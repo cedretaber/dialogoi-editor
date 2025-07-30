@@ -119,15 +119,13 @@ describe('PathNormalizer テストスイート', () => {
     });
 
     it('異なるパスの場合false', () => {
-      expect(
-        PathNormalizer.isSamePath('settings/world.md', 'settings/characters/hero.md')
-      ).toBe(false);
+      expect(PathNormalizer.isSamePath('settings/world.md', 'settings/characters/hero.md')).toBe(
+        false,
+      );
     });
 
     it('パス区切り文字が異なっても同じパスと認識', () => {
-      expect(
-        PathNormalizer.isSamePath('settings\\world.md', 'settings/world.md')
-      ).toBe(true);
+      expect(PathNormalizer.isSamePath('settings\\world.md', 'settings/world.md')).toBe(true);
     });
   });
 

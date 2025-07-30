@@ -1,5 +1,5 @@
-import { suite, test, beforeEach, afterEach } from 'mocha';
-import { strict as assert } from 'assert';
+import '@testing-library/jest-dom';
+
 import { render, screen, fireEvent, waitFor, cleanup } from '@testing-library/react';
 import { ProjectSettingsApp } from './ProjectSettingsApp';
 import { resetGlobalReadyMessageSent } from '../../hooks/useVSCodeApi';
@@ -11,7 +11,7 @@ import type {
   SaveResultMessage,
 } from '../../types/ProjectSettings';
 
-suite('ProjectSettingsApp コンポーネント', () => {
+describe('ProjectSettingsApp コンポーネント', () => {
   let mockPostMessage: (message: ProjectSettingsMessage) => void;
   let messageCallbacks: ((event: MessageEvent<ProjectSettingsWebViewMessage>) => void)[];
   let originalAddEventListener: typeof window.addEventListener;
@@ -109,8 +109,8 @@ suite('ProjectSettingsApp コンポーネント', () => {
     },
   };
 
-  suite('初期状態', () => {
-    test('Dialogoiプロジェクトが見つからない場合のメッセージ', () => {
+  describe('初期状態', () => {
+    it('Dialogoiプロジェクトが見つからない場合のメッセージ', () => {
       render(<ProjectSettingsApp />);
       const updateMessage: UpdateProjectSettingsMessage = {
         type: 'updateSettings',
@@ -122,15 +122,15 @@ suite('ProjectSettingsApp コンポーネント', () => {
       };
       sendMessage(updateMessage);
 
-      assert(screen.getByText('Dialogoiプロジェクトが見つかりません。'));
-      assert(
+      expect(screen.getByText('Dialogoiプロジェクトが見つかりません。')).toBeInTheDocument();
+      expect(
         screen.getByText(
           '新しいプロジェクトを作成するか、既存のDialogoiプロジェクトを開いてください。',
         ),
-      );
+      ).toBeInTheDocument();
     });
 
-    test('設定読み込みエラーの表示', async () => {
+    it('設定読み込みエラーの表示', async () => {
       render(<ProjectSettingsApp />);
       const updateMessage: UpdateProjectSettingsMessage = {
         type: 'updateSettings',
@@ -143,34 +143,34 @@ suite('ProjectSettingsApp コンポーネント', () => {
       sendMessage(updateMessage);
 
       await waitFor(() => {
-        assert(screen.getByText('プロジェクト設定の読み込みに失敗しました。'));
-        assert(screen.getByText('📝 YAML直接編集'));
+        expect(screen.getByText('プロジェクト設定の読み込みに失敗しました。')).toBeInTheDocument();
+        expect(screen.getByText('📝 YAML直接編集')).toBeInTheDocument();
       });
     });
 
-    test('readyメッセージが送信される', async () => {
+    it('readyメッセージが送信される', async () => {
       const spy = createPostMessageSpy();
       render(<ProjectSettingsApp />);
 
       await waitFor(() => {
-        assert(spy.wasCalledWith({ command: 'ready' }));
+        expect(spy.wasCalledWith({ command: 'ready' })).toBeTruthy();
       });
     });
 
-    test('メッセージリスナーが登録される', () => {
+    it('メッセージリスナーが登録される', () => {
       render(<ProjectSettingsApp />);
-      assert.strictEqual(messageCallbacks.length, 1);
+      expect(messageCallbacks.length).toBe(1);
     });
 
-    test('コンポーネントのクリーンアップ時にリスナーが削除される', () => {
+    it('コンポーネントのクリーンアップ時にリスナーが削除される', () => {
       const { unmount } = render(<ProjectSettingsApp />);
       const initialCallbackCount = messageCallbacks.length;
       unmount();
-      assert.strictEqual(messageCallbacks.length, initialCallbackCount - 1);
+      expect(messageCallbacks.length).toBe(initialCallbackCount - 1);
     });
   });
 
-  suite('既存プロジェクトの表示', () => {
+  describe('既存プロジェクトの表示', () => {
     beforeEach(async () => {
       render(<ProjectSettingsApp />);
       const updateMessage: UpdateProjectSettingsMessage = {
@@ -185,43 +185,43 @@ suite('ProjectSettingsApp コンポーネント', () => {
 
       // 状態更新を待つ
       await waitFor(() => {
-        assert(screen.getByDisplayValue('テスト小説'));
+        expect(screen.getByDisplayValue('テスト小説')).toBeInTheDocument();
       });
     });
 
-    test('基本情報が正しく表示される', async () => {
+    it('基本情報が正しく表示される', async () => {
       await waitFor(() => {
-        assert(screen.getByDisplayValue('テスト小説'));
-        assert(screen.getByDisplayValue('テスト作者'));
+        expect(screen.getByDisplayValue('テスト小説')).toBeInTheDocument();
+        expect(screen.getByDisplayValue('テスト作者')).toBeInTheDocument();
       });
     });
 
-    test('タグが正しく表示される', () => {
-      assert(screen.getByText('ファンタジー'));
-      assert(screen.getByText('アクション'));
+    it('タグが正しく表示される', () => {
+      expect(screen.getByText('ファンタジー')).toBeInTheDocument();
+      expect(screen.getByText('アクション')).toBeInTheDocument();
     });
 
-    test('プロジェクト設定が正しく表示される', async () => {
+    it('プロジェクト設定が正しく表示される', async () => {
       await waitFor(() => {
-        assert(screen.getByDisplayValue('README.md'));
+        expect(screen.getByDisplayValue('README.md')).toBeInTheDocument();
         // テキストエリアの値は改行で分かれている
         // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-assertion
         const textareaElement = screen.getByLabelText('除外パターン') as HTMLTextAreaElement;
-        assert.strictEqual(textareaElement.value, '*.tmp\nnode_modules/');
+        expect(textareaElement.value).toBe('*.tmp\nnode_modules/');
       });
     });
 
-    test('メタデータが表示される', () => {
-      assert(screen.getByText(/作成日:/));
-      assert(screen.getByText(/更新日:/));
+    it('メタデータが表示される', () => {
+      expect(screen.getByText(/作成日:/)).toBeInTheDocument();
+      expect(screen.getByText(/更新日:/)).toBeInTheDocument();
     });
 
-    test('YAML直接編集ボタンが表示される', () => {
-      assert(screen.getByText('📝 YAML直接編集'));
+    it('YAML直接編集ボタンが表示される', () => {
+      expect(screen.getByText('📝 YAML直接編集')).toBeInTheDocument();
     });
   });
 
-  suite('新規プロジェクトの作成', () => {
+  describe('新規プロジェクトの作成', () => {
     beforeEach(async () => {
       render(<ProjectSettingsApp />);
       const updateMessage: UpdateProjectSettingsMessage = {
@@ -236,23 +236,23 @@ suite('ProjectSettingsApp コンポーネント', () => {
 
       // 状態更新を待つ
       await waitFor(() => {
-        assert(screen.getByText('🆕 新しい小説プロジェクトの作成'));
+        expect(screen.getByText('🆕 新しい小説プロジェクトの作成')).toBeInTheDocument();
       });
     });
 
-    test('新規プロジェクトのタイトルが表示される', () => {
-      assert(screen.getByText('🆕 新しい小説プロジェクトの作成'));
+    it('新規プロジェクトのタイトルが表示される', () => {
+      expect(screen.getByText('🆕 新しい小説プロジェクトの作成')).toBeInTheDocument();
     });
 
-    test('作成ボタンが表示される', () => {
-      assert(screen.getByText('✨ プロジェクトを作成'));
+    it('作成ボタンが表示される', () => {
+      expect(screen.getByText('✨ プロジェクトを作成')).toBeInTheDocument();
     });
 
-    test('必須フィールドのバリデーション', () => {
+    it('必須フィールドのバリデーション', () => {
       const createButton = screen.getByText('✨ プロジェクトを作成');
 
       // 最初はボタンがdisabledになっている
-      assert((createButton as HTMLButtonElement).disabled);
+      expect((createButton as HTMLButtonElement).disabled);
 
       // タイトルフィールドをフォーカスアウトしてバリデーションをトリガー
       const titleInput = screen.getByLabelText('タイトル *');
@@ -265,11 +265,11 @@ suite('ProjectSettingsApp コンポーネント', () => {
       fireEvent.blur(authorInput);
 
       // エラーメッセージが表示されることを確認
-      assert(screen.getByText('タイトルは必須です'));
-      assert(screen.getByText('著者は必須です'));
+      expect(screen.getByText('タイトルは必須です')).toBeInTheDocument();
+      expect(screen.getByText('著者は必須です')).toBeInTheDocument();
     });
 
-    test('正しいデータでプロジェクトが作成される', async () => {
+    it('正しいデータでプロジェクトが作成される', async () => {
       const spy = createPostMessageSpy();
 
       // フォームに入力
@@ -280,8 +280,8 @@ suite('ProjectSettingsApp コンポーネント', () => {
       fireEvent.change(authorInput, { target: { value: '新しい作者' } });
 
       // 入力値が正しく設定されていることを事前確認
-      assert.strictEqual((titleInput as HTMLInputElement).value, '新しい小説');
-      assert.strictEqual((authorInput as HTMLInputElement).value, '新しい作者');
+      expect((titleInput as HTMLInputElement).value).toBe('新しい小説');
+      expect((authorInput as HTMLInputElement).value).toBe('新しい作者');
 
       // 作成ボタンをクリック
       const createButton = screen.getByText('✨ プロジェクトを作成');
@@ -292,29 +292,30 @@ suite('ProjectSettingsApp コンポーネント', () => {
         const calls = spy.getCalls();
         const saveSettingsCall = calls.find((call) => call.command === 'saveSettings');
 
-        assert(saveSettingsCall, 'saveSettings command not found');
-        assert(saveSettingsCall.data, 'saveSettings data should exist');
+        expect(saveSettingsCall).toBeTruthy(); // saveSettings command not found
+        expect(saveSettingsCall?.data).toBeTruthy(); // saveSettings data should exist
 
         // 型ガードとしてdataの構造を確認
-        const data = saveSettingsCall.data;
-        assert('title' in data && 'author' in data, 'data should have title and author');
+        const data = saveSettingsCall?.data;
+        expect(data && 'title' in data && 'author' in data).toBeTruthy(); // data should have title and author
 
-        assert.strictEqual(data.title, '新しい小説');
-        assert.strictEqual(data.author, '新しい作者');
+        if (!data) {
+          return;
+        }
+        const typedData = data as ProjectSettingsData;
+        expect(typedData.title).toBe('新しい小説');
+        expect(typedData.author).toBe('新しい作者');
 
         // 新規プロジェクト作成時はデフォルトのproject_settingsが含まれることを確認
-        assert(
-          'project_settings' in data && data.project_settings,
-          'project_settings should be included',
-        );
-        assert.strictEqual(data.project_settings.readme_filename, 'README.md');
-        assert(Array.isArray(data.project_settings.exclude_patterns));
-        assert(data.project_settings.exclude_patterns.length > 0);
+        expect('project_settings' in data && data.project_settings).toBeTruthy(); // project_settings should be included
+        expect(typedData.project_settings?.readme_filename).toBe('README.md');
+        expect(Array.isArray(typedData.project_settings?.exclude_patterns)).toBeTruthy();
+        expect(typedData.project_settings?.exclude_patterns?.length).toBeGreaterThan(0);
       });
     });
   });
 
-  suite('フィールド編集と自動保存', () => {
+  describe('フィールド編集と自動保存', () => {
     beforeEach(async () => {
       render(<ProjectSettingsApp />);
       const updateMessage: UpdateProjectSettingsMessage = {
@@ -329,17 +330,17 @@ suite('ProjectSettingsApp コンポーネント', () => {
 
       // 状態更新を待つ
       await waitFor(() => {
-        assert(screen.getByDisplayValue('テスト小説'));
+        expect(screen.getByDisplayValue('テスト小説')).toBeInTheDocument();
       });
     });
 
-    test('タイトル変更時の自動保存', () => {
+    it('タイトル変更時の自動保存', () => {
       const spy = createPostMessageSpy();
       const titleInput = screen.getByLabelText('タイトル *');
       fireEvent.change(titleInput, { target: { value: '更新された小説' } });
       fireEvent.blur(titleInput);
 
-      assert(
+      expect(
         spy.wasCalledWith({
           command: 'saveSettings',
           data: {
@@ -352,24 +353,24 @@ suite('ProjectSettingsApp コンポーネント', () => {
             },
           },
         }),
-      );
+      ).toBeTruthy();
     });
 
-    test('バリデーションエラー時は自動保存されない', () => {
+    it('バリデーションエラー時は自動保存されない', () => {
       const spy = createPostMessageSpy();
       const titleInput = screen.getByLabelText('タイトル *');
       fireEvent.change(titleInput, { target: { value: '' } });
       fireEvent.blur(titleInput);
 
-      assert(screen.getByText('タイトルは必須です'));
+      expect(screen.getByText('タイトルは必須です')).toBeInTheDocument();
 
       // saveSettingsコマンドが呼ばれていないことを確認
       const savesCalls = spy.getCalls().filter((call) => call.command === 'saveSettings');
-      assert.strictEqual(savesCalls.length, 0);
+      expect(savesCalls.length).toBe(0);
     });
   });
 
-  suite('タグ管理', () => {
+  describe('タグ管理', () => {
     let spy: ReturnType<typeof createPostMessageSpy>;
 
     beforeEach(async () => {
@@ -387,17 +388,17 @@ suite('ProjectSettingsApp コンポーネント', () => {
 
       // 状態更新を待つ
       await waitFor(() => {
-        assert(screen.getByDisplayValue('テスト小説'));
+        expect(screen.getByDisplayValue('テスト小説')).toBeInTheDocument();
       });
     });
 
-    test('タグの追加', async () => {
+    it('タグの追加', async () => {
       const tagInput = screen.getByPlaceholderText('新しいタグを入力してEnterキーを押してください');
       fireEvent.change(tagInput, { target: { value: 'ロマンス' } });
       fireEvent.keyDown(tagInput, { key: 'Enter' });
 
       await waitFor(() => {
-        assert(
+        expect(
           spy.wasCalledWith({
             command: 'saveSettings',
             data: {
@@ -410,11 +411,11 @@ suite('ProjectSettingsApp コンポーネント', () => {
               },
             },
           }),
-        );
+        ).toBeTruthy();
       });
     });
 
-    test('重複タグは追加されない', async () => {
+    it('重複タグは追加されない', async () => {
       const tagInput = screen.getByPlaceholderText('新しいタグを入力してEnterキーを押してください');
       fireEvent.change(tagInput, { target: { value: 'ファンタジー' } });
       fireEvent.keyDown(tagInput, { key: 'Enter' });
@@ -428,11 +429,11 @@ suite('ProjectSettingsApp コンポーネント', () => {
       if (saveCall && saveCall.data && 'tags' in saveCall.data) {
         const tags = saveCall.data.tags || [];
         const fantasyCount = tags.filter((tag: string) => tag === 'ファンタジー').length;
-        assert.strictEqual(fantasyCount, 1, 'ファンタジータグは1つのみであるべき');
+        expect(fantasyCount).toBe(1); // ファンタジータグは1つのみであるべき
       }
     });
 
-    test('タグの削除', async () => {
+    it('タグの削除', async () => {
       // タグセクション内の削除ボタンのみを取得
       const tagRemoveButtons = screen
         .getAllByRole('button')
@@ -444,13 +445,14 @@ suite('ProjectSettingsApp コンポーネント', () => {
       await waitFor(() => {
         const calls = spy.getCalls();
         const saveCall = calls.find((call) => call.command === 'saveSettings');
-        assert(saveCall, 'saveSettings command should be called');
-        assert(saveCall?.data && 'tags' in saveCall.data);
-        assert.deepStrictEqual(saveCall.data.tags, ['アクション']);
+        expect(saveCall).toBeTruthy(); // saveSettings command should be called
+        expect(saveCall?.data && 'tags' in saveCall.data).toBeTruthy();
+        const typedData = saveCall?.data as ProjectSettingsData;
+        expect(typedData.tags).toEqual(['アクション']);
       });
     });
 
-    test('全タグ削除時はundefinedになる', async () => {
+    it('全タグ削除時はundefinedになる', async () => {
       // 最初のタグを削除
       const tagRemoveButtons1 = screen
         .getAllByRole('button')
@@ -461,9 +463,10 @@ suite('ProjectSettingsApp コンポーネント', () => {
       await waitFor(() => {
         const calls = spy.getCalls();
         const saveCall = calls.find((call) => call.command === 'saveSettings');
-        assert(saveCall, 'First saveSettings call should be made');
-        assert(saveCall?.data && 'tags' in saveCall.data);
-        assert(Array.isArray(saveCall.data.tags) && saveCall.data.tags.length === 1);
+        expect(saveCall).toBeTruthy(); // First saveSettings call should be made
+        expect(saveCall?.data && 'tags' in saveCall.data).toBeTruthy();
+        const typedData = saveCall?.data as ProjectSettingsData;
+        expect(Array.isArray(typedData.tags) && typedData.tags?.length === 1).toBeTruthy();
       });
 
       // 2番目（最後）のタグを削除
@@ -476,14 +479,15 @@ suite('ProjectSettingsApp コンポーネント', () => {
       await waitFor(() => {
         const calls = spy.getCalls();
         const finalSaveCall = calls.filter((call) => call.command === 'saveSettings')[1]; // 2回目の呼び出し
-        assert(finalSaveCall, 'Final saveSettings call should be made');
-        assert(finalSaveCall.data && 'tags' in finalSaveCall.data);
-        assert.strictEqual(finalSaveCall.data.tags, undefined);
+        expect(finalSaveCall).toBeTruthy(); // Final saveSettings call should be made
+        expect(finalSaveCall?.data && 'tags' in finalSaveCall.data).toBeTruthy();
+        const typedData = finalSaveCall?.data as ProjectSettingsData;
+        expect(typedData.tags).toBe(undefined);
       });
     });
   });
 
-  suite('除外パターン管理', () => {
+  describe('除外パターン管理', () => {
     beforeEach(async () => {
       render(<ProjectSettingsApp />);
       const updateMessage: UpdateProjectSettingsMessage = {
@@ -498,11 +502,11 @@ suite('ProjectSettingsApp コンポーネント', () => {
 
       // 状態更新を待つ
       await waitFor(() => {
-        assert(screen.getByDisplayValue('テスト小説'));
+        expect(screen.getByDisplayValue('テスト小説')).toBeInTheDocument();
       });
     });
 
-    test('除外パターンのテキストエリア編集', () => {
+    it('除外パターンのテキストエリア編集', () => {
       const spy = createPostMessageSpy();
       // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-assertion
       const textarea = screen.getByLabelText('除外パターン') as HTMLTextAreaElement;
@@ -516,7 +520,7 @@ suite('ProjectSettingsApp コンポーネント', () => {
         lastCall.data &&
         'project_settings' in lastCall.data
       ) {
-        assert.deepStrictEqual(lastCall.data.project_settings?.exclude_patterns, [
+        expect(lastCall.data.project_settings?.exclude_patterns).toEqual([
           '*.log',
           '*.cache',
           'build/',
@@ -524,7 +528,7 @@ suite('ProjectSettingsApp コンポーネント', () => {
       }
     });
 
-    test('空行と空白は除去される', () => {
+    it('空行と空白は除去される', () => {
       const spy = createPostMessageSpy();
       const textarea = screen.getByLabelText('除外パターン');
       fireEvent.change(textarea, { target: { value: '*.log\n\n  \n*.cache\n  build/  ' } });
@@ -537,7 +541,7 @@ suite('ProjectSettingsApp コンポーネント', () => {
         lastCall.data &&
         'project_settings' in lastCall.data
       ) {
-        assert.deepStrictEqual(lastCall.data.project_settings?.exclude_patterns, [
+        expect(lastCall.data.project_settings?.exclude_patterns).toEqual([
           '*.log',
           '*.cache',
           'build/',
@@ -545,15 +549,15 @@ suite('ProjectSettingsApp コンポーネント', () => {
       }
     });
 
-    test('重複パターンのバリデーション', () => {
+    it('重複パターンのバリデーション', () => {
       const textarea = screen.getByLabelText('除外パターン');
       fireEvent.change(textarea, { target: { value: '*.log\n*.cache\n*.log' } });
       fireEvent.blur(textarea);
 
-      assert(screen.getByText('重複する除外パターンがあります: *.log'));
+      expect(screen.getByText('重複する除外パターンがあります: *.log')).toBeInTheDocument();
     });
 
-    test('全パターン削除時はundefinedになる', () => {
+    it('全パターン削除時はundefinedになる', () => {
       const spy = createPostMessageSpy();
       const textarea = screen.getByLabelText('除外パターン');
       fireEvent.change(textarea, { target: { value: '' } });
@@ -566,12 +570,12 @@ suite('ProjectSettingsApp コンポーネント', () => {
         lastCall.data &&
         'project_settings' in lastCall.data
       ) {
-        assert.strictEqual(lastCall.data.project_settings?.exclude_patterns, undefined);
+        expect(lastCall.data.project_settings?.exclude_patterns).toBe(undefined);
       }
     });
   });
 
-  suite('READMEファイル名設定', () => {
+  describe('READMEファイル名設定', () => {
     beforeEach(async () => {
       render(<ProjectSettingsApp />);
       const updateMessage: UpdateProjectSettingsMessage = {
@@ -586,11 +590,11 @@ suite('ProjectSettingsApp コンポーネント', () => {
 
       // 状態更新を待つ
       await waitFor(() => {
-        assert(screen.getByDisplayValue('テスト小説'));
+        expect(screen.getByDisplayValue('テスト小説')).toBeInTheDocument();
       });
     });
 
-    test('READMEファイル名の変更', () => {
+    it('READMEファイル名の変更', () => {
       const spy = createPostMessageSpy();
       const input = screen.getByLabelText('READMEファイル名');
       fireEvent.change(input, { target: { value: 'index.md' } });
@@ -603,11 +607,11 @@ suite('ProjectSettingsApp コンポーネント', () => {
         lastCall.data &&
         'project_settings' in lastCall.data
       ) {
-        assert.strictEqual(lastCall.data.project_settings?.readme_filename, 'index.md');
+        expect(lastCall.data.project_settings?.readme_filename).toBe('index.md');
       }
     });
 
-    test('空のREADMEファイル名はundefinedになる', () => {
+    it('空のREADMEファイル名はundefinedになる', () => {
       const spy = createPostMessageSpy();
       const input = screen.getByLabelText('READMEファイル名');
       fireEvent.change(input, { target: { value: '' } });
@@ -620,13 +624,13 @@ suite('ProjectSettingsApp コンポーネント', () => {
         lastCall.data &&
         'project_settings' in lastCall.data
       ) {
-        assert.strictEqual(lastCall.data.project_settings?.readme_filename, undefined);
+        expect(lastCall.data.project_settings?.readme_filename).toBe(undefined);
       }
     });
   });
 
-  suite('YAML直接編集', () => {
-    test('YAML直接編集ボタンのクリック', async () => {
+  describe('YAML直接編集', () => {
+    it('YAML直接編集ボタンのクリック', async () => {
       const spy = createPostMessageSpy();
       render(<ProjectSettingsApp />);
       const updateMessage: UpdateProjectSettingsMessage = {
@@ -641,16 +645,16 @@ suite('ProjectSettingsApp コンポーネント', () => {
 
       // 状態更新を待つ
       await waitFor(() => {
-        assert(screen.getByDisplayValue('テスト小説'));
+        expect(screen.getByDisplayValue('テスト小説')).toBeInTheDocument();
       });
 
       const yamlButton = screen.getByText('📝 YAML直接編集');
       fireEvent.click(yamlButton);
 
-      assert(spy.wasCalledWith({ command: 'openYamlEditor' }));
+      expect(spy.wasCalledWith({ command: 'openYamlEditor' })).toBeTruthy();
     });
 
-    test('エラー時もYAML直接編集ボタンは表示される', async () => {
+    it('エラー時もYAML直接編集ボタンは表示される', async () => {
       const spy = createPostMessageSpy();
       render(<ProjectSettingsApp />);
       const updateMessage: UpdateProjectSettingsMessage = {
@@ -665,18 +669,18 @@ suite('ProjectSettingsApp コンポーネント', () => {
 
       // エラー状態になるまで待つ
       await waitFor(() => {
-        assert(screen.getByText('❌ エラー'));
+        expect(screen.getByText('❌ エラー')).toBeInTheDocument();
       });
 
       const yamlButton = screen.getByText('📝 YAML直接編集');
       fireEvent.click(yamlButton);
 
-      assert(spy.wasCalledWith({ command: 'openYamlEditor' }));
+      expect(spy.wasCalledWith({ command: 'openYamlEditor' })).toBeTruthy();
     });
   });
 
-  suite('保存状態の管理', () => {
-    test('保存完了メッセージの処理', async () => {
+  describe('保存状態の管理', () => {
+    it('保存完了メッセージの処理', async () => {
       render(<ProjectSettingsApp />);
       const updateMessage: UpdateProjectSettingsMessage = {
         type: 'updateSettings',
@@ -690,7 +694,7 @@ suite('ProjectSettingsApp コンポーネント', () => {
 
       // 状態更新を待つ
       await waitFor(() => {
-        assert(screen.getByDisplayValue('テスト小説'));
+        expect(screen.getByDisplayValue('テスト小説')).toBeInTheDocument();
       });
 
       // タイトルを変更
@@ -718,10 +722,10 @@ suite('ProjectSettingsApp コンポーネント', () => {
 
       // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-assertion
       const titleInputElement = screen.getByLabelText('タイトル *') as HTMLInputElement;
-      assert.strictEqual(titleInputElement.value, '更新後');
+      expect(titleInputElement.value).toBe('更新後');
     });
 
-    test('新規プロジェクト作成成功後の処理', async () => {
+    it('新規プロジェクト作成成功後の処理', async () => {
       render(<ProjectSettingsApp />);
       const newProjectMessage: UpdateProjectSettingsMessage = {
         type: 'updateSettings',
@@ -735,7 +739,7 @@ suite('ProjectSettingsApp コンポーネント', () => {
 
       // 新規プロジェクト画面が表示されるまで待つ
       await waitFor(() => {
-        assert(screen.getByText('🆕 新しい小説プロジェクトの作成'));
+        expect(screen.getByText('🆕 新しい小説プロジェクトの作成')).toBeInTheDocument();
       });
 
       // フォームに入力
@@ -772,14 +776,14 @@ suite('ProjectSettingsApp コンポーネント', () => {
 
       // 既存プロジェクト状態に更新されるまで待つ
       await waitFor(() => {
-        assert(!screen.queryByText('✨ プロジェクトを作成'));
-        assert(screen.getByText('📝 YAML直接編集'));
+        expect(screen.queryByText('✨ プロジェクトを作成')).toBeNull();
+        expect(screen.getByText('📝 YAML直接編集')).toBeInTheDocument();
       });
     });
   });
 
-  suite('エッジケース', () => {
-    test('不正なメッセージタイプは無視される', async () => {
+  describe('エッジケース', () => {
+    it('不正なメッセージタイプは無視される', async () => {
       render(<ProjectSettingsApp />);
 
       // 初期設定
@@ -795,11 +799,11 @@ suite('ProjectSettingsApp コンポーネント', () => {
 
       // 状態更新を待つ
       await waitFor(() => {
-        assert(screen.getByDisplayValue('テスト小説'));
+        expect(screen.getByDisplayValue('テスト小説')).toBeInTheDocument();
       });
     });
 
-    test('project_settingsが空の場合はundefinedになる', async () => {
+    it('project_settingsが空の場合はundefinedになる', async () => {
       const spy = createPostMessageSpy();
       render(<ProjectSettingsApp />);
       const updateMessage: UpdateProjectSettingsMessage = {
@@ -814,7 +818,7 @@ suite('ProjectSettingsApp コンポーネント', () => {
 
       // 状態更新を待つ
       await waitFor(() => {
-        assert(screen.getByDisplayValue('テスト小説'));
+        expect(screen.getByDisplayValue('テスト小説')).toBeInTheDocument();
       });
 
       // READMEファイル名と除外パターンを空にする
@@ -832,11 +836,11 @@ suite('ProjectSettingsApp コンポーネント', () => {
         lastCall.data &&
         'project_settings' in lastCall.data
       ) {
-        assert.strictEqual(lastCall.data.project_settings, undefined);
+        expect(lastCall.data.project_settings).toBe(undefined);
       }
     });
 
-    test('Enterキー以外ではタグが追加されない', async () => {
+    it('Enterキー以外ではタグが追加されない', async () => {
       render(<ProjectSettingsApp />);
       const updateMessage: UpdateProjectSettingsMessage = {
         type: 'updateSettings',
@@ -850,7 +854,7 @@ suite('ProjectSettingsApp コンポーネント', () => {
 
       // 状態更新を待つ
       await waitFor(() => {
-        assert(screen.getByDisplayValue('テスト小説'));
+        expect(screen.getByDisplayValue('テスト小説')).toBeInTheDocument();
       });
 
       const tagInput = screen.getByPlaceholderText('新しいタグを入力してEnterキーを押してください');
@@ -858,7 +862,7 @@ suite('ProjectSettingsApp コンポーネント', () => {
       fireEvent.keyDown(tagInput, { key: 'Tab' });
 
       // タグは追加されていない
-      assert(!screen.queryByText('テストタグ'));
+      expect(screen.queryByText('テストタグ')).toBeNull();
     });
   });
 });

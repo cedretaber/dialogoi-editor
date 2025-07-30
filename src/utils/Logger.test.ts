@@ -68,7 +68,8 @@ describe('Logger テストスイート', () => {
 
     expect(consoleLogs.length).toBe(1);
     expect(
-      consoleLogs[0] !== undefined && consoleLogs[0].includes('[DEBUG] テストデバッグメッセージ')).toBeTruthy();
+      consoleLogs[0] !== undefined && consoleLogs[0].includes('[DEBUG] テストデバッグメッセージ'),
+    ).toBeTruthy();
   });
 
   it('本番環境ではdebugログが出力されない', () => {
@@ -88,7 +89,8 @@ describe('Logger テストスイート', () => {
 
     expect(consoleLogs.length).toBe(1);
     expect(
-      consoleLogs[0] !== undefined && consoleLogs[0].includes('[DEBUG] テストデバッグメッセージ')).toBeTruthy();
+      consoleLogs[0] !== undefined && consoleLogs[0].includes('[DEBUG] テストデバッグメッセージ'),
+    ).toBeTruthy();
   });
 
   it('infoログが正しく出力される', () => {
@@ -96,7 +98,8 @@ describe('Logger テストスイート', () => {
 
     expect(consoleLogs.length).toBe(1);
     expect(
-      consoleLogs[0] !== undefined && consoleLogs[0].includes('[INFO] 情報メッセージ')).toBeTruthy();
+      consoleLogs[0] !== undefined && consoleLogs[0].includes('[INFO] 情報メッセージ'),
+    ).toBeTruthy();
   });
 
   it('warnログが正しく出力される', () => {
@@ -104,7 +107,8 @@ describe('Logger テストスイート', () => {
 
     expect(consoleWarns.length).toBe(1);
     expect(
-      consoleWarns[0] !== undefined && consoleWarns[0].includes('[WARN] 警告メッセージ')).toBeTruthy();
+      consoleWarns[0] !== undefined && consoleWarns[0].includes('[WARN] 警告メッセージ'),
+    ).toBeTruthy();
   });
 
   it('errorログが正しく出力される（エラーオブジェクトなし）', () => {
@@ -112,7 +116,8 @@ describe('Logger テストスイート', () => {
 
     expect(consoleErrors.length).toBe(1);
     expect(
-      consoleErrors[0] !== undefined && consoleErrors[0].includes('[ERROR] エラーメッセージ')).toBeTruthy();
+      consoleErrors[0] !== undefined && consoleErrors[0].includes('[ERROR] エラーメッセージ'),
+    ).toBeTruthy();
   });
 
   it('errorログが正しく出力される（エラーオブジェクト付き）', () => {
@@ -121,9 +126,11 @@ describe('Logger テストスイート', () => {
 
     expect(consoleErrors.length).toBe(1);
     expect(
-      consoleErrors[0] !== undefined && consoleErrors[0].includes('[ERROR] エラーが発生しました')).toBeTruthy();
+      consoleErrors[0] !== undefined && consoleErrors[0].includes('[ERROR] エラーが発生しました'),
+    ).toBeTruthy();
     expect(
-      consoleErrors[0] !== undefined && consoleErrors[0].includes('テストエラー')).toBeTruthy();
+      consoleErrors[0] !== undefined && consoleErrors[0].includes('テストエラー'),
+    ).toBeTruthy();
   });
 
   it('errorログが正しく出力される（非Errorオブジェクト付き）', () => {
@@ -131,9 +138,11 @@ describe('Logger テストスイート', () => {
 
     expect(consoleErrors.length).toBe(1);
     expect(
-      consoleErrors[0] !== undefined && consoleErrors[0].includes('[ERROR] エラーが発生しました')).toBeTruthy();
+      consoleErrors[0] !== undefined && consoleErrors[0].includes('[ERROR] エラーが発生しました'),
+    ).toBeTruthy();
     expect(
-      consoleErrors[0] !== undefined && consoleErrors[0].includes('カスタムエラー')).toBeTruthy();
+      consoleErrors[0] !== undefined && consoleErrors[0].includes('カスタムエラー'),
+    ).toBeTruthy();
   });
 
   it('追加の引数が正しく処理される', () => {
@@ -141,11 +150,9 @@ describe('Logger テストスイート', () => {
 
     expect(consoleLogs.length).toBe(1);
     const output = consoleLogs[0];
-    expect(
-      output !== undefined && output.includes('[INFO] メッセージ')).toBeTruthy();
+    expect(output !== undefined && output.includes('[INFO] メッセージ')).toBeTruthy();
     expect(output !== undefined && output.includes('arg1')).toBeTruthy();
     expect(output !== undefined && output.includes('123')).toBeTruthy();
-    expect(
-      output !== undefined && output.includes('[object Object]')).toBeTruthy();
+    expect(output !== undefined && output.includes('[object Object]')).toBeTruthy();
   });
 });

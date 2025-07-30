@@ -121,7 +121,7 @@ describe('ProjectPathService テストスイート', () => {
       expect(result?.projectRoot).toBe(testProjectPath);
       // 結果は常にスラッシュ区切りになることを確認
       expect(result?.relativePath).toBe('chapter1.txt');
-      expect(!result?.relativePath.includes('\\')).toBeTruthy();
+      expect(result?.relativePath.includes('\\')).toBe(false);
     });
 
     it('プロジェクトルート自体のファイルも正しく処理される', async () => {

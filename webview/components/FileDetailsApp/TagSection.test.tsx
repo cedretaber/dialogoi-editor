@@ -1,15 +1,15 @@
-import { suite, test, setup } from 'mocha';
+import '@testing-library/jest-dom';
+
 import { render, screen, fireEvent, waitFor } from '../../test-utils';
 import { TagSection } from './TagSection';
-import assert from 'assert';
 
-suite('TagSection コンポーネント', () => {
+describe('TagSection コンポーネント', () => {
   let mockOnTagAdd: (tag: string) => void;
   let mockOnTagRemove: (tag: string) => void;
   let addedTags: string[];
   let removedTags: string[];
 
-  setup(() => {
+  beforeEach(() => {
     // 各テスト前にモック関数をリセット
     addedTags = [];
     removedTags = [];
@@ -23,14 +23,14 @@ suite('TagSection コンポーネント', () => {
     };
   });
 
-  suite('基本表示', () => {
-    test('タグがない場合は「タグがありません」と表示される', () => {
+  describe('基本表示', () => {
+    it('タグがない場合は「タグがありません」と表示される', () => {
       render(<TagSection tags={[]} onTagAdd={mockOnTagAdd} onTagRemove={mockOnTagRemove} />);
 
-      assert(screen.getByText('タグがありません'));
+      expect(screen.getByText('タグがありません')).toBeInTheDocument();
     });
 
-    test('タグがある場合はタグリストが表示される', () => {
+    it('タグがある場合はタグリストが表示される', () => {
       render(
         <TagSection
           tags={['テスト', '小説']}
@@ -39,56 +39,58 @@ suite('TagSection コンポーネント', () => {
         />,
       );
 
-      assert(screen.getByText('#テスト'));
-      assert(screen.getByText('#小説'));
+      expect(screen.getByText('#テスト')).toBeInTheDocument();
+      expect(screen.getByText('#小説')).toBeInTheDocument();
     });
 
-    test('入力フィールドが表示される', () => {
+    it('入力フィールドが表示される', () => {
       render(<TagSection tags={[]} onTagAdd={mockOnTagAdd} onTagRemove={mockOnTagRemove} />);
 
       const input = screen.getByPlaceholderText('新しいタグを入力してEnterキーを押してください...');
-      assert(input);
-      assert.strictEqual((input as HTMLInputElement).type, 'text');
+      expect(input).toBeTruthy();
+      expect((input as HTMLInputElement).type).toBe('text');
     });
 
-    test('セクションヘッダーが表示される', () => {
+    it('セクションヘッダーが表示される', () => {
       render(<TagSection tags={[]} onTagAdd={mockOnTagAdd} onTagRemove={mockOnTagRemove} />);
 
-      assert(screen.getByText('タグ'));
+      expect(screen.getByText('タグ')).toBeInTheDocument();
     });
   });
 
-  suite('展開・折りたたみ機能', () => {
-    test('初期状態では展開されている', () => {
+  describe('展開・折りたたみ機能', () => {
+    it('初期状態では展開されている', () => {
       render(
         <TagSection tags={['テスト']} onTagAdd={mockOnTagAdd} onTagRemove={mockOnTagRemove} />,
       );
 
       // タグが見えている = 展開されている
-      assert(screen.getByText('#テスト'));
+      expect(screen.getByText('#テスト')).toBeInTheDocument();
     });
 
-    test('ヘッダーをクリックすると折りたたまれる', () => {
+    it('ヘッダーをクリックすると折りたたまれる', () => {
       render(
         <TagSection tags={['テスト']} onTagAdd={mockOnTagAdd} onTagRemove={mockOnTagRemove} />,
       );
 
       const header = screen.getByText('タグ').closest('button');
-      assert(header);
+      expect(header).not.toBeNull();
 
-      fireEvent.click(header);
+      if (header) {
+        fireEvent.click(header);
+      }
 
       // 折りたたみ状態の確認（classNameで判定）
       const content = screen
         .getByText('タグ')
         .closest('.section')
         ?.querySelector('.section-content');
-      assert(content?.classList.contains('collapsed'));
+      expect(content?.classList.contains('collapsed')).toBeTruthy();
     });
   });
 
-  suite('タグ追加機能', () => {
-    test('Enterキーでタグを追加できる', () => {
+  describe('タグ追加機能', () => {
+    it('Enterキーでタグを追加できる', () => {
       render(<TagSection tags={[]} onTagAdd={mockOnTagAdd} onTagRemove={mockOnTagRemove} />);
 
       const input = screen.getByPlaceholderText('新しいタグを入力してEnterキーを押してください...');
@@ -96,11 +98,11 @@ suite('TagSection コンポーネント', () => {
       fireEvent.change(input, { target: { value: '新しいタグ' } });
       fireEvent.keyDown(input, { key: 'Enter' });
 
-      assert.strictEqual(addedTags.length, 1);
-      assert.strictEqual(addedTags[0], '新しいタグ');
+      expect(addedTags).toHaveLength(1);
+      expect(addedTags[0]).toBe('新しいタグ');
     });
 
-    test('フォーム送信でタグを追加できる', () => {
+    it('フォーム送信でタグを追加できる', () => {
       render(<TagSection tags={[]} onTagAdd={mockOnTagAdd} onTagRemove={mockOnTagRemove} />);
 
       const input = screen.getByPlaceholderText('新しいタグを入力してEnterキーを押してください...');
@@ -111,11 +113,11 @@ suite('TagSection コンポーネント', () => {
         fireEvent.submit(form);
       }
 
-      assert.strictEqual(addedTags.length, 1);
-      assert.strictEqual(addedTags[0], 'フォームテスト');
+      expect(addedTags).toHaveLength(1);
+      expect(addedTags[0]).toBe('フォームテスト');
     });
 
-    test('前後の空白は自動的にトリムされる', () => {
+    it('前後の空白は自動的にトリムされる', () => {
       render(<TagSection tags={[]} onTagAdd={mockOnTagAdd} onTagRemove={mockOnTagRemove} />);
 
       const input = screen.getByPlaceholderText('新しいタグを入力してEnterキーを押してください...');
@@ -123,10 +125,10 @@ suite('TagSection コンポーネント', () => {
       fireEvent.change(input, { target: { value: '  トリムテスト  ' } });
       fireEvent.keyDown(input, { key: 'Enter' });
 
-      assert.strictEqual(addedTags[0], 'トリムテスト');
+      expect(addedTags[0]).toBe('トリムテスト');
     });
 
-    test('タグ追加後は入力フィールドがクリアされる', async () => {
+    it('タグ追加後は入力フィールドがクリアされる', async () => {
       render(<TagSection tags={[]} onTagAdd={mockOnTagAdd} onTagRemove={mockOnTagRemove} />);
 
       const input = screen.getByPlaceholderText('新しいタグを入力してEnterキーを押してください...');
@@ -135,11 +137,11 @@ suite('TagSection コンポーネント', () => {
       fireEvent.keyDown(input, { key: 'Enter' });
 
       await waitFor(() => {
-        assert.strictEqual((input as HTMLInputElement).value, '');
+        expect((input as HTMLInputElement).value).toBe('');
       });
     });
 
-    test('空文字列は追加されない', () => {
+    it('空文字列は追加されない', () => {
       render(<TagSection tags={[]} onTagAdd={mockOnTagAdd} onTagRemove={mockOnTagRemove} />);
 
       const input = screen.getByPlaceholderText('新しいタグを入力してEnterキーを押してください...');
@@ -147,10 +149,10 @@ suite('TagSection コンポーネント', () => {
       fireEvent.change(input, { target: { value: '' } });
       fireEvent.keyDown(input, { key: 'Enter' });
 
-      assert.strictEqual(addedTags.length, 0);
+      expect(addedTags).toHaveLength(0);
     });
 
-    test('空白のみの文字列は追加されない', () => {
+    it('空白のみの文字列は追加されない', () => {
       render(<TagSection tags={[]} onTagAdd={mockOnTagAdd} onTagRemove={mockOnTagRemove} />);
 
       const input = screen.getByPlaceholderText('新しいタグを入力してEnterキーを押してください...');
@@ -158,12 +160,12 @@ suite('TagSection コンポーネント', () => {
       fireEvent.change(input, { target: { value: '   ' } });
       fireEvent.keyDown(input, { key: 'Enter' });
 
-      assert.strictEqual(addedTags.length, 0);
+      expect(addedTags).toHaveLength(0);
     });
   });
 
-  suite('重複チェック機能', () => {
-    test('重複するタグは追加されない', () => {
+  describe('重複チェック機能', () => {
+    it('重複するタグは追加されない', () => {
       render(
         <TagSection tags={['既存タグ']} onTagAdd={mockOnTagAdd} onTagRemove={mockOnTagRemove} />,
       );
@@ -173,10 +175,10 @@ suite('TagSection コンポーネント', () => {
       fireEvent.change(input, { target: { value: '既存タグ' } });
       fireEvent.keyDown(input, { key: 'Enter' });
 
-      assert.strictEqual(addedTags.length, 0);
+      expect(addedTags).toHaveLength(0);
     });
 
-    test('重複タグ入力後は入力フィールドがクリアされる', async () => {
+    it('重複タグ入力後は入力フィールドがクリアされる', async () => {
       render(
         <TagSection tags={['既存タグ']} onTagAdd={mockOnTagAdd} onTagRemove={mockOnTagRemove} />,
       );
@@ -187,13 +189,13 @@ suite('TagSection コンポーネント', () => {
       fireEvent.keyDown(input, { key: 'Enter' });
 
       await waitFor(() => {
-        assert.strictEqual((input as HTMLInputElement).value, '');
+        expect((input as HTMLInputElement).value).toBe('');
       });
     });
   });
 
-  suite('タグ削除機能', () => {
-    test('削除ボタンをクリックするとタグが削除される', () => {
+  describe('タグ削除機能', () => {
+    it('削除ボタンをクリックするとタグが削除される', () => {
       render(
         <TagSection tags={['削除テスト']} onTagAdd={mockOnTagAdd} onTagRemove={mockOnTagRemove} />,
       );
@@ -201,11 +203,11 @@ suite('TagSection コンポーネント', () => {
       const deleteButton = screen.getByTitle('タグを削除');
       fireEvent.click(deleteButton);
 
-      assert.strictEqual(removedTags.length, 1);
-      assert.strictEqual(removedTags[0], '削除テスト');
+      expect(removedTags).toHaveLength(1);
+      expect(removedTags[0]).toBe('削除テスト');
     });
 
-    test('複数タグがある場合は対応するタグが削除される', () => {
+    it('複数タグがある場合は対応するタグが削除される', () => {
       render(
         <TagSection
           tags={['タグ1', 'タグ2', 'タグ3']}
@@ -220,32 +222,36 @@ suite('TagSection コンポーネント', () => {
       // 2番目のタグ（タグ2）を削除
       fireEvent.click(deleteButtons[1]);
 
-      assert.strictEqual(removedTags.length, 1);
-      assert.strictEqual(removedTags[0], 'タグ2');
+      expect(removedTags).toHaveLength(1);
+      expect(removedTags[0]).toBe('タグ2');
     });
   });
 
-  suite('プロパティの型チェック', () => {
-    test('tagsプロパティが未定義でもエラーにならない', () => {
+  describe('プロパティの型チェック', () => {
+    it('tagsプロパティが未定義でもエラーにならない', () => {
       // undefined が渡された場合のテスト
-      assert.doesNotThrow(() => {
-        render(<TagSection onTagAdd={mockOnTagAdd} onTagRemove={mockOnTagRemove} />);
-      });
+      expect(() => {
+        render(
+          <TagSection tags={undefined} onTagAdd={mockOnTagAdd} onTagRemove={mockOnTagRemove} />,
+        );
+      }).not.toThrow();
 
-      assert(screen.getByText('タグがありません'));
+      expect(screen.getByText('タグがありません')).toBeInTheDocument();
     });
 
-    test('空の配列が渡されても正常に動作する', () => {
-      assert.doesNotThrow(() => {
-        render(<TagSection tags={[]} onTagAdd={mockOnTagAdd} onTagRemove={mockOnTagRemove} />);
-      });
+    it('空の配列が渡されても正常に動作する', () => {
+      expect(() => {
+        render(
+          <TagSection tags={undefined} onTagAdd={mockOnTagAdd} onTagRemove={mockOnTagRemove} />,
+        );
+      }).not.toThrow();
 
-      assert(screen.getByText('タグがありません'));
+      expect(screen.getByText('タグがありません')).toBeInTheDocument();
     });
   });
 
-  suite('キーボードイベント', () => {
-    test('Enter以外のキーでは何も実行されない', () => {
+  describe('キーボードイベント', () => {
+    it('Enter以外のキーでは何も実行されない', () => {
       render(<TagSection tags={[]} onTagAdd={mockOnTagAdd} onTagRemove={mockOnTagRemove} />);
 
       const input = screen.getByPlaceholderText('新しいタグを入力してEnterキーを押してください...');
@@ -253,10 +259,10 @@ suite('TagSection コンポーネント', () => {
       fireEvent.change(input, { target: { value: 'テストタグ' } });
       fireEvent.keyDown(input, { key: 'Escape' });
 
-      assert.strictEqual(addedTags.length, 0);
+      expect(addedTags).toHaveLength(0);
     });
 
-    test('Tabキーでもタグは追加されない', () => {
+    it('Tabキーでもタグは追加されない', () => {
       render(<TagSection tags={[]} onTagAdd={mockOnTagAdd} onTagRemove={mockOnTagRemove} />);
 
       const input = screen.getByPlaceholderText('新しいタグを入力してEnterキーを押してください...');
@@ -264,7 +270,7 @@ suite('TagSection コンポーネント', () => {
       fireEvent.change(input, { target: { value: 'テストタグ' } });
       fireEvent.keyDown(input, { key: 'Tab' });
 
-      assert.strictEqual(addedTags.length, 0);
+      expect(addedTags).toHaveLength(0);
     });
   });
 });

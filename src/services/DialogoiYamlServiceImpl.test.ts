@@ -106,7 +106,7 @@ tags: ["ファンタジー"]`;
 
       expect(result).toBe(true);
       expect(
-        await mockFileRepository.existsAsync(mockFileRepository.createFileUri(dialogoiYamlPath))
+        await mockFileRepository.existsAsync(mockFileRepository.createFileUri(dialogoiYamlPath)),
       ).toBeTruthy();
 
       const savedContent = await mockFileRepository.readFileAsync(
@@ -185,7 +185,7 @@ tags: ["ファンタジー"]`;
       );
 
       expect(result).toBe(true);
-      expect((await service.isDialogoiProjectRootAsync(projectRoot))).toBeTruthy();
+      expect(await service.isDialogoiProjectRootAsync(projectRoot)).toBeTruthy();
 
       const data = await service.loadDialogoiYamlAsync(projectRoot);
       expect(data).not.toBe(null);
@@ -219,9 +219,9 @@ tags: ["ファンタジー"]`;
 
       expect(result).toBe(true);
       expect(
-        await mockFileRepository.existsAsync(mockFileRepository.createDirectoryUri(projectRoot))
+        await mockFileRepository.existsAsync(mockFileRepository.createDirectoryUri(projectRoot)),
       ).toBeTruthy();
-      expect((await service.isDialogoiProjectRootAsync(projectRoot))).toBeTruthy();
+      expect(await service.isDialogoiProjectRootAsync(projectRoot)).toBeTruthy();
     });
   });
 

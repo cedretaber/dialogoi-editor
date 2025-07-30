@@ -193,9 +193,7 @@ files:
 
     const magicRefs = refManager.getReferences(path.join(testDir, 'settings', 'magic.md'));
     const magicRefByPaths = magicRefs.referencedBy.map((ref) => ref.path).sort();
-    expect(
-      magicRefByPaths).toEqual(['contents/chapter1.txt', 'contents/chapter2.txt'].sort(),
-    );
+    expect(magicRefByPaths).toEqual(['contents/chapter1.txt', 'contents/chapter2.txt'].sort());
   });
 
   it('存在しないファイルの参照関係を取得すると空の配列が返る', async () => {
@@ -251,9 +249,7 @@ files:
     refManager.updateFileReferences(filePath, referencesWithInvalid);
 
     const invalidRefs = await refManager.getInvalidReferencesAsync(filePath);
-    expect(
-      invalidRefs.sort()).toEqual(['settings/non-existent.md', 'invalid/path.md'].sort(),
-    );
+    expect(invalidRefs.sort()).toEqual(['settings/non-existent.md', 'invalid/path.md'].sort());
   });
 
   it('空の参照配列で更新すると参照関係が削除される', async () => {
@@ -274,9 +270,7 @@ files:
 
     // 逆参照も削除される
     const worldRefs = refManager.getReferences(path.join(testDir, 'settings', 'world.md'));
-    expect(
-      worldRefs.referencedBy.some((ref) => ref.path === 'contents/chapter1.txt')).toBe(false,
-    );
+    expect(worldRefs.referencedBy.some((ref) => ref.path === 'contents/chapter1.txt')).toBe(false);
   });
 
   it('同じファイルを複数回参照しても重複しない', async () => {
@@ -336,8 +330,6 @@ files:
     refManager.updateFileReferences(filePath, referencesWithInvalid);
 
     const invalidRefs = await refManager.getInvalidReferencesAsync(filePath);
-    expect(
-      invalidRefs.sort()).toEqual(['settings/non-existent.md', 'invalid/path.md'].sort(),
-    );
+    expect(invalidRefs.sort()).toEqual(['settings/non-existent.md', 'invalid/path.md'].sort());
   });
 });

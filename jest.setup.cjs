@@ -1,13 +1,16 @@
 // React Testing Library setup
 require('@testing-library/jest-dom');
 
-// Happy DOM setup for React component testing
-const { GlobalRegistrator } = require('@happy-dom/global-registrator');
+// Mock react-markdown and related ESM modules
+jest.mock('react-markdown', () => {
+  return function ReactMarkdown({ children }) {
+    return children;
+  };
+});
 
-// Register Happy DOM globally for React tests
-if (process.env.NODE_ENV === 'test') {
-  GlobalRegistrator.register();
-}
+jest.mock('remark-gfm', () => {
+  return {};
+});
 
 // Global test utilities
 global.console = {

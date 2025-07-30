@@ -1,13 +1,13 @@
-import { suite, test, setup } from 'mocha';
+import '@testing-library/jest-dom';
+
 import { render, screen, fireEvent } from '../../test-utils';
 import { BasicInfoSection } from './BasicInfoSection';
-import assert from 'assert';
 import type { FileDetailsData } from '../../types/FileDetails';
 
-suite('BasicInfoSection コンポーネント', () => {
+describe('BasicInfoSection コンポーネント', () => {
   let mockFileData: FileDetailsData;
 
-  setup(() => {
+  beforeEach(() => {
     // 各テスト前にモックデータをリセット
     mockFileData = {
       name: 'test-file.txt',
@@ -17,177 +17,187 @@ suite('BasicInfoSection コンポーネント', () => {
     };
   });
 
-  suite('基本表示', () => {
-    test('セクションヘッダーが表示される', () => {
+  describe('基本表示', () => {
+    it('セクションヘッダーが表示される', () => {
       render(<BasicInfoSection fileData={mockFileData} />);
 
-      assert(screen.getByText('基本情報'));
+      expect(screen.getByText('基本情報')).toBeInTheDocument();
     });
 
-    test('種別が正しく表示される', () => {
+    it('種別が正しく表示される', () => {
       render(<BasicInfoSection fileData={mockFileData} />);
 
-      assert(screen.getByText('種別:'));
-      assert(screen.getByText('content'));
+      expect(screen.getByText('種別:')).toBeInTheDocument();
+      expect(screen.getByText('content')).toBeInTheDocument();
     });
 
-    test('パスが存在する場合はパスが表示される', () => {
+    it('パスが存在する場合はパスが表示される', () => {
       render(<BasicInfoSection fileData={mockFileData} />);
 
-      assert(screen.getByText('パス:'));
-      assert(screen.getByText('contents/chapter1/test-file.txt'));
+      expect(screen.getByText('パス:')).toBeInTheDocument();
+      expect(screen.getByText('contents/chapter1/test-file.txt')).toBeInTheDocument();
     });
 
-    test('パスが存在しない場合はパスが表示されない', () => {
+    it('パスが存在しない場合はパスが表示されない', () => {
       const fileDataWithoutPath = { ...mockFileData, path: undefined };
       render(<BasicInfoSection fileData={fileDataWithoutPath} />);
 
-      assert(!screen.queryByText('パス:'));
+      expect(screen.queryByText('パス:')).toBeNull();
     });
 
-    test('種別がundefinedの場合はunknownと表示される', () => {
+    it('種別がundefinedの場合はunknownと表示される', () => {
       const fileDataWithoutType = { ...mockFileData, type: undefined };
       render(<BasicInfoSection fileData={fileDataWithoutType} />);
 
-      assert(screen.getByText('種別:'));
-      assert(screen.getByText('unknown'));
+      expect(screen.getByText('種別:')).toBeInTheDocument();
+      expect(screen.getByText('unknown')).toBeInTheDocument();
     });
   });
 
-  suite('展開・折りたたみ機能', () => {
-    test('初期状態では展開されている', () => {
+  describe('展開・折りたたみ機能', () => {
+    it('初期状態では展開されている', () => {
       render(<BasicInfoSection fileData={mockFileData} />);
 
       // 内容が見えている = 展開されている
-      assert(screen.getByText('種別:'));
-      assert(screen.getByText('content'));
+      expect(screen.getByText('種別:')).toBeInTheDocument();
+      expect(screen.getByText('content')).toBeInTheDocument();
     });
 
-    test('ヘッダーをクリックすると折りたたまれる', () => {
+    it('ヘッダーをクリックすると折りたたまれる', () => {
       render(<BasicInfoSection fileData={mockFileData} />);
 
       const header = screen.getByText('基本情報').closest('button');
-      assert(header);
+      expect(header).not.toBeNull();
 
-      fireEvent.click(header);
+      if (header) {
+        fireEvent.click(header);
+      }
 
       // 折りたたみ状態の確認（classNameで判定）
       const content = screen
         .getByText('基本情報')
         .closest('.section')
         ?.querySelector('.section-content');
-      assert(content?.classList.contains('collapsed'));
+      expect(content?.classList.contains('collapsed')).toBeTruthy();
     });
 
-    test('折りたたみ状態でヘッダーをクリックすると展開される', () => {
+    it('折りたたみ状態でヘッダーをクリックすると展開される', () => {
       render(<BasicInfoSection fileData={mockFileData} />);
 
       const header = screen.getByText('基本情報').closest('button');
-      assert(header);
+      expect(header).not.toBeNull();
 
       // 一度折りたたむ
-      fireEvent.click(header);
+      if (header) {
+        fireEvent.click(header);
+      }
 
       // 再度クリックして展開
-      fireEvent.click(header);
+      if (header) {
+        fireEvent.click(header);
+      }
 
       // 展開状態の確認
       const content = screen
         .getByText('基本情報')
         .closest('.section')
         ?.querySelector('.section-content');
-      assert(!content?.classList.contains('collapsed'));
+      expect(content?.classList.contains('collapsed')).toBeFalsy();
     });
 
-    test('シェブロンアイコンの状態が正しく切り替わる', () => {
+    it('シェブロンアイコンの状態が正しく切り替わる', () => {
       render(<BasicInfoSection fileData={mockFileData} />);
 
       const chevron = screen
         .getByText('基本情報')
         .closest('button')
         ?.querySelector('.section-chevron');
-      assert(chevron);
+      expect(chevron).not.toBeNull();
 
       // 初期状態（展開）
-      assert(!chevron.classList.contains('collapsed'));
+      expect(chevron?.classList.contains('collapsed')).toBeFalsy();
 
       const header = screen.getByText('基本情報').closest('button');
-      assert(header);
+      expect(header).not.toBeNull();
 
       // 折りたたみ
-      fireEvent.click(header);
-      assert(chevron.classList.contains('collapsed'));
+      if (header) {
+        fireEvent.click(header);
+      }
+      expect(chevron?.classList.contains('collapsed')).toBeTruthy();
 
       // 再展開
-      fireEvent.click(header);
-      assert(!chevron.classList.contains('collapsed'));
+      if (header) {
+        fireEvent.click(header);
+      }
+      expect(chevron?.classList.contains('collapsed')).toBeFalsy();
     });
   });
 
-  suite('異なるファイル種別のテスト', () => {
-    test('setting種別のファイルが正しく表示される', () => {
+  describe('異なるファイル種別のテスト', () => {
+    it('setting種別のファイルが正しく表示される', () => {
       const settingFileData = { ...mockFileData, type: 'setting' as const };
       render(<BasicInfoSection fileData={settingFileData} />);
 
-      assert(screen.getByText('setting'));
+      expect(screen.getByText('setting')).toBeInTheDocument();
     });
 
-    test('subdirectory種別のファイルが正しく表示される', () => {
+    it('subdirectory種別のファイルが正しく表示される', () => {
       const subdirectoryFileData = { ...mockFileData, type: 'subdirectory' as const };
       render(<BasicInfoSection fileData={subdirectoryFileData} />);
 
-      assert(screen.getByText('subdirectory'));
+      expect(screen.getByText('subdirectory')).toBeInTheDocument();
     });
   });
 
-  suite('エッジケース', () => {
-    test('空のパス文字列の場合はパスが表示されない', () => {
+  describe('エッジケース', () => {
+    it('空のパス文字列の場合はパスが表示されない', () => {
       const fileDataWithEmptyPath = { ...mockFileData, path: '' };
       render(<BasicInfoSection fileData={fileDataWithEmptyPath} />);
 
-      assert(!screen.queryByText('パス:'));
+      expect(screen.queryByText('パス:')).toBeNull();
     });
 
-    test('ファイルデータが最小構成でも正常に動作する', () => {
+    it('ファイルデータが最小構成でも正常に動作する', () => {
       const minimalFileData: FileDetailsData = {};
       render(<BasicInfoSection fileData={minimalFileData} />);
 
-      assert(screen.getByText('基本情報'));
-      assert(screen.getByText('種別:'));
-      assert(screen.getByText('unknown'));
-      assert(!screen.queryByText('パス:'));
+      expect(screen.getByText('基本情報')).toBeInTheDocument();
+      expect(screen.getByText('種別:')).toBeInTheDocument();
+      expect(screen.getByText('unknown')).toBeInTheDocument();
+      expect(screen.queryByText('パス:')).toBeNull();
     });
 
-    test('name以外のプロパティがundefinedでも正常に動作する', () => {
+    it('name以外のプロパティがundefinedでも正常に動作する', () => {
       const partialFileData: FileDetailsData = { name: 'test.txt' };
 
-      assert.doesNotThrow(() => {
+      expect(() => {
         render(<BasicInfoSection fileData={partialFileData} />);
-      });
+      }).not.toThrow();
 
-      assert(screen.getByText('基本情報'));
-      assert(screen.getByText('unknown'));
+      expect(screen.getByText('基本情報')).toBeInTheDocument();
+      expect(screen.getByText('unknown')).toBeInTheDocument();
     });
   });
 
-  suite('アクセシビリティ', () => {
-    test('ヘッダーボタンがbutton要素として正しく実装されている', () => {
+  describe('アクセシビリティ', () => {
+    it('ヘッダーボタンがbutton要素として正しく実装されている', () => {
       render(<BasicInfoSection fileData={mockFileData} />);
 
       const header = screen.getByText('基本情報').closest('button');
-      assert(header);
-      assert.strictEqual(header.tagName, 'BUTTON');
-      assert.strictEqual(header.getAttribute('type'), 'button');
+      expect(header).not.toBeNull();
+      expect(header?.tagName).toBe('BUTTON');
+      expect(header?.getAttribute('type')).toBe('button');
     });
 
-    test('情報行のラベルと値の構造が正しい', () => {
+    it('情報行のラベルと値の構造が正しい', () => {
       render(<BasicInfoSection fileData={mockFileData} />);
 
       // ラベルと値のペアが正しく表示されている
       const typeRow = screen.getByText('種別:').closest('.info-row');
-      assert(typeRow);
-      assert(typeRow.querySelector('.info-label'));
-      assert(typeRow.querySelector('.info-value'));
+      expect(typeRow).not.toBeNull();
+      expect(typeRow?.querySelector('.info-label')).toBeTruthy();
+      expect(typeRow?.querySelector('.info-value')).toBeTruthy();
     });
   });
 });

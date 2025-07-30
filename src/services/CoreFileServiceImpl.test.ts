@@ -91,7 +91,7 @@ describe('CoreFileService テストスイート', () => {
 
       // ディレクトリが作成されているか確認
       const dirUri = mockFileRepository.createDirectoryUri('/test/newdir');
-      expect((await mockFileRepository.existsAsync(dirUri))).toBeTruthy();
+      expect(await mockFileRepository.existsAsync(dirUri)).toBeTruthy();
     });
 
     it('キャラクターサブタイプでファイルを作成できる', async () => {
@@ -133,7 +133,7 @@ describe('CoreFileService テストスイート', () => {
 
       // ファイルが物理的に削除されているか確認
       const fileUri = mockFileRepository.createFileUri('/test/existing.txt');
-      expect((await mockFileRepository.existsAsync(fileUri))).toBeFalsy();
+      expect(await mockFileRepository.existsAsync(fileUri)).toBeFalsy();
 
       // メタデータからも削除されているか確認
       const metaContent = await mockFileRepository.readFileAsync(
@@ -163,15 +163,16 @@ describe('CoreFileService テストスイート', () => {
       }
       expect(result.success).toBe(true);
       expect(
-        result.message.includes('ファイル名を "existing.txt" から "renamed.txt" に変更しました')).toBeTruthy();
+        result.message.includes('ファイル名を "existing.txt" から "renamed.txt" に変更しました'),
+      ).toBeTruthy();
 
       // 新しい名前でファイルが存在するか確認
       const newFileUri = mockFileRepository.createFileUri('/test/renamed.txt');
-      expect((await mockFileRepository.existsAsync(newFileUri))).toBeTruthy();
+      expect(await mockFileRepository.existsAsync(newFileUri)).toBeTruthy();
 
       // 旧ファイルが存在しないか確認
       const oldFileUri = mockFileRepository.createFileUri('/test/existing.txt');
-      expect((await mockFileRepository.existsAsync(oldFileUri))).toBeFalsy();
+      expect(await mockFileRepository.existsAsync(oldFileUri)).toBeFalsy();
 
       // メタデータが更新されているか確認
       try {
@@ -252,11 +253,11 @@ describe('CoreFileService テストスイート', () => {
 
       // 移動先にファイルが存在することを確認
       const targetFileUri = mockFileRepository.createFileUri('/target/existing.txt');
-      expect((await mockFileRepository.existsAsync(targetFileUri))).toBeTruthy();
+      expect(await mockFileRepository.existsAsync(targetFileUri)).toBeTruthy();
 
       // 移動元からファイルが削除されていることを確認
       const sourceFileUri = mockFileRepository.createFileUri('/test/existing.txt');
-      expect((await mockFileRepository.existsAsync(sourceFileUri))).toBeFalsy();
+      expect(await mockFileRepository.existsAsync(sourceFileUri)).toBeFalsy();
 
       // メタデータが更新されていることを確認
       const targetMetaContent = await mockFileRepository.readFileAsync(
@@ -305,11 +306,11 @@ describe('CoreFileService テストスイート', () => {
 
       // 移動先にディレクトリが存在することを確認
       const targetDirUri = mockFileRepository.createDirectoryUri('/targetparent/testdir');
-      expect((await mockFileRepository.existsAsync(targetDirUri))).toBeTruthy();
+      expect(await mockFileRepository.existsAsync(targetDirUri)).toBeTruthy();
 
       // 移動元からディレクトリが削除されていることを確認
       const sourceDirUri = mockFileRepository.createDirectoryUri('/test/testdir');
-      expect((await mockFileRepository.existsAsync(sourceDirUri))).toBeFalsy();
+      expect(await mockFileRepository.existsAsync(sourceDirUri)).toBeFalsy();
     });
 
     it('存在しないディレクトリの移動はエラー', async () => {
@@ -329,7 +330,7 @@ describe('CoreFileService テストスイート', () => {
 
       // ディレクトリが物理的に削除されているか確認
       const dirUri = mockFileRepository.createDirectoryUri('/test/testdir');
-      expect((await mockFileRepository.existsAsync(dirUri))).toBeFalsy();
+      expect(await mockFileRepository.existsAsync(dirUri)).toBeFalsy();
 
       // メタデータからも削除されているか確認
       const metaContent = await mockFileRepository.readFileAsync(

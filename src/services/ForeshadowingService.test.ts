@@ -309,7 +309,7 @@ files:
         expect(fileItem.foreshadowing.plants[0]?.location).toBe('contents/chapter1.txt');
         expect(fileItem.foreshadowing.plants[0]?.comment).toBe('最初のヒント');
       } else {
-        fail('fileItemにforeshadowingプロパティが存在しません');
+        throw new Error('fileItemにforeshadowingプロパティが存在しません');
       }
     });
 
@@ -335,7 +335,7 @@ files:
       if (fileItem && isForeshadowingItem(fileItem)) {
         expect(fileItem.foreshadowing.plants.length).toBe(0);
       } else {
-        fail('fileItemにforeshadowingプロパティが存在しません');
+        throw new Error('fileItemにforeshadowingプロパティが存在しません');
       }
     });
 
@@ -367,7 +367,7 @@ files:
         expect(fileItem.foreshadowing.plants[0]?.location).toBe('contents/chapter2.txt');
         expect(fileItem.foreshadowing.plants[0]?.comment).toBe('更新後');
       } else {
-        fail('fileItemにforeshadowingプロパティが存在しません');
+        throw new Error('fileItemにforeshadowingプロパティが存在しません');
       }
     });
 
@@ -391,7 +391,7 @@ files:
         expect(fileItem.foreshadowing.payoff.location).toBe('contents/chapter5.txt');
         expect(fileItem.foreshadowing.payoff.comment).toBe('真相明示');
       } else {
-        fail('fileItemにforeshadowingプロパティが存在しません');
+        throw new Error('fileItemにforeshadowingプロパティが存在しません');
       }
     });
 
@@ -417,7 +417,7 @@ files:
         expect(fileItem.foreshadowing.payoff.location).toBe('');
         expect(fileItem.foreshadowing.payoff.comment).toBe('');
       } else {
-        fail('fileItemにforeshadowingプロパティが存在しません');
+        throw new Error('fileItemにforeshadowingプロパティが存在しません');
       }
     });
 

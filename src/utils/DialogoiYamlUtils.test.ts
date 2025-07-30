@@ -77,7 +77,7 @@ invalid: yaml: syntax`;
       expect(result.includes('author: テスト著者')).toBeTruthy();
       expect(
         result.includes("created_at: '2024-01-01T00:00:00Z'") ||
-          result.includes('created_at: 2024-01-01T00:00:00Z')
+          result.includes('created_at: 2024-01-01T00:00:00Z'),
       ).toBeTruthy();
       expect(result.includes('tags:')).toBeTruthy();
       expect(result.includes('- ファンタジー')).toBeTruthy();
@@ -103,7 +103,7 @@ invalid: yaml: syntax`;
       expect(result.includes('author: テスト著者')).toBeTruthy();
       expect(
         result.includes("created_at: '2024-01-01T00:00:00Z'") ||
-          result.includes('created_at: 2024-01-01T00:00:00Z')
+          result.includes('created_at: 2024-01-01T00:00:00Z'),
       ).toBeTruthy();
       expect(result.includes('tags: []')).toBeTruthy(); // 空のtagsが出力される
     });

@@ -295,7 +295,11 @@ files:
       ),
     );
     expect(updatedContent.includes('[空テキスト](../settings/new_character1.md)).toBeTruthy()'));
-    expect(updatedContent.includes('[特殊文字#含む](../settings/new_character1.md#section)).toBeTruthy()'));
+    expect(
+      updatedContent.includes(
+        '[特殊文字#含む](../settings/new_character1.md#section)).toBeTruthy()',
+      ),
+    );
     expect(updatedContent.includes('[  空白あり  ](../settings/new_character1.md)).toBeTruthy()'));
   });
 
