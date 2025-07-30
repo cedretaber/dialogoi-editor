@@ -205,7 +205,7 @@ describe('FileDetailsApp コンポーネント', () => {
       };
       sendMessage({ type: 'updateFile', data: dataWithCharacter });
       await waitFor(() => {
-        expect(expect(screen.getByText('キャラクター情報')).toBeInTheDocument());
+        expect(screen.getByText('キャラクター情報')).toBeInTheDocument();
       });
     });
 
@@ -231,7 +231,7 @@ describe('FileDetailsApp コンポーネント', () => {
       };
       sendMessage({ type: 'updateFile', data: settingData });
       await waitFor(() => {
-        expect(expect(screen.getByText('🔮 伏線管理')).toBeInTheDocument());
+        expect(screen.getByText('🔮 伏線管理')).toBeInTheDocument();
       });
     });
 
@@ -257,7 +257,7 @@ describe('FileDetailsApp コンポーネント', () => {
 
       // 状態更新を待つ - タグセクションが表示されることを確認
       await waitFor(() => {
-        expect(expect(screen.getByText('タグ')).toBeInTheDocument());
+        expect(screen.getByText('タグ')).toBeInTheDocument();
       });
 
       // タグ入力フィールドに入力
@@ -281,7 +281,7 @@ describe('FileDetailsApp コンポーネント', () => {
       // タグが表示されるまで待つ
       await waitFor(() => {
         // タグが表示されていることを確認
-        expect(expect(screen.getByText('#タグ1')).toBeInTheDocument());
+        expect(screen.getByText('#タグ1')).toBeInTheDocument();
       });
 
       // 削除ボタンをクリック
@@ -303,10 +303,9 @@ describe('FileDetailsApp コンポーネント', () => {
       render(<FileDetailsApp />);
       sendMessage({ type: 'updateFile', data: mockFileData });
 
-      // 状態更新を待つ
+      // 状態更新を待つ - タグセクションが表示されることを確認
       await waitFor(() => {
-        // ファイル名が表示されることを直接確認しない（特定の要素が複数あるため）
-        // 代わりにコンポーネントが正しくレンダリングされているかを確認
+        expect(screen.getByText('タグ')).toBeInTheDocument();
       });
 
       // 参照リンクをクリック
@@ -326,10 +325,9 @@ describe('FileDetailsApp コンポーネント', () => {
       render(<FileDetailsApp />);
       sendMessage({ type: 'updateFile', data: mockFileData });
 
-      // 状態更新を待つ
+      // 状態更新を待つ - タグセクションが表示されることを確認
       await waitFor(() => {
-        // ファイル名が表示されることを直接確認しない（特定の要素が複数あるため）
-        // 代わりにコンポーネントが正しくレンダリングされているかを確認
+        expect(screen.getByText('タグ')).toBeInTheDocument();
       });
 
       // 削除ボタンをクリック
@@ -358,10 +356,9 @@ describe('FileDetailsApp コンポーネント', () => {
       };
       sendMessage({ type: 'updateFile', data: dataWithReversRef });
 
-      // 状態更新を待つ
+      // 状態更新を待つ - タグセクションが表示されることを確認
       await waitFor(() => {
-        // ファイル名が表示されることを直接確認しない（特定の要素が複数あるため）
-        // 代わりにコンポーネントが正しくレンダリングされているかを確認
+        expect(screen.getByText('タグ')).toBeInTheDocument();
       });
 
       // 削除ボタンをクリック
@@ -392,7 +389,7 @@ describe('FileDetailsApp コンポーネント', () => {
 
       // 状態更新を待つ - キャラクター情報セクションが表示されるまで待機
       await waitFor(() => {
-        expect(expect(screen.getByText('キャラクター情報')).toBeInTheDocument());
+        expect(screen.getByText('キャラクター情報')).toBeInTheDocument();
       });
 
       // 削除ボタンをクリック
@@ -426,7 +423,7 @@ describe('FileDetailsApp コンポーネント', () => {
       await waitFor(() => {
         // ファイル名が表示されることを直接確認しない（特定の要素が複数あるため）
         // 代わりにコンポーネントが正しくレンダリングされているかを確認
-        expect(expect(screen.getByText('🔮 伏線管理')).toBeInTheDocument());
+        expect(screen.getByText('🔮 伏線管理')).toBeInTheDocument();
       });
 
       // 追加ボタンをクリック
@@ -465,7 +462,7 @@ describe('FileDetailsApp コンポーネント', () => {
       await waitFor(() => {
         // ファイル名が表示されることを直接確認しない（特定の要素が複数あるため）
         // 代わりにコンポーネントが正しくレンダリングされているかを確認
-        expect(expect(screen.getByText('🔮 伏線管理')).toBeInTheDocument());
+        expect(screen.getByText('🔮 伏線管理')).toBeInTheDocument();
       });
 
       // 削除ボタンをクリック
@@ -489,7 +486,7 @@ describe('FileDetailsApp コンポーネント', () => {
       await waitFor(() => {
         // ファイル名が表示されることを直接確認しない（特定の要素が複数あるため）
         // 代わりにコンポーネントが正しくレンダリングされているかを確認
-        expect(expect(screen.getByText('🔮 伏線管理')).toBeInTheDocument());
+        expect(screen.getByText('🔮 伏線管理')).toBeInTheDocument();
       });
 
       // 編集ボタンをクリック
@@ -525,7 +522,7 @@ describe('FileDetailsApp コンポーネント', () => {
       await waitFor(() => {
         // ファイル名が表示されることを直接確認しない（特定の要素が複数あるため）
         // 代わりにコンポーネントが正しくレンダリングされているかを確認
-        expect(expect(screen.getByText('🔮 伏線管理')).toBeInTheDocument());
+        expect(screen.getByText('🔮 伏線管理')).toBeInTheDocument();
       });
 
       // 設定ボタンをクリック
@@ -563,7 +560,7 @@ describe('FileDetailsApp コンポーネント', () => {
       await waitFor(() => {
         // ファイル名が表示されることを直接確認しない（特定の要素が複数あるため）
         // 代わりにコンポーネントが正しくレンダリングされているかを確認
-        expect(expect(screen.getByText('🔮 伏線管理')).toBeInTheDocument());
+        expect(screen.getByText('🔮 伏線管理')).toBeInTheDocument();
       });
 
       // 削除ボタンをクリック（2番目の削除ボタンが回収位置）
@@ -585,7 +582,7 @@ describe('FileDetailsApp コンポーネント', () => {
       sendMessage({ type: 'updateFile', data: dataWithoutName });
 
       await waitFor(() => {
-        expect(expect(screen.getByText('Unknown File')).toBeInTheDocument());
+        expect(screen.getByText('Unknown File')).toBeInTheDocument();
       });
     });
 
@@ -594,10 +591,9 @@ describe('FileDetailsApp コンポーネント', () => {
       render(<FileDetailsApp />);
       sendMessage({ type: 'updateFile', data: mockFileData });
 
-      // 状態更新を待つ
+      // 状態更新を待つ - タグセクションが表示されることを確認
       await waitFor(() => {
-        // ファイル名が表示されることを直接確認しない（特定の要素が複数あるため）
-        // 代わりにコンポーネントが正しくレンダリングされているかを確認
+        expect(screen.getByText('タグ')).toBeInTheDocument();
       });
 
       // タグ追加
