@@ -416,7 +416,7 @@ await coreFileService.createFileAsync(dirPath, fileName, fileType, content);
   - 参照操作: `addReference()`, `removeReference()`, `setReferences()`
   - 汎用操作: `updateMetaYaml()`, `updateAllReferences()`
 - [x] MetadataService.test.ts作成（12テスト）
-- [x] ServiceContainer/TestServiceContainer DI設定更新
+- [x] ServiceContainer DI設定更新
 
 **Phase 2実装成果:**
 - [x] **FileManagementService**拡張実装（7メソッド移行）
@@ -464,7 +464,7 @@ await coreFileService.createFileAsync(dirPath, fileName, fileType, content);
 - [x] **旧FileOperationService完全削除**
   - FileOperationService.ts削除（1714行の巨大クラスを除去）
   - FileOperationService.test.ts削除（関連テストも整理）
-  - ServiceContainer/TestServiceContainerから全参照削除
+  - ServiceContainerから全参照削除
 - [x] **最終品質確認**
   - **463サーバサイドテスト + 239Reactテスト = 702テスト全通過** ✅
   - TypeScript/ESLint/Prettier完全通過 ✅

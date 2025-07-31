@@ -84,19 +84,15 @@
 ├─────────────────────────────────────────────────┤
 │  Abstraction Layer (DI Container)               │
 │  ├─ ServiceContainer                            │
-│  ├─ VSCodeServiceContainer                      │
-│  └─ TestServiceContainer                        │
+│  └─ VSCodeServiceContainer                      │
 ├─────────────────────────────────────────────────┤
 │  Data Access Layer (Repository Pattern)        │
 │  ├─ FileRepository (抽象基底クラス)             │
-│  │   ├─ VSCodeFileRepository (本番実装)        │
-│  │   └─ MockFileRepository (テスト実装)        │
+│  │   └─ VSCodeFileRepository (本番実装)        │
 │  ├─ SettingsRepository                          │
-│  │   ├─ VSCodeSettingsRepository                │
-│  │   └─ MockSettingsRepository                  │
+│  │   └─ VSCodeSettingsRepository                │
 │  ├─ EventEmitterRepository                      │
-│  │   ├─ VSCodeEventEmitterRepository            │
-│  │   └─ MockEventEmitterRepository              │
+│  │   └─ VSCodeEventEmitterRepository            │
 │  └─ Uri Interface                               │
 └─────────────────────────────────────────────────┘
 ```
@@ -398,7 +394,32 @@ React WebView更新・編集モード開始
 ### 3. メモリ管理
 - WeakMapによる循環参照回避
 - 適切なリスナー削除とクリーンアップ
-- MockRepositoryによるテスト時メモリ効率
+- テスト時のメモリ効率最適化
+
+## テストアーキテクチャ
+
+### 1. モックパターン
+- **jest-mock-extended** を使用した型安全なモック生成
+- `MockProxy<T>` による自動的なメソッドスタブ
+- コンストラクタインジェクションによる明示的な依存性注入
+
+### 2. テスト構造
+```typescript
+describe('ServiceName テストスイート', () => {
+  let service: ServiceName;
+  let mockDependency: MockProxy<DependencyType>;
+
+  beforeEach(() => {
+    mockDependency = mock<DependencyType>();
+    service = new ServiceName(mockDependency);
+  });
+});
+```
+
+### 3. 廃止された仕組み (2025-01-31)
+- TestServiceContainer: 全サービステストがjest-mock-extendedに移行
+- MockRepositoryクラス群: MockProxy<T>パターンで代替
+- ServiceContainer.initializeForTesting(): 不要になり削除
 
 
 ## セキュリティ考慮事項

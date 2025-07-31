@@ -35,6 +35,7 @@ src/services/ディレクトリ内のテストファイル（*.test.ts）とそ�
 
 ## 備考
 
-- すべてのテストファイルは TestServiceContainer と MockFileRepository を使用してDI（依存性注入）パターンでテストを実装
+- すべてのテストファイルは jest-mock-extended を使用してモック化とDI（依存性注入）パターンでテストを実装
 - 各テストファイルは対応するサービスクラスの単体テストを包括的にカバー
-- ファイル操作に関連するサービスは MockFileRepository を使用して実際のファイルシステムに依存しないテストを実装
+- ファイル操作に関連するサービスは `MockProxy<FileRepository>` を使用して実際のファイルシステムに依存しないテストを実装
+- TestServiceContainer と MockRepository クラスは完全に廃止され、より型安全で保守しやすいテスト構造に移行完了（2025-01-31）
