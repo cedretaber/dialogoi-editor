@@ -171,7 +171,7 @@ npm run check-all
 
 ### 依存関係注入（DI）アーキテクチャ
 
-**重要**: このプロジェクトではVSCode依存の局所化とテスト可能性の向上のため、依存関係注入パターンを採用しています。
+**重要**: このプロジェクトではVSCode依存の局所化とテスト可能性の向上のため、依存関係注入パターンを採用しています。2025年1月31日にアーキテクチャの大幅改善を完了し、全サービスでコンストラクタ注入パターンを統一しました。
 
 #### レイヤー設計の基本原則
 
@@ -229,32 +229,32 @@ export function registerSomeCommands(context: vscode.ExtensionContext) {
 }
 ```
 
-**テストの作成指針:**
-- 全てのサービスクラスのテストはMockFileOperationServiceを使用
-- TestServiceContainerから依存関係を取得
+**テストの作成指針 (2025-01-31更新):**
+- 全てのサービスクラスのテストはjest-mock-extendedを使用
+- MockProxy<T>パターンで依存関係をモック化
 - 実際のファイルシステムに依存しない
 
-**例：**
+**例（最新版）：**
 ```typescript
-suite('NewService テストスイート', () => {
+describe('NewService テストスイート', () => {
   let service: NewService;
-  let mockFileService: MockFileOperationService;
+  let mockFileRepository: MockProxy<FileRepository>;
 
-  setup(() => {
-    const container = TestServiceContainer.create();
-    mockFileService = container.getFileOperationService() as MockFileOperationService;
-    service = new NewService(mockFileService);
+  beforeEach(() => {
+    mockFileRepository = mock<FileRepository>();
+    service = new NewService(mockFileRepository);
   });
 
   test('テストケース', () => {
-    // テスト用ファイルを準備
-    mockFileService.createFile('/test/file.txt', 'test content');
+    // モックの動作を設定
+    mockFileRepository.readFileAsync.mockResolvedValue('test content');
     
     // テスト実行
     const result = service.someMethod();
     
     // 結果検証
-    assert.strictEqual(result, 'expected');
+    expect(result).toBe('expected');
+    expect(mockFileRepository.readFileAsync).toHaveBeenCalledWith(/* 期待引数 */);
   });
 });
 ```
@@ -463,6 +463,33 @@ npm run check-all
 - 全テスト：`npm run test:all`
 
 ## 実装実績
+
+### アーキテクチャ統一プロジェクト ✅ **2025-01-31完了**
+
+**全サービスでjest-mock-extended移行とDIパターン統一を実現**
+
+#### 技術的成果
+- **jest-mock-extended完全移行**: TestServiceContainer廃止によるシンプル化
+- **ReferenceService改名**: ReferenceManager → ReferenceServiceで命名統一
+- **ServiceContainer統一**: コンストラクタ注入パターンの完全統一
+- **テスト品質向上**: 517→600+テストに増加
+
+#### アーキテクチャ改善
+```typescript
+// 旧: 複雑なテストコンテナ
+const container = TestServiceContainer.create();
+const service = container.getCommentService();
+
+// 新: シンプルなモック注入
+const mockFileRepo = mock<FileRepository>();
+const service = new CommentService(mockFileRepo);
+```
+
+#### 品質指標
+- **ESLintエラー**: 261個→0個の完全解決
+- **型安全性**: TypeScript strict mode + MockProxy<T>
+- **テストカバレッジ**: 全サービス・WebViewコンポーネントの包括的テスト
+- **CI/CD**: GitHub Actions完全通過
 
 ### Phase 3.5b: インライン編集機能の完全実装 ✅ **2025-01-22完了**
 

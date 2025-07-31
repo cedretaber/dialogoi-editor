@@ -28,7 +28,7 @@
 ### 主要ライブラリ
 
 - **js-yaml** - YAMLファイルの読み書き
-- **mocha + tsx** - テストフレームワーク（サーバーサイド）
+- **Jest + jest-mock-extended** - テストフレームワーク（型安全なモック生成）
 - **crypto (Node.js標準)** - SHA-256ハッシュ計算
 - **micromatch** - glob パターンマッチング
 - **React** - WebView UI構築
@@ -79,7 +79,7 @@
 │  ├─ ProjectPathService                          │
 │  ├─ ProjectSetupService                         │
 │  ├─ ProjectSettingsService                      │
-│  ├─ ReferenceManager                            │
+│  ├─ ReferenceService                            │
 │  └─ TreeViewFilterService                       │
 ├─────────────────────────────────────────────────┤
 │  Abstraction Layer (DI Container)               │
@@ -226,7 +226,7 @@ export class ServiceContainer {
   getForeshadowingService(): ForeshadowingService
   getHashService(): HashService
   getMetaYamlService(): MetaYamlService
-  getReferenceManager(): ReferenceManager
+  getReferenceService(): ReferenceService
   // ... その他のサービス取得メソッド
 }
 ```
@@ -270,7 +270,7 @@ export class ServiceContainer {
 - プロジェクトルート検索・判定
 - バリデーション・除外パターン取得
 
-### 7. ReferenceManager
+### 7. ReferenceService
 参照関係の一元管理：
 - 手動参照とハイパーリンク参照の統合
 - 双方向参照の自動追跡
@@ -364,12 +364,12 @@ React WebView更新・編集モード開始
 
 ## テスト戦略
 
-### 1. サーバーサイドテスト（517テスト）
+### 1. サーバーサイドテスト（600+テスト）
 - 全サービスクラスの完全テストカバレッジ
-- MockFileRepository使用による高速実行
+- jest-mock-extended による型安全なモック生成
 - TypeScript strict mode準拠
 
-### 2. Reactコンポーネントテスト（223テスト）
+### 2. Reactコンポーネントテスト（200+テスト）
 - React Testing Library + Happy-DOM
 - VSCode APIモック実装
 - ユーザー操作シミュレーション
@@ -420,6 +420,29 @@ describe('ServiceName テストスイート', () => {
 - TestServiceContainer: 全サービステストがjest-mock-extendedに移行
 - MockRepositoryクラス群: MockProxy<T>パターンで代替
 - ServiceContainer.initializeForTesting(): 不要になり削除
+
+## 最新のアーキテクチャ改善 (2025-01-31)
+
+### 依存関係注入の統一化
+- **コンストラクタ注入パターンの統一**: 全サービスが明示的な依存関係注入を採用
+- **ServiceContainer の完全リファクタリング**: シングルトンパターンによる統一管理
+- **ReferenceManager → ReferenceService**: 命名規則の統一とインターフェース分離
+
+### テストアーキテクチャの大幅改善
+- **jest-mock-extended完全移行**: MockProxy<T>による型安全なモック生成
+- **TestServiceContainer削除**: 複雑な仕組みを廃止してシンプルな依存注入へ
+- **テスト数向上**: 517→600+テストに増加（品質改善と機能追加）
+
+### 主要な変更点
+```typescript
+// 旧: TestServiceContainer使用
+const container = TestServiceContainer.create();
+const service = container.getCommentService();
+
+// 新: jest-mock-extended使用
+const mockRepo = mock<FileRepository>();
+const service = new CommentService(mockRepo);
+```
 
 
 ## セキュリティ考慮事項
