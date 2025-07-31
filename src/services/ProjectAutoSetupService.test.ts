@@ -1,35 +1,167 @@
+import { mock, MockProxy } from 'jest-mock-extended';
 import { ProjectAutoSetupService } from './ProjectAutoSetupService.js';
-import { TestServiceContainer } from '../di/TestServiceContainer.js';
-import { MockFileRepository } from '../repositories/MockFileRepository.js';
+import { FileRepository } from '../repositories/FileRepository.js';
 import { MetaYamlService } from './MetaYamlService.js';
 import { DialogoiYamlService } from './DialogoiYamlService.js';
+import { Uri } from '../interfaces/Uri.js';
+import { MetaYaml } from '../utils/MetaYamlUtils.js';
+import * as yaml from 'js-yaml';
+import * as path from 'path';
 
 describe('ProjectAutoSetupService テストスイート', () => {
   let projectAutoSetupService: ProjectAutoSetupService;
-  let mockFileRepository: MockFileRepository;
-  let metaYamlService: MetaYamlService;
-  let dialogoiYamlService: DialogoiYamlService;
+  let mockFileRepository: MockProxy<FileRepository>;
+  let mockMetaYamlService: MockProxy<MetaYamlService>;
+  let mockDialogoiYamlService: MockProxy<DialogoiYamlService>;
+  let fileSystem: Map<string, string>;
+  let directories: Set<string>;
 
   beforeEach(() => {
-    const container = TestServiceContainer.create();
-    mockFileRepository = container.getFileRepository() as MockFileRepository;
-    metaYamlService = container.getMetaYamlService();
-    dialogoiYamlService = container.getDialogoiYamlService();
+    jest.clearAllMocks();
+    fileSystem = new Map<string, string>();
+    directories = new Set<string>();
+    
+    // jest-mock-extendedでモック作成
+    mockFileRepository = mock<FileRepository>();
+    mockMetaYamlService = mock<MetaYamlService>();
+    mockDialogoiYamlService = mock<DialogoiYamlService>();
+    
+    // ファイルシステムモックの設定
+    setupFileSystemMocks();
+    
     projectAutoSetupService = new ProjectAutoSetupService(
       mockFileRepository,
-      metaYamlService,
-      dialogoiYamlService,
+      mockMetaYamlService,
+      mockDialogoiYamlService,
     );
   });
+  
+  function setupFileSystemMocks(): void {
+    mockFileRepository.createFileUri.mockImplementation((filePath: string) => {
+      return { path: filePath, fsPath: filePath } as Uri;
+    });
+    
+    mockFileRepository.createDirectoryUri.mockImplementation((dirPath: string) => {
+      return { path: dirPath, fsPath: dirPath } as Uri;
+    });
+    
+    mockFileRepository.existsAsync.mockImplementation(async (uri: Uri) => {
+      return fileSystem.has(uri.path) || directories.has(uri.path);
+    });
+    
+    mockFileRepository.createDirectoryAsync.mockImplementation(async (uri: Uri) => {
+      directories.add(uri.path);
+    });
+    
+    mockFileRepository.writeFileAsync.mockImplementation(async (uri: Uri, content: string) => {
+      fileSystem.set(uri.path, content);
+    });
+    
+    (mockFileRepository.readFileAsync as jest.MockedFunction<typeof mockFileRepository.readFileAsync>).mockImplementation(
+      async (uri: Uri, _encoding?: BufferEncoding) => {
+        const content = fileSystem.get(uri.path);
+        if (!content) {
+          throw new Error(`File not found: ${uri.path}`);
+        }
+        return content;
+      }
+    );
+    
+    mockFileRepository.readdirAsync.mockImplementation(async (uri: Uri) => {
+      const dirPath = uri.path;
+      const items: Array<{ name: string; isFile: () => boolean; isDirectory: () => boolean }> = [];
+      
+      // ファイルを検索
+      for (const filePath of fileSystem.keys()) {
+        if (path.dirname(filePath) === dirPath) {
+          const name = path.basename(filePath);
+          items.push({
+            name,
+            isFile: () => true,
+            isDirectory: () => false
+          });
+        }
+      }
+      
+      // ディレクトリを検索（直接の子ディレクトリのみ）
+      for (const directoryPath of directories) {
+        if (path.dirname(directoryPath) === dirPath) {
+          const name = path.basename(directoryPath);
+          items.push({
+            name,
+            isFile: () => false,
+            isDirectory: () => true
+          });
+        }
+      }
+      
+      return items;
+    });
+    
+    // MetaYamlService のモック
+    mockMetaYamlService.loadMetaYamlAsync.mockImplementation(async (dirPath: string) => {
+      const yamlPath = path.join(dirPath, '.dialogoi-meta.yaml');
+      const content = fileSystem.get(yamlPath);
+      if (!content) {
+        return null;
+      }
+      try {
+        return yaml.load(content) as MetaYaml;
+      } catch {
+        return null;
+      }
+    });
+    
+    mockMetaYamlService.saveMetaYamlAsync.mockImplementation(async (dirPath: string, metaData: MetaYaml) => {
+      const yamlPath = path.join(dirPath, '.dialogoi-meta.yaml');
+      const yamlContent = yaml.dump(metaData);
+      fileSystem.set(yamlPath, yamlContent);
+      return true;
+    });
+    
+    // DialogoiYamlService のモック
+    mockDialogoiYamlService.isDialogoiProjectRootAsync.mockImplementation(async (projectRoot: string) => {
+      return fileSystem.has(path.join(projectRoot, 'dialogoi.yaml'));
+    });
+    
+    mockDialogoiYamlService.loadDialogoiYamlAsync.mockImplementation(async (projectRoot: string) => {
+      const yamlPath = path.join(projectRoot, 'dialogoi.yaml');
+      const content = fileSystem.get(yamlPath);
+      if (!content) {
+        return null;
+      }
+      try {
+        return yaml.load(content) as any;
+      } catch {
+        return null;
+      }
+    });
+    
+    mockDialogoiYamlService.getExcludePatternsAsync.mockImplementation(async (projectRoot: string) => {
+      const dialogoiData = await mockDialogoiYamlService.loadDialogoiYamlAsync(projectRoot);
+      if (dialogoiData?.project_settings?.exclude_patterns) {
+        return dialogoiData.project_settings.exclude_patterns;
+      }
+      return ['.*', '*.tmp', 'node_modules', '.git'];
+    });
+  }
+  
+  function createDirectoryForTest(dirPath: string): void {
+    directories.add(dirPath);
+  }
+  
+  function createFileForTest(filePath: string, content: string): void {
+    fileSystem.set(filePath, content);
+  }
 
   describe('setupProjectStructure', () => {
     it('基本的なプロジェクト構造をセットアップできる', async () => {
       const projectRoot = '/test/project';
 
       // テスト環境を準備
-      mockFileRepository.createDirectoryForTest(projectRoot);
-      mockFileRepository.createDirectoryForTest(`${projectRoot}/contents`);
-      mockFileRepository.createDirectoryForTest(`${projectRoot}/settings`);
+      createDirectoryForTest(projectRoot);
+      createDirectoryForTest(`${projectRoot}/contents`);
+      createDirectoryForTest(`${projectRoot}/settings`);
 
       // dialogoi.yamlを作成（Dialogoiプロジェクトとして認識させるため）
       const dialogoiContent = `
@@ -42,7 +174,7 @@ project_settings:
     - ".*"
     - "*.tmp"
 `;
-      mockFileRepository.createFileForTest(`${projectRoot}/dialogoi.yaml`, dialogoiContent);
+      createFileForTest(`${projectRoot}/dialogoi.yaml`, dialogoiContent);
 
       const result = await projectAutoSetupService.setupProjectStructure(projectRoot);
 
@@ -63,7 +195,7 @@ project_settings:
 
     it('Dialogoiプロジェクトでない場合はエラーを返す', async () => {
       const projectRoot = '/test/non-dialogoi-project';
-      mockFileRepository.createDirectoryForTest(projectRoot);
+      createDirectoryForTest(projectRoot);
 
       const result = await projectAutoSetupService.setupProjectStructure(projectRoot);
 
@@ -77,7 +209,7 @@ project_settings:
       const projectRoot = '/test/existing-project';
 
       // テスト環境を準備
-      mockFileRepository.createDirectoryForTest(projectRoot);
+      createDirectoryForTest(projectRoot);
 
       // dialogoi.yamlを作成
       const dialogoiContent = `
@@ -86,7 +218,7 @@ author: Test Author
 created_at: 2024-01-01T00:00:00.000Z
 updated_at: 2024-01-01T00:00:00.000Z
 `;
-      mockFileRepository.createFileForTest(`${projectRoot}/dialogoi.yaml`, dialogoiContent);
+      createFileForTest(`${projectRoot}/dialogoi.yaml`, dialogoiContent);
 
       // 既存の.dialogoi-meta.yamlを作成
       const existingMetaContent = `readme: README.md
@@ -100,7 +232,7 @@ files:
     comments: '.existing.txt.comments.yaml'
     isUntracked: false
     isMissing: false`;
-      mockFileRepository.createFileForTest(
+      createFileForTest(
         `${projectRoot}/.dialogoi-meta.yaml`,
         existingMetaContent,
       );
@@ -121,7 +253,7 @@ files:
       const projectRoot = '/test/template-project';
 
       // テスト環境を準備
-      mockFileRepository.createDirectoryForTest(projectRoot);
+      createDirectoryForTest(projectRoot);
 
       // dialogoi.yamlを作成
       const dialogoiContent = `
@@ -130,7 +262,7 @@ author: Test Author
 created_at: 2024-01-01T00:00:00.000Z
 updated_at: 2024-01-01T00:00:00.000Z
 `;
-      mockFileRepository.createFileForTest(`${projectRoot}/dialogoi.yaml`, dialogoiContent);
+      createFileForTest(`${projectRoot}/dialogoi.yaml`, dialogoiContent);
 
       // 詳細テンプレートで実行
       const result = await projectAutoSetupService.setupProjectStructure(projectRoot, {
@@ -153,8 +285,8 @@ updated_at: 2024-01-01T00:00:00.000Z
       const projectRoot = '/test/register-project';
 
       // テスト環境を準備
-      mockFileRepository.createDirectoryForTest(projectRoot);
-      mockFileRepository.createDirectoryForTest(`${projectRoot}/contents`);
+      createDirectoryForTest(projectRoot);
+      createDirectoryForTest(`${projectRoot}/contents`);
 
       // dialogoi.yamlを作成
       const dialogoiContent = `
@@ -167,28 +299,28 @@ project_settings:
     - ".*"
     - "*.tmp"
 `;
-      mockFileRepository.createFileForTest(`${projectRoot}/dialogoi.yaml`, dialogoiContent);
+      createFileForTest(`${projectRoot}/dialogoi.yaml`, dialogoiContent);
 
       // .dialogoi-meta.yamlを作成
       const metaContent = `files: []`;
-      mockFileRepository.createFileForTest(`${projectRoot}/.dialogoi-meta.yaml`, metaContent);
-      mockFileRepository.createFileForTest(
+      createFileForTest(`${projectRoot}/.dialogoi-meta.yaml`, metaContent);
+      createFileForTest(
         `${projectRoot}/contents/.dialogoi-meta.yaml`,
         metaContent,
       );
 
       // テスト用ファイルを作成
-      mockFileRepository.createFileForTest(`${projectRoot}/chapter1.txt`, 'Chapter 1 content');
-      mockFileRepository.createFileForTest(`${projectRoot}/setting.md`, '# Setting');
-      mockFileRepository.createFileForTest(
+      createFileForTest(`${projectRoot}/chapter1.txt`, 'Chapter 1 content');
+      createFileForTest(`${projectRoot}/setting.md`, '# Setting');
+      createFileForTest(
         `${projectRoot}/contents/chapter2.txt`,
         'Chapter 2 content',
       );
 
       // 除外対象ファイルも作成
-      mockFileRepository.createFileForTest(`${projectRoot}/.gitignore`, '# Git ignore');
-      mockFileRepository.createFileForTest(`${projectRoot}/temp.tmp`, 'temporary');
-      mockFileRepository.createFileForTest(`${projectRoot}/README.md`, '# Project README');
+      createFileForTest(`${projectRoot}/.gitignore`, '# Git ignore');
+      createFileForTest(`${projectRoot}/temp.tmp`, 'temporary');
+      createFileForTest(`${projectRoot}/README.md`, '# Project README');
 
       const result = await projectAutoSetupService.registerAllFiles(projectRoot);
 
@@ -198,7 +330,7 @@ project_settings:
       expect(result.skippedFiles).toBe(6); // 管理ファイルと除外ファイル
 
       // meta.yamlが更新されていることを確認
-      const updatedMeta = await metaYamlService.loadMetaYamlAsync(projectRoot);
+      const updatedMeta = await mockMetaYamlService.loadMetaYamlAsync(projectRoot);
       expect(updatedMeta).not.toBe(null);
       expect(updatedMeta?.files.length).toBe(3); // chapter1.txt, setting.md, subdirectory'contents'
 
@@ -213,7 +345,7 @@ project_settings:
 
     it('Dialogoiプロジェクトでない場合はエラーを返す', async () => {
       const projectRoot = '/test/non-dialogoi-register';
-      mockFileRepository.createDirectoryForTest(projectRoot);
+      createDirectoryForTest(projectRoot);
 
       const result = await projectAutoSetupService.registerAllFiles(projectRoot);
 
@@ -227,8 +359,8 @@ project_settings:
       const projectRoot = '/test/no-meta-project';
 
       // テスト環境を準備
-      mockFileRepository.createDirectoryForTest(projectRoot);
-      mockFileRepository.createDirectoryForTest(`${projectRoot}/nometa`);
+      createDirectoryForTest(projectRoot);
+      createDirectoryForTest(`${projectRoot}/nometa`);
 
       // dialogoi.yamlを作成
       const dialogoiContent = `
@@ -237,16 +369,16 @@ author: Test Author
 created_at: 2024-01-01T00:00:00.000Z
 updated_at: 2024-01-01T00:00:00.000Z
 `;
-      mockFileRepository.createFileForTest(`${projectRoot}/dialogoi.yaml`, dialogoiContent);
+      createFileForTest(`${projectRoot}/dialogoi.yaml`, dialogoiContent);
 
       // プロジェクトルートにのみmeta.yamlを作成
       const metaContent = `files: []`;
-      mockFileRepository.createFileForTest(`${projectRoot}/.dialogoi-meta.yaml`, metaContent);
+      createFileForTest(`${projectRoot}/.dialogoi-meta.yaml`, metaContent);
       // サブディレクトリにはmeta.yamlを作成しない
 
       // テスト用ファイルを作成
-      mockFileRepository.createFileForTest(`${projectRoot}/root.txt`, 'Root content');
-      mockFileRepository.createFileForTest(`${projectRoot}/nometa/orphan.txt`, 'Orphan content');
+      createFileForTest(`${projectRoot}/root.txt`, 'Root content');
+      createFileForTest(`${projectRoot}/nometa/orphan.txt`, 'Orphan content');
 
       const result = await projectAutoSetupService.registerAllFiles(projectRoot);
 
@@ -254,14 +386,14 @@ updated_at: 2024-01-01T00:00:00.000Z
       expect(result.registeredFiles).toBe(1); // root.txtのみ登録される
 
       // プロジェクトルートのmeta.yamlが更新されていることを確認
-      const updatedMeta = await metaYamlService.loadMetaYamlAsync(projectRoot);
+      const updatedMeta = await mockMetaYamlService.loadMetaYamlAsync(projectRoot);
       expect(updatedMeta?.files.length).toBe(2); // root.txt と nometa subdirectory
       // root.txtとnometaが登録されていることを確認
-      const rootTxtEntry = updatedMeta?.files.find((f) => f.name === 'root.txt');
+      const rootTxtEntry = updatedMeta?.files.find((f: any) => f.name === 'root.txt');
       expect(rootTxtEntry).not.toBe(undefined);
       expect(rootTxtEntry?.type).toBe('content');
 
-      const nometaDirEntry = updatedMeta?.files.find((f) => f.name === 'nometa');
+      const nometaDirEntry = updatedMeta?.files.find((f: any) => f.name === 'nometa');
       expect(nometaDirEntry).not.toBe(undefined);
       expect(nometaDirEntry?.type).toBe('subdirectory');
     });
@@ -270,7 +402,7 @@ updated_at: 2024-01-01T00:00:00.000Z
       const projectRoot = '/test/existing-files-project';
 
       // テスト環境を準備
-      mockFileRepository.createDirectoryForTest(projectRoot);
+      createDirectoryForTest(projectRoot);
 
       // dialogoi.yamlを作成
       const dialogoiContent = `
@@ -279,7 +411,7 @@ author: Test Author
 created_at: 2024-01-01T00:00:00.000Z
 updated_at: 2024-01-01T00:00:00.000Z
 `;
-      mockFileRepository.createFileForTest(`${projectRoot}/dialogoi.yaml`, dialogoiContent);
+      createFileForTest(`${projectRoot}/dialogoi.yaml`, dialogoiContent);
 
       // 既存のmeta.yamlを作成（一部ファイルが既に登録済み）
       const metaContent = `readme: README.md
@@ -293,11 +425,11 @@ files:
     comments: '.existing.txt.comments.yaml'
     isUntracked: false
     isMissing: false`;
-      mockFileRepository.createFileForTest(`${projectRoot}/.dialogoi-meta.yaml`, metaContent);
+      createFileForTest(`${projectRoot}/.dialogoi-meta.yaml`, metaContent);
 
       // テスト用ファイルを作成
-      mockFileRepository.createFileForTest(`${projectRoot}/existing.txt`, 'Existing content');
-      mockFileRepository.createFileForTest(`${projectRoot}/new.txt`, 'New content');
+      createFileForTest(`${projectRoot}/existing.txt`, 'Existing content');
+      createFileForTest(`${projectRoot}/new.txt`, 'New content');
 
       const result = await projectAutoSetupService.registerAllFiles(projectRoot);
 
@@ -306,7 +438,7 @@ files:
       expect(result.skippedFiles).toBe(3); // existing.txt + dialogoi.yaml + .dialogoi-meta.yaml
 
       // meta.yamlが更新されていることを確認
-      const updatedMeta = await metaYamlService.loadMetaYamlAsync(projectRoot);
+      const updatedMeta = await mockMetaYamlService.loadMetaYamlAsync(projectRoot);
       expect(updatedMeta?.files.length).toBe(2); // existing.txt + new.txt
     });
 
@@ -314,7 +446,7 @@ files:
       const projectRoot = '/test/readme-creation-project';
 
       // テスト環境を準備
-      mockFileRepository.createDirectoryForTest(projectRoot);
+      createDirectoryForTest(projectRoot);
 
       // dialogoi.yamlを作成
       const dialogoiContent = `
@@ -323,14 +455,14 @@ author: Test Author
 created_at: 2024-01-01T00:00:00.000Z
 updated_at: 2024-01-01T00:00:00.000Z
 `;
-      mockFileRepository.createFileForTest(`${projectRoot}/dialogoi.yaml`, dialogoiContent);
+      createFileForTest(`${projectRoot}/dialogoi.yaml`, dialogoiContent);
 
       // .dialogoi-meta.yamlを作成
       const metaContent = `files: []`;
-      mockFileRepository.createFileForTest(`${projectRoot}/.dialogoi-meta.yaml`, metaContent);
+      createFileForTest(`${projectRoot}/.dialogoi-meta.yaml`, metaContent);
 
       // READMEファイルは作成しない（test.txtのみ作成）
-      mockFileRepository.createFileForTest(`${projectRoot}/test.txt`, 'Test content');
+      createFileForTest(`${projectRoot}/test.txt`, 'Test content');
 
       const result = await projectAutoSetupService.registerAllFiles(projectRoot, {
         createReadmeIfMissing: true,

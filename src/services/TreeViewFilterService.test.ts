@@ -1,9 +1,9 @@
+import { mock, MockProxy } from 'jest-mock-extended';
 import { TreeViewFilterService } from './TreeViewFilterService.js';
 import { DialogoiTreeItem } from '../utils/MetaYamlUtils.js';
 import { ReferenceManager } from './ReferenceManager.js';
-import { TestServiceContainer } from '../di/TestServiceContainer.js';
 import { ServiceContainer } from '../di/ServiceContainer.js';
-import { MockFileRepository } from '../repositories/MockFileRepository.js';
+import { FileRepository } from '../repositories/FileRepository.js';
 import {
   createContentItem,
   createSettingItem,
@@ -13,14 +13,32 @@ import {
 describe('TreeViewFilterService テストスイート', () => {
   let filterService: TreeViewFilterService;
   let referenceManager: ReferenceManager;
-  let testContainer: TestServiceContainer;
-  let mockFileRepository: MockFileRepository;
+  let mockFileRepository: MockProxy<FileRepository>;
+  let mockServiceContainer: MockProxy<ServiceContainer>;
+  let mockFilePathMapService: MockProxy<any>;
+  let mockHyperlinkExtractorService: MockProxy<any>;
+  let mockMetaYamlService: MockProxy<any>;
 
   beforeEach(() => {
-    // TestServiceContainerを初期化
-    testContainer = TestServiceContainer.create();
-    ServiceContainer.setTestInstance(testContainer);
-    mockFileRepository = testContainer.getFileRepository() as MockFileRepository;
+    jest.clearAllMocks();
+    
+    // jest-mock-extendedでモック作成
+    mockFileRepository = mock<FileRepository>();
+    mockServiceContainer = mock<ServiceContainer>();
+    mockFilePathMapService = mock<any>();
+    mockHyperlinkExtractorService = mock<any>();
+    mockMetaYamlService = mock<any>();
+    
+    // ServiceContainerのモックを設定（全サービスをモック）
+    jest.spyOn(ServiceContainer, 'getInstance').mockReturnValue(mockServiceContainer);
+    mockServiceContainer.getFileRepository.mockReturnValue(mockFileRepository);
+    mockServiceContainer.getFilePathMapService.mockReturnValue(mockFilePathMapService);
+    mockServiceContainer.getHyperlinkExtractorService.mockReturnValue(mockHyperlinkExtractorService);
+    mockServiceContainer.getMetaYamlService.mockReturnValue(mockMetaYamlService);
+    
+    // サービスのメソッドをモック
+    mockFilePathMapService.buildFileMap.mockResolvedValue(undefined);
+    mockMetaYamlService.loadMetaYamlAsync.mockResolvedValue(null);
 
     // ReferenceManagerを初期化
     referenceManager = ReferenceManager.getInstance();
@@ -33,9 +51,7 @@ describe('TreeViewFilterService テストスイート', () => {
 
   afterEach(() => {
     referenceManager.clear();
-    mockFileRepository.reset();
-    testContainer.cleanup();
-    ServiceContainer.clearTestInstance();
+    jest.restoreAllMocks();
   });
 
   describe('フィルター状態管理', () => {

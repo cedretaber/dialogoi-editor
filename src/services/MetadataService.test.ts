@@ -3,7 +3,7 @@ import { TestServiceContainer } from '../di/TestServiceContainer.js';
 import { MockFileRepository } from '../repositories/MockFileRepository.js';
 import { createContentItem } from '../test/testHelpers.js';
 
-describe('MetadataService テストスイート', () => {
+suite('MetadataService テストスイート', () => {
   let metadataService: MetadataService;
   let mockFileRepository: MockFileRepository;
 
@@ -59,7 +59,7 @@ files:
     );
   });
 
-  describe('タグ操作', () => {
+  suite('タグ操作', () => {
     it('タグを追加できる', async () => {
       const newTag = 'tag2';
       const result = await metadataService.addTag('/test', 'test.txt', newTag);
@@ -124,7 +124,7 @@ files:
     });
   });
 
-  describe('参照操作', () => {
+  suite('参照操作', () => {
     it('参照を追加できる', async () => {
       const result = await metadataService.addReference('/test', 'test.txt', '/new/reference.txt');
 
@@ -177,7 +177,7 @@ files:
     });
   });
 
-  describe('汎用メタデータ操作', () => {
+  suite('汎用メタデータ操作', () => {
     it('updateMetaYamlで任意の更新ができる', async () => {
       const result = await metadataService.updateMetaYaml('/test', (meta) => {
         meta.readme = 'updated-readme.md';
@@ -194,7 +194,7 @@ files:
     });
   });
 
-  describe('エラーハンドリング', () => {
+  suite('エラーハンドリング', () => {
     it('メタデータファイルが存在しない場合のエラー', async () => {
       // 存在しないディレクトリ
       const newTag = 'tag';

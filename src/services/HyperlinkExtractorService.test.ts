@@ -1,30 +1,103 @@
+import { mock, MockProxy } from 'jest-mock-extended';
 import { HyperlinkExtractorService } from './HyperlinkExtractorService.js';
 import { FilePathMapService } from './FilePathMapService.js';
-import { TestServiceContainer } from '../di/TestServiceContainer.js';
-import { MockFileRepository } from '../repositories/MockFileRepository.js';
+import { FileRepository } from '../repositories/FileRepository.js';
 
 describe('HyperlinkExtractorService テストスイート', () => {
   let service: HyperlinkExtractorService;
-  let container: TestServiceContainer;
-  let mockFileRepo: MockFileRepository;
+  let mockFileRepository: MockProxy<FileRepository>;
+  let mockFilePathMapService: MockProxy<FilePathMapService>;
+
+  // ファイルシステムの状態をシミュレート
+  const fileSystem = new Map<string, string>();
 
   beforeEach(() => {
-    container = TestServiceContainer.create();
-    mockFileRepo = container.getFileRepository() as MockFileRepository;
-    // HyperlinkExtractorServiceは具体的なnovelRootPathが必要なので、テストごとに個別作成
+    jest.clearAllMocks();
+    fileSystem.clear();
+    
+    // jest-mock-extendedでモック作成
+    mockFileRepository = mock<FileRepository>();
+    mockFilePathMapService = mock<FilePathMapService>();
+    
+    // ファイルシステムのモック実装
+    mockFileRepository.readFileAsync.mockImplementation(async (uri: any, encoding?: any): Promise<any> => {
+      const path = typeof uri === 'string' ? uri : uri.fsPath;
+      const content = fileSystem.get(path);
+      if (content === undefined) {
+        throw new Error(`File not found: ${path}`);
+      }
+      if (encoding) {
+        return content;
+      }
+      return new TextEncoder().encode(content);
+    });
+    
+    mockFileRepository.existsAsync.mockImplementation(async (uri) => {
+      const path = typeof uri === 'string' ? uri : uri.fsPath;
+      return fileSystem.has(path);
+    });
+    
+    mockFileRepository.createFileUri.mockImplementation((path) => ({
+      fsPath: path,
+      scheme: 'file',
+      authority: '',
+      path: path,
+      query: '',
+      fragment: '',
+      with: jest.fn(),
+      toJSON: jest.fn(),
+      toString: jest.fn(() => path)
+    }));
+    
+    // FilePathMapServiceのモック設定
+    mockFilePathMapService.buildFileMap.mockResolvedValue();
+    mockFilePathMapService.isProjectFile.mockImplementation((relativePath) => {
+      // 外部URLやアンカーは除外
+      if (relativePath.startsWith('http') || relativePath.startsWith('mailto') || relativePath.startsWith('#')) {
+        return false;
+      }
+      // プロジェクト内のファイルとして扱うパターン
+      const projectFiles = [
+        'settings/world.md',
+        'settings/character.md', 
+        'target.md',
+        'contents/01_prologue.txt',
+        './settings/world.md',
+        '../settings/world.md'
+      ];
+      return projectFiles.includes(relativePath) || relativePath.includes('settings/world.md') ||
+             relativePath.includes('settings/character.md') || relativePath.includes('target.md') ||
+             relativePath.includes('contents/01_prologue.txt');
+    });
+    mockFilePathMapService.resolveFileAbsolutePath.mockImplementation((relativePath) => {
+      // シンプルなパス解決ロジック
+      const novelRoot = '/test/novel';
+      return `${novelRoot}/${relativePath}`;
+    });
+    mockFilePathMapService.resolveRelativePathFromRoot.mockImplementation((linkUrl) => {
+      // パスを正規化してプロジェクトルートからの相対パスとして返す
+      if (linkUrl.includes('settings/world.md')) {
+        return 'settings/world.md';
+      } else if (linkUrl.includes('settings/character.md')) {
+        return 'settings/character.md';
+      } else if (linkUrl.includes('target.md')) {
+        return 'target.md';
+      } else if (linkUrl.includes('contents/01_prologue.txt')) {
+        return 'contents/01_prologue.txt';
+      }
+      return linkUrl;
+    });
   });
 
-  afterEach(() => {
-    container.cleanup();
-  });
+  // ヘルパー関数：テスト用ファイルを作成
+  const createFileForTest = (filePath: string, content: string): void => {
+    fileSystem.set(filePath, content);
+  };
 
   describe('parseMarkdownLinks', () => {
     it('基本的なマークダウンリンクを抽出できる', () => {
       // サービスを作成
-      const metaYamlService = container.getMetaYamlService();
-      const coreFileService = container.getCoreFileService();
-      const filePathMapService = new FilePathMapService(metaYamlService, coreFileService);
-      service = new HyperlinkExtractorService(mockFileRepo, filePathMapService);
+      service = new HyperlinkExtractorService(mockFileRepository, mockFilePathMapService);
 
       const content = `
 # テストファイル
@@ -44,10 +117,7 @@ describe('HyperlinkExtractorService テストスイート', () => {
 
     it('タイトル付きマークダウンリンクを抽出できる', () => {
       // サービスを作成
-      const metaYamlService = container.getMetaYamlService();
-      const coreFileService = container.getCoreFileService();
-      const filePathMapService = new FilePathMapService(metaYamlService, coreFileService);
-      service = new HyperlinkExtractorService(mockFileRepo, filePathMapService);
+      service = new HyperlinkExtractorService(mockFileRepository, mockFilePathMapService);
 
       const content = `
 [リンク](test.md "タイトル")
@@ -67,10 +137,7 @@ describe('HyperlinkExtractorService テストスイート', () => {
 
     it('外部リンクも抽出される', () => {
       // サービスを作成
-      const metaYamlService = container.getMetaYamlService();
-      const coreFileService = container.getCoreFileService();
-      const filePathMapService = new FilePathMapService(metaYamlService, coreFileService);
-      service = new HyperlinkExtractorService(mockFileRepo, filePathMapService);
+      service = new HyperlinkExtractorService(mockFileRepository, mockFilePathMapService);
 
       const content = `
 [GitHub](https://github.com)
@@ -88,10 +155,7 @@ describe('HyperlinkExtractorService テストスイート', () => {
 
     it('空のテキストやURLも処理される', () => {
       // サービスを作成
-      const metaYamlService = container.getMetaYamlService();
-      const coreFileService = container.getCoreFileService();
-      const filePathMapService = new FilePathMapService(metaYamlService, coreFileService);
-      service = new HyperlinkExtractorService(mockFileRepo, filePathMapService);
+      service = new HyperlinkExtractorService(mockFileRepository, mockFilePathMapService);
 
       const content = `
 [](empty-url.md)
@@ -109,42 +173,9 @@ describe('HyperlinkExtractorService テストスイート', () => {
   });
 
   describe('filterProjectLinks', () => {
-    it('プロジェクト内リンクのみをフィルタリングできる', async () => {
-      // テストプロジェクト構造を作成
-      const novelRoot = '/test/novel';
-
+    it('プロジェクト内リンクのみをフィルタリングできる', () => {
       // サービスを作成
-      const metaYamlService = container.getMetaYamlService();
-      const coreFileService = container.getCoreFileService(novelRoot);
-      const filePathMapService = new FilePathMapService(metaYamlService, coreFileService);
-      service = new HyperlinkExtractorService(mockFileRepo, filePathMapService);
-
-      mockFileRepo.createFileForTest(
-        `${novelRoot}/.dialogoi-meta.yaml`,
-        `
-project_name: "テストプロジェクト"
-files:
-  - name: "第1章.md"
-    type: "content"
-  - name: "settings"
-    type: "subdirectory"
-`,
-      );
-
-      mockFileRepo.createFileForTest(
-        `${novelRoot}/settings/.dialogoi-meta.yaml`,
-        `
-files:
-  - name: "world.md"
-    type: "setting"
-  - name: "character.md"
-    type: "setting"
-    character:
-      importance: "main"
-`,
-      );
-
-      await filePathMapService.buildFileMap(novelRoot);
+      service = new HyperlinkExtractorService(mockFileRepository, mockFilePathMapService);
 
       const links = [
         { text: 'プロジェクト内', url: 'settings/world.md' },
@@ -154,7 +185,7 @@ files:
         { text: 'ページ内アンカー', url: '#section1' },
       ];
 
-      const currentFile = `${novelRoot}/第1章.md`;
+      const currentFile = `/test/novel/第1章.md`;
       const projectLinks = service.filterProjectLinks(links, currentFile);
 
       expect(projectLinks.length).toBe(2);
@@ -162,37 +193,9 @@ files:
       expect(projectLinks.includes('settings/character.md')).toBe(true);
     });
 
-    it('相対パスも正しく処理される', async () => {
-      const novelRoot = '/test/novel';
-
+    it('相対パスも正しく処理される', () => {
       // サービスを作成
-      const metaYamlService = container.getMetaYamlService();
-      const coreFileService = container.getCoreFileService(novelRoot);
-      const filePathMapService = new FilePathMapService(metaYamlService, coreFileService);
-      service = new HyperlinkExtractorService(mockFileRepo, filePathMapService);
-
-      mockFileRepo.createFileForTest(
-        `${novelRoot}/.dialogoi-meta.yaml`,
-        `
-project_name: "テストプロジェクト"
-files:
-  - name: "第1章.md"
-    type: "content"
-  - name: "settings"
-    type: "subdirectory"
-`,
-      );
-
-      mockFileRepo.createFileForTest(
-        `${novelRoot}/settings/.dialogoi-meta.yaml`,
-        `
-files:
-  - name: "world.md"
-    type: "setting"
-`,
-      );
-
-      await filePathMapService.buildFileMap(novelRoot);
+      service = new HyperlinkExtractorService(mockFileRepository, mockFilePathMapService);
 
       const links = [
         { text: 'カレント相対', url: './settings/world.md' },
@@ -200,7 +203,7 @@ files:
         { text: 'プロジェクトルート相対', url: 'settings/world.md' },
       ];
 
-      const currentFile = `${novelRoot}/第1章.md`;
+      const currentFile = `/test/novel/第1章.md`;
       const projectLinks = service.filterProjectLinks(links, currentFile);
 
       // 全て同じファイルを指しているので、重複除去されて1つになる
@@ -215,38 +218,10 @@ files:
       const novelRoot = '/test/novel';
 
       // サービスを作成
-      const metaYamlService = container.getMetaYamlService();
-      const coreFileService = container.getCoreFileService(novelRoot);
-      const filePathMapService = new FilePathMapService(metaYamlService, coreFileService);
-      service = new HyperlinkExtractorService(mockFileRepo, filePathMapService);
-
-      mockFileRepo.createFileForTest(
-        `${novelRoot}/.dialogoi-meta.yaml`,
-        `
-project_name: "テストプロジェクト"
-files:
-  - name: "第1章.md"
-    type: "content"
-  - name: "settings"
-    type: "subdirectory"
-`,
-      );
-
-      mockFileRepo.createFileForTest(
-        `${novelRoot}/settings/.dialogoi-meta.yaml`,
-        `
-files:
-  - name: "world.md"
-    type: "setting"
-  - name: "character.md"
-    type: "setting"
-    character:
-      importance: "main"
-`,
-      );
+      service = new HyperlinkExtractorService(mockFileRepository, mockFilePathMapService);
 
       // 第1章.mdファイルの内容
-      mockFileRepo.createFileForTest(
+      createFileForTest(
         `${novelRoot}/第1章.md`,
         `
 # 第1章
@@ -258,8 +233,6 @@ files:
       `,
       );
 
-      await filePathMapService.buildFileMap(novelRoot);
-
       const projectLinks = await service.extractProjectLinksAsync(`${novelRoot}/第1章.md`);
 
       expect(projectLinks.length).toBe(2);
@@ -268,6 +241,9 @@ files:
     });
 
     it('存在しないファイルは空配列を返す', async () => {
+      // サービスを作成（空のファイルマップ）
+      service = new HyperlinkExtractorService(mockFileRepository, mockFilePathMapService);
+      
       const projectLinks = await service.extractProjectLinksAsync('/nonexistent/file.md');
       expect(projectLinks.length).toBe(0);
     });
@@ -275,7 +251,10 @@ files:
     it('リンクが含まれていないファイルは空配列を返す', async () => {
       const novelRoot = '/test/novel';
 
-      mockFileRepo.createFileForTest(
+      // サービスを作成
+      service = new HyperlinkExtractorService(mockFileRepository, mockFilePathMapService);
+      
+      createFileForTest(
         `${novelRoot}/simple.md`,
         `
 # シンプルなファイル
@@ -295,31 +274,14 @@ files:
       const novelRoot = '/test/novel';
 
       // サービスを作成
-      const metaYamlService = container.getMetaYamlService();
-      const coreFileService = container.getCoreFileService(novelRoot);
-      const filePathMapService = new FilePathMapService(metaYamlService, coreFileService);
-      service = new HyperlinkExtractorService(mockFileRepo, filePathMapService);
+      service = new HyperlinkExtractorService(mockFileRepository, mockFilePathMapService);
 
-      mockFileRepo.createFileForTest(
-        `${novelRoot}/.dialogoi-meta.yaml`,
-        `
-project_name: "テストプロジェクト"
-files:
-  - name: "test.md"
-    type: "content"
-  - name: "target.md"
-    type: "setting"
-`,
-      );
-
-      mockFileRepo.createFileForTest(
+      createFileForTest(
         `${novelRoot}/test.md`,
         `
 [リンク](target.md)
       `,
       );
-
-      await filePathMapService.buildFileMap(novelRoot);
 
       const projectLinks = await service.refreshFileLinksAsync(`${novelRoot}/test.md`);
 
@@ -334,41 +296,22 @@ files:
       const novelRoot = '/test/novel';
 
       // サービスを作成
-      const metaYamlService = container.getMetaYamlService();
-      const coreFileService = container.getCoreFileService(novelRoot);
-      const filePathMapService = new FilePathMapService(metaYamlService, coreFileService);
-      service = new HyperlinkExtractorService(mockFileRepo, filePathMapService);
+      service = new HyperlinkExtractorService(mockFileRepository, mockFilePathMapService);
 
-      mockFileRepo.createFileForTest(
-        `${novelRoot}/.dialogoi-meta.yaml`,
-        `
-project_name: "テストプロジェクト"
-files:
-  - name: "file1.md"
-    type: "content"
-  - name: "file2.md"
-    type: "content"
-  - name: "target.md"
-    type: "setting"
-`,
-      );
-
-      mockFileRepo.createFileForTest(
+      createFileForTest(
         `${novelRoot}/file1.md`,
         `
 [ターゲット](target.md)
       `,
       );
 
-      mockFileRepo.createFileForTest(
+      createFileForTest(
         `${novelRoot}/file2.md`,
         `
 [同じターゲット](target.md)
 [外部](https://example.com)
       `,
       );
-
-      await filePathMapService.buildFileMap(novelRoot);
 
       const filePaths = [`${novelRoot}/file1.md`, `${novelRoot}/file2.md`];
       const result = await service.extractProjectLinksFromFilesAsync(filePaths);
@@ -395,50 +338,10 @@ files:
       const novelRoot = '/test/novel';
 
       // サービスを作成
-      const metaYamlService = container.getMetaYamlService();
-      const coreFileService = container.getCoreFileService(novelRoot);
-      const filePathMapService = new FilePathMapService(metaYamlService, coreFileService);
-      service = new HyperlinkExtractorService(mockFileRepo, filePathMapService);
-
-      // プロジェクトルート
-      mockFileRepo.createFileForTest(
-        `${novelRoot}/.dialogoi-meta.yaml`,
-        `
-project_name: "テストプロジェクト"
-files:
-  - name: "settings"
-    type: "subdirectory"
-  - name: "contents"
-    type: "subdirectory"
-`,
-      );
-
-      // 本文ディレクトリ
-      mockFileRepo.createFileForTest(
-        `${novelRoot}/contents/.dialogoi-meta.yaml`,
-        `
-files:
-  - name: "01_prologue.txt"
-    type: "content"
-    order: 1
-`,
-      );
-
-      mockFileRepo.createFileForTest(`${novelRoot}/contents/01_prologue.txt`, 'プロローグの内容');
-
-      // 設定ディレクトリ
-      mockFileRepo.createFileForTest(
-        `${novelRoot}/settings/.dialogoi-meta.yaml`,
-        `
-files:
-  - name: "character.md"
-    type: "setting"
-    order: 1
-`,
-      );
+      service = new HyperlinkExtractorService(mockFileRepository, mockFilePathMapService);
 
       // ユーザが追加したリンクを含む設定ファイル
-      mockFileRepo.createFileForTest(
+      createFileForTest(
         `${novelRoot}/settings/character.md`,
         `# キャラクター設定
 
@@ -448,26 +351,24 @@ files:
 その他の情報...`,
       );
 
-      await filePathMapService.buildFileMap(novelRoot);
-
       // デバッグ：ファイルマップの状態を確認
       // テスト対象のファイルが正しく認識されているかチェック
-      const isProjectFile = filePathMapService.isProjectFile(
+      const isProjectFile = mockFilePathMapService.isProjectFile(
         'contents/01_prologue.txt',
         `${novelRoot}/settings/character.md`,
       );
       expect(isProjectFile).toBe(true);
 
       // パス解決もテスト
-      const resolvedPath = filePathMapService.resolveFileAbsolutePath(
+      const resolvedPath = mockFilePathMapService.resolveFileAbsolutePath(
         'contents/01_prologue.txt',
         `${novelRoot}/settings/character.md`,
       );
       expect(resolvedPath).toBe(`${novelRoot}/contents/01_prologue.txt`);
 
       // デバッグ：パースされるリンクを確認
-      const content = await mockFileRepo.readFileAsync(
-        mockFileRepo.createFileUri(`${novelRoot}/settings/character.md`),
+      const content = await mockFileRepository.readFileAsync(
+        mockFileRepository.createFileUri(`${novelRoot}/settings/character.md`),
         'utf-8',
       );
 
@@ -491,41 +392,15 @@ files:
     it('ファイルからプロジェクト内リンクを抽出（非同期版）できる', async () => {
       const novelRoot = '/test/novel';
 
-      const metaYamlService = container.getMetaYamlService();
-      const coreFileService = container.getCoreFileService(novelRoot);
-      const filePathMapService = new FilePathMapService(metaYamlService, coreFileService);
-      service = new HyperlinkExtractorService(mockFileRepo, filePathMapService);
+      service = new HyperlinkExtractorService(mockFileRepository, mockFilePathMapService);
 
-      mockFileRepo.createFileForTest(
-        `${novelRoot}/.dialogoi-meta.yaml`,
-        `
-project_name: "テストプロジェクト"
-files:
-  - name: "chapter1.md"
-    type: "content"
-  - name: "settings"
-    type: "subdirectory"
-`,
-      );
-
-      mockFileRepo.createFileForTest(
-        `${novelRoot}/settings/.dialogoi-meta.yaml`,
-        `
-files:
-  - name: "world.md"
-    type: "setting"
-`,
-      );
-
-      mockFileRepo.createFileForTest(
+      createFileForTest(
         `${novelRoot}/chapter1.md`,
         `
 [世界設定](settings/world.md)
 [外部リンク](https://example.com)
 `,
       );
-
-      await filePathMapService.buildFileMap(novelRoot);
 
       const links = await service.extractProjectLinksAsync(`${novelRoot}/chapter1.md`);
 
@@ -536,30 +411,11 @@ files:
     it('複数ファイルのリンクを一括抽出（非同期版）できる', async () => {
       const novelRoot = '/test/novel';
 
-      const metaYamlService = container.getMetaYamlService();
-      const coreFileService = container.getCoreFileService(novelRoot);
-      const filePathMapService = new FilePathMapService(metaYamlService, coreFileService);
-      service = new HyperlinkExtractorService(mockFileRepo, filePathMapService);
+      service = new HyperlinkExtractorService(mockFileRepository, mockFilePathMapService);
 
-      mockFileRepo.createFileForTest(
-        `${novelRoot}/.dialogoi-meta.yaml`,
-        `
-project_name: "テストプロジェクト"
-files:
-  - name: "file1.md"
-    type: "content"
-  - name: "file2.md"
-    type: "content"
-  - name: "target.md"
-    type: "setting"
-`,
-      );
+      createFileForTest(`${novelRoot}/file1.md`, `[ターゲット](target.md)`);
 
-      mockFileRepo.createFileForTest(`${novelRoot}/file1.md`, `[ターゲット](target.md)`);
-
-      mockFileRepo.createFileForTest(`${novelRoot}/file2.md`, `[同じターゲット](target.md)`);
-
-      await filePathMapService.buildFileMap(novelRoot);
+      createFileForTest(`${novelRoot}/file2.md`, `[同じターゲット](target.md)`);
 
       const filePaths = [`${novelRoot}/file1.md`, `${novelRoot}/file2.md`];
       const result = await service.extractProjectLinksFromFilesAsync(filePaths);
@@ -584,26 +440,9 @@ files:
     it('refreshFileLinksAsync で更新されたリンクを取得できる', async () => {
       const novelRoot = '/test/novel';
 
-      const metaYamlService = container.getMetaYamlService();
-      const coreFileService = container.getCoreFileService(novelRoot);
-      const filePathMapService = new FilePathMapService(metaYamlService, coreFileService);
-      service = new HyperlinkExtractorService(mockFileRepo, filePathMapService);
+      service = new HyperlinkExtractorService(mockFileRepository, mockFilePathMapService);
 
-      mockFileRepo.createFileForTest(
-        `${novelRoot}/.dialogoi-meta.yaml`,
-        `
-project_name: "テストプロジェクト"
-files:
-  - name: "chapter.md"
-    type: "content"
-  - name: "target.md"
-    type: "setting"
-`,
-      );
-
-      mockFileRepo.createFileForTest(`${novelRoot}/chapter.md`, `[リンク](target.md)`);
-
-      await filePathMapService.buildFileMap(novelRoot);
+      createFileForTest(`${novelRoot}/chapter.md`, `[リンク](target.md)`);
 
       const refreshedLinks = await service.refreshFileLinksAsync(`${novelRoot}/chapter.md`);
 

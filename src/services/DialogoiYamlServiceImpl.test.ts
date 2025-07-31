@@ -1,16 +1,63 @@
 import * as path from 'path';
+import { mock, MockProxy } from 'jest-mock-extended';
+import { Uri } from '../interfaces/Uri.js';
 import { DialogoiYamlService } from './DialogoiYamlService.js';
 import { DialogoiYamlServiceImpl } from './DialogoiYamlServiceImpl.js';
-import { MockFileRepository } from '../repositories/MockFileRepository.js';
-import { TestServiceContainer } from '../di/TestServiceContainer.js';
+import { FileRepository } from '../repositories/FileRepository.js';
 
 describe('DialogoiYamlServiceImpl テストスイート', () => {
   let service: DialogoiYamlService;
-  let mockFileRepository: MockFileRepository;
+  let mockFileRepository: MockProxy<FileRepository>;
+  let fileSystem: Map<string, string>;
 
   beforeEach(() => {
-    const container = TestServiceContainer.create();
-    mockFileRepository = container.getFileRepository() as MockFileRepository;
+    jest.clearAllMocks();
+    fileSystem = new Map<string, string>();
+    
+    // jest-mock-extendedでモック作成
+    mockFileRepository = mock<FileRepository>();
+    
+    // ファイルシステムモックの設定
+    mockFileRepository.createFileUri.mockImplementation((filePath: string) => {
+      return { path: filePath, fsPath: filePath } as Uri;
+    });
+    
+    mockFileRepository.createDirectoryUri.mockImplementation((dirPath: string) => {
+      return { path: dirPath, fsPath: dirPath } as Uri;
+    });
+    
+    mockFileRepository.existsAsync.mockImplementation(async (uri: Uri) => {
+      return fileSystem.has(uri.path);
+    });
+    
+    (mockFileRepository.readFileAsync as jest.MockedFunction<typeof mockFileRepository.readFileAsync>).mockImplementation(
+      async (uri: Uri, _encoding?: BufferEncoding) => {
+        const content = fileSystem.get(uri.path);
+        if (!content) {
+          throw new Error(`File not found: ${uri.path}`);
+        }
+        return content;
+      }
+    );
+    
+    mockFileRepository.writeFileAsync.mockImplementation(async (uri: Uri, content: string) => {
+      fileSystem.set(uri.path, content);
+    });
+    
+    mockFileRepository.createDirectoryAsync.mockImplementation(async (uri: Uri) => {
+      // ディレクトリ作成のシミュレーション
+      fileSystem.set(uri.path, '[DIRECTORY]');
+    });
+    
+    mockFileRepository.statAsync.mockImplementation(async (uri: Uri) => {
+      // 簡単なstatの実装
+      return {
+        isDirectory: () => !uri.path.includes('.'),
+        isFile: () => uri.path.includes('.'),
+        size: 0
+      } as any;
+    });
+    
     service = new DialogoiYamlServiceImpl(mockFileRepository);
   });
 
@@ -31,7 +78,7 @@ describe('DialogoiYamlServiceImpl テストスイート', () => {
       const projectRoot = '/test/project';
       const dialogoiYamlPath = path.join(projectRoot, 'dialogoi.yaml');
 
-      mockFileRepository.createFileForTest(dialogoiYamlPath, 'test content');
+      fileSystem.set(dialogoiYamlPath, 'test content');
 
       const result = await service.isDialogoiProjectRootAsync(projectRoot);
       expect(result).toBe(true);
@@ -54,7 +101,7 @@ author: "テスト著者"
 created_at: "2024-01-01T00:00:00Z"
 tags: ["ファンタジー"]`;
 
-      mockFileRepository.createFileForTest(dialogoiYamlPath, yamlContent);
+      fileSystem.set(dialogoiYamlPath, yamlContent);
 
       const result = await service.loadDialogoiYamlAsync(projectRoot);
 
@@ -76,7 +123,7 @@ tags: ["ファンタジー"]`;
       const projectRoot = '/test/project';
       const dialogoiYamlPath = path.join(projectRoot, 'dialogoi.yaml');
 
-      mockFileRepository.createFileForTest(
+      fileSystem.set(
         dialogoiYamlPath,
         'title: "テスト"\nauthor: "著者"\ninvalid: yaml: [unclosed',
       );
@@ -198,7 +245,7 @@ tags: ["ファンタジー"]`;
       const projectRoot = '/test/existing-project';
       const dialogoiYamlPath = path.join(projectRoot, 'dialogoi.yaml');
 
-      mockFileRepository.createFileForTest(dialogoiYamlPath, 'existing content');
+      fileSystem.set(dialogoiYamlPath, 'existing content');
 
       const result = await service.createDialogoiProjectAsync(
         projectRoot,
@@ -238,7 +285,7 @@ project_settings:
   readme_filename: "README.md"
   exclude_patterns: []`;
 
-      mockFileRepository.createFileForTest(dialogoiYamlPath, originalContent);
+      fileSystem.set(dialogoiYamlPath, originalContent);
 
       const result = await service.updateDialogoiYamlAsync(projectRoot, {
         title: '新しいタイトル',
@@ -270,7 +317,7 @@ project_settings:
       const subDir = '/test/project/contents';
       const dialogoiYamlPath = path.join(projectRoot, 'dialogoi.yaml');
 
-      mockFileRepository.createFileForTest(dialogoiYamlPath, 'test content');
+      fileSystem.set(dialogoiYamlPath, 'test content');
 
       const result = await service.findProjectRootAsync(subDir);
       expect(result).toBe(projectRoot);
@@ -280,7 +327,7 @@ project_settings:
       const projectRoot = '/test/project';
       const dialogoiYamlPath = path.join(projectRoot, 'dialogoi.yaml');
 
-      mockFileRepository.createFileForTest(dialogoiYamlPath, 'test content');
+      fileSystem.set(dialogoiYamlPath, 'test content');
 
       const result = await service.findProjectRootAsync(projectRoot);
       expect(result).toBe(projectRoot);
@@ -298,7 +345,7 @@ project_settings:
       const deepDir = '/test/project/contents/chapter1/subsection';
       const dialogoiYamlPath = path.join(projectRoot, 'dialogoi.yaml');
 
-      mockFileRepository.createFileForTest(dialogoiYamlPath, 'test content');
+      fileSystem.set(dialogoiYamlPath, 'test content');
 
       const result = await service.findProjectRootAsync(deepDir);
       expect(result).toBe(projectRoot);
@@ -310,9 +357,9 @@ project_settings:
       const dialogoiYamlPath = path.join(projectRoot, 'dialogoi.yaml');
 
       // プロジェクトルートにdialogoi.yamlを作成
-      mockFileRepository.createFileForTest(dialogoiYamlPath, 'test content');
+      fileSystem.set(dialogoiYamlPath, 'test content');
       // ファイルも実際に作成
-      mockFileRepository.createFileForTest(filePath, '# ヒーロー');
+      fileSystem.set(filePath, '# ヒーロー');
 
       const result = await service.findProjectRootAsync(filePath);
       expect(result).toBe(projectRoot);
@@ -324,7 +371,7 @@ project_settings:
       const dialogoiYamlPath = path.join(projectRoot, 'dialogoi.yaml');
 
       // プロジェクトルートにdialogoi.yamlを作成（ファイルは作成しない）
-      mockFileRepository.createFileForTest(dialogoiYamlPath, 'test content');
+      fileSystem.set(dialogoiYamlPath, 'test content');
 
       const result = await service.findProjectRootAsync(nonExistentFilePath);
       expect(result).toBe(projectRoot);

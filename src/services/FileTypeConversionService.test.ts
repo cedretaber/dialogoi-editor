@@ -1,20 +1,97 @@
+import { mock, MockProxy } from 'jest-mock-extended';
 import * as yaml from 'js-yaml';
 import { FileTypeConversionService } from './FileTypeConversionService.js';
-import { TestServiceContainer } from '../di/TestServiceContainer.js';
-import { MockFileRepository } from '../repositories/MockFileRepository.js';
+import { FileRepository } from '../repositories/FileRepository.js';
 import { MetaYamlService } from './MetaYamlService.js';
+import { FileChangeNotificationService } from './FileChangeNotificationService.js';
+import { EventEmitterRepository } from '../repositories/EventEmitterRepository.js';
+import { Uri } from '../interfaces/Uri.js';
+import { MetaYaml } from '../utils/MetaYamlUtils.js';
+import * as path from 'path';
 
 describe('FileTypeConversionService テストスイート', () => {
   let service: FileTypeConversionService;
-  let mockFileRepository: MockFileRepository;
-  let metaYamlService: MetaYamlService;
+  let mockFileRepository: MockProxy<FileRepository>;
+  let mockMetaYamlService: MockProxy<MetaYamlService>;
+  let fileSystem: Map<string, string>;
+  let directories: Set<string>;
 
   beforeEach(() => {
-    const container = TestServiceContainer.create();
-    mockFileRepository = container.getFileRepository() as MockFileRepository;
-    metaYamlService = container.getMetaYamlService();
-    service = new FileTypeConversionService(mockFileRepository, metaYamlService);
+    jest.clearAllMocks();
+    fileSystem = new Map<string, string>();
+    directories = new Set<string>();
+    
+    // jest-mock-extendedでモック作成
+    mockFileRepository = mock<FileRepository>();
+    mockMetaYamlService = mock<MetaYamlService>();
+    
+    // FileChangeNotificationServiceを初期化（シングルトン）
+    const mockEventEmitterRepository = mock<EventEmitterRepository<any>>();
+    FileChangeNotificationService.setInstance(mockEventEmitterRepository);
+    
+    // モックの設定
+    setupMocks();
+    
+    service = new FileTypeConversionService(mockFileRepository, mockMetaYamlService);
   });
+  
+  function setupMocks(): void {
+    // FileRepository のモック
+    mockFileRepository.createFileUri.mockImplementation((filePath: string) => {
+      return { path: filePath, fsPath: filePath } as Uri;
+    });
+    
+    mockFileRepository.createDirectoryUri.mockImplementation((dirPath: string) => {
+      return { path: dirPath, fsPath: dirPath } as Uri;
+    });
+    
+    mockFileRepository.existsAsync.mockImplementation(async (uri: Uri) => {
+      return fileSystem.has(uri.path) || directories.has(uri.path);
+    });
+    
+    (mockFileRepository.readFileAsync as jest.MockedFunction<typeof mockFileRepository.readFileAsync>).mockImplementation(
+      async (uri: Uri, _encoding?: BufferEncoding) => {
+        const content = fileSystem.get(uri.path);
+        if (!content) {
+          throw new Error(`File not found: ${uri.path}`);
+        }
+        return content;
+      }
+    );
+    
+    mockFileRepository.writeFileAsync.mockImplementation(async (uri: Uri, content: string) => {
+      fileSystem.set(uri.path, content);
+    });
+    
+    // MetaYamlService のモック
+    mockMetaYamlService.loadMetaYamlAsync.mockImplementation(async (dirPath: string) => {
+      const yamlPath = path.join(dirPath, '.dialogoi-meta.yaml');
+      const content = fileSystem.get(yamlPath);
+      if (!content) {
+        return null;
+      }
+      try {
+        return yaml.load(content) as MetaYaml;
+      } catch {
+        return null;
+      }
+    });
+    
+    mockMetaYamlService.saveMetaYamlAsync.mockImplementation(async (dirPath: string, metaData: MetaYaml) => {
+      const yamlPath = path.join(dirPath, '.dialogoi-meta.yaml');
+      const yamlContent = yaml.dump(metaData);
+      fileSystem.set(yamlPath, yamlContent);
+      return true;
+    });
+  }
+  
+  function createDirectoryForTest(dirPath: string): void {
+    directories.add(dirPath);
+  }
+  
+  function createFileForTest(filePath: string, content: string): void {
+    fileSystem.set(filePath, content);
+  }
 
   describe('convertFileType', () => {
     it('contentファイルをsettingに変更する', async () => {
@@ -23,8 +100,8 @@ describe('FileTypeConversionService テストスイート', () => {
       const absoluteFilePath = `${testDir}/${fileName}`;
 
       // テスト環境を準備
-      mockFileRepository.createDirectoryForTest(testDir);
-      mockFileRepository.createFileForTest(absoluteFilePath, 'Chapter 1 content');
+      createDirectoryForTest(testDir);
+      createFileForTest(absoluteFilePath, 'Chapter 1 content');
 
       // dialogoi.yamlを作成（プロジェクトルート検出のため）
       const dialogoiYamlPath = `${testDir}/dialogoi.yaml`;
@@ -34,7 +111,7 @@ describe('FileTypeConversionService テストスイート', () => {
         version: '1.0.0',
         created_at: '2024-01-01T00:00:00Z',
       });
-      mockFileRepository.createFileForTest(dialogoiYamlPath, dialogoiYamlContent);
+      createFileForTest(dialogoiYamlPath, dialogoiYamlContent);
 
       // meta.yamlを作成
       const metaYaml = {
@@ -55,7 +132,7 @@ describe('FileTypeConversionService テストスイート', () => {
       };
 
       const metaYamlPath = `${testDir}/.dialogoi-meta.yaml`;
-      mockFileRepository.createFileForTest(metaYamlPath, yaml.dump(metaYaml));
+      createFileForTest(metaYamlPath, yaml.dump(metaYaml));
 
       // 種別変更を実行
       const result = await service.convertFileType(absoluteFilePath, 'setting');
@@ -67,7 +144,7 @@ describe('FileTypeConversionService テストスイート', () => {
       expect(result.message.includes('contentからsettingに変更しました')).toBeTruthy();
 
       // meta.yamlが更新されたことを確認
-      const updatedMetaYaml = await metaYamlService.loadMetaYamlAsync(testDir);
+      const updatedMetaYaml = await mockMetaYamlService.loadMetaYamlAsync(testDir);
       expect(updatedMetaYaml).toBeTruthy();
       const updatedFile = updatedMetaYaml?.files.find((file) => file.name === fileName);
       expect(updatedFile?.type).toBe('setting');
@@ -79,8 +156,8 @@ describe('FileTypeConversionService テストスイート', () => {
       const absoluteFilePath = `${testDir}/${fileName}`;
 
       // テスト環境を準備
-      mockFileRepository.createDirectoryForTest(testDir);
-      mockFileRepository.createFileForTest(absoluteFilePath, '# Character Info');
+      createDirectoryForTest(testDir);
+      createFileForTest(absoluteFilePath, '# Character Info');
 
       // dialogoi.yamlを作成（プロジェクトルート検出のため）
       const dialogoiYamlPath = `${testDir}/dialogoi.yaml`;
@@ -90,7 +167,7 @@ describe('FileTypeConversionService テストスイート', () => {
         version: '1.0.0',
         created_at: '2024-01-01T00:00:00Z',
       });
-      mockFileRepository.createFileForTest(dialogoiYamlPath, dialogoiYamlContent);
+      createFileForTest(dialogoiYamlPath, dialogoiYamlContent);
 
       // meta.yamlを作成
       const metaYaml = {
@@ -110,7 +187,7 @@ describe('FileTypeConversionService テストスイート', () => {
       };
 
       const metaYamlPath = `${testDir}/.dialogoi-meta.yaml`;
-      mockFileRepository.createFileForTest(metaYamlPath, yaml.dump(metaYaml));
+      createFileForTest(metaYamlPath, yaml.dump(metaYaml));
 
       // 種別変更を実行
       const result = await service.convertFileType(absoluteFilePath, 'content');
@@ -122,7 +199,7 @@ describe('FileTypeConversionService テストスイート', () => {
       expect(result.message.includes('settingからcontentに変更しました')).toBeTruthy();
 
       // meta.yamlが更新されたことを確認
-      const updatedMetaYaml = await metaYamlService.loadMetaYamlAsync(testDir);
+      const updatedMetaYaml = await mockMetaYamlService.loadMetaYamlAsync(testDir);
       expect(updatedMetaYaml).toBeTruthy();
       const updatedFile = updatedMetaYaml?.files.find((file) => file.name === fileName);
       expect(updatedFile?.type).toBe('content');
@@ -134,8 +211,8 @@ describe('FileTypeConversionService テストスイート', () => {
       const absoluteFilePath = `${testDir}/${fileName}`;
 
       // テスト環境を準備
-      mockFileRepository.createDirectoryForTest(testDir);
-      mockFileRepository.createFileForTest(absoluteFilePath, 'Chapter 1 content');
+      createDirectoryForTest(testDir);
+      createFileForTest(absoluteFilePath, 'Chapter 1 content');
 
       // dialogoi.yamlを作成（プロジェクトルート検出のため）
       const dialogoiYamlPath = `${testDir}/dialogoi.yaml`;
@@ -145,7 +222,7 @@ describe('FileTypeConversionService テストスイート', () => {
         version: '1.0.0',
         created_at: '2024-01-01T00:00:00Z',
       });
-      mockFileRepository.createFileForTest(dialogoiYamlPath, dialogoiYamlContent);
+      createFileForTest(dialogoiYamlPath, dialogoiYamlContent);
 
       // meta.yamlを作成
       const metaYaml = {
@@ -166,7 +243,7 @@ describe('FileTypeConversionService テストスイート', () => {
       };
 
       const metaYamlPath = `${testDir}/.dialogoi-meta.yaml`;
-      mockFileRepository.createFileForTest(metaYamlPath, yaml.dump(metaYaml));
+      createFileForTest(metaYamlPath, yaml.dump(metaYaml));
 
       // 同じ種別に変更を試行
       const result = await service.convertFileType(absoluteFilePath, 'content');
@@ -196,8 +273,8 @@ describe('FileTypeConversionService テストスイート', () => {
       const absoluteFilePath = `${testDir}/${fileName}`;
 
       // ファイルのみ作成（meta.yamlなし）
-      mockFileRepository.createDirectoryForTest(testDir);
-      mockFileRepository.createFileForTest(absoluteFilePath, 'Chapter 1 content');
+      createDirectoryForTest(testDir);
+      createFileForTest(absoluteFilePath, 'Chapter 1 content');
 
       // dialogoi.yamlを作成（プロジェクトルート検出のため）
       const dialogoiYamlPath = `${testDir}/dialogoi.yaml`;
@@ -207,7 +284,7 @@ describe('FileTypeConversionService テストスイート', () => {
         version: '1.0.0',
         created_at: '2024-01-01T00:00:00Z',
       });
-      mockFileRepository.createFileForTest(dialogoiYamlPath, dialogoiYamlContent);
+      createFileForTest(dialogoiYamlPath, dialogoiYamlContent);
 
       // 種別変更を試行
       const result = await service.convertFileType(absoluteFilePath, 'setting');
@@ -224,8 +301,8 @@ describe('FileTypeConversionService テストスイート', () => {
       const absoluteFilePath = `${testDir}/${fileName}`;
 
       // テスト環境を準備
-      mockFileRepository.createDirectoryForTest(testDir);
-      mockFileRepository.createFileForTest(absoluteFilePath, 'Unregistered content');
+      createDirectoryForTest(testDir);
+      createFileForTest(absoluteFilePath, 'Unregistered content');
 
       // dialogoi.yamlを作成（プロジェクトルート検出のため）
       const dialogoiYamlPath = `${testDir}/dialogoi.yaml`;
@@ -235,7 +312,7 @@ describe('FileTypeConversionService テストスイート', () => {
         version: '1.0.0',
         created_at: '2024-01-01T00:00:00Z',
       });
-      mockFileRepository.createFileForTest(dialogoiYamlPath, dialogoiYamlContent);
+      createFileForTest(dialogoiYamlPath, dialogoiYamlContent);
 
       // 別のファイルだけが登録されたmeta.yamlを作成
       const metaYaml = {
@@ -256,7 +333,7 @@ describe('FileTypeConversionService テストスイート', () => {
       };
 
       const metaYamlPath = `${testDir}/.dialogoi-meta.yaml`;
-      mockFileRepository.createFileForTest(metaYamlPath, yaml.dump(metaYaml));
+      createFileForTest(metaYamlPath, yaml.dump(metaYaml));
 
       // 種別変更を試行
       const result = await service.convertFileType(absoluteFilePath, 'setting');
@@ -273,8 +350,8 @@ describe('FileTypeConversionService テストスイート', () => {
       const absoluteDirPath = `${testDir}/${dirName}`;
 
       // テスト環境を準備
-      mockFileRepository.createDirectoryForTest(testDir);
-      mockFileRepository.createDirectoryForTest(absoluteDirPath);
+      createDirectoryForTest(testDir);
+      createDirectoryForTest(absoluteDirPath);
 
       // dialogoi.yamlを作成（プロジェクトルート検出のため）
       const dialogoiYamlPath = `${testDir}/dialogoi.yaml`;
@@ -284,7 +361,7 @@ describe('FileTypeConversionService テストスイート', () => {
         version: '1.0.0',
         created_at: '2024-01-01T00:00:00Z',
       });
-      mockFileRepository.createFileForTest(dialogoiYamlPath, dialogoiYamlContent);
+      createFileForTest(dialogoiYamlPath, dialogoiYamlContent);
 
       // meta.yamlを作成
       const metaYaml = {
@@ -299,7 +376,7 @@ describe('FileTypeConversionService テストスイート', () => {
       };
 
       const metaYamlPath = `${testDir}/.dialogoi-meta.yaml`;
-      mockFileRepository.createFileForTest(metaYamlPath, yaml.dump(metaYaml));
+      createFileForTest(metaYamlPath, yaml.dump(metaYaml));
 
       // 種別変更を試行
       const result = await service.convertFileType(absoluteDirPath, 'setting');
@@ -318,8 +395,8 @@ describe('FileTypeConversionService テストスイート', () => {
       const absoluteFilePath = `${testDir}/${fileName}`;
 
       // テスト環境を準備
-      mockFileRepository.createDirectoryForTest(testDir);
-      mockFileRepository.createFileForTest(absoluteFilePath, 'Chapter 1 content');
+      createDirectoryForTest(testDir);
+      createFileForTest(absoluteFilePath, 'Chapter 1 content');
 
       // meta.yamlを作成
       const metaYaml = {
@@ -334,7 +411,7 @@ describe('FileTypeConversionService テストスイート', () => {
       };
 
       const metaYamlPath = `${testDir}/.dialogoi-meta.yaml`;
-      mockFileRepository.createFileForTest(metaYamlPath, JSON.stringify(metaYaml));
+      createFileForTest(metaYamlPath, JSON.stringify(metaYaml));
 
       // 種別を取得
       const type = await service.getCurrentFileType(absoluteFilePath);
@@ -349,8 +426,8 @@ describe('FileTypeConversionService テストスイート', () => {
       const absoluteFilePath = `${testDir}/${fileName}`;
 
       // テスト環境を準備
-      mockFileRepository.createDirectoryForTest(testDir);
-      mockFileRepository.createFileForTest(absoluteFilePath, '# Character Info');
+      createDirectoryForTest(testDir);
+      createFileForTest(absoluteFilePath, '# Character Info');
 
       // meta.yamlを作成
       const metaYaml = {
@@ -365,7 +442,7 @@ describe('FileTypeConversionService テストスイート', () => {
       };
 
       const metaYamlPath = `${testDir}/.dialogoi-meta.yaml`;
-      mockFileRepository.createFileForTest(metaYamlPath, JSON.stringify(metaYaml));
+      createFileForTest(metaYamlPath, JSON.stringify(metaYaml));
 
       // 種別を取得
       const type = await service.getCurrentFileType(absoluteFilePath);
@@ -390,7 +467,7 @@ describe('FileTypeConversionService テストスイート', () => {
       const absoluteFilePath = `${testDir}/${fileName}`;
 
       // テスト環境を準備
-      mockFileRepository.createDirectoryForTest(testDir);
+      createDirectoryForTest(testDir);
 
       // 空のmeta.yamlを作成
       const metaYaml = {
@@ -399,7 +476,7 @@ describe('FileTypeConversionService テストスイート', () => {
       };
 
       const metaYamlPath = `${testDir}/.dialogoi-meta.yaml`;
-      mockFileRepository.createFileForTest(metaYamlPath, JSON.stringify(metaYaml));
+      createFileForTest(metaYamlPath, JSON.stringify(metaYaml));
 
       // 種別を取得
       const type = await service.getCurrentFileType(absoluteFilePath);
@@ -414,7 +491,7 @@ describe('FileTypeConversionService テストスイート', () => {
       const absoluteDirPath = `${testDir}/${dirName}`;
 
       // テスト環境を準備
-      mockFileRepository.createDirectoryForTest(testDir);
+      createDirectoryForTest(testDir);
 
       // meta.yamlを作成
       const metaYaml = {
@@ -429,7 +506,7 @@ describe('FileTypeConversionService テストスイート', () => {
       };
 
       const metaYamlPath = `${testDir}/.dialogoi-meta.yaml`;
-      mockFileRepository.createFileForTest(metaYamlPath, JSON.stringify(metaYaml));
+      createFileForTest(metaYamlPath, JSON.stringify(metaYaml));
 
       // 種別を取得
       const type = await service.getCurrentFileType(absoluteDirPath);
@@ -446,8 +523,8 @@ describe('FileTypeConversionService テストスイート', () => {
       const absoluteFilePath = `${testDir}/${fileName}`;
 
       // テスト環境を準備
-      mockFileRepository.createDirectoryForTest(testDir);
-      mockFileRepository.createFileForTest(absoluteFilePath, 'Chapter 1 content');
+      createDirectoryForTest(testDir);
+      createFileForTest(absoluteFilePath, 'Chapter 1 content');
 
       // meta.yamlを作成
       const metaYaml = {
@@ -462,7 +539,7 @@ describe('FileTypeConversionService テストスイート', () => {
       };
 
       const metaYamlPath = `${testDir}/.dialogoi-meta.yaml`;
-      mockFileRepository.createFileForTest(metaYamlPath, JSON.stringify(metaYaml));
+      createFileForTest(metaYamlPath, JSON.stringify(metaYaml));
 
       // 変更可能性を確認
       const convertible = await service.isFileTypeConvertible(absoluteFilePath);
@@ -477,8 +554,8 @@ describe('FileTypeConversionService テストスイート', () => {
       const absoluteFilePath = `${testDir}/${fileName}`;
 
       // テスト環境を準備
-      mockFileRepository.createDirectoryForTest(testDir);
-      mockFileRepository.createFileForTest(absoluteFilePath, '# Character Info');
+      createDirectoryForTest(testDir);
+      createFileForTest(absoluteFilePath, '# Character Info');
 
       // meta.yamlを作成
       const metaYaml = {
@@ -493,7 +570,7 @@ describe('FileTypeConversionService テストスイート', () => {
       };
 
       const metaYamlPath = `${testDir}/.dialogoi-meta.yaml`;
-      mockFileRepository.createFileForTest(metaYamlPath, JSON.stringify(metaYaml));
+      createFileForTest(metaYamlPath, JSON.stringify(metaYaml));
 
       // 変更可能性を確認
       const convertible = await service.isFileTypeConvertible(absoluteFilePath);
@@ -518,8 +595,8 @@ describe('FileTypeConversionService テストスイート', () => {
       const absoluteDirPath = `${testDir}/${dirName}`;
 
       // テスト環境を準備
-      mockFileRepository.createDirectoryForTest(testDir);
-      mockFileRepository.createDirectoryForTest(absoluteDirPath);
+      createDirectoryForTest(testDir);
+      createDirectoryForTest(absoluteDirPath);
 
       // meta.yamlを作成
       const metaYaml = {
@@ -534,7 +611,7 @@ describe('FileTypeConversionService テストスイート', () => {
       };
 
       const metaYamlPath = `${testDir}/.dialogoi-meta.yaml`;
-      mockFileRepository.createFileForTest(metaYamlPath, JSON.stringify(metaYaml));
+      createFileForTest(metaYamlPath, JSON.stringify(metaYaml));
 
       // 変更可能性を確認
       const convertible = await service.isFileTypeConvertible(absoluteDirPath);
@@ -549,8 +626,8 @@ describe('FileTypeConversionService テストスイート', () => {
       const absoluteFilePath = `${testDir}/${fileName}`;
 
       // ファイルのみ作成（meta.yamlなし）
-      mockFileRepository.createDirectoryForTest(testDir);
-      mockFileRepository.createFileForTest(absoluteFilePath, 'Unregistered content');
+      createDirectoryForTest(testDir);
+      createFileForTest(absoluteFilePath, 'Unregistered content');
 
       // 変更可能性を確認
       const convertible = await service.isFileTypeConvertible(absoluteFilePath);
