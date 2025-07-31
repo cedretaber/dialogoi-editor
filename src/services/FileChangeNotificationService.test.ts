@@ -14,31 +14,33 @@ describe('FileChangeNotificationService', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     firedEvents = [];
-    
+
     // jest-mock-extendedでモック作成
     mockEventEmitterRepository = mock<EventEmitterRepository<FileChangeEvent>>();
-    
+
     // onEvent メソッドでリスナーを実行
     const listeners: Array<(event: FileChangeEvent) => void> = [];
-    mockEventEmitterRepository.onEvent.mockImplementation((listener: (event: FileChangeEvent) => void) => {
-      listeners.push(listener);
-      return {
-        dispose: () => {
-          const index = listeners.indexOf(listener);
-          if (index !== -1) {
-            listeners.splice(index, 1);
-          }
-        }
-      };
-    });
-    
+    mockEventEmitterRepository.onEvent.mockImplementation(
+      (listener: (event: FileChangeEvent) => void) => {
+        listeners.push(listener);
+        return {
+          dispose: (): void => {
+            const index = listeners.indexOf(listener);
+            if (index !== -1) {
+              listeners.splice(index, 1);
+            }
+          },
+        };
+      },
+    );
+
     // fire メソッドでイベントを記録
     mockEventEmitterRepository.fire.mockImplementation((event: FileChangeEvent) => {
       firedEvents.push(event);
       // 登録されたリスナーにもイベントを配信
-      listeners.forEach(listener => listener(event));
+      listeners.forEach((listener) => listener(event));
     });
-    
+
     FileChangeNotificationService.setInstance(mockEventEmitterRepository);
     service = FileChangeNotificationService.getInstance();
   });
@@ -54,7 +56,7 @@ describe('FileChangeNotificationService', () => {
       expect(mockEventEmitterRepository.fire).toHaveBeenCalledWith({
         type: FileChangeType.REFERENCE_UPDATED,
         filePath: testFilePath,
-        metadata: testMetadata
+        metadata: testMetadata,
       });
 
       const event = firedEvents[0];
@@ -126,7 +128,7 @@ describe('FileChangeNotificationService', () => {
       expect(mockEventEmitterRepository.fire).toHaveBeenCalledWith({
         type: FileChangeType.META_YAML_UPDATED,
         filePath: testFilePath,
-        metadata: testMetadata
+        metadata: testMetadata,
       });
 
       const event = firedEvents[0];

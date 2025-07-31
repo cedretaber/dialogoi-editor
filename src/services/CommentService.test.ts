@@ -20,76 +20,79 @@ describe('CommentService テストスイート', () => {
   beforeEach(() => {
     // モックをリセット
     jest.clearAllMocks();
-    
+
     // ファイルシステムの初期化
     fileSystem = new Map<string, string>();
     directories = new Set<string>();
-    
+
     // jest-mock-extendedでモック作成
     mockFileRepository = mock<FileRepository>();
     mockDialogoiYamlService = mock<DialogoiYamlService>();
-    
+
     // テスト用のワークスペースを設定
     workspaceRootPath = '/workspace';
     workspaceRoot = { path: workspaceRootPath, fsPath: workspaceRootPath } as Uri;
-    
+
     // サービスインスタンス作成
     commentService = new CommentService(mockFileRepository, mockDialogoiYamlService, workspaceRoot);
     testRelativeFilePath = 'test.txt';
-    
+
     // ファイルシステムモックの設定
     setupFileSystemMocks();
-    
+
     // テスト用ディレクトリとファイルを作成
     addDirectory(workspaceRootPath);
     const fullTestAbsolutePath = path.join(workspaceRootPath, testRelativeFilePath);
     addFile(fullTestAbsolutePath, 'Hello, World!\nThis is a test file.\n');
   });
-  
+
   function setupFileSystemMocks(): void {
     // createFileUriのモック
     mockFileRepository.createFileUri.mockImplementation((filePath: string) => {
       return { path: filePath, fsPath: filePath } as Uri;
     });
-    
+
     // joinPathのモック
     mockFileRepository.joinPath.mockImplementation((base: Uri, ...segments: string[]) => {
       const joinedPath = path.join(base.path, ...segments);
       return { path: joinedPath, fsPath: joinedPath } as Uri;
     });
-    
+
     // existsAsyncのモック
     mockFileRepository.existsAsync.mockImplementation((uri: Uri) => {
       return Promise.resolve(fileSystem.has(uri.path) || directories.has(uri.path));
     });
-    
+
     // readFileAsyncのモック
-    (mockFileRepository.readFileAsync as jest.MockedFunction<typeof mockFileRepository.readFileAsync>)
-      .mockImplementation((uri: Uri, encoding?: string): Promise<string | Uint8Array> => {
-        const content = fileSystem.get(uri.path);
-        if (content === undefined) {
-          return Promise.reject(new Error(`File not found: ${uri.path}`));
-        }
-        if (encoding !== undefined) {
-          return Promise.resolve(content);
-        } else {
-          return Promise.resolve(new TextEncoder().encode(content));
-        }
-      });
-    
+    (
+      mockFileRepository.readFileAsync as jest.MockedFunction<
+        typeof mockFileRepository.readFileAsync
+      >
+    ).mockImplementation((uri: Uri, encoding?: string): Promise<string | Uint8Array> => {
+      const content = fileSystem.get(uri.path);
+      if (content === undefined) {
+        return Promise.reject(new Error(`File not found: ${uri.path}`));
+      }
+      if (encoding !== undefined) {
+        return Promise.resolve(content);
+      } else {
+        return Promise.resolve(new TextEncoder().encode(content));
+      }
+    });
+
     // writeFileAsyncのモック
     mockFileRepository.writeFileAsync.mockImplementation((uri: Uri, data: string | Uint8Array) => {
       const content = typeof data === 'string' ? data : new TextDecoder().decode(data);
       fileSystem.set(uri.path, content);
       return Promise.resolve();
     });
-    
+
     // unlinkAsyncのモック
     mockFileRepository.unlinkAsync.mockImplementation((uri: Uri) => {
       fileSystem.delete(uri.path);
       return Promise.resolve();
     });
-    
+
     // DialogoiYamlServiceのモック設定
     mockDialogoiYamlService.loadDialogoiYamlAsync.mockImplementation((absolutePath: string) => {
       const dialogoiPath = path.join(absolutePath, 'dialogoi.yaml');
@@ -97,7 +100,7 @@ describe('CommentService テストスイート', () => {
       if (content === undefined) {
         return Promise.resolve(null);
       }
-      
+
       // 簡単なパーシング（テスト用）
       const lines = content.split('\n');
       const result: Partial<DialogoiYaml> = {};
@@ -115,12 +118,12 @@ describe('CommentService テストスイート', () => {
       return Promise.resolve(result as DialogoiYaml);
     });
   }
-  
+
   // テスト用ヘルパー関数
   function addFile(filePath: string, content: string): void {
     fileSystem.set(filePath, content);
   }
-  
+
   function addDirectory(dirPath: string): void {
     directories.add(dirPath);
   }
@@ -298,8 +301,9 @@ created_at: '2024-01-01T00:00:00Z'`;
     });
 
     it('存在しないコメントファイルを更新しようとするとエラーが発生する', async () => {
-      await expect(commentService.updateCommentAsync('nonexistent.txt', 0, { status: 'resolved' }))
-        .rejects.toThrow('更新対象のコメントが見つかりません');
+      await expect(
+        commentService.updateCommentAsync('nonexistent.txt', 0, { status: 'resolved' }),
+      ).rejects.toThrow('更新対象のコメントが見つかりません');
     });
 
     it('無効なコメントインデックスでエラーが発生する', async () => {
@@ -310,8 +314,9 @@ created_at: '2024-01-01T00:00:00Z'`;
 
       await commentService.addCommentAsync(testRelativeFilePath, options);
 
-      await expect(commentService.updateCommentAsync(testRelativeFilePath, 999, { status: 'resolved' }))
-        .rejects.toThrow('更新対象のコメントが見つかりません');
+      await expect(
+        commentService.updateCommentAsync(testRelativeFilePath, 999, { status: 'resolved' }),
+      ).rejects.toThrow('更新対象のコメントが見つかりません');
     });
   });
 
@@ -353,8 +358,9 @@ created_at: '2024-01-01T00:00:00Z'`;
     });
 
     it('存在しないコメントファイルからの削除でエラーが発生する', async () => {
-      await expect(commentService.deleteCommentAsync('nonexistent.txt', 0))
-        .rejects.toThrow('削除対象のコメントが見つかりません');
+      await expect(commentService.deleteCommentAsync('nonexistent.txt', 0)).rejects.toThrow(
+        '削除対象のコメントが見つかりません',
+      );
     });
 
     it('無効なコメントインデックスでエラーが発生する', async () => {
@@ -365,8 +371,9 @@ created_at: '2024-01-01T00:00:00Z'`;
 
       await commentService.addCommentAsync(testRelativeFilePath, options);
 
-      await expect(commentService.deleteCommentAsync(testRelativeFilePath, 999))
-        .rejects.toThrow('削除対象のコメントが見つかりません');
+      await expect(commentService.deleteCommentAsync(testRelativeFilePath, 999)).rejects.toThrow(
+        '削除対象のコメントが見つかりません',
+      );
     });
   });
 
@@ -431,8 +438,7 @@ created_at: '2024-01-01T00:00:00Z'`;
 
     it('コメントファイルが存在しない場合は何もしない', async () => {
       // エラーが発生しないことを確認
-      await expect(commentService.updateFileHashAsync('nonexistent.txt'))
-        .resolves.not.toThrow();
+      await expect(commentService.updateFileHashAsync('nonexistent.txt')).resolves.not.toThrow();
     });
   });
 
@@ -503,8 +509,9 @@ created_at: '2024-01-01T00:00:00Z'`;
       );
       addFile(commentFilePath, 'file_hash: "test"\ninvalid: yaml: [unclosed');
 
-      await expect(commentService.loadCommentFileAsync(testRelativeFilePath))
-        .rejects.toThrow('コメントファイル読み込みエラー');
+      await expect(commentService.loadCommentFileAsync(testRelativeFilePath)).rejects.toThrow(
+        'コメントファイル読み込みエラー',
+      );
     });
 
     it('不正な形式のコメントファイルをロードするとエラーが発生する', async () => {
@@ -512,13 +519,11 @@ created_at: '2024-01-01T00:00:00Z'`;
         workspaceRootPath,
         `.${testRelativeFilePath}.comments.yaml`,
       );
-      addFile(
-        commentFilePath,
-        'comments:\n  - invalid_field: "no required fields"'
-      );
+      addFile(commentFilePath, 'comments:\n  - invalid_field: "no required fields"');
 
-      await expect(commentService.loadCommentFileAsync(testRelativeFilePath))
-        .rejects.toThrow('コメントファイルの形式が正しくありません');
+      await expect(commentService.loadCommentFileAsync(testRelativeFilePath)).rejects.toThrow(
+        'コメントファイルの形式が正しくありません',
+      );
     });
   });
 });

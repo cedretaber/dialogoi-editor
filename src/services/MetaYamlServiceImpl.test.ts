@@ -13,61 +13,70 @@ describe('MetaYamlServiceImpl テストスイート', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
-    
+
     // ファイルシステムの初期化
     fileSystem = new Map<string, string>();
     directories = new Set<string>();
-    
+
     // jest-mock-extendedでモック作成
     mockFileRepository = mock<FileRepository>();
-    
+
     // サービスインスタンス作成
     service = new MetaYamlServiceImpl(mockFileRepository);
-    
+
     // ファイルシステムモックの設定
     setupFileSystemMocks();
   });
-  
+
   function setupFileSystemMocks(): void {
     // createFileUriのモック
     mockFileRepository.createFileUri.mockImplementation((filePath: string) => {
       return { path: filePath } as Uri;
     });
-    
+
     // existsAsyncのモック
-    mockFileRepository.existsAsync.mockImplementation(async (uri: Uri) => {
-      return fileSystem.has(uri.path) || directories.has(uri.path);
+    mockFileRepository.existsAsync.mockImplementation((uri: Uri) => {
+      return Promise.resolve(fileSystem.has(uri.path) || directories.has(uri.path));
     });
-    
+
     // readFileAsyncのモック
-    mockFileRepository.readFileAsync.mockImplementation(async (uri: Uri, _encoding?: any): Promise<any> => {
+    (
+      mockFileRepository.readFileAsync as jest.MockedFunction<
+        typeof mockFileRepository.readFileAsync
+      >
+    ).mockImplementation((uri: Uri, _encoding?: string): Promise<string | Uint8Array> => {
       const content = fileSystem.get(uri.path);
-      if (!content) throw new Error(`File not found: ${uri.path}`);
-      return content;
+      if (content === undefined) {
+        return Promise.reject(new Error(`File not found: ${uri.path}`));
+      }
+      return Promise.resolve(content);
     });
-    
+
     // writeFileAsyncのモック
-    mockFileRepository.writeFileAsync.mockImplementation(async (uri: Uri, data: string | Uint8Array) => {
+    mockFileRepository.writeFileAsync.mockImplementation((uri: Uri, data: string | Uint8Array) => {
       const content = typeof data === 'string' ? data : new TextDecoder().decode(data);
       fileSystem.set(uri.path, content);
+      return Promise.resolve();
     });
-    
+
     // createDirectoryAsyncのモック
-    mockFileRepository.createDirectoryAsync.mockImplementation(async (uri: Uri) => {
+    mockFileRepository.createDirectoryAsync.mockImplementation((uri: Uri) => {
       directories.add(uri.path);
+      return Promise.resolve();
     });
-    
+
     // readdirAsyncのモック
-    mockFileRepository.readdirAsync.mockImplementation(async (uri: Uri) => {
+    mockFileRepository.readdirAsync.mockImplementation((uri: Uri) => {
       const dirPath = uri.path;
       if (!directories.has(dirPath)) {
-        throw new Error(`Directory not found: ${dirPath}`);
+        return Promise.reject(new Error(`Directory not found: ${dirPath}`));
       }
-      
+
       // ディレクトリ内のファイルとサブディレクトリを返す
-      const entries: any[] = [];
+      const entries: Array<{ name: string; isFile: () => boolean; isDirectory: () => boolean }> =
+        [];
       const dirPrefix = dirPath.endsWith('/') ? dirPath : dirPath + '/';
-      
+
       // ファイルを検索
       for (const [filePath] of fileSystem) {
         if (filePath.startsWith(dirPrefix) && !filePath.slice(dirPrefix.length).includes('/')) {
@@ -75,41 +84,41 @@ describe('MetaYamlServiceImpl テストスイート', () => {
           entries.push({
             name,
             isFile: () => true,
-            isDirectory: () => false
+            isDirectory: () => false,
           });
         }
       }
-      
+
       // サブディレクトリを検索
       for (const dir of directories) {
         if (dir.startsWith(dirPrefix) && dir !== dirPath) {
           const remaining = dir.slice(dirPrefix.length);
           const firstSlash = remaining.indexOf('/');
           const name = firstSlash === -1 ? remaining : remaining.slice(0, firstSlash);
-          if (!entries.some(e => e.name === name)) {
+          if (!entries.some((e) => e.name === name)) {
             entries.push({
               name,
               isFile: () => false,
-              isDirectory: () => true
+              isDirectory: () => true,
             });
           }
         }
       }
-      
-      return entries;
+
+      return Promise.resolve(entries);
     });
-    
+
     // createDirectoryUriのモック
     mockFileRepository.createDirectoryUri.mockImplementation((dirPath: string) => {
       return { path: dirPath } as Uri;
     });
   }
-  
+
   // テスト用ヘルパー関数
   function addFile(filePath: string, content: string): void {
     fileSystem.set(filePath, content);
   }
-  
+
   function addDirectory(dirPath: string): void {
     directories.add(dirPath);
   }
@@ -159,11 +168,10 @@ files:
       expect(result?.files[0]?.name).toBe('chapter1.txt');
       expect(result?.files[0]?.type).toBe('content');
       const firstFile = result?.files[0];
-      if (firstFile && firstFile.type === 'content') {
-        expect(firstFile.tags).toEqual(['重要', '序章']);
-      } else {
+      if (!firstFile || firstFile.type !== 'content') {
         throw new Error('最初のファイルはContentItemである必要があります');
       }
+      expect(firstFile.tags).toEqual(['重要', '序章']);
       expect(result?.files[1]?.name).toBe('settings');
       expect(result?.files[1]?.type).toBe('subdirectory');
     });
@@ -521,16 +529,17 @@ files: []`;
       const loadResult1 = await service.loadMetaYamlAsync(testDir);
       expect(loadResult1).not.toBe(null);
 
-      if (loadResult1 !== null) {
-        const saveResult2 = await service.saveMetaYamlAsync(testDir, loadResult1);
-        expect(saveResult2).toBe(true);
-
-        const loadResult2 = await service.loadMetaYamlAsync(testDir);
-        expect(loadResult2).not.toBe(null);
-
-        // 両方の読み込み結果が同じであることを確認
-        expect(loadResult1).toEqual(loadResult2);
+      if (loadResult1 === null) {
+        throw new Error('loadResult1 should not be null');
       }
+      const saveResult2 = await service.saveMetaYamlAsync(testDir, loadResult1);
+      expect(saveResult2).toBe(true);
+
+      const loadResult2 = await service.loadMetaYamlAsync(testDir);
+      expect(loadResult2).not.toBe(null);
+
+      // 両方の読み込み結果が同じであることを確認
+      expect(loadResult1).toEqual(loadResult2);
     });
   });
 
@@ -567,14 +576,16 @@ files: []`;
       const updatedMeta = await service.loadMetaYamlAsync(testDir);
       expect(updatedMeta).not.toBe(null);
 
-      if (updatedMeta !== null) {
-        const fileItem = updatedMeta.files.find((f) => f.name === fileName);
-        expect(fileItem).not.toBe(undefined);
-
-        if (fileItem !== undefined && 'tags' in fileItem) {
-          expect(fileItem.tags).toEqual(newTags);
-        }
+      if (updatedMeta === null) {
+        throw new Error('updatedMeta should not be null');
       }
+      const fileItem = updatedMeta.files.find((f) => f.name === fileName);
+      expect(fileItem).not.toBe(undefined);
+
+      if (fileItem === undefined || !('tags' in fileItem)) {
+        throw new Error('fileItem should exist and have tags property');
+      }
+      expect(fileItem.tags).toEqual(newTags);
     });
 
     it('updateFileTagsでタグを空にする', async () => {
@@ -608,14 +619,16 @@ files: []`;
       const updatedMeta = await service.loadMetaYamlAsync(testDir);
       expect(updatedMeta).not.toBe(null);
 
-      if (updatedMeta !== null) {
-        const fileItem = updatedMeta.files.find((f) => f.name === fileName);
-        expect(fileItem).not.toBe(undefined);
-
-        if (fileItem !== undefined && 'tags' in fileItem) {
-          expect(fileItem.tags).toEqual([]);
-        }
+      if (updatedMeta === null) {
+        throw new Error('updatedMeta should not be null');
       }
+      const fileItem = updatedMeta.files.find((f) => f.name === fileName);
+      expect(fileItem).not.toBe(undefined);
+
+      if (fileItem === undefined || !('tags' in fileItem)) {
+        throw new Error('fileItem should exist and have tags property');
+      }
+      expect(fileItem.tags).toEqual([]);
     });
 
     it('addFileTagで新しいタグを追加する', async () => {
@@ -649,14 +662,16 @@ files: []`;
       const updatedMeta = await service.loadMetaYamlAsync(testDir);
       expect(updatedMeta).not.toBe(null);
 
-      if (updatedMeta !== null) {
-        const fileItem = updatedMeta.files.find((f) => f.name === fileName);
-        expect(fileItem).not.toBe(undefined);
-
-        if (fileItem !== undefined && 'tags' in fileItem) {
-          expect(fileItem.tags).toEqual(['既存タグ1', '新タグ']);
-        }
+      if (updatedMeta === null) {
+        throw new Error('updatedMeta should not be null');
       }
+      const fileItem = updatedMeta.files.find((f) => f.name === fileName);
+      expect(fileItem).not.toBe(undefined);
+
+      if (fileItem === undefined || !('tags' in fileItem)) {
+        throw new Error('fileItem should exist and have tags property');
+      }
+      expect(fileItem.tags).toEqual(['既存タグ1', '新タグ']);
     });
 
     it('addFileTagで重複タグを追加しても成功する', async () => {
@@ -690,14 +705,16 @@ files: []`;
       const updatedMeta = await service.loadMetaYamlAsync(testDir);
       expect(updatedMeta).not.toBe(null);
 
-      if (updatedMeta !== null) {
-        const fileItem = updatedMeta.files.find((f) => f.name === fileName);
-        expect(fileItem).not.toBe(undefined);
-
-        if (fileItem !== undefined && 'tags' in fileItem) {
-          expect(fileItem.tags).toEqual(['既存タグ1']);
-        }
+      if (updatedMeta === null) {
+        throw new Error('updatedMeta should not be null');
       }
+      const fileItem = updatedMeta.files.find((f) => f.name === fileName);
+      expect(fileItem).not.toBe(undefined);
+
+      if (fileItem === undefined || !('tags' in fileItem)) {
+        throw new Error('fileItem should exist and have tags property');
+      }
+      expect(fileItem.tags).toEqual(['既存タグ1']);
     });
 
     it('addFileTagでタグがないファイルに新規追加', async () => {
@@ -731,14 +748,16 @@ files: []`;
       const updatedMeta = await service.loadMetaYamlAsync(testDir);
       expect(updatedMeta).not.toBe(null);
 
-      if (updatedMeta !== null) {
-        const fileItem = updatedMeta.files.find((f) => f.name === fileName);
-        expect(fileItem).not.toBe(undefined);
-
-        if (fileItem !== undefined && 'tags' in fileItem) {
-          expect(fileItem.tags).toEqual(['新タグ']);
-        }
+      if (updatedMeta === null) {
+        throw new Error('updatedMeta should not be null');
       }
+      const fileItem = updatedMeta.files.find((f) => f.name === fileName);
+      expect(fileItem).not.toBe(undefined);
+
+      if (fileItem === undefined || !('tags' in fileItem)) {
+        throw new Error('fileItem should exist and have tags property');
+      }
+      expect(fileItem.tags).toEqual(['新タグ']);
     });
 
     it('removeFileTagでタグを削除する', async () => {
@@ -772,14 +791,16 @@ files: []`;
       const updatedMeta = await service.loadMetaYamlAsync(testDir);
       expect(updatedMeta).not.toBe(null);
 
-      if (updatedMeta !== null) {
-        const fileItem = updatedMeta.files.find((f) => f.name === fileName);
-        expect(fileItem).not.toBe(undefined);
-
-        if (fileItem !== undefined && 'tags' in fileItem) {
-          expect(fileItem.tags).toEqual(['タグ1', 'タグ3']);
-        }
+      if (updatedMeta === null) {
+        throw new Error('updatedMeta should not be null');
       }
+      const fileItem = updatedMeta.files.find((f) => f.name === fileName);
+      expect(fileItem).not.toBe(undefined);
+
+      if (fileItem === undefined || !('tags' in fileItem)) {
+        throw new Error('fileItem should exist and have tags property');
+      }
+      expect(fileItem.tags).toEqual(['タグ1', 'タグ3']);
     });
 
     it('removeFileTagで最後のタグを削除するとtagsフィールドが削除される', async () => {
@@ -813,14 +834,16 @@ files: []`;
       const updatedMeta = await service.loadMetaYamlAsync(testDir);
       expect(updatedMeta).not.toBe(null);
 
-      if (updatedMeta !== null) {
-        const fileItem = updatedMeta.files.find((f) => f.name === fileName);
-        expect(fileItem).not.toBe(undefined);
-
-        if (fileItem !== undefined && 'tags' in fileItem) {
-          expect(fileItem.tags).toEqual([]);
-        }
+      if (updatedMeta === null) {
+        throw new Error('updatedMeta should not be null');
       }
+      const fileItem = updatedMeta.files.find((f) => f.name === fileName);
+      expect(fileItem).not.toBe(undefined);
+
+      if (fileItem === undefined || !('tags' in fileItem)) {
+        throw new Error('fileItem should exist and have tags property');
+      }
+      expect(fileItem.tags).toEqual([]);
     });
 
     it('removeFileTagで存在しないタグを削除しても成功する', async () => {
@@ -854,14 +877,16 @@ files: []`;
       const updatedMeta = await service.loadMetaYamlAsync(testDir);
       expect(updatedMeta).not.toBe(null);
 
-      if (updatedMeta !== null) {
-        const fileItem = updatedMeta.files.find((f) => f.name === fileName);
-        expect(fileItem).not.toBe(undefined);
-
-        if (fileItem !== undefined && 'tags' in fileItem) {
-          expect(fileItem.tags).toEqual(['タグ1']);
-        }
+      if (updatedMeta === null) {
+        throw new Error('updatedMeta should not be null');
       }
+      const fileItem = updatedMeta.files.find((f) => f.name === fileName);
+      expect(fileItem).not.toBe(undefined);
+
+      if (fileItem === undefined || !('tags' in fileItem)) {
+        throw new Error('fileItem should exist and have tags property');
+      }
+      expect(fileItem.tags).toEqual(['タグ1']);
     });
 
     it('.dialogoi-meta.yamlが存在しない場合はfalseを返す', async () => {
@@ -968,12 +993,13 @@ files: []`;
       const updatedMeta = await service.loadMetaYamlAsync(testDir);
       expect(updatedMeta).not.toBe(null);
 
-      if (updatedMeta !== null) {
-        expect(updatedMeta.files.length).toBe(3);
-        expect(updatedMeta.files[0]?.name).toBe('file2.txt');
-        expect(updatedMeta.files[1]?.name).toBe('file3.txt');
-        expect(updatedMeta.files[2]?.name).toBe('file1.txt');
+      if (updatedMeta === null) {
+        throw new Error('updatedMeta should not be null');
       }
+      expect(updatedMeta.files.length).toBe(3);
+      expect(updatedMeta.files[0]?.name).toBe('file2.txt');
+      expect(updatedMeta.files[1]?.name).toBe('file3.txt');
+      expect(updatedMeta.files[2]?.name).toBe('file1.txt');
     });
 
     it('異なるディレクトリ間でのファイル移動', async () => {
@@ -1038,21 +1064,23 @@ files: []`;
       // 移動元を確認
       const updatedSourceMeta = await service.loadMetaYamlAsync(sourceDir);
       expect(updatedSourceMeta).not.toBe(null);
-      if (updatedSourceMeta !== null) {
-        expect(updatedSourceMeta.files.length).toBe(1);
-        expect(updatedSourceMeta.files[0]?.name).toBe('file2.txt');
+      if (updatedSourceMeta === null) {
+        throw new Error('updatedSourceMeta should not be null');
       }
+      expect(updatedSourceMeta.files.length).toBe(1);
+      expect(updatedSourceMeta.files[0]?.name).toBe('file2.txt');
 
       // 移動先を確認
       const updatedTargetMeta = await service.loadMetaYamlAsync(targetDir);
       expect(updatedTargetMeta).not.toBe(null);
-      if (updatedTargetMeta !== null) {
-        expect(updatedTargetMeta.files.length).toBe(2);
-        expect(updatedTargetMeta.files[0]?.name).toBe('file1.txt');
-        expect(updatedTargetMeta.files[1]?.name).toBe('file3.txt');
-        // パスが更新されていることを確認
-        expect(updatedTargetMeta.files[0]?.path).toBe(`${targetDir}/file1.txt`);
+      if (updatedTargetMeta === null) {
+        throw new Error('updatedTargetMeta should not be null');
       }
+      expect(updatedTargetMeta.files.length).toBe(2);
+      expect(updatedTargetMeta.files[0]?.name).toBe('file1.txt');
+      expect(updatedTargetMeta.files[1]?.name).toBe('file3.txt');
+      // パスが更新されていることを確認
+      expect(updatedTargetMeta.files[0]?.path).toBe(`${targetDir}/file1.txt`);
     });
 
     it('同じディレクトリ内で重複ファイル移動を試行（エラーにならない）', async () => {

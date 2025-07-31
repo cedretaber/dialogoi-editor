@@ -10,24 +10,24 @@ describe('DialogoiSettingsService テストスイート', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     settingsStorage = new Map<string, Map<string, unknown>>();
-    
+
     // jest-mock-extendedでモック作成
     mockRepository = mock<SettingsRepository>();
-    
+
     // SettingsRepositoryモックの設定
     setupSettingsRepositoryMocks();
-    
+
     service = new DialogoiSettingsService(mockRepository);
   });
-  
+
   function setupSettingsRepositoryMocks(): void {
     mockRepository.get.mockImplementation(<T>(section: string, key?: string): T | undefined => {
       const sectionStorage = settingsStorage.get(section);
       if (!sectionStorage) {
         return undefined;
       }
-      
-      if (key) {
+
+      if (key !== undefined) {
         return sectionStorage.get(key) as T | undefined;
       } else {
         // セクション全体を返す場合
@@ -38,42 +38,50 @@ describe('DialogoiSettingsService テストスイート', () => {
         return result as T;
       }
     });
-    
-    mockRepository.update.mockImplementation(async (
-      section: string,
-      key: string | undefined,
-      value: unknown,
-      _target: 'global' | 'workspace'
-    ): Promise<boolean> => {
-      try {
-        if (!settingsStorage.has(section)) {
-          settingsStorage.set(section, new Map<string, unknown>());
-        }
-        const sectionStorage = settingsStorage.get(section)!;
-        
-        if (key) {
-          sectionStorage.set(key, value);
-        } else {
-          // セクション全体を更新する場合
-          sectionStorage.clear();
-          if (typeof value === 'object' && value !== null) {
-            for (const [k, v] of Object.entries(value)) {
-              sectionStorage.set(k, v);
+
+    mockRepository.update.mockImplementation(
+      (
+        section: string,
+        key: string | undefined,
+        value: unknown,
+        _target: 'global' | 'workspace',
+      ): Promise<boolean> => {
+        try {
+          if (!settingsStorage.has(section)) {
+            settingsStorage.set(section, new Map<string, unknown>());
+          }
+          const sectionStorage = settingsStorage.get(section);
+          if (!sectionStorage) {
+            return Promise.resolve(false);
+          }
+
+          if (key !== undefined) {
+            sectionStorage.set(key, value);
+          } else {
+            // セクション全体を更新する場合
+            sectionStorage.clear();
+            if (typeof value === 'object' && value !== null) {
+              for (const [k, v] of Object.entries(value)) {
+                sectionStorage.set(k, v);
+              }
             }
           }
+          return Promise.resolve(true);
+        } catch {
+          return Promise.resolve(false);
         }
-        return true;
-      } catch {
-        return false;
-      }
-    });
+      },
+    );
   }
-  
+
   function setSettings(section: string, key: string, value: unknown): void {
     if (!settingsStorage.has(section)) {
       settingsStorage.set(section, new Map<string, unknown>());
     }
-    settingsStorage.get(section)!.set(key, value);
+    const sectionMap = settingsStorage.get(section);
+    if (sectionMap) {
+      sectionMap.set(key, value);
+    }
   }
 
   describe('addDialogoiExcludePatterns', () => {
@@ -268,26 +276,26 @@ describe('DialogoiSettingsService テストスイート', () => {
     it('設定更新エラー時にfalseを返す', async () => {
       // updateメソッドがエラーを返すように設定
       mockRepository.update.mockResolvedValue(false);
-      
+
       // 実行
       const result = await service.addDialogoiExcludePatterns();
-      
+
       // 検証
       expect(result).toBe(false);
     });
-    
+
     it('設定取得エラー時の動作確認', () => {
       // getメソッドがエラーを投げるように設定
       mockRepository.get.mockImplementation(() => {
         throw new Error('Settings access error');
       });
-      
+
       // 実行
       const result = service.hasDialogoiExcludePatterns();
-      
+
       // 検証（エラー時はfalseを返す）
       expect(result).toBe(false);
-      
+
       // getCurrentExcludePatterns も同様にエラーハンドリングをテスト
       const patterns = service.getCurrentExcludePatterns();
       expect(patterns).toEqual({});

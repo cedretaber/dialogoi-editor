@@ -37,13 +37,12 @@ files:
       const file1 = result?.files[0];
       expect(file1?.name).toBe('chapter1.txt');
       expect(file1?.type).toBe('content');
-      if (file1?.type === 'content') {
-        const contentItem = file1;
-        expect(contentItem.tags).toEqual(['重要', '序章']);
-        expect(contentItem.references).toEqual(['settings/world.md']);
-        expect(contentItem.comments).toBe('.chapter1.txt.comments.yaml');
-        expect(contentItem.hash).toBe('abc123');
-      }
+      // file1のtypeがcontentであることを確認済み、型アサーションで安全にアクセス
+      const contentItem = file1 as DialogoiTreeItem & { type: 'content' };
+      expect(contentItem.tags).toEqual(['重要', '序章']);
+      expect(contentItem.references).toEqual(['settings/world.md']);
+      expect(contentItem.comments).toBe('.chapter1.txt.comments.yaml');
+      expect(contentItem.hash).toBe('abc123');
     });
 
     it('最小構成のYAMLを正しく解析する', () => {
@@ -228,9 +227,11 @@ files:
       const errors = MetaYamlUtils.validateDialogoiTreeItem(item);
       expect(errors.length).toBe(1);
       const firstError = errors[0];
-      if (firstError !== undefined) {
-        expect(firstError.includes('name フィールドは必須です')).toBeTruthy();
+      expect(firstError).toBeDefined();
+      if (firstError === undefined) {
+        throw new Error('firstError should be defined');
       }
+      expect(firstError.includes('name フィールドは必須です')).toBeTruthy();
     });
 
     it('不正なtypeの場合エラーを返す', () => {
@@ -243,13 +244,15 @@ files:
       const errors = MetaYamlUtils.validateDialogoiTreeItem(item);
       expect(errors.length).toBe(1);
       const firstError = errors[0];
-      if (firstError !== undefined) {
-        expect(
-          firstError.includes(
-            'type フィールドは content, setting, subdirectory のいずれかである必要があります',
-          ),
-        ).toBeTruthy();
+      expect(firstError).toBeDefined();
+      if (firstError === undefined) {
+        throw new Error('firstError should be defined');
       }
+      expect(
+        firstError.includes(
+          'type フィールドは content, setting, subdirectory のいずれかである必要があります',
+        ),
+      ).toBeTruthy();
     });
   });
 
@@ -292,9 +295,10 @@ files:
       const errors = MetaYamlUtils.validateMetaYaml(invalidMeta);
       expect(errors.length).toBe(1);
       const firstError = errors[0];
-      if (firstError !== undefined) {
-        expect(firstError.includes('files フィールドは配列である必要があります')).toBeTruthy();
+      if (firstError === undefined) {
+        throw new Error('firstError should not be undefined');
       }
+      expect(firstError.includes('files フィールドは配列である必要があります')).toBeTruthy();
     });
 
     it('ファイルアイテムのエラーがある場合インデックス付きでエラーを返す', () => {

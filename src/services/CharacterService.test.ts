@@ -4,7 +4,7 @@ import { CharacterService } from './CharacterService.js';
 import { FileRepository } from '../repositories/FileRepository.js';
 import { MetaYamlService } from './MetaYamlService.js';
 import { Uri } from '../interfaces/Uri.js';
-import { MetaYaml } from '../utils/MetaYamlUtils.js';
+import { MetaYaml, DialogoiTreeItem } from '../utils/MetaYamlUtils.js';
 import { hasCharacterProperty } from '../utils/MetaYamlUtils.js';
 import * as yaml from 'js-yaml';
 
@@ -19,51 +19,54 @@ describe('CharacterService テストスイート', () => {
   beforeEach(() => {
     // モックをリセット
     jest.clearAllMocks();
-    
+
     // ファイルシステムの初期化
     fileSystem = new Map<string, string>();
     directories = new Set<string>();
-    
+
     // jest-mock-extendedでモック作成
     mockFileRepository = mock<FileRepository>();
     mockMetaYamlService = mock<MetaYamlService>();
-    
+
     // サービスインスタンス作成
     characterService = new CharacterService(mockFileRepository, mockMetaYamlService);
     testDir = '/tmp/dialogoi-character-test';
-    
+
     // ファイルシステムモックの設定
     setupFileSystemMocks();
-    
+
     // テスト用ディレクトリを作成
     addDirectory(testDir);
   });
-  
+
   function setupFileSystemMocks(): void {
     // createFileUriのモック
     mockFileRepository.createFileUri.mockImplementation((filePath: string) => {
       return { path: filePath } as Uri;
     });
-    
+
     // existsAsyncのモック
     mockFileRepository.existsAsync.mockImplementation((uri: Uri) => {
       return Promise.resolve(fileSystem.has(uri.path) || directories.has(uri.path));
     });
-    
+
     // readFileAsyncのモック
-    (mockFileRepository.readFileAsync as jest.MockedFunction<typeof mockFileRepository.readFileAsync>)
-      .mockImplementation((uri: Uri, encoding?: string): Promise<string | Uint8Array> => {
-        const content = fileSystem.get(uri.path);
-        if (content === undefined) {
-          return Promise.reject(new Error(`File not found: ${uri.path}`));
-        }
-        if (encoding !== undefined) {
-          return Promise.resolve(content);
-        } else {
-          return Promise.resolve(new TextEncoder().encode(content));
-        }
-      });
-    
+    (
+      mockFileRepository.readFileAsync as jest.MockedFunction<
+        typeof mockFileRepository.readFileAsync
+      >
+    ).mockImplementation((uri: Uri, encoding?: string): Promise<string | Uint8Array> => {
+      const content = fileSystem.get(uri.path);
+      if (content === undefined) {
+        return Promise.reject(new Error(`File not found: ${uri.path}`));
+      }
+      if (encoding !== undefined) {
+        return Promise.resolve(content);
+      } else {
+        return Promise.resolve(new TextEncoder().encode(content));
+      }
+    });
+
     // MetaYamlServiceのモック設定
     mockMetaYamlService.loadMetaYamlAsync.mockImplementation((absolutePath: string) => {
       const metaPath = absolutePath + '/.dialogoi-meta.yaml';
@@ -78,12 +81,12 @@ describe('CharacterService テストスイート', () => {
       }
     });
   }
-  
+
   // テスト用ヘルパー関数
   function addFile(filePath: string, content: string): void {
     fileSystem.set(filePath, content);
   }
-  
+
   function addDirectory(dirPath: string): void {
     directories.add(dirPath);
   }
@@ -266,19 +269,20 @@ files:
       expect(fileInfo?.type).toBe('setting');
 
       // 型ガードを使って安全にcharacterプロパティにアクセス
-      expect(fileInfo).not.toBe(null);
-      if (fileInfo !== null) {
-        expect(hasCharacterProperty(fileInfo)).toBe(true);
-        if (hasCharacterProperty(fileInfo)) {
-          expect(fileInfo.character.importance).toBe('main');
-        }
-      }
-
       expect(fileInfo).not.toBeNull();
-      expect(fileInfo?.type).toBe('setting');
-      if (fileInfo !== null && fileInfo.type === 'setting') {
-        expect(fileInfo.tags).toEqual(['主人公', '戦士']);
+      expect(hasCharacterProperty(fileInfo as DialogoiTreeItem)).toBe(true);
+
+      // fileInfoがnullでないことを既に確認したので、安全にアクセス
+      const nonNullFileInfo = fileInfo as DialogoiTreeItem;
+      // hasCharacterPropertyがtrueを返したことを既に確認しているので、characterプロパティは存在する
+      // 型ガードが成功していることを確認済みなので、型アサーションで安全にアクセス
+      expect(hasCharacterProperty(nonNullFileInfo)).toBe(true);
+      if (!hasCharacterProperty(nonNullFileInfo)) {
+        throw new Error('Character property should exist');
       }
+      expect(nonNullFileInfo.character.importance).toBe('main');
+      expect(nonNullFileInfo.type).toBe('setting');
+      expect(nonNullFileInfo.tags).toEqual(['主人公', '戦士']);
     });
 
     it('ファイルが存在しない場合nullを返す', async () => {

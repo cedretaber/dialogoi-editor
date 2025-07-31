@@ -41,7 +41,7 @@ export default [
       '@typescript-eslint/no-explicit-any': 'error',
       '@typescript-eslint/no-non-null-assertion': 'error',
       '@typescript-eslint/strict-boolean-expressions': 'error',
-      '@typescript-eslint/no-deprecated': 'off', // 一時的に無効化: Jest自動モック導入時にDIパターン全体を再設計予定
+      '@typescript-eslint/no-deprecated': 'error',
       'no-console': ['warn', { allow: ['warn', 'error'] }],
       'eqeqeq': 'error',
       'curly': 'error'
@@ -94,7 +94,7 @@ export default [
       '@typescript-eslint/explicit-function-return-type': 'error',
       '@typescript-eslint/no-explicit-any': 'error',
       '@typescript-eslint/no-non-null-assertion': 'error',
-      '@typescript-eslint/no-deprecated': 'off', // 一時的に無効化: Jest自動モック導入時にDIパターン全体を再設計予定
+      '@typescript-eslint/no-deprecated': 'error',
       
       // React関連
       'react/prop-types': 'off', // TypeScriptを使用するためprop-typesは不要
@@ -141,7 +141,9 @@ export default [
       '@typescript-eslint/explicit-function-return-type': 'error',
       '@typescript-eslint/no-explicit-any': 'error',
       '@typescript-eslint/no-non-null-assertion': 'error',
-      '@typescript-eslint/no-deprecated': 'off'
+      '@typescript-eslint/no-deprecated': 'off',
+      // Jestのexpect.objectContaining等はany型を返すため、テストファイルでは無効化
+      '@typescript-eslint/no-unsafe-assignment': 'off'
     }
   },
   // webviewテストファイル用設定（Jest）
@@ -186,8 +188,14 @@ export default [
       '@typescript-eslint/no-explicit-any': 'error',
       '@typescript-eslint/no-non-null-assertion': 'error',
       '@typescript-eslint/no-deprecated': 'off',
+      // Jestのexpect.objectContaining等はany型を返すため、テストファイルでは無効化
+      '@typescript-eslint/no-unsafe-assignment': 'off',
       'react/prop-types': 'off',
-      'react/react-in-jsx-scope': 'off'
+      'react/react-in-jsx-scope': 'off',
+      // waitForやwaitForElementRemoval内のexpectを許可
+      'jest/no-standalone-expect': ['error', {
+        additionalTestBlockFunctions: ['waitFor', 'waitForElementRemoval']
+      }]
     }
   }
 ];

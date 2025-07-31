@@ -15,19 +15,19 @@ describe('DropHandlerService テストスイート', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
-    
+
     // シングルトンサービスのモック設定
     const mockEventEmitterRepository = mock<EventEmitterRepository<FileChangeEvent>>();
     mockEventEmitterRepository.onEvent.mockReturnValue({ dispose: jest.fn() });
     mockEventEmitterRepository.fire.mockImplementation(() => {});
-    
+
     FileChangeNotificationService.setInstance(mockEventEmitterRepository);
-    
+
     // jest-mock-extendedでモック作成
     mockCharacterService = mock<CharacterService>();
     mockMetaYamlService = mock<MetaYamlService>();
     mockDialogoiYamlService = mock<DialogoiYamlService>();
-    
+
     // サービスを作成
     dropHandlerService = new DropHandlerService(
       mockCharacterService,
@@ -44,7 +44,7 @@ describe('DropHandlerService テストスイート', () => {
 
       // モックの設定
       mockDialogoiYamlService.findProjectRootAsync.mockResolvedValue(projectRoot);
-      
+
       const targetFileInfo: DialogoiTreeItem = {
         name: 'chapter1.txt',
         path: 'contents/chapter1.txt',
@@ -54,22 +54,24 @@ describe('DropHandlerService テストスイート', () => {
         references: [],
         comments: '.chapter1.txt.comments.yaml',
         isUntracked: false,
-        isMissing: false
+        isMissing: false,
       };
       mockCharacterService.getFileInfo.mockResolvedValue(targetFileInfo);
-      
+
       const metaYaml: MetaYaml = {
-        files: [{
-          name: 'chapter1.txt',
-          type: 'content',
-          path: '/test/project/contents/chapter1.txt',
-          hash: 'hash123',
-          tags: [],
-          references: [],
-          comments: '.chapter1.txt.comments.yaml',
-          isUntracked: false,
-          isMissing: false,
-          }]
+        files: [
+          {
+            name: 'chapter1.txt',
+            type: 'content',
+            path: '/test/project/contents/chapter1.txt',
+            hash: 'hash123',
+            tags: [],
+            references: [],
+            comments: '.chapter1.txt.comments.yaml',
+            isUntracked: false,
+            isMissing: false,
+          },
+        ],
       };
       mockMetaYamlService.loadMetaYamlAsync.mockResolvedValue(metaYaml);
       mockMetaYamlService.saveMetaYamlAsync.mockResolvedValue(true);
@@ -101,10 +103,10 @@ describe('DropHandlerService テストスイート', () => {
           files: expect.arrayContaining([
             expect.objectContaining({
               name: 'chapter1.txt',
-              references: ['settings/character1.md']
-            })
-          ])
-        })
+              references: ['settings/character1.md'],
+            }),
+          ]),
+        }),
       );
     });
 
@@ -115,7 +117,7 @@ describe('DropHandlerService テストスイート', () => {
 
       // モックの設定
       mockDialogoiYamlService.findProjectRootAsync.mockResolvedValue(projectRoot);
-      
+
       const targetFileInfo: DialogoiTreeItem = {
         name: 'chapter1.txt',
         path: 'contents/chapter1.txt',
@@ -125,23 +127,25 @@ describe('DropHandlerService テストスイート', () => {
         references: ['settings/character1.md'],
         comments: '.chapter1.txt.comments.yaml',
         isUntracked: false,
-        isMissing: false
+        isMissing: false,
       };
       mockCharacterService.getFileInfo.mockResolvedValue(targetFileInfo);
-      
+
       // 既に参照が存在するメタデータ
       const metaYaml: MetaYaml = {
-        files: [{
-          name: 'chapter1.txt',
-          type: 'content',
-          path: '/test/project/contents/chapter1.txt',
-          hash: 'hash789',
-          tags: [],
-          references: ['settings/character1.md'],
-          comments: '.chapter1.txt.comments.yaml',
-          isUntracked: false,
-          isMissing: false,
-        }]
+        files: [
+          {
+            name: 'chapter1.txt',
+            type: 'content',
+            path: '/test/project/contents/chapter1.txt',
+            hash: 'hash789',
+            tags: [],
+            references: ['settings/character1.md'],
+            comments: '.chapter1.txt.comments.yaml',
+            isUntracked: false,
+            isMissing: false,
+          },
+        ],
       };
       mockMetaYamlService.loadMetaYamlAsync.mockResolvedValue(metaYaml);
 
@@ -163,7 +167,7 @@ describe('DropHandlerService テストスイート', () => {
       // 結果を検証
       expect(result.success).toBe(true);
       expect(result.message).toBe('参照 "settings/character1.md" は既に存在します。');
-      
+
       // saveが呼ばれないことを確認（重複のため）
       expect(mockMetaYamlService.saveMetaYamlAsync).not.toHaveBeenCalled();
     });
@@ -176,7 +180,7 @@ describe('DropHandlerService テストスイート', () => {
 
       // モックの設定
       mockDialogoiYamlService.findProjectRootAsync.mockResolvedValue(projectRoot);
-      
+
       const targetFileInfo: DialogoiTreeItem = {
         name: 'overview.md',
         path: 'settings/overview.md',
@@ -185,7 +189,7 @@ describe('DropHandlerService テストスイート', () => {
         tags: [],
         comments: '.overview.md.comments.yaml',
         isUntracked: false,
-        isMissing: false
+        isMissing: false,
       };
       mockCharacterService.getFileInfo.mockResolvedValue(targetFileInfo);
 
@@ -199,7 +203,10 @@ describe('DropHandlerService テストスイート', () => {
       };
 
       // 設定ファイルにドロップ
-      const result = await dropHandlerService.handleDrop('/test/project/settings/overview.md', droppedData);
+      const result = await dropHandlerService.handleDrop(
+        '/test/project/settings/overview.md',
+        droppedData,
+      );
 
       // 結果を検証
       expect(result.success).toBe(true);
@@ -213,7 +220,7 @@ describe('DropHandlerService テストスイート', () => {
     it('Dialogoiプロジェクト外のファイルにドロップした場合、エラーになる', async () => {
       // プロジェクト外のファイル
       const outsideFile = '/outside/file.txt';
-      
+
       // モックの設定（プロジェクトルートが見つからない）
       mockDialogoiYamlService.findProjectRootAsync.mockResolvedValue(null);
 

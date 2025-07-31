@@ -4,6 +4,9 @@ import { DialogoiTreeItem } from '../utils/MetaYamlUtils.js';
 import { ReferenceManager } from './ReferenceManager.js';
 import { ServiceContainer } from '../di/ServiceContainer.js';
 import { FileRepository } from '../repositories/FileRepository.js';
+import { FilePathMapService } from './FilePathMapService.js';
+import { HyperlinkExtractorService } from './HyperlinkExtractorService.js';
+import { MetaYamlService } from './MetaYamlService.js';
 import {
   createContentItem,
   createSettingItem,
@@ -15,27 +18,29 @@ describe('TreeViewFilterService テストスイート', () => {
   let referenceManager: ReferenceManager;
   let mockFileRepository: MockProxy<FileRepository>;
   let mockServiceContainer: MockProxy<ServiceContainer>;
-  let mockFilePathMapService: MockProxy<any>;
-  let mockHyperlinkExtractorService: MockProxy<any>;
-  let mockMetaYamlService: MockProxy<any>;
+  let mockFilePathMapService: MockProxy<FilePathMapService>;
+  let mockHyperlinkExtractorService: MockProxy<HyperlinkExtractorService>;
+  let mockMetaYamlService: MockProxy<MetaYamlService>;
 
   beforeEach(() => {
     jest.clearAllMocks();
-    
+
     // jest-mock-extendedでモック作成
     mockFileRepository = mock<FileRepository>();
     mockServiceContainer = mock<ServiceContainer>();
-    mockFilePathMapService = mock<any>();
-    mockHyperlinkExtractorService = mock<any>();
-    mockMetaYamlService = mock<any>();
-    
+    mockFilePathMapService = mock<FilePathMapService>();
+    mockHyperlinkExtractorService = mock<HyperlinkExtractorService>();
+    mockMetaYamlService = mock<MetaYamlService>();
+
     // ServiceContainerのモックを設定（全サービスをモック）
     jest.spyOn(ServiceContainer, 'getInstance').mockReturnValue(mockServiceContainer);
     mockServiceContainer.getFileRepository.mockReturnValue(mockFileRepository);
     mockServiceContainer.getFilePathMapService.mockReturnValue(mockFilePathMapService);
-    mockServiceContainer.getHyperlinkExtractorService.mockReturnValue(mockHyperlinkExtractorService);
+    mockServiceContainer.getHyperlinkExtractorService.mockReturnValue(
+      mockHyperlinkExtractorService,
+    );
     mockServiceContainer.getMetaYamlService.mockReturnValue(mockMetaYamlService);
-    
+
     // サービスのメソッドをモック
     mockFilePathMapService.buildFileMap.mockResolvedValue(undefined);
     mockMetaYamlService.loadMetaYamlAsync.mockResolvedValue(null);
@@ -223,9 +228,9 @@ describe('TreeViewFilterService テストスイート', () => {
       // 同じ結果が得られる
       expect(result1.length).toBe(result2.length);
       expect(result1.length).toBe(1);
-      if (result1.length > 0 && result2.length > 0) {
-        expect(result1[0]?.name).toBe(result2[0]?.name);
-      }
+      expect(result2.length).toBeGreaterThan(0);
+      // 両方の結果が存在することを確認済み
+      expect(result1[0]?.name).toBe(result2[0]?.name);
     });
 
     it('タグがないファイルは除外される', () => {

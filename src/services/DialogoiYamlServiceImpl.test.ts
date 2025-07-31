@@ -13,51 +13,57 @@ describe('DialogoiYamlServiceImpl テストスイート', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     fileSystem = new Map<string, string>();
-    
+
     // jest-mock-extendedでモック作成
     mockFileRepository = mock<FileRepository>();
-    
+
     // ファイルシステムモックの設定
     mockFileRepository.createFileUri.mockImplementation((filePath: string) => {
       return { path: filePath, fsPath: filePath } as Uri;
     });
-    
+
     mockFileRepository.createDirectoryUri.mockImplementation((dirPath: string) => {
       return { path: dirPath, fsPath: dirPath } as Uri;
     });
-    
-    mockFileRepository.existsAsync.mockImplementation(async (uri: Uri) => {
-      return fileSystem.has(uri.path);
+
+    mockFileRepository.existsAsync.mockImplementation((uri: Uri) => {
+      return Promise.resolve(fileSystem.has(uri.path));
     });
-    
-    (mockFileRepository.readFileAsync as jest.MockedFunction<typeof mockFileRepository.readFileAsync>).mockImplementation(
-      async (uri: Uri, _encoding?: BufferEncoding) => {
-        const content = fileSystem.get(uri.path);
-        if (!content) {
-          throw new Error(`File not found: ${uri.path}`);
-        }
-        return content;
+
+    (
+      mockFileRepository.readFileAsync as jest.MockedFunction<
+        typeof mockFileRepository.readFileAsync
+      >
+    ).mockImplementation((uri: Uri, _encoding?: string) => {
+      const content = fileSystem.get(uri.path);
+      if (content === undefined) {
+        return Promise.reject(new Error(`File not found: ${uri.path}`));
       }
-    );
-    
-    mockFileRepository.writeFileAsync.mockImplementation(async (uri: Uri, content: string) => {
-      fileSystem.set(uri.path, content);
+      return Promise.resolve(content);
     });
-    
-    mockFileRepository.createDirectoryAsync.mockImplementation(async (uri: Uri) => {
+
+    mockFileRepository.writeFileAsync.mockImplementation((uri: Uri, content: string) => {
+      fileSystem.set(uri.path, content);
+      return Promise.resolve();
+    });
+
+    mockFileRepository.createDirectoryAsync.mockImplementation((uri: Uri) => {
       // ディレクトリ作成のシミュレーション
       fileSystem.set(uri.path, '[DIRECTORY]');
+      return Promise.resolve();
     });
-    
-    mockFileRepository.statAsync.mockImplementation(async (uri: Uri) => {
+
+    mockFileRepository.statAsync.mockImplementation((uri: Uri) => {
       // 簡単なstatの実装
-      return {
-        isDirectory: () => !uri.path.includes('.'),
-        isFile: () => uri.path.includes('.'),
-        size: 0
-      } as any;
+      return Promise.resolve({
+        isDirectory: (): boolean => !uri.path.includes('.'),
+        isFile: (): boolean => uri.path.includes('.'),
+        size: 0,
+        mtime: new Date(),
+        birthtime: new Date(),
+      });
     });
-    
+
     service = new DialogoiYamlServiceImpl(mockFileRepository);
   });
 
@@ -123,10 +129,7 @@ tags: ["ファンタジー"]`;
       const projectRoot = '/test/project';
       const dialogoiYamlPath = path.join(projectRoot, 'dialogoi.yaml');
 
-      fileSystem.set(
-        dialogoiYamlPath,
-        'title: "テスト"\nauthor: "著者"\ninvalid: yaml: [unclosed',
-      );
+      fileSystem.set(dialogoiYamlPath, 'title: "テスト"\nauthor: "著者"\ninvalid: yaml: [unclosed');
 
       const result = await service.loadDialogoiYamlAsync(projectRoot);
       expect(result).toBe(null);
@@ -212,11 +215,15 @@ tags: ["ファンタジー"]`;
 
       // 保存されたファイルから updated_at を読み取って確認
       const savedData = await service.loadDialogoiYamlAsync(projectRoot);
-      expect(savedData?.updated_at !== undefined).toBeTruthy();
-      if (savedData?.updated_at !== undefined) {
-        expect(savedData.updated_at >= before).toBeTruthy();
-        expect(savedData.updated_at <= after).toBeTruthy();
+      expect(savedData).not.toBeNull();
+      expect(savedData?.updated_at).toBeDefined();
+      // savedDataとupdated_atが存在することを確認済み
+      expect(savedData).toBeDefined();
+      if (!savedData || !savedData.updated_at) {
+        throw new Error('savedData or updated_at should be defined');
       }
+      expect(savedData.updated_at >= before).toBeTruthy();
+      expect(savedData.updated_at <= after).toBeTruthy();
     });
   });
 

@@ -15,36 +15,36 @@ describe('FilePathMapService テストスイート', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     fileSystem = new Map<string, string>();
-    
+
     // jest-mock-extendedでモック作成
     mockMetaYamlService = mock<MetaYamlService>();
     mockCoreFileService = mock<CoreFileService>();
-    
+
     // モックの設定
     setupMocks();
-    
+
     // FilePathMapServiceは具体的なnovelRootPathが必要なので、テストごとに個別作成
   });
-  
+
   function setupMocks(): void {
     // MetaYamlService のモック
-    mockMetaYamlService.loadMetaYamlAsync.mockImplementation(async (dirPath: string) => {
+    mockMetaYamlService.loadMetaYamlAsync.mockImplementation((dirPath: string) => {
       const yamlPath = path.join(dirPath, '.dialogoi-meta.yaml');
       const content = fileSystem.get(yamlPath);
-      if (!content) {
-        return null;
+      if (content === undefined) {
+        return Promise.resolve(null);
       }
       try {
-        return yaml.load(content) as MetaYaml;
+        return Promise.resolve(yaml.load(content) as MetaYaml);
       } catch {
-        return null;
+        return Promise.resolve(null);
       }
     });
-    
+
     // CoreFileService のモック - getNovelRootPathのみ設定
     mockCoreFileService.getNovelRootPath.mockReturnValue('/test/novel');
   }
-  
+
   function createFileForTest(filePath: string, content: string): void {
     fileSystem.set(filePath, content);
   }
@@ -104,17 +104,19 @@ files:
       // 各ファイルの情報を確認
       const chapterEntry = service.getFileEntry('第1章.md');
       expect(chapterEntry).not.toBe(null);
-      if (chapterEntry !== null) {
-        expect(chapterEntry.fileType).toBe('content');
-        expect(chapterEntry.isCharacter).toBe(false);
+      if (!chapterEntry) {
+        throw new Error('chapterEntry should not be null');
       }
+      expect(chapterEntry.fileType).toBe('content');
+      expect(chapterEntry.isCharacter).toBe(false);
 
       const heroEntry = service.getFileEntry('settings/characters/hero.md');
       expect(heroEntry).not.toBe(null);
-      if (heroEntry !== null) {
-        expect(heroEntry.fileType).toBe('setting');
-        expect(heroEntry.isCharacter).toBe(true);
+      if (!heroEntry) {
+        throw new Error('heroEntry should not be null');
       }
+      expect(heroEntry.fileType).toBe('setting');
+      expect(heroEntry.isCharacter).toBe(true);
     });
 
     it('meta.yamlが存在しないディレクトリはスキップされる', async () => {
@@ -269,10 +271,11 @@ files: []
       expect(service.getMapSize()).toBe(1);
       const entry = service.getFileEntry('new.md');
       expect(entry).not.toBe(null);
-      if (entry !== null) {
-        expect(entry.fileName).toBe('new.md');
-        expect(entry.fileType).toBe('content');
+      if (!entry) {
+        throw new Error('entry should not be null');
       }
+      expect(entry.fileName).toBe('new.md');
+      expect(entry.fileType).toBe('content');
     });
 
     it('ファイル削除時にマップから除去される', async () => {
@@ -330,21 +333,23 @@ files:
       // キャラクターファイル
       const characterEntry = service.getFileEntry('character.md');
       expect(characterEntry).not.toBe(null);
-      if (characterEntry !== null) {
-        expect(characterEntry.fileName).toBe('character.md');
-        expect(characterEntry.fileType).toBe('setting');
-        expect(characterEntry.isCharacter).toBe(true);
+      if (!characterEntry) {
+        throw new Error('characterEntry should not be null');
       }
+      expect(characterEntry.fileName).toBe('character.md');
+      expect(characterEntry.fileType).toBe('setting');
+      expect(characterEntry.isCharacter).toBe(true);
 
       // 用語集ファイル
       const glossaryEntry = service.getFileEntry('glossary.md');
       expect(glossaryEntry).not.toBe(null);
-      if (glossaryEntry !== null) {
-        expect(glossaryEntry.fileName).toBe('glossary.md');
-        expect(glossaryEntry.fileType).toBe('setting');
-        expect(glossaryEntry.isCharacter).toBe(false);
-        expect(glossaryEntry.glossary).toBe(true);
+      if (!glossaryEntry) {
+        throw new Error('glossaryEntry should not be null');
       }
+      expect(glossaryEntry.fileName).toBe('glossary.md');
+      expect(glossaryEntry.fileType).toBe('setting');
+      expect(glossaryEntry.isCharacter).toBe(false);
+      expect(glossaryEntry.glossary).toBe(true);
 
       // 存在しないファイル
       expect(service.getFileEntry('nonexistent.md')).toBe(null);

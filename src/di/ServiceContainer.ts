@@ -61,7 +61,6 @@ export interface IServiceContainer {
  */
 export class ServiceContainer implements IServiceContainer {
   private static instance: ServiceContainer | null = null;
-  private static testInstance: IServiceContainer | null = null;
   protected fileRepository: FileRepository | null = null;
   private characterService: CharacterService | null = null;
   private foreshadowingService: ForeshadowingService | null = null;
@@ -87,14 +86,8 @@ export class ServiceContainer implements IServiceContainer {
 
   /**
    * ServiceContainerのインスタンスを取得
-   * @deprecated テスト用オーバーロード機能は非推奨。新しいテストではTestServiceContainer.create()を使用
    */
   static getInstance(): IServiceContainer {
-    // テスト用のインスタンスが設定されている場合はそれを返す
-    if (ServiceContainer.testInstance !== null) {
-      return ServiceContainer.testInstance;
-    }
-
     if (!ServiceContainer.instance) {
       ServiceContainer.instance = new ServiceContainer();
     }
@@ -249,7 +242,6 @@ export class ServiceContainer implements IServiceContainer {
     return this.dropHandlerService;
   }
 
-
   /**
    * サービスをリセット（テスト用）
    */
@@ -402,23 +394,5 @@ export class ServiceContainer implements IServiceContainer {
       );
     }
     return this.coreFileService;
-  }
-
-  /**
-   * テスト用のインスタンスを設定
-   * @deprecated DIパターンに対応していないレガシーサービス（ReferenceManager等）のテストでのみ使用
-   * TODO: 対象サービスをDIパターンに変更後に削除予定
-   */
-  static setTestInstance(instance: IServiceContainer): void {
-    ServiceContainer.testInstance = instance;
-  }
-
-  /**
-   * テスト用のインスタンスをクリア
-   * @deprecated DIパターンに対応していないレガシーサービス（ReferenceManager等）のテストでのみ使用
-   * TODO: 対象サービスをDIパターンに変更後に削除予定
-   */
-  static clearTestInstance(): void {
-    ServiceContainer.testInstance = null;
   }
 }

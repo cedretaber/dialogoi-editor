@@ -9,7 +9,7 @@ describe('MetadataService テストスイート', () => {
   let mockMetaYamlService: MockProxy<MetaYamlService>;
   let testMetaYaml: MetaYaml;
 
-  beforeEach(async () => {
+  beforeEach(() => {
     // モックの作成
     mockMetaYamlService = mock<MetaYamlService>();
 
@@ -37,14 +37,14 @@ describe('MetadataService テストスイート', () => {
     };
 
     // MetaYamlServiceのモック実装
-    mockMetaYamlService.loadMetaYamlAsync.mockImplementation(async () => {
+    mockMetaYamlService.loadMetaYamlAsync.mockImplementation(() => {
       // deep copyを返す
-      return JSON.parse(JSON.stringify(testMetaYaml));
+      return Promise.resolve(JSON.parse(JSON.stringify(testMetaYaml)));
     });
 
-    mockMetaYamlService.saveMetaYamlAsync.mockImplementation(async (_dirPath, metaYaml) => {
-      testMetaYaml = JSON.parse(JSON.stringify(metaYaml));
-      return true;
+    mockMetaYamlService.saveMetaYamlAsync.mockImplementation((_dirPath, metaYaml: MetaYaml) => {
+      testMetaYaml = JSON.parse(JSON.stringify(metaYaml)) as MetaYaml;
+      return Promise.resolve(true);
     });
   });
 
@@ -233,12 +233,14 @@ describe('MetadataService テストスイート', () => {
     it('メタデータファイルが存在しない場合のエラー', async () => {
       // loadMetaYamlAsyncがnullを返すようにモック設定
       mockMetaYamlService.loadMetaYamlAsync.mockResolvedValueOnce(null);
-      
+
       const newTag = 'tag';
       const result = await metadataService.addTag('/nonexistent', 'file.txt', newTag);
 
       expect(result.success).toBe(false);
-      expect(result.message).toContain('.dialogoi-meta.yamlが見つからないか、読み込みに失敗しました。');
+      expect(result.message).toContain(
+        '.dialogoi-meta.yamlが見つからないか、読み込みに失敗しました。',
+      );
     });
   });
 });

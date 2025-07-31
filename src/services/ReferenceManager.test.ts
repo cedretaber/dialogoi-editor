@@ -23,29 +23,31 @@ describe('ReferenceManager テストスイート', () => {
   beforeEach(() => {
     // モックをリセット
     jest.clearAllMocks();
-    
+
     // ファイルシステムの初期化
     fileSystem = new Map<string, string>();
     directories = new Set<string>();
-    
+
     // jest-mock-extendedでモック作成
     mockFileRepository = mock<FileRepository>();
     mockHyperlinkExtractorService = mock<HyperlinkExtractorService>();
     mockFilePathMapService = mock<FilePathMapService>();
     mockMetaYamlService = mock<MetaYamlService>();
-    
+
     testDir = '/tmp/dialogoi-ref-test';
-    
+
     // ファイルシステムモックの設定
     setupFileSystemMocks();
-    
+
     // ServiceContainerのモック設定
     const mockServiceContainer = mock<ServiceContainer>();
     mockServiceContainer.getFilePathMapService.mockReturnValue(mockFilePathMapService);
-    mockServiceContainer.getHyperlinkExtractorService.mockReturnValue(mockHyperlinkExtractorService);
+    mockServiceContainer.getHyperlinkExtractorService.mockReturnValue(
+      mockHyperlinkExtractorService,
+    );
     mockServiceContainer.getMetaYamlService.mockReturnValue(mockMetaYamlService);
     jest.spyOn(ServiceContainer, 'getInstance').mockReturnValue(mockServiceContainer);
-    
+
     // テスト用のプロジェクト構造を作成
     createTestProject();
 
@@ -65,19 +67,23 @@ describe('ReferenceManager テストスイート', () => {
     mockFileRepository.createFileUri.mockImplementation((filePath: string) => {
       return { path: filePath, fsPath: filePath } as Uri;
     });
-    
+
     // createDirectoryUriのモック
     mockFileRepository.createDirectoryUri.mockImplementation((dirPath: string) => {
       return { path: dirPath, fsPath: dirPath } as Uri;
     });
-    
+
     // existsAsyncのモック
     mockFileRepository.existsAsync.mockImplementation((uri: Uri) => {
       return Promise.resolve(fileSystem.has(uri.path) || directories.has(uri.path));
     });
-    
+
     // readFileAsyncのモック
-    (mockFileRepository.readFileAsync as jest.MockedFunction<(uri: Uri, encoding?: string) => Promise<string | Uint8Array>>).mockImplementation((uri: Uri, encoding?: string): Promise<string | Uint8Array> => {
+    (
+      mockFileRepository.readFileAsync as jest.MockedFunction<
+        (uri: Uri, encoding?: string) => Promise<string | Uint8Array>
+      >
+    ).mockImplementation((uri: Uri, encoding?: string): Promise<string | Uint8Array> => {
       const content = fileSystem.get(uri.path);
       if (content === undefined) {
         return Promise.reject(new Error(`File not found: ${uri.path}`));
@@ -88,12 +94,12 @@ describe('ReferenceManager テストスイート', () => {
         return Promise.resolve(new TextEncoder().encode(content));
       }
     });
-    
+
     // readdirAsyncのモック
     mockFileRepository.readdirAsync.mockImplementation((uri: Uri) => {
       const entries: DirectoryEntry[] = [];
       const basePath = uri.path;
-      
+
       // ファイルを探す
       for (const filePath of Array.from(fileSystem.keys())) {
         if (path.dirname(filePath) === basePath) {
@@ -101,11 +107,11 @@ describe('ReferenceManager テストスイート', () => {
           entries.push({
             name,
             isFile: () => true,
-            isDirectory: () => false
+            isDirectory: () => false,
           });
         }
       }
-      
+
       // ディレクトリを探す
       for (const dirPath of Array.from(directories)) {
         if (path.dirname(dirPath) === basePath) {
@@ -113,18 +119,18 @@ describe('ReferenceManager テストスイート', () => {
           entries.push({
             name,
             isFile: () => false,
-            isDirectory: () => true
+            isDirectory: () => true,
           });
         }
       }
-      
+
       return Promise.resolve(entries);
     });
-    
+
     // 依存サービスのモック設定
     mockFilePathMapService.buildFileMap.mockResolvedValue();
     mockHyperlinkExtractorService.extractProjectLinksAsync.mockResolvedValue([]);
-    
+
     // MetaYamlServiceのモック設定
     mockMetaYamlService.loadMetaYamlAsync.mockImplementation((absolutePath: string) => {
       const metaPath = path.join(absolutePath, '.dialogoi-meta.yaml');
@@ -139,16 +145,16 @@ describe('ReferenceManager テストスイート', () => {
       }
     });
   }
-  
+
   // テスト用ヘルパー関数
   function addFile(filePath: string, content: string): void {
     fileSystem.set(filePath, content);
   }
-  
+
   function addDirectory(dirPath: string): void {
     directories.add(dirPath);
   }
-  
+
   function createTestProject(): void {
     // ルートディレクトリを作成
     addDirectory(testDir);
@@ -417,5 +423,4 @@ files:
 
     expect(instance1).toBe(instance2);
   });
-
 });

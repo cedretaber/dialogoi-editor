@@ -13,12 +13,12 @@ describe('ProjectSettingsService テストスイート', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
-    
+
     // jest-mock-extendedでモック作成
     mockDialogoiYamlService = mock<DialogoiYamlService>();
     mockProjectSetupService = mock<ProjectSetupService>();
     mockLogger = mock<Logger>();
-    
+
     // サービスを作成
     service = new ProjectSettingsService(
       mockDialogoiYamlService,
@@ -65,7 +65,7 @@ describe('ProjectSettingsService テストスイート', () => {
 
       const loadedSettings = await service.loadProjectSettings(projectRoot);
       expect(loadedSettings).toBe(null);
-      
+
       // Loggerのdebuggメソッドが呼ばれたことを確認
       expect(mockLogger.debug).toHaveBeenCalledWith(`Not a Dialogoi project: ${projectRoot}`);
     });
@@ -79,9 +79,11 @@ describe('ProjectSettingsService テストスイート', () => {
 
       const loadedSettings = await service.loadProjectSettings(projectRoot);
       expect(loadedSettings).toBe(null);
-      
+
       // Loggerのwarnメソッドが呼ばれたことを確認
-      expect(mockLogger.warn).toHaveBeenCalledWith(`Failed to load project settings: ${projectRoot}`);
+      expect(mockLogger.warn).toHaveBeenCalledWith(
+        `Failed to load project settings: ${projectRoot}`,
+      );
     });
   });
 
@@ -272,8 +274,8 @@ describe('ProjectSettingsService テストスイート', () => {
         updated_at: expect.any(String),
       };
       // 空の値はundefinedになるため、プロパティを削除
-      delete (updatedYaml as any).tags;
-      delete (updatedYaml as any).project_settings;
+      delete (updatedYaml as unknown as Record<string, unknown>)['tags'];
+      delete (updatedYaml as unknown as Record<string, unknown>)['project_settings'];
 
       // DialogoiYamlServiceのモック設定
       mockDialogoiYamlService.isDialogoiProjectRootAsync.mockResolvedValue(true);
@@ -294,5 +296,4 @@ describe('ProjectSettingsService テストスイート', () => {
       expect(updatedSettings?.project_settings?.exclude_patterns).toBeUndefined();
     });
   });
-
 });

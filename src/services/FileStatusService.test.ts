@@ -7,7 +7,6 @@ import { DialogoiTreeItem, MetaYaml } from '../utils/MetaYamlUtils.js';
 import { Uri } from '../interfaces/Uri.js';
 import * as yaml from 'js-yaml';
 
-
 describe('FileStatusService テストスイート', () => {
   let fileStatusService: FileStatusService;
   let mockFileRepository: MockProxy<FileRepository>;
@@ -18,63 +17,68 @@ describe('FileStatusService テストスイート', () => {
   beforeEach(() => {
     // モックをリセット
     jest.clearAllMocks();
-    
+
     // ファイルシステムの初期化
     fileSystem = new Map<string, string>();
     directories = new Set<string>();
-    
+
     // jest-mock-extendedでモック作成
     mockFileRepository = mock<FileRepository>();
     mockMetaYamlService = mock<MetaYamlService>();
-    
+
     // ファイルシステムモックの設定
     setupFileSystemMocks();
-    
+
     fileStatusService = new FileStatusService(mockFileRepository, mockMetaYamlService);
   });
-  
+
   function setupFileSystemMocks(): void {
     // createFileUriのモック
     mockFileRepository.createFileUri.mockImplementation((filePath: string) => {
       return { path: filePath, fsPath: filePath } as Uri;
     });
-    
+
     // createDirectoryUriのモック
     mockFileRepository.createDirectoryUri.mockImplementation((dirPath: string) => {
       return { path: dirPath, fsPath: dirPath } as Uri;
     });
-    
+
     // existsAsyncのモック
     mockFileRepository.existsAsync.mockImplementation((uri: Uri): Promise<boolean> => {
       return Promise.resolve(fileSystem.has(uri.path) || directories.has(uri.path));
     });
-    
+
     // readFileAsyncのモック
-    (mockFileRepository.readFileAsync as jest.MockedFunction<typeof mockFileRepository.readFileAsync>)
-      .mockImplementation((uri: Uri, encoding?: string): Promise<string | Uint8Array> => {
-        const content = fileSystem.get(uri.path);
-        if (content === undefined) {
-          return Promise.reject(new Error(`File not found: ${uri.path}`));
-        }
-        if (encoding !== undefined) {
-          return Promise.resolve(content);
-        } else {
-          return Promise.resolve(new TextEncoder().encode(content));
-        }
-      });
-    
-    // writeFileAsyncのモック
-    mockFileRepository.writeFileAsync.mockImplementation((uri: Uri, data: string | Uint8Array): Promise<void> => {
-      const content = typeof data === 'string' ? data : new TextDecoder().decode(data);
-      fileSystem.set(uri.path, content);
-      return Promise.resolve();
+    (
+      mockFileRepository.readFileAsync as jest.MockedFunction<
+        typeof mockFileRepository.readFileAsync
+      >
+    ).mockImplementation((uri: Uri, encoding?: string): Promise<string | Uint8Array> => {
+      const content = fileSystem.get(uri.path);
+      if (content === undefined) {
+        return Promise.reject(new Error(`File not found: ${uri.path}`));
+      }
+      if (encoding !== undefined) {
+        return Promise.resolve(content);
+      } else {
+        return Promise.resolve(new TextEncoder().encode(content));
+      }
     });
-    
+
+    // writeFileAsyncのモック
+    mockFileRepository.writeFileAsync.mockImplementation(
+      (uri: Uri, data: string | Uint8Array): Promise<void> => {
+        const content = typeof data === 'string' ? data : new TextDecoder().decode(data);
+        fileSystem.set(uri.path, content);
+        return Promise.resolve();
+      },
+    );
+
     // readdirAsyncのモック
     mockFileRepository.readdirAsync.mockImplementation((uri: Uri): Promise<DirectoryEntry[]> => {
       const entries: DirectoryEntry[] = [];
       const basePath = uri.path;
-      
+
       // ファイルを探す
       for (const filePath of Array.from(fileSystem.keys())) {
         if (path.dirname(filePath) === basePath) {
@@ -82,11 +86,11 @@ describe('FileStatusService テストスイート', () => {
           entries.push({
             name,
             isFile: (): boolean => true,
-            isDirectory: (): boolean => false
+            isDirectory: (): boolean => false,
           });
         }
       }
-      
+
       // ディレクトリを探す
       for (const dirPath of Array.from(directories)) {
         if (path.dirname(dirPath) === basePath) {
@@ -94,50 +98,62 @@ describe('FileStatusService テストスイート', () => {
           entries.push({
             name,
             isFile: (): boolean => false,
-            isDirectory: (): boolean => true
+            isDirectory: (): boolean => true,
           });
         }
       }
-      
+
       return Promise.resolve(entries);
     });
-    
+
     // statAsyncのモック
-    mockFileRepository.statAsync.mockImplementation((uri: Uri): Promise<{ isFile: () => boolean; isDirectory: () => boolean; size: number; mtime: Date; birthtime: Date }> => {
-      const isDir = directories.has(uri.path);
-      const isFile = fileSystem.has(uri.path);
-      if (!isDir && !isFile) {
-        return Promise.reject(new Error(`Path not found: ${uri.path}`));
-      }
-      return Promise.resolve({
-        isFile: (): boolean => isFile,
-        isDirectory: (): boolean => isDir,
-        size: isFile ? (fileSystem.get(uri.path) ?? '').length : 0,
-        mtime: new Date(),
-        birthtime: new Date()
-      });
-    });
-    
+    mockFileRepository.statAsync.mockImplementation(
+      (
+        uri: Uri,
+      ): Promise<{
+        isFile: () => boolean;
+        isDirectory: () => boolean;
+        size: number;
+        mtime: Date;
+        birthtime: Date;
+      }> => {
+        const isDir = directories.has(uri.path);
+        const isFile = fileSystem.has(uri.path);
+        if (!isDir && !isFile) {
+          return Promise.reject(new Error(`Path not found: ${uri.path}`));
+        }
+        return Promise.resolve({
+          isFile: (): boolean => isFile,
+          isDirectory: (): boolean => isDir,
+          size: isFile ? (fileSystem.get(uri.path) ?? '').length : 0,
+          mtime: new Date(),
+          birthtime: new Date(),
+        });
+      },
+    );
+
     // MetaYamlServiceのモック設定
-    mockMetaYamlService.loadMetaYamlAsync.mockImplementation((absolutePath: string): Promise<MetaYaml | null> => {
-      const metaPath = path.join(absolutePath, '.dialogoi-meta.yaml');
-      const content = fileSystem.get(metaPath);
-      if (content === undefined) {
-        return Promise.resolve(null);
-      }
-      try {
-        return Promise.resolve(yaml.load(content) as MetaYaml);
-      } catch {
-        return Promise.resolve(null);
-      }
-    });
+    mockMetaYamlService.loadMetaYamlAsync.mockImplementation(
+      (absolutePath: string): Promise<MetaYaml | null> => {
+        const metaPath = path.join(absolutePath, '.dialogoi-meta.yaml');
+        const content = fileSystem.get(metaPath);
+        if (content === undefined) {
+          return Promise.resolve(null);
+        }
+        try {
+          return Promise.resolve(yaml.load(content) as MetaYaml);
+        } catch {
+          return Promise.resolve(null);
+        }
+      },
+    );
   }
-  
+
   // テスト用ヘルパー関数
   function addFile(filePath: string, content: string): void {
     fileSystem.set(filePath, content);
   }
-  
+
   function addDirectory(dirPath: string): void {
     directories.add(dirPath);
   }
@@ -336,10 +352,7 @@ files:
       addFile('/test/comments/.dialogoi-meta.yaml', metaContent);
       addFile('/test/comments/chapter1.txt', 'chapter1 content');
       addFile('/test/comments/chapter2.txt', 'chapter2 content');
-      addFile(
-        '/test/comments/.chapter1.txt.comments.yaml',
-        'comments content',
-      );
+      addFile('/test/comments/.chapter1.txt.comments.yaml', 'comments content');
 
       const result = await fileStatusService.getFileStatusList(directoryPath);
 

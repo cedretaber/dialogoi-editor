@@ -2,6 +2,7 @@ import { mock, MockProxy } from 'jest-mock-extended';
 import { HyperlinkExtractorService } from './HyperlinkExtractorService.js';
 import { FilePathMapService } from './FilePathMapService.js';
 import { FileRepository } from '../repositories/FileRepository.js';
+import { Uri } from '../interfaces/Uri.js';
 
 describe('HyperlinkExtractorService テストスイート', () => {
   let service: HyperlinkExtractorService;
@@ -14,29 +15,30 @@ describe('HyperlinkExtractorService テストスイート', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     fileSystem.clear();
-    
+
     // jest-mock-extendedでモック作成
     mockFileRepository = mock<FileRepository>();
     mockFilePathMapService = mock<FilePathMapService>();
-    
+
     // ファイルシステムのモック実装
-    mockFileRepository.readFileAsync.mockImplementation(async (uri: any, encoding?: any): Promise<any> => {
+    (
+      mockFileRepository.readFileAsync as jest.MockedFunction<
+        typeof mockFileRepository.readFileAsync
+      >
+    ).mockImplementation((uri: Uri, _encoding?: string): Promise<string> => {
       const path = typeof uri === 'string' ? uri : uri.fsPath;
       const content = fileSystem.get(path);
       if (content === undefined) {
-        throw new Error(`File not found: ${path}`);
+        return Promise.reject(new Error(`File not found: ${path}`));
       }
-      if (encoding) {
-        return content;
-      }
-      return new TextEncoder().encode(content);
+      return Promise.resolve(content);
     });
-    
-    mockFileRepository.existsAsync.mockImplementation(async (uri) => {
+
+    mockFileRepository.existsAsync.mockImplementation((uri) => {
       const path = typeof uri === 'string' ? uri : uri.fsPath;
-      return fileSystem.has(path);
+      return Promise.resolve(fileSystem.has(path));
     });
-    
+
     mockFileRepository.createFileUri.mockImplementation((path) => ({
       fsPath: path,
       scheme: 'file',
@@ -46,28 +48,36 @@ describe('HyperlinkExtractorService テストスイート', () => {
       fragment: '',
       with: jest.fn(),
       toJSON: jest.fn(),
-      toString: jest.fn(() => path)
+      toString: jest.fn(() => path),
     }));
-    
+
     // FilePathMapServiceのモック設定
     mockFilePathMapService.buildFileMap.mockResolvedValue();
     mockFilePathMapService.isProjectFile.mockImplementation((relativePath) => {
       // 外部URLやアンカーは除外
-      if (relativePath.startsWith('http') || relativePath.startsWith('mailto') || relativePath.startsWith('#')) {
+      if (
+        relativePath.startsWith('http') ||
+        relativePath.startsWith('mailto') ||
+        relativePath.startsWith('#')
+      ) {
         return false;
       }
       // プロジェクト内のファイルとして扱うパターン
       const projectFiles = [
         'settings/world.md',
-        'settings/character.md', 
+        'settings/character.md',
         'target.md',
         'contents/01_prologue.txt',
         './settings/world.md',
-        '../settings/world.md'
+        '../settings/world.md',
       ];
-      return projectFiles.includes(relativePath) || relativePath.includes('settings/world.md') ||
-             relativePath.includes('settings/character.md') || relativePath.includes('target.md') ||
-             relativePath.includes('contents/01_prologue.txt');
+      return (
+        projectFiles.includes(relativePath) ||
+        relativePath.includes('settings/world.md') ||
+        relativePath.includes('settings/character.md') ||
+        relativePath.includes('target.md') ||
+        relativePath.includes('contents/01_prologue.txt')
+      );
     });
     mockFilePathMapService.resolveFileAbsolutePath.mockImplementation((relativePath) => {
       // シンプルなパス解決ロジック
@@ -243,7 +253,7 @@ describe('HyperlinkExtractorService テストスイート', () => {
     it('存在しないファイルは空配列を返す', async () => {
       // サービスを作成（空のファイルマップ）
       service = new HyperlinkExtractorService(mockFileRepository, mockFilePathMapService);
-      
+
       const projectLinks = await service.extractProjectLinksAsync('/nonexistent/file.md');
       expect(projectLinks.length).toBe(0);
     });
@@ -253,7 +263,7 @@ describe('HyperlinkExtractorService テストスイート', () => {
 
       // サービスを作成
       service = new HyperlinkExtractorService(mockFileRepository, mockFilePathMapService);
-      
+
       createFileForTest(
         `${novelRoot}/simple.md`,
         `
@@ -320,17 +330,19 @@ describe('HyperlinkExtractorService テストスイート', () => {
 
       const file1Links = result.get(`${novelRoot}/file1.md`);
       expect(file1Links).not.toBe(undefined);
-      if (file1Links !== undefined) {
-        expect(file1Links.length).toBe(1);
-        expect(file1Links[0]).toBe('target.md');
+      if (file1Links === undefined) {
+        throw new Error('file1Links should not be undefined');
       }
+      expect(file1Links.length).toBe(1);
+      expect(file1Links[0]).toBe('target.md');
 
       const file2Links = result.get(`${novelRoot}/file2.md`);
       expect(file2Links).not.toBe(undefined);
-      if (file2Links !== undefined) {
-        expect(file2Links.length).toBe(1);
-        expect(file2Links[0]).toBe('target.md');
+      if (file2Links === undefined) {
+        throw new Error('file2Links should not be undefined');
       }
+      expect(file2Links.length).toBe(1);
+      expect(file2Links[0]).toBe('target.md');
     });
 
     it('ユーザケース：設定ファイルから本文ファイルへのリンクを抽出（デバッグ版）', async () => {
@@ -424,17 +436,19 @@ describe('HyperlinkExtractorService テストスイート', () => {
 
       const file1Links = result.get(`${novelRoot}/file1.md`);
       expect(file1Links).not.toBe(undefined);
-      if (file1Links !== undefined) {
-        expect(file1Links.length).toBe(1);
-        expect(file1Links[0]).toBe('target.md');
+      if (file1Links === undefined) {
+        throw new Error('file1Links should not be undefined');
       }
+      expect(file1Links.length).toBe(1);
+      expect(file1Links[0]).toBe('target.md');
 
       const file2Links = result.get(`${novelRoot}/file2.md`);
       expect(file2Links).not.toBe(undefined);
-      if (file2Links !== undefined) {
-        expect(file2Links.length).toBe(1);
-        expect(file2Links[0]).toBe('target.md');
+      if (file2Links === undefined) {
+        throw new Error('file2Links should not be undefined');
       }
+      expect(file2Links.length).toBe(1);
+      expect(file2Links[0]).toBe('target.md');
     });
 
     it('refreshFileLinksAsync で更新されたリンクを取得できる', async () => {

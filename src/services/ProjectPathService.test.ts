@@ -46,7 +46,7 @@ describe('ProjectPathService テストスイート', () => {
       mockDialogoiYamlService.findProjectRootAsync.mockResolvedValue(testProjectPath);
 
       const result = await projectPathService.getRelativePathFromProject(absoluteFilePath);
-      
+
       expect(mockDialogoiYamlService.findProjectRootAsync).toHaveBeenCalledWith(absoluteFilePath);
       expect(result).not.toBe(null);
       expect(result?.projectRoot).toBe(testProjectPath);
@@ -60,7 +60,7 @@ describe('ProjectPathService テストスイート', () => {
       mockDialogoiYamlService.findProjectRootAsync.mockResolvedValue(null);
 
       const result = await projectPathService.getRelativePathFromProject(outsideFilePath);
-      
+
       expect(mockDialogoiYamlService.findProjectRootAsync).toHaveBeenCalledWith(outsideFilePath);
       expect(result).toBe(null);
     });
@@ -72,7 +72,7 @@ describe('ProjectPathService テストスイート', () => {
       mockDialogoiYamlService.findProjectRootAsync.mockResolvedValue(testProjectPath);
 
       const result = await projectPathService.getRelativePathFromProject(fileInSubDir);
-      
+
       expect(mockDialogoiYamlService.findProjectRootAsync).toHaveBeenCalledWith(fileInSubDir);
       expect(result).not.toBe(null);
       expect(result?.projectRoot).toBe(testProjectPath);
@@ -82,11 +82,11 @@ describe('ProjectPathService テストスイート', () => {
     it('パス区切り文字の正規化が正しく動作する', async () => {
       const normalPath = path.join(testProjectPath, 'chapter1.txt');
 
-      // DialogoiYamlServiceのモック設定：プロジェクトルートを返す  
+      // DialogoiYamlServiceのモック設定：プロジェクトルートを返す
       mockDialogoiYamlService.findProjectRootAsync.mockResolvedValue(testProjectPath);
 
       const result = await projectPathService.getRelativePathFromProject(normalPath);
-      
+
       expect(result).not.toBe(null);
       expect(result?.projectRoot).toBe(testProjectPath);
       // 結果は常にスラッシュ区切りになることを確認
@@ -101,7 +101,7 @@ describe('ProjectPathService テストスイート', () => {
       mockDialogoiYamlService.findProjectRootAsync.mockResolvedValue(testProjectPath);
 
       const result = await projectPathService.getRelativePathFromProject(readmePath);
-      
+
       expect(mockDialogoiYamlService.findProjectRootAsync).toHaveBeenCalledWith(readmePath);
       expect(result).not.toBe(null);
       expect(result?.projectRoot).toBe(testProjectPath);
@@ -115,7 +115,7 @@ describe('ProjectPathService テストスイート', () => {
       mockDialogoiYamlService.findProjectRootAsync.mockResolvedValue(testProjectPath);
 
       const result = await projectPathService.getRelativePathFromProject(deepPath);
-      
+
       expect(mockDialogoiYamlService.findProjectRootAsync).toHaveBeenCalledWith(deepPath);
       expect(result).not.toBe(null);
       expect(result?.projectRoot).toBe(testProjectPath);

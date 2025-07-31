@@ -153,7 +153,7 @@ describe('ProjectSettingsApp コンポーネント', () => {
       render(<ProjectSettingsApp />);
 
       await waitFor(() => {
-        expect(spy.wasCalledWith({ command: 'ready' })).toBeTruthy();
+        expect(spy.wasCalledWith({ command: 'ready' })).toBe(true);
       });
     });
 
@@ -252,7 +252,7 @@ describe('ProjectSettingsApp コンポーネント', () => {
       const createButton = screen.getByText('✨ プロジェクトを作成');
 
       // 最初はボタンがdisabledになっている
-      expect((createButton as HTMLButtonElement).disabled);
+      expect((createButton as HTMLButtonElement).disabled).toBe(true);
 
       // タイトルフィールドをフォーカスアウトしてバリデーションをトリガー
       const titleInput = screen.getByLabelText('タイトル *');
@@ -292,24 +292,24 @@ describe('ProjectSettingsApp コンポーネント', () => {
         const calls = spy.getCalls();
         const saveSettingsCall = calls.find((call) => call.command === 'saveSettings');
 
-        expect(saveSettingsCall).toBeTruthy(); // saveSettings command not found
-        expect(saveSettingsCall?.data).toBeTruthy(); // saveSettings data should exist
+        expect(saveSettingsCall).toBeDefined();
+        expect(saveSettingsCall?.data).toBeDefined();
 
         // 型ガードとしてdataの構造を確認
         const data = saveSettingsCall?.data;
-        expect(data && 'title' in data && 'author' in data).toBeTruthy(); // data should have title and author
+        expect(data).toBeDefined();
+        expect(data).toHaveProperty('title');
+        expect(data).toHaveProperty('author');
 
-        if (!data) {
-          return;
-        }
         const typedData = data as ProjectSettingsData;
         expect(typedData.title).toBe('新しい小説');
         expect(typedData.author).toBe('新しい作者');
 
         // 新規プロジェクト作成時はデフォルトのproject_settingsが含まれることを確認
-        expect('project_settings' in data && data.project_settings).toBeTruthy(); // project_settings should be included
+        expect(data).toHaveProperty('project_settings');
+        expect(typedData.project_settings).toBeDefined();
         expect(typedData.project_settings?.readme_filename).toBe('README.md');
-        expect(Array.isArray(typedData.project_settings?.exclude_patterns)).toBeTruthy();
+        expect(Array.isArray(typedData.project_settings?.exclude_patterns)).toBe(true);
         expect(typedData.project_settings?.exclude_patterns?.length).toBeGreaterThan(0);
       });
     });
@@ -353,7 +353,7 @@ describe('ProjectSettingsApp コンポーネント', () => {
             },
           },
         }),
-      ).toBeTruthy();
+      ).toBe(true);
     });
 
     it('バリデーションエラー時は自動保存されない', () => {
@@ -411,7 +411,7 @@ describe('ProjectSettingsApp コンポーネント', () => {
               },
             },
           }),
-        ).toBeTruthy();
+        ).toBe(true);
       });
     });
 
@@ -426,11 +426,12 @@ describe('ProjectSettingsApp コンポーネント', () => {
       const calls = spy.getCalls();
       // saveSettingsの呼び出しがあった場合、重複タグがないことを確認
       const saveCall = calls.find((call) => call.command === 'saveSettings');
-      if (saveCall && saveCall.data && 'tags' in saveCall.data) {
-        const tags = saveCall.data.tags || [];
-        const fantasyCount = tags.filter((tag: string) => tag === 'ファンタジー').length;
-        expect(fantasyCount).toBe(1); // ファンタジータグは1つのみであるべき
-      }
+      expect(saveCall).toBeDefined();
+      expect(saveCall?.data).toBeDefined();
+      expect(saveCall?.data).toHaveProperty('tags');
+      const tags = (saveCall?.data as { tags?: string[] })?.tags || [];
+      const fantasyCount = tags.filter((tag: string) => tag === 'ファンタジー').length;
+      expect(fantasyCount).toBe(1); // ファンタジータグは1つのみであるべき
     });
 
     it('タグの削除', async () => {
@@ -445,8 +446,9 @@ describe('ProjectSettingsApp コンポーネント', () => {
       await waitFor(() => {
         const calls = spy.getCalls();
         const saveCall = calls.find((call) => call.command === 'saveSettings');
-        expect(saveCall).toBeTruthy(); // saveSettings command should be called
-        expect(saveCall?.data && 'tags' in saveCall.data).toBeTruthy();
+        expect(saveCall).toBeDefined();
+        expect(saveCall?.data).toBeDefined();
+        expect(saveCall?.data).toHaveProperty('tags');
         const typedData = saveCall?.data as ProjectSettingsData;
         expect(typedData.tags).toEqual(['アクション']);
       });
@@ -463,10 +465,12 @@ describe('ProjectSettingsApp コンポーネント', () => {
       await waitFor(() => {
         const calls = spy.getCalls();
         const saveCall = calls.find((call) => call.command === 'saveSettings');
-        expect(saveCall).toBeTruthy(); // First saveSettings call should be made
-        expect(saveCall?.data && 'tags' in saveCall.data).toBeTruthy();
+        expect(saveCall).toBeDefined();
+        expect(saveCall?.data).toBeDefined();
+        expect(saveCall?.data).toHaveProperty('tags');
         const typedData = saveCall?.data as ProjectSettingsData;
-        expect(Array.isArray(typedData.tags) && typedData.tags?.length === 1).toBeTruthy();
+        expect(Array.isArray(typedData.tags)).toBe(true);
+        expect(typedData.tags?.length).toBe(1);
       });
 
       // 2番目（最後）のタグを削除
@@ -479,8 +483,9 @@ describe('ProjectSettingsApp コンポーネント', () => {
       await waitFor(() => {
         const calls = spy.getCalls();
         const finalSaveCall = calls.filter((call) => call.command === 'saveSettings')[1]; // 2回目の呼び出し
-        expect(finalSaveCall).toBeTruthy(); // Final saveSettings call should be made
-        expect(finalSaveCall?.data && 'tags' in finalSaveCall.data).toBeTruthy();
+        expect(finalSaveCall).toBeDefined();
+        expect(finalSaveCall?.data).toBeDefined();
+        expect(finalSaveCall?.data).toHaveProperty('tags');
         const typedData = finalSaveCall?.data as ProjectSettingsData;
         expect(typedData.tags).toBe(undefined);
       });
@@ -514,18 +519,12 @@ describe('ProjectSettingsApp コンポーネント', () => {
       fireEvent.blur(textarea);
 
       const lastCall = spy.getLastCall();
-      if (
-        lastCall &&
-        lastCall.command === 'saveSettings' &&
-        lastCall.data &&
-        'project_settings' in lastCall.data
-      ) {
-        expect(lastCall.data.project_settings?.exclude_patterns).toEqual([
-          '*.log',
-          '*.cache',
-          'build/',
-        ]);
-      }
+      expect(lastCall).toBeDefined();
+      expect(lastCall?.command).toBe('saveSettings');
+      expect(lastCall?.data).toBeDefined();
+      expect(lastCall?.data).toHaveProperty('project_settings');
+      const typedData = lastCall?.data as ProjectSettingsData;
+      expect(typedData.project_settings?.exclude_patterns).toEqual(['*.log', '*.cache', 'build/']);
     });
 
     it('空行と空白は除去される', () => {
@@ -535,18 +534,12 @@ describe('ProjectSettingsApp コンポーネント', () => {
       fireEvent.blur(textarea);
 
       const lastCall = spy.getLastCall();
-      if (
-        lastCall &&
-        lastCall.command === 'saveSettings' &&
-        lastCall.data &&
-        'project_settings' in lastCall.data
-      ) {
-        expect(lastCall.data.project_settings?.exclude_patterns).toEqual([
-          '*.log',
-          '*.cache',
-          'build/',
-        ]);
-      }
+      expect(lastCall).toBeDefined();
+      expect(lastCall?.command).toBe('saveSettings');
+      expect(lastCall?.data).toBeDefined();
+      expect(lastCall?.data).toHaveProperty('project_settings');
+      const typedData = lastCall?.data as ProjectSettingsData;
+      expect(typedData.project_settings?.exclude_patterns).toEqual(['*.log', '*.cache', 'build/']);
     });
 
     it('重複パターンのバリデーション', () => {
@@ -564,14 +557,12 @@ describe('ProjectSettingsApp コンポーネント', () => {
       fireEvent.blur(textarea);
 
       const lastCall = spy.getLastCall();
-      if (
-        lastCall &&
-        lastCall.command === 'saveSettings' &&
-        lastCall.data &&
-        'project_settings' in lastCall.data
-      ) {
-        expect(lastCall.data.project_settings?.exclude_patterns).toBe(undefined);
-      }
+      expect(lastCall).toBeDefined();
+      expect(lastCall?.command).toBe('saveSettings');
+      expect(lastCall?.data).toBeDefined();
+      expect(lastCall?.data).toHaveProperty('project_settings');
+      const typedData = lastCall?.data as ProjectSettingsData;
+      expect(typedData.project_settings?.exclude_patterns).toBe(undefined);
     });
   });
 
@@ -601,14 +592,12 @@ describe('ProjectSettingsApp コンポーネント', () => {
       fireEvent.blur(input);
 
       const lastCall = spy.getLastCall();
-      if (
-        lastCall &&
-        lastCall.command === 'saveSettings' &&
-        lastCall.data &&
-        'project_settings' in lastCall.data
-      ) {
-        expect(lastCall.data.project_settings?.readme_filename).toBe('index.md');
-      }
+      expect(lastCall).toBeDefined();
+      expect(lastCall?.command).toBe('saveSettings');
+      expect(lastCall?.data).toBeDefined();
+      expect(lastCall?.data).toHaveProperty('project_settings');
+      const typedData = lastCall?.data as ProjectSettingsData;
+      expect(typedData.project_settings?.readme_filename).toBe('index.md');
     });
 
     it('空のREADMEファイル名はundefinedになる', () => {
@@ -618,14 +607,12 @@ describe('ProjectSettingsApp コンポーネント', () => {
       fireEvent.blur(input);
 
       const lastCall = spy.getLastCall();
-      if (
-        lastCall &&
-        lastCall.command === 'saveSettings' &&
-        lastCall.data &&
-        'project_settings' in lastCall.data
-      ) {
-        expect(lastCall.data.project_settings?.readme_filename).toBe(undefined);
-      }
+      expect(lastCall).toBeDefined();
+      expect(lastCall?.command).toBe('saveSettings');
+      expect(lastCall?.data).toBeDefined();
+      expect(lastCall?.data).toHaveProperty('project_settings');
+      const typedData = lastCall?.data as ProjectSettingsData;
+      expect(typedData.project_settings?.readme_filename).toBe(undefined);
     });
   });
 
@@ -830,14 +817,12 @@ describe('ProjectSettingsApp コンポーネント', () => {
       fireEvent.blur(textarea);
 
       const lastCall = spy.getLastCall();
-      if (
-        lastCall &&
-        lastCall.command === 'saveSettings' &&
-        lastCall.data &&
-        'project_settings' in lastCall.data
-      ) {
-        expect(lastCall.data.project_settings).toBe(undefined);
-      }
+      expect(lastCall).toBeDefined();
+      expect(lastCall?.command).toBe('saveSettings');
+      expect(lastCall?.data).toBeDefined();
+      expect(lastCall?.data).toHaveProperty('project_settings');
+      const typedData = lastCall?.data as ProjectSettingsData;
+      expect(typedData.project_settings).toBe(undefined);
     });
 
     it('Enterキー以外ではタグが追加されない', async () => {

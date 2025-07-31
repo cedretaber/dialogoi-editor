@@ -5,6 +5,7 @@ import { FileRepository } from '../repositories/FileRepository.js';
 import { MetaYamlService } from './MetaYamlService.js';
 import { FileChangeNotificationService } from './FileChangeNotificationService.js';
 import { EventEmitterRepository } from '../repositories/EventEmitterRepository.js';
+import { FileChangeEvent } from './FileChangeNotificationService.js';
 import { Uri } from '../interfaces/Uri.js';
 import { MetaYaml } from '../utils/MetaYamlUtils.js';
 import * as path from 'path';
@@ -20,75 +21,80 @@ describe('FileTypeConversionService テストスイート', () => {
     jest.clearAllMocks();
     fileSystem = new Map<string, string>();
     directories = new Set<string>();
-    
+
     // jest-mock-extendedでモック作成
     mockFileRepository = mock<FileRepository>();
     mockMetaYamlService = mock<MetaYamlService>();
-    
+
     // FileChangeNotificationServiceを初期化（シングルトン）
-    const mockEventEmitterRepository = mock<EventEmitterRepository<any>>();
+    const mockEventEmitterRepository = mock<EventEmitterRepository<FileChangeEvent>>();
     FileChangeNotificationService.setInstance(mockEventEmitterRepository);
-    
+
     // モックの設定
     setupMocks();
-    
+
     service = new FileTypeConversionService(mockFileRepository, mockMetaYamlService);
   });
-  
+
   function setupMocks(): void {
     // FileRepository のモック
     mockFileRepository.createFileUri.mockImplementation((filePath: string) => {
       return { path: filePath, fsPath: filePath } as Uri;
     });
-    
+
     mockFileRepository.createDirectoryUri.mockImplementation((dirPath: string) => {
       return { path: dirPath, fsPath: dirPath } as Uri;
     });
-    
-    mockFileRepository.existsAsync.mockImplementation(async (uri: Uri) => {
-      return fileSystem.has(uri.path) || directories.has(uri.path);
+
+    mockFileRepository.existsAsync.mockImplementation((uri: Uri) => {
+      return Promise.resolve(fileSystem.has(uri.path) || directories.has(uri.path));
     });
-    
-    (mockFileRepository.readFileAsync as jest.MockedFunction<typeof mockFileRepository.readFileAsync>).mockImplementation(
-      async (uri: Uri, _encoding?: BufferEncoding) => {
-        const content = fileSystem.get(uri.path);
-        if (!content) {
-          throw new Error(`File not found: ${uri.path}`);
-        }
-        return content;
+
+    (
+      mockFileRepository.readFileAsync as jest.MockedFunction<
+        typeof mockFileRepository.readFileAsync
+      >
+    ).mockImplementation((uri: Uri, _encoding?: string) => {
+      const content = fileSystem.get(uri.path);
+      if (content === undefined) {
+        return Promise.reject(new Error(`File not found: ${uri.path}`));
       }
-    );
-    
-    mockFileRepository.writeFileAsync.mockImplementation(async (uri: Uri, content: string) => {
-      fileSystem.set(uri.path, content);
+      return Promise.resolve(content);
     });
-    
+
+    mockFileRepository.writeFileAsync.mockImplementation((uri: Uri, content: string) => {
+      fileSystem.set(uri.path, content);
+      return Promise.resolve();
+    });
+
     // MetaYamlService のモック
-    mockMetaYamlService.loadMetaYamlAsync.mockImplementation(async (dirPath: string) => {
+    mockMetaYamlService.loadMetaYamlAsync.mockImplementation((dirPath: string) => {
       const yamlPath = path.join(dirPath, '.dialogoi-meta.yaml');
       const content = fileSystem.get(yamlPath);
-      if (!content) {
-        return null;
+      if (content === undefined) {
+        return Promise.resolve(null);
       }
       try {
-        return yaml.load(content) as MetaYaml;
+        return Promise.resolve(yaml.load(content) as MetaYaml);
       } catch {
-        return null;
+        return Promise.resolve(null);
       }
     });
-    
-    mockMetaYamlService.saveMetaYamlAsync.mockImplementation(async (dirPath: string, metaData: MetaYaml) => {
-      const yamlPath = path.join(dirPath, '.dialogoi-meta.yaml');
-      const yamlContent = yaml.dump(metaData);
-      fileSystem.set(yamlPath, yamlContent);
-      return true;
-    });
+
+    mockMetaYamlService.saveMetaYamlAsync.mockImplementation(
+      (dirPath: string, metaData: MetaYaml) => {
+        const yamlPath = path.join(dirPath, '.dialogoi-meta.yaml');
+        const yamlContent = yaml.dump(metaData);
+        fileSystem.set(yamlPath, yamlContent);
+        return Promise.resolve(true);
+      },
+    );
   }
-  
+
   function createDirectoryForTest(dirPath: string): void {
     directories.add(dirPath);
   }
-  
+
   function createFileForTest(filePath: string, content: string): void {
     fileSystem.set(filePath, content);
   }
