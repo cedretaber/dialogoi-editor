@@ -40,7 +40,7 @@ export class DialogoiPathService {
    * @return .dialogoi/内のコメントファイルパス
    *
    * 例：
-   * - /project/contents/chapter1.txt → /project/.dialogoi/contents/.chapter1.txt.comments.yaml
+   * - /project/contents/chapter1.txt → /project/.dialogoi/contents/chapter1.txt.comments.yaml
    */
   resolveCommentPath(filePath: string): string {
     const projectRoot = this.fileRepository.getProjectRoot();
@@ -55,11 +55,11 @@ export class DialogoiPathService {
 
     // ルートディレクトリの場合
     if (relativeDir === '') {
-      return path.join(projectRoot, '.dialogoi', `.${filename}.comments.yaml`);
+      return path.join(projectRoot, '.dialogoi', `${filename}.comments.yaml`);
     }
 
     // サブディレクトリの場合
-    return path.join(projectRoot, '.dialogoi', relativeDir, `.${filename}.comments.yaml`);
+    return path.join(projectRoot, '.dialogoi', relativeDir, `${filename}.comments.yaml`);
   }
 
   /**

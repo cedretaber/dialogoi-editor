@@ -527,6 +527,69 @@ VSCode上での実際の操作：
 - **品質保証**: 全687+テスト通過、`npm run check-all` 完全クリア
 - **パフォーマンス向上**: ファイル監視対象を約30-50%削減
 
+### Phase 4.5: コメントファイル名称の正規化（推定: 1.5時間）
+
+**🎯 目的**: `.dialogoi/` ディレクトリ内への移行に伴い、コメントファイルの隠しファイル形式を廃止し、視認性を向上させる。
+
+#### **現状の問題点**
+- 現在: `.{filename}.comments.yaml` （隠しファイル形式）
+- 問題: `.dialogoi/` 内では隠しファイルの必要性がない
+- 課題: ファイル管理・デバッグ時の視認性が低い
+
+#### **新しい命名規則**
+```
+# 修正前（隠しファイル）
+.dialogoi/contents/.chapter1.txt.comments.yaml
+.dialogoi/settings/.character1.md.comments.yaml
+
+# 修正後（通常ファイル）
+.dialogoi/contents/chapter1.txt.comments.yaml
+.dialogoi/settings/character1.md.comments.yaml
+```
+
+#### **実装が必要な項目**
+
+- [x] **4.5.1** DialogoiPathService の更新（30分）
+  - `resolveCommentPath()` メソッドの命名規則変更
+  - `.${filename}.comments.yaml` → `${filename}.comments.yaml` に修正（58行目、62行目）
+  - DialogoiPathService.test.ts の4箇所の期待値を更新
+
+- [x] **4.5.2** CommentsViewProvider の監視パターン更新（15分）
+  - `**/.dialogoi/**/.*.comments.yaml` → `**/.dialogoi/**/*.comments.yaml` に変更
+  - より正確で効率的な監視パターンに改善（隠しファイル指定子 `.` を除去）
+
+- [x] **4.5.3** CommentService のテスト更新（30分）
+  - CommentService.test.ts のモック実装を新命名規則に対応
+  - パス生成ロジックの検証強化
+
+
+#### **技術的詳細**
+
+**修正箇所の詳細**:
+```typescript
+// DialogoiPathService.ts - 修正前
+return path.join(projectRoot, '.dialogoi', `.${filename}.comments.yaml`);
+
+// DialogoiPathService.ts - 修正後  
+return path.join(projectRoot, '.dialogoi', `${filename}.comments.yaml`);
+```
+
+**影響を受けるテストケース**:
+- `.README.md.comments.yaml` → `README.md.comments.yaml`
+- `.chapter1.txt.comments.yaml` → `chapter1.txt.comments.yaml`
+- `.protagonist.md.comments.yaml` → `protagonist.md.comments.yaml`
+- `.第1章 - 始まり.txt.comments.yaml` → `第1章 - 始まり.txt.comments.yaml`
+
+#### **期待される効果**
+- **視認性向上**: `.dialogoi/` 内でコメントファイルが見やすくなる
+- **デバッグ改善**: 開発時のファイル特定が容易になる
+- **命名統一**: 隠しファイル形式の不統一を解消
+- **保守性向上**: ファイル管理・操作の簡素化
+
+#### **後方互換性**
+- **移行方針**: 新規作成のみ新形式、既存ファイルは自動移行なし
+- **理由**: 開発段階のため後方互換性は考慮不要（CLAUDE.md方針準拠）
+
 ### Phase 5: テスト修正とユーティリティ更新（推定: 4時間）
 
 - [ ] **5.1** 重要なテストファイルの修正

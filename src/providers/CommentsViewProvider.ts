@@ -92,9 +92,9 @@ export class CommentsViewProvider implements vscode.WebviewViewProvider {
    * コメントファイル監視のセットアップ
    */
   private setupCommentFileWatcher(): void {
-    // .dialogoi/**/.*.comments.yaml ファイルの変更を監視（コメントファイルのみ）
+    // .dialogoi/**/*.comments.yaml ファイルの変更を監視（コメントファイルのみ）
     this.commentFileWatcher = vscode.workspace.createFileSystemWatcher(
-      '**/.dialogoi/**/.*.comments.yaml',
+      '**/.dialogoi/**/*.comments.yaml',
     );
 
     // ファイル変更時の処理

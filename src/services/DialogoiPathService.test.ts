@@ -70,7 +70,7 @@ describe('DialogoiPathService テストスイート', () => {
 
       const result = service.resolveCommentPath(filePath);
 
-      expect(result).toBe('/home/user/project/.dialogoi/.README.md.comments.yaml');
+      expect(result).toBe('/home/user/project/.dialogoi/README.md.comments.yaml');
     });
 
     test('サブディレクトリのファイルの場合、対応する.dialogoi/内のパスを返す', () => {
@@ -81,7 +81,7 @@ describe('DialogoiPathService テストスイート', () => {
 
       const result = service.resolveCommentPath(filePath);
 
-      expect(result).toBe('/home/user/project/.dialogoi/contents/.chapter1.txt.comments.yaml');
+      expect(result).toBe('/home/user/project/.dialogoi/contents/chapter1.txt.comments.yaml');
     });
 
     test('深い階層のファイルの場合、正しいパスを返す', () => {
@@ -93,7 +93,7 @@ describe('DialogoiPathService テストスイート', () => {
       const result = service.resolveCommentPath(filePath);
 
       expect(result).toBe(
-        '/home/user/project/.dialogoi/settings/characters/.protagonist.md.comments.yaml',
+        '/home/user/project/.dialogoi/settings/characters/protagonist.md.comments.yaml',
       );
     });
 
@@ -116,9 +116,7 @@ describe('DialogoiPathService テストスイート', () => {
 
       const result = service.resolveCommentPath(filePath);
 
-      expect(result).toBe(
-        '/home/user/project/.dialogoi/contents/.第1章 - 始まり.txt.comments.yaml',
-      );
+      expect(result).toBe('/home/user/project/.dialogoi/contents/第1章 - 始まり.txt.comments.yaml');
     });
   });
 

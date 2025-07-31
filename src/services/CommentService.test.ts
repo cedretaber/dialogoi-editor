@@ -128,21 +128,16 @@ describe('CommentService テストスイート', () => {
 
     // DialogoiPathServiceのモック設定
     mockDialogoiPathService.resolveCommentPath.mockImplementation((filePath: string) => {
-      // 新しいパス構造: /workspace/.dialogoi/{relativePath}/.{filename}.comments.yaml
+      // 新しいパス構造: /workspace/.dialogoi/{relativePath}/{filename}.comments.yaml
       const relativePath = path.relative(workspaceRootPath, path.dirname(filePath));
       const filename = path.basename(filePath);
 
       if (relativePath === '' || relativePath === '.') {
         // ルートディレクトリの場合
-        return path.join(workspaceRootPath, '.dialogoi', `.${filename}.comments.yaml`);
+        return path.join(workspaceRootPath, '.dialogoi', `${filename}.comments.yaml`);
       } else {
         // サブディレクトリの場合
-        return path.join(
-          workspaceRootPath,
-          '.dialogoi',
-          relativePath,
-          `.${filename}.comments.yaml`,
-        );
+        return path.join(workspaceRootPath, '.dialogoi', relativePath, `${filename}.comments.yaml`);
       }
     });
 
@@ -600,11 +595,11 @@ created_at: '2024-01-01T00:00:00Z'`;
 
   describe('データ妥当性検証', () => {
     it('不正なYAMLファイルをロードするとエラーが発生する', async () => {
-      // 新しいパス構造に対応: .dialogoi/.{filename}.comments.yaml
+      // 新しいパス構造に対応: .dialogoi/{filename}.comments.yaml
       const commentFilePath = path.join(
         workspaceRootPath,
         '.dialogoi',
-        `.${testRelativeFilePath}.comments.yaml`,
+        `${testRelativeFilePath}.comments.yaml`,
       );
       addFile(commentFilePath, 'file_hash: "test"\ninvalid: yaml: [unclosed');
 
@@ -614,11 +609,11 @@ created_at: '2024-01-01T00:00:00Z'`;
     });
 
     it('不正な形式のコメントファイルをロードするとエラーが発生する', async () => {
-      // 新しいパス構造に対応: .dialogoi/.{filename}.comments.yaml
+      // 新しいパス構造に対応: .dialogoi/{filename}.comments.yaml
       const commentFilePath = path.join(
         workspaceRootPath,
         '.dialogoi',
-        `.${testRelativeFilePath}.comments.yaml`,
+        `${testRelativeFilePath}.comments.yaml`,
       );
       addFile(commentFilePath, 'comments:\n  - invalid_field: "no required fields"');
 
