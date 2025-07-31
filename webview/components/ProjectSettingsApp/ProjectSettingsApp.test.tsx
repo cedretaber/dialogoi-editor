@@ -424,14 +424,12 @@ describe('ProjectSettingsApp コンポーネント', () => {
       await new Promise((resolve) => setTimeout(resolve, 100));
 
       const calls = spy.getCalls();
-      // saveSettingsの呼び出しがあった場合、重複タグがないことを確認
+      // 重複タグの場合、saveSettingsが呼ばれないことを確認
       const saveCall = calls.find((call) => call.command === 'saveSettings');
-      expect(saveCall).toBeDefined();
-      expect(saveCall?.data).toBeDefined();
-      expect(saveCall?.data).toHaveProperty('tags');
-      const tags = (saveCall?.data as { tags?: string[] })?.tags || [];
-      const fantasyCount = tags.filter((tag: string) => tag === 'ファンタジー').length;
-      expect(fantasyCount).toBe(1); // ファンタジータグは1つのみであるべき
+      expect(saveCall).toBeUndefined(); // 重複タグのため保存されない
+
+      // 入力フィールドはクリアされず、重複タグ名が残る（ユーザが修正できるように）
+      expect((tagInput as HTMLInputElement).value).toBe('ファンタジー');
     });
 
     it('タグの削除', async () => {
