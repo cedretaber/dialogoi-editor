@@ -288,4 +288,12 @@ export class VSCodeFileRepository extends FileRepository {
       );
     }
   }
+
+  getProjectRoot(): string {
+    const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
+    if (!workspaceFolder) {
+      throw new Error('ワークスペースが開かれていません');
+    }
+    return workspaceFolder.uri.fsPath;
+  }
 }

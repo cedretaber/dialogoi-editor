@@ -13,6 +13,7 @@ import { HyperlinkExtractorService } from '../services/HyperlinkExtractorService
 import { DropHandlerService } from '../services/DropHandlerService.js';
 import { SettingsRepository } from '../repositories/SettingsRepository.js';
 import { DialogoiSettingsService } from '../services/DialogoiSettingsService.js';
+import { DialogoiPathService } from '../services/DialogoiPathService.js';
 import { ProjectSettingsService } from '../services/ProjectSettingsService.js';
 import { FileStatusService } from '../services/FileStatusService.js';
 import { FileManagementService } from '../services/FileManagementService.js';
@@ -50,6 +51,7 @@ export interface IServiceContainer {
   getEventEmitterRepository(): EventEmitterRepository<FileChangeEvent>;
   getFileChangeNotificationService(): FileChangeNotificationService;
   getDialogoiSettingsService(): DialogoiSettingsService;
+  getDialogoiPathService(): DialogoiPathService;
   getProjectSettingsService(): ProjectSettingsService;
   getFileStatusService(): FileStatusService;
   getFileManagementService(): FileManagementService;
@@ -80,6 +82,7 @@ export class ServiceContainer implements IServiceContainer {
   private hyperlinkExtractorService: HyperlinkExtractorService | null = null;
   private dropHandlerService: DropHandlerService | null = null;
   private dialogoiSettingsService: DialogoiSettingsService | null = null;
+  private dialogoiPathService: DialogoiPathService | null = null;
   private projectSettingsService: ProjectSettingsService | null = null;
   private fileStatusService: FileStatusService | null = null;
   private fileManagementService: FileManagementService | null = null;
@@ -273,6 +276,7 @@ export class ServiceContainer implements IServiceContainer {
     this.hyperlinkExtractorService = null;
     this.dropHandlerService = null;
     this.dialogoiSettingsService = null;
+    this.dialogoiPathService = null;
     this.fileStatusService = null;
     this.fileManagementService = null;
     this.fileTypeConversionService = null;
@@ -312,6 +316,14 @@ export class ServiceContainer implements IServiceContainer {
       this.dialogoiSettingsService = new DialogoiSettingsService(settingsRepository);
     }
     return this.dialogoiSettingsService;
+  }
+
+  getDialogoiPathService(): DialogoiPathService {
+    if (!this.dialogoiPathService) {
+      const fileRepository = this.getFileRepository();
+      this.dialogoiPathService = new DialogoiPathService(fileRepository);
+    }
+    return this.dialogoiPathService;
   }
 
   getProjectSettingsService(): ProjectSettingsService {

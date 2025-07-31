@@ -128,6 +128,12 @@ export abstract class FileRepository {
    */
   abstract readExtensionResource(resourcePath: string): Promise<string>;
 
+  /**
+   * 現在のワークスペースのプロジェクトルートを取得
+   * @returns プロジェクトルートの絶対パス
+   */
+  abstract getProjectRoot(): string;
+
   // Repository は純粋なデータアクセス層の責務のみを担当
   // 高レベルな操作は Service 層で実装
 }

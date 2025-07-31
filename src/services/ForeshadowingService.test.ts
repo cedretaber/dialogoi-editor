@@ -2,49 +2,17 @@ import * as path from 'path';
 import { ForeshadowingService, ForeshadowingData } from './ForeshadowingService.js';
 import { FileRepository } from '../repositories/FileRepository.js';
 import { MetaYamlService } from './MetaYamlService.js';
-
-// 依存サービスをJestで自動モック
-jest.mock('../repositories/FileRepository.js');
-jest.mock('./MetaYamlService.js');
+import { mock, MockProxy } from 'jest-mock-extended';
 
 describe('ForeshadowingService', () => {
-  let mockFileRepository: jest.Mocked<FileRepository>;
-  let mockMetaYamlService: jest.Mocked<MetaYamlService>;
+  let mockFileRepository: MockProxy<FileRepository>;
+  let mockMetaYamlService: MockProxy<MetaYamlService>;
   let foreshadowingService: ForeshadowingService;
   let novelRootAbsolutePath: string;
 
   beforeEach(() => {
-    // Jestの自動モック機能でサービスをモック化
-    mockFileRepository = {
-      existsAsync: jest.fn(),
-      readFileAsync: jest.fn(),
-      writeFileAsync: jest.fn(),
-      createDirectoryAsync: jest.fn(),
-      unlinkAsync: jest.fn(),
-      rmAsync: jest.fn(),
-      readdirAsync: jest.fn(),
-      statAsync: jest.fn(),
-      renameAsync: jest.fn(),
-      createFileUri: jest.fn(),
-      createDirectoryUri: jest.fn(),
-      parseUri: jest.fn(),
-      joinPath: jest.fn(),
-      readExtensionResource: jest.fn(),
-    } as jest.Mocked<FileRepository>;
-
-    mockMetaYamlService = {
-      loadMetaYamlAsync: jest.fn(),
-      getReadmeFilePathAsync: jest.fn(),
-      findNovelRootAsync: jest.fn(),
-      saveMetaYamlAsync: jest.fn(),
-      updateFileTags: jest.fn(),
-      addFileTag: jest.fn(),
-      removeFileTag: jest.fn(),
-      moveDirectoryInMetadata: jest.fn(),
-      moveFileInMetadata: jest.fn(),
-      removeFileReference: jest.fn(),
-      removeFileCharacter: jest.fn(),
-    } as jest.Mocked<MetaYamlService>;
+    mockFileRepository = mock<FileRepository>();
+    mockMetaYamlService = mock<MetaYamlService>();
 
     foreshadowingService = new ForeshadowingService(mockFileRepository, mockMetaYamlService);
     novelRootAbsolutePath = '/tmp/dialogoi-test/novel';

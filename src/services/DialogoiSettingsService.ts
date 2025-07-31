@@ -12,9 +12,7 @@ export class DialogoiSettingsService {
    * Dialogoi関連のファイルパターン
    */
   private static readonly DIALOGOI_PATTERNS = {
-    '**/dialogoi.yaml': true,
-    '**/.dialogoi-meta.yaml': true,
-    '**/.dialogoi-reviews/**': true,
+    '**/.dialogoi/**': true,
   };
 
   constructor(private settingsRepository: SettingsRepository) {}

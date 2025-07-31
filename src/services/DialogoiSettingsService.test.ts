@@ -93,9 +93,7 @@ describe('DialogoiSettingsService テストスイート', () => {
       expect(result).toBe(true);
 
       const currentExclude = mockRepository.get<ExcludePatterns>('files', 'exclude');
-      expect(currentExclude?.['**/dialogoi.yaml']).toBe(true);
-      expect(currentExclude?.['**/.dialogoi-meta.yaml']).toBe(true);
-      expect(currentExclude?.['**/.dialogoi-reviews/**']).toBe(true);
+      expect(currentExclude?.['**/.dialogoi/**']).toBe(true);
     });
 
     it('既存の除外設定を保持しながら追加する', async () => {
@@ -117,9 +115,7 @@ describe('DialogoiSettingsService テストスイート', () => {
       expect(currentExclude?.['node_modules']).toBe(true);
       expect(currentExclude?.['dist']).toBe(true);
       // 新しい設定が追加されている
-      expect(currentExclude?.['**/dialogoi.yaml']).toBe(true);
-      expect(currentExclude?.['**/.dialogoi-meta.yaml']).toBe(true);
-      expect(currentExclude?.['**/.dialogoi-reviews/**']).toBe(true);
+      expect(currentExclude?.['**/.dialogoi/**']).toBe(true);
     });
   });
 
@@ -144,9 +140,7 @@ describe('DialogoiSettingsService テストスイート', () => {
       // 既存設定が保持されている
       expect(currentExclude?.['node_modules']).toBe(true);
       // Dialogoi関連パターンが削除されている
-      expect(currentExclude?.['**/dialogoi.yaml']).toBe(undefined);
-      expect(currentExclude?.['**/.dialogoi-meta.yaml']).toBe(undefined);
-      expect(currentExclude?.['**/.dialogoi-reviews/**']).toBe(undefined);
+      expect(currentExclude?.['**/.dialogoi/**']).toBe(undefined);
     });
 
     it('除外設定が存在しない場合でも正常に動作する', async () => {
@@ -163,9 +157,7 @@ describe('DialogoiSettingsService テストスイート', () => {
       // 準備：全てのDialogoi関連パターンを設定
       const excludePatterns = {
         node_modules: true,
-        '**/dialogoi.yaml': true,
-        '**/.dialogoi-meta.yaml': true,
-        '**/.dialogoi-reviews/**': true,
+        '**/.dialogoi/**': true,
       };
       setSettings('files', 'exclude', excludePatterns);
 
@@ -180,9 +172,7 @@ describe('DialogoiSettingsService テストスイート', () => {
       // 準備：一部のパターンのみ設定
       const excludePatterns = {
         node_modules: true,
-        '**/dialogoi.yaml': true,
-        // '**/.dialogoi-meta.yaml': true,  // 欠けている
-        '**/.dialogoi-reviews/**': true,
+        // '**/.dialogoi/**': true,  // 欠けている
       };
       setSettings('files', 'exclude', excludePatterns);
 

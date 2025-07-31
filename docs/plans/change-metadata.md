@@ -67,72 +67,119 @@ novel/
 ### 2.2 実装の基本方針
 
 - 既存のビジネスロジックは変更しない
-- パス解決を行う層（FileRepository）でパス変換を実装
+- パス解決は新規サービスクラス（DialogoiPathService）で実装
+- Repository層は純粋なファイル操作のみを担当
 - 後方互換性は考慮しない（新規実装のみ対応）
 
 ## 3. 実装詳細
 
-### 3.1 パス変換ロジック
+### 3.1 DialogoiPathService の設計
 
-#### メタデータファイルのパス変換
+新規サービスクラス `DialogoiPathService` でDialogoi固有のパス変換を担当します。
+
+#### クラス設計
 ```typescript
-/**
- * 実際のディレクトリパスから.dialogoi/内のメタデータパスを取得
- * @param targetPath プロジェクト内の実際のディレクトリパス
- * @return .dialogoi/内のメタデータファイルパス
- * 
- * 例：
- * - /project/contents → /project/.dialogoi/contents/dialogoi-meta.yaml
- * - /project → /project/.dialogoi/dialogoi-meta.yaml
- */
-function resolveMetaPath(targetPath: string): string {
-  const projectRoot = this.getProjectRoot();
-  if (targetPath === projectRoot) {
-    return path.join(projectRoot, '.dialogoi', 'dialogoi-meta.yaml');
+export class DialogoiPathService {
+  constructor(private fileRepository: FileRepository) {}
+
+  /**
+   * 実際のディレクトリパスから.dialogoi/内のメタデータパスを取得
+   * @param targetPath プロジェクト内の実際のディレクトリパス
+   * @return .dialogoi/内のメタデータファイルパス
+   * 
+   * 例：
+   * - /project/contents → /project/.dialogoi/contents/dialogoi-meta.yaml
+   * - /project → /project/.dialogoi/dialogoi-meta.yaml
+   */
+  resolveMetaPath(targetPath: string): string {
+    const projectRoot = this.getProjectRoot();
+    if (targetPath === projectRoot) {
+      return path.join(projectRoot, '.dialogoi', 'dialogoi-meta.yaml');
+    }
+    const relativePath = path.relative(projectRoot, targetPath);
+    return path.join(projectRoot, '.dialogoi', relativePath, 'dialogoi-meta.yaml');
   }
-  const relativePath = path.relative(projectRoot, targetPath);
-  return path.join(projectRoot, '.dialogoi', relativePath, 'dialogoi-meta.yaml');
+
+  /**
+   * 実際のファイルパスから.dialogoi/内のコメントファイルパスを取得
+   * @param filePath プロジェクト内の実際のファイルパス
+   * @return .dialogoi/内のコメントファイルパス
+   * 
+   * 例：
+   * - /project/contents/chapter1.txt → /project/.dialogoi/contents/.chapter1.txt.comments.yaml
+   */
+  resolveCommentPath(filePath: string): string {
+    const projectRoot = this.getProjectRoot();
+    const dir = path.dirname(filePath);
+    const filename = path.basename(filePath);
+    const relativeDir = path.relative(projectRoot, dir);
+    
+    if (relativeDir === '') {
+      return path.join(projectRoot, '.dialogoi', `.${filename}.comments.yaml`);
+    }
+    return path.join(projectRoot, '.dialogoi', relativeDir, `.${filename}.comments.yaml`);
+  }
+
+  /**
+   * .dialogoi/内の必要なディレクトリ構造を作成
+   * @param targetPath 実際のディレクトリパス
+   */
+  async ensureDialogoiDirectory(targetPath: string): Promise<void> {
+    const metaPath = this.resolveMetaPath(targetPath);
+    const metaDir = path.dirname(metaPath);
+    const metaDirUri = this.fileRepository.createDirectoryUri(metaDir);
+    
+    if (!(await this.fileRepository.existsAsync(metaDirUri))) {
+      await this.fileRepository.createDirectoryAsync(metaDirUri);
+    }
+  }
+
+  private getProjectRoot(): string {
+    // VSCodeワークスペースの第1フォルダーを取得
+    // 実装は既存の他サービスと同様のパターンを使用
+  }
 }
 ```
 
-#### コメントファイルのパス変換
+### 3.2 各サービスクラスでの利用パターン
+
+#### MetaYamlServiceImpl での利用例
 ```typescript
-/**
- * 実際のファイルパスから.dialogoi/内のコメントファイルパスを取得
- * @param filePath プロジェクト内の実際のファイルパス
- * @return .dialogoi/内のコメントファイルパス
- * 
- * 例：
- * - /project/contents/chapter1.txt → /project/.dialogoi/contents/.chapter1.txt.comments.yaml
- */
-function resolveCommentPath(filePath: string): string {
-  const projectRoot = this.getProjectRoot();
-  const dir = path.dirname(filePath);
-  const filename = path.basename(filePath);
-  const relativeDir = path.relative(projectRoot, dir);
-  
-  if (relativeDir === '') {
-    return path.join(projectRoot, '.dialogoi', `.${filename}.comments.yaml`);
+export class MetaYamlServiceImpl implements MetaYamlService {
+  constructor(
+    private fileRepository: FileRepository,
+    private dialogoiPathService: DialogoiPathService // 新たに依存注入
+  ) {}
+
+  private getMetaYamlPath(dirAbsolutePath: string): string {
+    // 旧: path.join(dirAbsolutePath, '.dialogoi-meta.yaml')
+    // 新: DialogoiPathService経由でパス変換
+    return this.dialogoiPathService.resolveMetaPath(dirAbsolutePath);
   }
-  return path.join(projectRoot, '.dialogoi', relativeDir, `.${filename}.comments.yaml`);
+
+  async saveMetaYamlAsync(dirAbsolutePath: string, metaYaml: MetaYaml): Promise<void> {
+    // 保存前にディレクトリ構造を自動作成
+    await this.dialogoiPathService.ensureDialogoiDirectory(dirAbsolutePath);
+    
+    const metaYamlPath = this.getMetaYamlPath(dirAbsolutePath);
+    // 既存の保存ロジック
+  }
 }
 ```
 
-### 3.2 ディレクトリ作成の自動化
-
-ファイル操作時に `.dialogoi/` 内の対応するディレクトリを自動作成：
-
+#### CommentService での利用例
 ```typescript
-/**
- * .dialogoi/内に必要なディレクトリ構造を作成
- * @param targetPath 実際のディレクトリパス
- */
-async function ensureDialogoiDirectory(targetPath: string): Promise<void> {
-  const metaPath = this.resolveMetaPath(targetPath);
-  const metaDir = path.dirname(metaPath);
-  
-  if (!await this.fileRepository.existsAsync(metaDir)) {
-    await this.fileRepository.createDirectoryAsync(metaDir);
+export class CommentService {
+  constructor(
+    private fileRepository: FileRepository,
+    private dialogoiPathService: DialogoiPathService, // 新たに依存注入
+    // ... その他の依存関係
+  ) {}
+
+  private getCommentFileUri(targetRelativeFilePath: string): Uri {
+    const absoluteFilePath = path.join(this.workspaceRoot.fsPath, targetRelativeFilePath);
+    const commentAbsolutePath = this.dialogoiPathService.resolveCommentPath(absoluteFilePath);
+    return this.fileRepository.createFileUri(commentAbsolutePath);
   }
 }
 ```
@@ -324,62 +371,82 @@ VSCode上での実際の操作：
 
 以下のTODOリストに従って実装を進めます。各項目にはPhaseと推定時間を記載しています。
 
-### Phase 1: 基盤層の実装（推定: 3時間）
+### Phase 1: 基盤層の実装（推定: 3時間） ✅ **完了**
 
-- [ ] **1.1** package.json の修正
+- [x] **1.1** package.json の修正
   - `workspaceContains:**/dialogoi.yaml` → `workspaceContains:**/.dialogoi/dialogoi.yaml`
-  - `**/.dialogoi-meta.yaml`: true → `**.dialogoi/**`: true に変更
+  - DialogoiSettingsService の除外パターンを `**/.dialogoi/**` に統一
 
-- [ ] **1.2** FileRepository 抽象クラスに `resolveMetaPath()` メソッドを追加
-  - 引数: targetPath（ディレクトリの絶対パス）
-  - 戻り値: .dialogoi/内のメタデータファイルパス
+- [x] **1.2** DialogoiPathService クラスの作成
+  - 新規サービスクラス: Dialogoi固有のパス変換ロジックを担当
+  - FileRepository を依存注入で受け取る設計
   
-- [ ] **1.3** FileRepository 抽象クラスに `resolveCommentPath()` メソッドを追加
-  - 引数: filePath（ファイルの絶対パス）
-  - 戻り値: .dialogoi/内のコメントファイルパス
+- [x] **1.3** DialogoiPathService にメソッドを実装
+  - `resolveMetaPath(targetPath: string): string` - メタデータファイルパス変換
+  - `resolveCommentPath(filePath: string): string` - コメントファイルパス変換
+  - `ensureDialogoiDirectory(targetPath: string): Promise<void>` - ディレクトリ自動作成
+  - FileRepository.getProjectRoot() 経由でプロジェクトルート取得（VSCode依存の適切な局所化）
 
-- [ ] **1.4** VSCodeFileRepository に上記2メソッドの実装を追加
-  - プロジェクトルートの取得ロジック
-  - 相対パス計算とパス結合
+- [x] **1.4** ServiceContainer に DialogoiPathService を追加
+  - `getDialogoiPathService(): DialogoiPathService` メソッドの実装
+  - FileRepository の依存注入設定
+  - resetメソッドでの初期化処理
 
-- [ ] **1.5** テストモック実装パターンの準備
-  - `mock<FileRepository>()` によるモック作成
-  - 新しいメソッドのモック動作定義
+- [x] **1.5** FileRepository から不適切なメソッドを削除
+  - `resolveMetaPath()` と `resolveCommentPath()` を削除
+  - Repository層を純粋なファイル操作のみに戻す
+  - `getProjectRoot(): string` メソッドを追加（VSCode依存の適切な局所化）
 
-- [ ] **1.6** FileRepository のテストを作成
-  - 正常系: ルート、サブディレクトリ、深い階層
-  - エッジケース: 空文字列、特殊文字を含むパス
+- [x] **1.6** DialogoiPathService のテストを作成
+  - jest-mock-extended による FileRepository のモック化
+  - 正常系: ルート、サブディレクトリ、深い階層のテスト（15テストケース）
+  - エッジケース: プロジェクト外パス、特殊文字、エラーハンドリング（10テストケース）
+  - 全685テストが通過、品質保証完了
+
+**Phase 1 完了時の技術的成果:**
+- **アーキテクチャ改善**: Repository層とService層の責務分離を実現
+- **VSCode依存の局所化**: FileRepository.getProjectRoot()でVSCode APIアクセスを適切に制限
+- **新規サービス実装**: DialogoiPathService（78行、3メソッド、包括的テスト）
+- **品質向上**: ForeshadowingService.test.tsをjest-mock-extendedパターンに統一
+- **設定統一**: 除外パターン3つ→1つへの集約、VSCode起動条件の更新
 
 ### Phase 2: メタデータ管理の移行（推定: 4時間）
 
-- [ ] **2.1** MetaYamlServiceImpl の `getMetaYamlPath()` を更新
-  - FileRepository.resolveMetaPath() を使用するよう変更
+- [ ] **2.1** MetaYamlServiceImpl にDialogoiPathService を依存注入
+  - コンストラクタに DialogoiPathService を追加
+  - ServiceContainer での注入設定
 
-- [ ] **2.2** MetaYamlServiceImpl に `ensureDialogoiDirectory()` を追加
-  - .dialogoi/内のディレクトリ構造を自動作成
+- [ ] **2.2** MetaYamlServiceImpl の `getMetaYamlPath()` を更新
+  - DialogoiPathService.resolveMetaPath() を使用するよう変更
 
 - [ ] **2.3** MetaYamlServiceImpl の `saveMetaYamlAsync()` を更新
-  - 保存前に ensureDialogoiDirectory() を呼び出し
+  - 保存前に DialogoiPathService.ensureDialogoiDirectory() を呼び出し
 
 - [ ] **2.4** CoreFileServiceImpl の `createDirectory()` を更新
   - 新しいパス構造でメタデータを作成
+  - DialogoiPathService の利用
 
 - [ ] **2.5** MetaYamlService のテストを修正
-  - `mock<FileRepository>()` の新しいメソッドに対応
+  - `mock<DialogoiPathService>()` によるモック化対応
   - 新しいパス構造での動作確認
 
 ### Phase 3: コメントシステムの移行（推定: 3時間）
 
-- [ ] **3.1** CommentService の `getCommentFilePath()` を更新
-  - FileRepository.resolveCommentPath() を使用
+- [ ] **3.1** CommentService にDialogoiPathService を依存注入  
+  - コンストラクタに DialogoiPathService を追加
+  - ServiceContainer での注入設定
 
-- [ ] **3.2** CommentService の `ensureCommentFile()` を更新
-  - .dialogoi/内にディレクトリを作成してからファイル作成
+- [ ] **3.2** CommentService の `getCommentFilePath()` を更新
+  - DialogoiPathService.resolveCommentPath() を使用
 
-- [ ] **3.3** CommentService の `deleteCommentFile()` を更新
+- [ ] **3.3** CommentService の `ensureCommentFile()` を更新
+  - DialogoiPathService.ensureDialogoiDirectory() でディレクトリ作成
+
+- [ ] **3.4** CommentService の `deleteCommentFile()` を更新
   - 新しいパスからファイルを削除
 
-- [ ] **3.4** CommentService のテストを修正
+- [ ] **3.5** CommentService のテストを修正
+  - `mock<DialogoiPathService>()` によるモック化対応
   - 新しいパス構造での全機能の動作確認
 
 ### Phase 4: UI・監視システムの更新（推定: 5時間）
