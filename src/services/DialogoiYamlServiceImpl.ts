@@ -4,7 +4,7 @@ import { DialogoiYaml, DialogoiYamlUtils } from '../utils/DialogoiYamlUtils.js';
 import { DialogoiYamlService } from './DialogoiYamlService.js';
 
 export class DialogoiYamlServiceImpl implements DialogoiYamlService {
-  private static readonly DIALOGOI_YAML_FILENAME = 'dialogoi.yaml';
+  private static readonly DIALOGOI_YAML_FILENAME = '.dialogoi/dialogoi.yaml';
 
   constructor(private fileRepository: FileRepository) {}
 
@@ -134,6 +134,18 @@ export class DialogoiYamlServiceImpl implements DialogoiYamlService {
         await this.fileRepository.createDirectoryAsync(projectUri);
       } catch (error) {
         console.error('プロジェクトディレクトリの作成エラー:', error);
+        return false;
+      }
+    }
+
+    // .dialogoi/ ディレクトリを作成
+    const dialogoiDirPath = path.join(projectRootAbsolutePath, '.dialogoi');
+    const dialogoiDirUri = this.fileRepository.createDirectoryUri(dialogoiDirPath);
+    if (!(await this.fileRepository.existsAsync(dialogoiDirUri))) {
+      try {
+        await this.fileRepository.createDirectoryAsync(dialogoiDirUri);
+      } catch (error) {
+        console.error('.dialogoi/ ディレクトリの作成エラー:', error);
         return false;
       }
     }

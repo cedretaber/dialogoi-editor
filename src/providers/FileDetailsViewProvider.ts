@@ -198,15 +198,17 @@ export class FileDetailsViewProvider implements vscode.WebviewViewProvider {
   }
 
   /**
-   * FileSystemWatcherを設定してmeta.yamlファイルとマークダウンファイルの変更を監視
+   * FileSystemWatcherを設定してメタデータファイルとマークダウンファイルの変更を監視
    */
   private setupFileWatcher(): void {
-    // .dialogoi-meta.yamlファイルの変更を監視
-    this.fileWatcher = vscode.workspace.createFileSystemWatcher('**/.dialogoi-meta.yaml');
+    // .dialogoi/**/dialogoi-meta.yaml ファイルの変更を監視（メタデータファイルのみ）
+    this.fileWatcher = vscode.workspace.createFileSystemWatcher(
+      '**/.dialogoi/**/dialogoi-meta.yaml',
+    );
 
     // ファイル変更時の処理
     this.fileWatcher.onDidChange((uri) => {
-      this.logger.debug(`meta.yamlファイルが変更されました: ${uri.fsPath}`);
+      this.logger.debug(`メタデータファイルが変更されました: ${uri.fsPath}`);
       void this.refreshCurrentItem();
     });
 

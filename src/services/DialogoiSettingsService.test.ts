@@ -124,9 +124,7 @@ describe('DialogoiSettingsService テストスイート', () => {
       // 準備：Dialogoi関連パターンを設定
       const existingExclude = {
         node_modules: true,
-        '**/dialogoi.yaml': true,
-        '**/.dialogoi-meta.yaml': true,
-        '**/.dialogoi-reviews/**': true,
+        '**/.dialogoi/**': true,
       };
       setSettings('files', 'exclude', existingExclude);
 
@@ -194,9 +192,7 @@ describe('DialogoiSettingsService テストスイート', () => {
     it('パターンがfalseに設定されている場合はfalseを返す', () => {
       // 準備：パターンがfalseに設定
       const excludePatterns = {
-        '**/dialogoi.yaml': false,
-        '**/.dialogoi-meta.yaml': true,
-        '**/.dialogoi-reviews/**': true,
+        '**/.dialogoi/**': false,
       };
       setSettings('files', 'exclude', excludePatterns);
 
@@ -213,7 +209,7 @@ describe('DialogoiSettingsService テストスイート', () => {
       // 準備
       const excludePatterns = {
         node_modules: true,
-        '**/dialogoi.yaml': true,
+        '**/.dialogoi/**': true,
         test: false,
       };
       setSettings('files', 'exclude', excludePatterns);

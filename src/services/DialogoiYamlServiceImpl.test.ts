@@ -70,7 +70,7 @@ describe('DialogoiYamlServiceImpl テストスイート', () => {
   describe('getDialogoiYamlPath', () => {
     it('dialogoi.yamlファイルのパスを取得する', () => {
       const projectRoot = '/test/project';
-      const expectedPath = path.join(projectRoot, 'dialogoi.yaml');
+      const expectedPath = path.join(projectRoot, '.dialogoi/dialogoi.yaml');
 
       const result = service.getDialogoiYamlPath(projectRoot);
       expect(result).toBe(expectedPath);
@@ -82,7 +82,7 @@ describe('DialogoiYamlServiceImpl テストスイート', () => {
   describe('isDialogoiProjectRootAsync', () => {
     it('dialogoi.yamlが存在する場合trueを返す', async () => {
       const projectRoot = '/test/project';
-      const dialogoiYamlPath = path.join(projectRoot, 'dialogoi.yaml');
+      const dialogoiYamlPath = path.join(projectRoot, '.dialogoi/dialogoi.yaml');
 
       fileSystem.set(dialogoiYamlPath, 'test content');
 
@@ -101,7 +101,7 @@ describe('DialogoiYamlServiceImpl テストスイート', () => {
   describe('loadDialogoiYamlAsync', () => {
     it('正常なdialogoi.yamlを読み込む', async () => {
       const projectRoot = '/test/project';
-      const dialogoiYamlPath = path.join(projectRoot, 'dialogoi.yaml');
+      const dialogoiYamlPath = path.join(projectRoot, '.dialogoi/dialogoi.yaml');
       const yamlContent = `title: "テスト小説"
 author: "テスト著者"
 created_at: "2024-01-01T00:00:00Z"
@@ -127,7 +127,7 @@ tags: ["ファンタジー"]`;
 
     it('不正なYAMLの場合nullを返す', async () => {
       const projectRoot = '/test/project';
-      const dialogoiYamlPath = path.join(projectRoot, 'dialogoi.yaml');
+      const dialogoiYamlPath = path.join(projectRoot, '.dialogoi/dialogoi.yaml');
 
       fileSystem.set(dialogoiYamlPath, 'title: "テスト"\nauthor: "著者"\ninvalid: yaml: [unclosed');
 
@@ -139,7 +139,7 @@ tags: ["ファンタジー"]`;
   describe('saveDialogoiYamlAsync', () => {
     it('正常なデータを保存する', async () => {
       const projectRoot = '/test/project';
-      const dialogoiYamlPath = path.join(projectRoot, 'dialogoi.yaml');
+      const dialogoiYamlPath = path.join(projectRoot, '.dialogoi/dialogoi.yaml');
       const data = {
         title: 'テスト小説',
         author: 'テスト著者',
@@ -188,7 +188,7 @@ tags: ["ファンタジー"]`;
 
     it('updated_atが自動で追加される', async () => {
       const projectRoot = '/test/project';
-      const dialogoiYamlPath = path.join(projectRoot, 'dialogoi.yaml');
+      const dialogoiYamlPath = path.join(projectRoot, '.dialogoi/dialogoi.yaml');
       const data = {
         title: 'テスト小説',
         author: 'テスト著者',
@@ -241,6 +241,12 @@ tags: ["ファンタジー"]`;
       expect(result).toBe(true);
       expect(await service.isDialogoiProjectRootAsync(projectRoot)).toBeTruthy();
 
+      // .dialogoi/ ディレクトリが作成されることを確認
+      const dialogoiDirUri = mockFileRepository.createDirectoryUri(
+        path.join(projectRoot, '.dialogoi'),
+      );
+      expect(mockFileRepository.createDirectoryAsync).toHaveBeenCalledWith(dialogoiDirUri);
+
       const data = await service.loadDialogoiYamlAsync(projectRoot);
       expect(data).not.toBe(null);
       expect(data?.title).toBe('新しい小説');
@@ -250,7 +256,7 @@ tags: ["ファンタジー"]`;
 
     it('既にプロジェクトが存在する場合は作成しない', async () => {
       const projectRoot = '/test/existing-project';
-      const dialogoiYamlPath = path.join(projectRoot, 'dialogoi.yaml');
+      const dialogoiYamlPath = path.join(projectRoot, '.dialogoi/dialogoi.yaml');
 
       fileSystem.set(dialogoiYamlPath, 'existing content');
 
@@ -282,7 +288,7 @@ tags: ["ファンタジー"]`;
   describe('updateDialogoiYamlAsync', () => {
     it('既存のプロジェクトを更新する', async () => {
       const projectRoot = '/test/project';
-      const dialogoiYamlPath = path.join(projectRoot, 'dialogoi.yaml');
+      const dialogoiYamlPath = path.join(projectRoot, '.dialogoi/dialogoi.yaml');
       const originalContent = `title: "元のタイトル"
 author: "元の著者"
 created_at: "2024-01-01T00:00:00Z"
@@ -322,7 +328,7 @@ project_settings:
     it('プロジェクトルートを見つける', async () => {
       const projectRoot = '/test/project';
       const subDir = '/test/project/contents';
-      const dialogoiYamlPath = path.join(projectRoot, 'dialogoi.yaml');
+      const dialogoiYamlPath = path.join(projectRoot, '.dialogoi/dialogoi.yaml');
 
       fileSystem.set(dialogoiYamlPath, 'test content');
 
@@ -332,7 +338,7 @@ project_settings:
 
     it('プロジェクトルート自体から開始する場合', async () => {
       const projectRoot = '/test/project';
-      const dialogoiYamlPath = path.join(projectRoot, 'dialogoi.yaml');
+      const dialogoiYamlPath = path.join(projectRoot, '.dialogoi/dialogoi.yaml');
 
       fileSystem.set(dialogoiYamlPath, 'test content');
 
@@ -350,7 +356,7 @@ project_settings:
     it('深い階層からプロジェクトルートを見つける', async () => {
       const projectRoot = '/test/project';
       const deepDir = '/test/project/contents/chapter1/subsection';
-      const dialogoiYamlPath = path.join(projectRoot, 'dialogoi.yaml');
+      const dialogoiYamlPath = path.join(projectRoot, '.dialogoi/dialogoi.yaml');
 
       fileSystem.set(dialogoiYamlPath, 'test content');
 
@@ -361,9 +367,9 @@ project_settings:
     it('ファイルパスを渡してもプロジェクトルートを見つける', async () => {
       const projectRoot = '/test/project';
       const filePath = '/test/project/settings/characters/hero.md';
-      const dialogoiYamlPath = path.join(projectRoot, 'dialogoi.yaml');
+      const dialogoiYamlPath = path.join(projectRoot, '.dialogoi/dialogoi.yaml');
 
-      // プロジェクトルートにdialogoi.yamlを作成
+      // プロジェクトルートに.dialogoi/dialogoi.yamlを作成
       fileSystem.set(dialogoiYamlPath, 'test content');
       // ファイルも実際に作成
       fileSystem.set(filePath, '# ヒーロー');
@@ -375,9 +381,9 @@ project_settings:
     it('存在しないファイルパスでもプロジェクトルートを見つける', async () => {
       const projectRoot = '/test/project';
       const nonExistentFilePath = '/test/project/settings/characters/villain.md';
-      const dialogoiYamlPath = path.join(projectRoot, 'dialogoi.yaml');
+      const dialogoiYamlPath = path.join(projectRoot, '.dialogoi/dialogoi.yaml');
 
-      // プロジェクトルートにdialogoi.yamlを作成（ファイルは作成しない）
+      // プロジェクトルートに.dialogoi/dialogoi.yamlを作成（ファイルは作成しない）
       fileSystem.set(dialogoiYamlPath, 'test content');
 
       const result = await service.findProjectRootAsync(nonExistentFilePath);

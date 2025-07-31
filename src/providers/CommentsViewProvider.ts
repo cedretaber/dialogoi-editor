@@ -50,6 +50,7 @@ export class CommentsViewProvider implements vscode.WebviewViewProvider {
   private logger: Logger;
   private _treeDataProvider: DialogoiTreeDataProvider | null = null;
   private disposables: vscode.Disposable[] = [];
+  private commentFileWatcher: vscode.FileSystemWatcher | null = null;
 
   constructor(
     private readonly context: vscode.ExtensionContext,
@@ -59,6 +60,9 @@ export class CommentsViewProvider implements vscode.WebviewViewProvider {
 
     // アクティブエディタ変更イベントを監視
     this.setupActiveEditorListener();
+
+    // コメントファイル監視のセットアップ
+    this.setupCommentFileWatcher();
   }
 
   /**
@@ -82,6 +86,45 @@ export class CommentsViewProvider implements vscode.WebviewViewProvider {
 
     this.disposables.push(activeEditorDisposable);
     this.logger.debug('アクティブエディタ監視を開始しました');
+  }
+
+  /**
+   * コメントファイル監視のセットアップ
+   */
+  private setupCommentFileWatcher(): void {
+    // .dialogoi/**/.*.comments.yaml ファイルの変更を監視（コメントファイルのみ）
+    this.commentFileWatcher = vscode.workspace.createFileSystemWatcher(
+      '**/.dialogoi/**/.*.comments.yaml',
+    );
+
+    // ファイル変更時の処理
+    this.commentFileWatcher.onDidChange((uri) => {
+      this.logger.debug(`コメントファイルが変更されました: ${uri.fsPath}`);
+      void this.refreshCurrentFile();
+    });
+
+    // ファイル作成・削除時の処理
+    this.commentFileWatcher.onDidCreate((uri) => {
+      this.logger.debug(`コメントファイルが作成されました: ${uri.fsPath}`);
+      void this.refreshCurrentFile();
+    });
+
+    this.commentFileWatcher.onDidDelete((uri) => {
+      this.logger.debug(`コメントファイルが削除されました: ${uri.fsPath}`);
+      void this.refreshCurrentFile();
+    });
+
+    this.disposables.push(this.commentFileWatcher);
+    this.logger.debug('コメントファイル監視を開始しました');
+  }
+
+  /**
+   * 現在のファイルのコメント表示を再読み込み
+   */
+  private async refreshCurrentFile(): Promise<void> {
+    if (this.currentFilePath !== null) {
+      await this.loadCommentsForCurrentFile();
+    }
   }
 
   /**
