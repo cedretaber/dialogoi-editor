@@ -295,6 +295,12 @@ describe('CoreFileService テストスイート', () => {
       // ディレクトリが作成されているか確認
       const dirUri = mockFileRepository.createDirectoryUri('/test/newdir');
       expect(await mockFileRepository.existsAsync(dirUri)).toBeTruthy();
+
+      // サブディレクトリ用の空のメタデータファイルが作成されることを確認
+      expect(mockMetaYamlService.saveMetaYamlAsync).toHaveBeenCalledWith('/test/newdir', {
+        files: [],
+      });
+      expect(mockMetaYamlService.saveMetaYamlAsync).toHaveBeenCalledTimes(2); // 親ディレクトリ + サブディレクトリ
     });
 
     it('キャラクターサブタイプでファイルを作成できる', async () => {
@@ -605,7 +611,7 @@ describe('CoreFileService テストスイート', () => {
       const result = await coreFileService.createFile('/nonexistent', 'file.txt', 'content');
 
       expect(result.success).toBe(false);
-      expect(result.message.includes('.dialogoi-meta.yamlが見つから')).toBeTruthy();
+      expect(result.message.includes('メタデータファイルが見つから')).toBeTruthy();
     });
 
     it('相対パス使用時のエラー（ノベルルートパス未設定）', async () => {

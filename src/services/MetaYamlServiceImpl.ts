@@ -10,18 +10,22 @@ import {
 } from '../utils/MetaYamlUtils.js';
 
 import { MetaYamlService } from './MetaYamlService.js';
+import { DialogoiPathService } from './DialogoiPathService.js';
 
 /**
- * .dialogoi-meta.yaml ファイルの操作を行うサービスの実装
+ * dialogoi-meta.yaml ファイルの操作を行うサービスの実装
  */
 export class MetaYamlServiceImpl implements MetaYamlService {
-  constructor(private fileRepository: FileRepository) {}
+  constructor(
+    private fileRepository: FileRepository,
+    private dialogoiPathService: DialogoiPathService,
+  ) {}
 
   /**
-   * .dialogoi-meta.yaml を読み込む（非同期版）
+   * メタデータファイルを読み込む（非同期版）
    */
   async loadMetaYamlAsync(dirAbsolutePath: string): Promise<MetaYaml | null> {
-    const metaAbsolutePath = path.join(dirAbsolutePath, '.dialogoi-meta.yaml');
+    const metaAbsolutePath = this.dialogoiPathService.resolveMetaPath(dirAbsolutePath);
 
     try {
       const metaUri = this.fileRepository.createFileUri(metaAbsolutePath);
@@ -31,7 +35,7 @@ export class MetaYamlServiceImpl implements MetaYamlService {
       const metaContent = await this.fileRepository.readFileAsync(metaUri, 'utf8');
       return MetaYamlUtils.parseMetaYaml(metaContent);
     } catch (error) {
-      console.error('.dialogoi-meta.yaml の読み込みエラー:', error);
+      console.error('メタデータファイルの読み込みエラー:', error);
       return null;
     }
   }
@@ -81,25 +85,27 @@ export class MetaYamlServiceImpl implements MetaYamlService {
   }
 
   /**
-   * .dialogoi-meta.yamlファイルを保存（非同期版）
+   * メタデータファイルを保存（非同期版）
    */
   async saveMetaYamlAsync(dirAbsolutePath: string, meta: MetaYaml): Promise<boolean> {
-    const metaAbsolutePath = path.join(dirAbsolutePath, '.dialogoi-meta.yaml');
-
     try {
       // バリデーション
       const validationErrors = MetaYamlUtils.validateMetaYaml(meta);
       if (validationErrors.length > 0) {
-        console.error('.dialogoi-meta.yaml検証エラー:', validationErrors);
+        console.error('メタデータファイル検証エラー:', validationErrors);
         return false;
       }
 
+      // 保存前にディレクトリ構造を自動作成
+      await this.dialogoiPathService.ensureDialogoiDirectory(dirAbsolutePath);
+
+      const metaAbsolutePath = this.dialogoiPathService.resolveMetaPath(dirAbsolutePath);
       const metaUri = this.fileRepository.createFileUri(metaAbsolutePath);
       const yamlContent = MetaYamlUtils.stringifyMetaYaml(meta);
       await this.fileRepository.writeFileAsync(metaUri, yamlContent);
       return true;
     } catch (error) {
-      console.error('.dialogoi-meta.yaml の保存エラー:', error);
+      console.error('メタデータファイルの保存エラー:', error);
       return false;
     }
   }
@@ -112,12 +118,11 @@ export class MetaYamlServiceImpl implements MetaYamlService {
     fileName: string,
     tags: string[],
   ): Promise<boolean> {
-    const metaUri = this.fileRepository.createFileUri(
-      path.join(dirAbsolutePath, '.dialogoi-meta.yaml'),
-    );
+    const metaAbsolutePath = this.dialogoiPathService.resolveMetaPath(dirAbsolutePath);
+    const metaUri = this.fileRepository.createFileUri(metaAbsolutePath);
 
     try {
-      // 既存の .dialogoi-meta.yaml を読み込む
+      // 既存のメタデータファイルを読み込む
       const meta = await this.loadMetaYamlAsync(dirAbsolutePath);
       if (!meta) {
         return false;
@@ -140,7 +145,7 @@ export class MetaYamlServiceImpl implements MetaYamlService {
         fileItem.tags = []; // 空配列に設定
       }
 
-      // .dialogoi-meta.yaml を更新
+      // メタデータファイルを更新
       const updatedContent = MetaYamlUtils.stringifyMetaYaml(meta);
       await this.fileRepository.writeFileAsync(metaUri, updatedContent);
 
@@ -223,7 +228,7 @@ export class MetaYamlServiceImpl implements MetaYamlService {
         return {
           success: false,
           message:
-            '移動元の親ディレクトリの.dialogoi-meta.yamlが見つからないか、読み込みに失敗しました。',
+            '移動元の親ディレクトリのメタデータファイルが見つからないか、読み込みに失敗しました。',
         };
       }
 
@@ -233,7 +238,7 @@ export class MetaYamlServiceImpl implements MetaYamlService {
         return {
           success: false,
           message:
-            '移動先の親ディレクトリの.dialogoi-meta.yamlが見つからないか、読み込みに失敗しました。',
+            '移動先の親ディレクトリのメタデータファイルが見つからないか、読み込みに失敗しました。',
         };
       }
 
@@ -244,7 +249,7 @@ export class MetaYamlServiceImpl implements MetaYamlService {
       if (dirIndex === -1) {
         return {
           success: false,
-          message: `移動元の.dialogoi-meta.yaml内にディレクトリ ${dirName} が見つかりません。`,
+          message: `移動元のメタデータファイル内にディレクトリ ${dirName} が見つかりません。`,
         };
       }
 
@@ -288,7 +293,7 @@ export class MetaYamlServiceImpl implements MetaYamlService {
       if (!saveSourceResult) {
         return {
           success: false,
-          message: '移動元の親ディレクトリの.dialogoi-meta.yamlの保存に失敗しました。',
+          message: '移動元の親ディレクトリのメタデータファイルの保存に失敗しました。',
         };
       }
 
@@ -301,7 +306,7 @@ export class MetaYamlServiceImpl implements MetaYamlService {
 
         return {
           success: false,
-          message: '移動先の親ディレクトリの.dialogoi-meta.yamlの保存に失敗しました。',
+          message: '移動先の親ディレクトリのメタデータファイルの保存に失敗しました。',
         };
       }
 
@@ -339,7 +344,7 @@ export class MetaYamlServiceImpl implements MetaYamlService {
       if (sourceMeta === null) {
         return {
           success: false,
-          message: '移動元の.dialogoi-meta.yamlが見つからないか、読み込みに失敗しました。',
+          message: '移動元のメタデータファイルが見つからないか、読み込みに失敗しました。',
         };
       }
 
@@ -348,7 +353,7 @@ export class MetaYamlServiceImpl implements MetaYamlService {
       if (targetMeta === null) {
         return {
           success: false,
-          message: '移動先の.dialogoi-meta.yamlが見つからないか、読み込みに失敗しました。',
+          message: '移動先のメタデータファイルが見つからないか、読み込みに失敗しました。',
         };
       }
 
@@ -357,7 +362,7 @@ export class MetaYamlServiceImpl implements MetaYamlService {
       if (fileIndex === -1) {
         return {
           success: false,
-          message: `移動元の.dialogoi-meta.yaml内にファイル ${fileName} が見つかりません。`,
+          message: `移動元のメタデータファイル内にファイル ${fileName} が見つかりません。`,
         };
       }
 
@@ -421,7 +426,7 @@ export class MetaYamlServiceImpl implements MetaYamlService {
         if (!saveSourceResult) {
           return {
             success: false,
-            message: '移動元の.dialogoi-meta.yamlの保存に失敗しました。',
+            message: '移動元のメタデータファイルの保存に失敗しました。',
           };
         }
 
@@ -434,7 +439,7 @@ export class MetaYamlServiceImpl implements MetaYamlService {
 
           return {
             success: false,
-            message: '移動先の.dialogoi-meta.yamlの保存に失敗しました。',
+            message: '移動先のメタデータファイルの保存に失敗しました。',
           };
         }
       }

@@ -65,7 +65,7 @@ export interface MetaYaml {
 }
 
 /**
- * .dialogoi-meta.yamlファイルの純粋なYAML処理を行うユーティリティクラス
+ * メタデータファイルの純粋なYAML処理を行うユーティリティクラス
  * ファイル操作を含まない純粋なYAMLテキスト処理のみを提供
  */
 export class MetaYamlUtils {
@@ -80,7 +80,7 @@ export class MetaYamlUtils {
       }
       return meta;
     } catch (error) {
-      console.error('.dialogoi-meta.yaml の解析エラー:', error);
+      console.error('メタデータファイルの解析エラー:', error);
       return null;
     }
   }

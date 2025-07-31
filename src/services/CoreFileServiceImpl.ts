@@ -84,6 +84,12 @@ export class CoreFileServiceImpl implements CoreFileService {
       // サブディレクトリの場合はディレクトリを作成
       if (fileType === 'subdirectory') {
         await this.fileRepository.createDirectoryAsync(fileUri);
+
+        // 新しく作成されたサブディレクトリ用の空のメタデータファイルを作成
+        const emptyMeta: MetaYaml = {
+          files: [],
+        };
+        await this.metaYamlService.saveMetaYamlAsync(absoluteFilePath, emptyMeta);
       } else {
         // ファイルを作成
         await this.fileRepository.writeFileAsync(fileUri, initialContent);
@@ -682,24 +688,24 @@ export class CoreFileServiceImpl implements CoreFileService {
     updateFunction: (meta: MetaYaml) => MetaYaml,
   ): Promise<FileOperationResult> {
     try {
-      // .dialogoi-meta.yamlを読み込み
+      // メタデータファイルを読み込み
       const meta = await this.metaYamlService.loadMetaYamlAsync(dirPath);
       if (meta === null) {
         return {
           success: false,
-          message: '.dialogoi-meta.yamlが見つからないか、読み込みに失敗しました。',
+          message: 'メタデータファイルが見つからないか、読み込みに失敗しました。',
         };
       }
 
       // 更新を実行
       const updatedMeta = updateFunction(meta);
 
-      // .dialogoi-meta.yamlを保存
+      // メタデータファイルを保存
       const saveResult = await this.metaYamlService.saveMetaYamlAsync(dirPath, updatedMeta);
       if (!saveResult) {
         return {
           success: false,
-          message: '.dialogoi-meta.yamlの保存に失敗しました。',
+          message: 'メタデータファイルの保存に失敗しました。',
         };
       }
 
@@ -711,13 +717,13 @@ export class CoreFileServiceImpl implements CoreFileService {
 
       return {
         success: true,
-        message: '.dialogoi-meta.yamlを更新しました。',
+        message: 'メタデータファイルを更新しました。',
         updatedItems,
       };
     } catch (error) {
       return {
         success: false,
-        message: `.dialogoi-meta.yaml更新エラー: ${error instanceof Error ? error.message : String(error)}`,
+        message: `メタデータファイル更新エラー: ${error instanceof Error ? error.message : String(error)}`,
       };
     }
   }

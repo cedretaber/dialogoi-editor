@@ -410,25 +410,37 @@ VSCode上での実際の操作：
 - **品質向上**: ForeshadowingService.test.tsをjest-mock-extendedパターンに統一
 - **設定統一**: 除外パターン3つ→1つへの集約、VSCode起動条件の更新
 
-### Phase 2: メタデータ管理の移行（推定: 4時間）
+### Phase 2: メタデータ管理の移行（推定: 4時間） ✅ **2025-01-31完了**
 
-- [ ] **2.1** MetaYamlServiceImpl にDialogoiPathService を依存注入
-  - コンストラクタに DialogoiPathService を追加
-  - ServiceContainer での注入設定
+**メタデータファイルを `.dialogoi/` ディレクトリ構造に移行完了**
 
-- [ ] **2.2** MetaYamlServiceImpl の `getMetaYamlPath()` を更新
-  - DialogoiPathService.resolveMetaPath() を使用するよう変更
+- [x] **2.1** MetaYamlServiceImpl にDialogoiPathService を依存注入
+  - コンストラクタに DialogoiPathService を追加完了
+  - ServiceContainer での注入設定完了
 
-- [ ] **2.3** MetaYamlServiceImpl の `saveMetaYamlAsync()` を更新
-  - 保存前に DialogoiPathService.ensureDialogoiDirectory() を呼び出し
+- [x] **2.2** MetaYamlServiceImpl の `loadMetaYamlAsync()` および関連メソッドを更新
+  - 全メソッド内のハードコードされたパス生成を DialogoiPathService.resolveMetaPath() に変更完了
+  - `path.join(dirAbsolutePath, '.dialogoi-meta.yaml')` の全3箇所を置換完了
 
-- [ ] **2.4** CoreFileServiceImpl の `createDirectory()` を更新
-  - 新しいパス構造でメタデータを作成
-  - DialogoiPathService の利用
+- [x] **2.3** MetaYamlServiceImpl の `saveMetaYamlAsync()` を更新
+  - 保存前に DialogoiPathService.ensureDialogoiDirectory() を呼び出し追加完了
+  - 自動的な `.dialogoi/` ディレクトリ構造作成に対応
 
-- [ ] **2.5** MetaYamlService のテストを修正
-  - `mock<DialogoiPathService>()` によるモック化対応
-  - 新しいパス構造での動作確認
+- [x] **2.4** CoreFileServiceImpl の `createFile()` 内 subdirectory 作成処理を更新
+  - subdirectory作成時に空のメタデータファイル自動作成機能追加完了
+  - DialogoiPathService 経由の新しいパス構造対応完了
+
+- [x] **2.5** MetaYamlService のテストを修正・強化
+  - `mock<DialogoiPathService>()` によるモック化対応完了
+  - メソッド呼び出し検証（`resolveMetaPath`, `ensureDialogoiDirectory`）追加完了
+  - CoreFileServiceImpl のサブディレクトリ作成テストも強化完了
+
+**Phase 2 完了時の技術的成果:**
+- **パス構造移行**: `{directory}/.dialogoi-meta.yaml` → `{projectRoot}/.dialogoi/{relativePath}/dialogoi-meta.yaml`
+- **自動ディレクトリ作成**: メタデータ保存時に必要な `.dialogoi/` 構造を自動生成
+- **テスト品質向上**: モックメソッドの呼び出し検証により信頼性の高いテストに改善
+- **文字列リテラル統一**: `.dialogoi-meta.yaml` 参照を「メタデータファイル」に統一し混乱を回避
+- **品質保証**: 全690+テスト通過、`npm run check-all` 完全クリア
 
 ### Phase 3: コメントシステムの移行（推定: 3時間）
 

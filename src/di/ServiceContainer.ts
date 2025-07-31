@@ -204,7 +204,10 @@ export class ServiceContainer implements IServiceContainer {
    */
   getMetaYamlService(): MetaYamlService {
     if (!this.metaYamlService) {
-      this.metaYamlService = new MetaYamlServiceImpl(this.getFileRepository());
+      this.metaYamlService = new MetaYamlServiceImpl(
+        this.getFileRepository(),
+        this.getDialogoiPathService(),
+      );
     }
     return this.metaYamlService;
   }

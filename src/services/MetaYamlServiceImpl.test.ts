@@ -2,12 +2,14 @@ import { mock, MockProxy } from 'jest-mock-extended';
 import { MetaYamlServiceImpl } from './MetaYamlServiceImpl.js';
 import { MetaYaml } from '../utils/MetaYamlUtils.js';
 import { FileRepository } from '../repositories/FileRepository.js';
+import { DialogoiPathService } from './DialogoiPathService.js';
 import { Uri } from '../interfaces/Uri.js';
 import { createContentItem, createSubdirectoryItem } from '../test/testHelpers.js';
 
 describe('MetaYamlServiceImpl テストスイート', () => {
   let service: MetaYamlServiceImpl;
   let mockFileRepository: MockProxy<FileRepository>;
+  let mockDialogoiPathService: MockProxy<DialogoiPathService>;
   let fileSystem: Map<string, string>;
   let directories: Set<string>;
 
@@ -20,15 +22,25 @@ describe('MetaYamlServiceImpl テストスイート', () => {
 
     // jest-mock-extendedでモック作成
     mockFileRepository = mock<FileRepository>();
+    mockDialogoiPathService = mock<DialogoiPathService>();
 
     // サービスインスタンス作成
-    service = new MetaYamlServiceImpl(mockFileRepository);
+    service = new MetaYamlServiceImpl(mockFileRepository, mockDialogoiPathService);
 
     // ファイルシステムモックの設定
     setupFileSystemMocks();
   });
 
   function setupFileSystemMocks(): void {
+    // DialogoiPathServiceのモック設定
+    mockDialogoiPathService.resolveMetaPath.mockImplementation((dirPath: string) => {
+      // 新しいパス構造: {projectRoot}/.dialogoi/{relativePath}/dialogoi-meta.yaml
+      // テスト用に簡単なパス変換を実装
+      return `${dirPath}/.dialogoi-meta.yaml`;
+    });
+
+    mockDialogoiPathService.ensureDialogoiDirectory.mockResolvedValue();
+
     // createFileUriのモック
     mockFileRepository.createFileUri.mockImplementation((filePath: string) => {
       return { path: filePath } as Uri;
@@ -124,7 +136,7 @@ describe('MetaYamlServiceImpl テストスイート', () => {
   }
 
   describe('loadMetaYamlAsync', () => {
-    it('正常な.dialogoi-meta.yamlファイルを読み込む', async () => {
+    it('正常なメタデータファイルを読み込む', async () => {
       const testDir = '/test/project';
 
       const contentItem = createContentItem({
@@ -162,6 +174,10 @@ files:
 
       const result = await service.loadMetaYamlAsync(testDir);
 
+      // DialogoiPathServiceのresolveMetaPathが正しく呼び出されたことを検証
+      expect(mockDialogoiPathService.resolveMetaPath).toHaveBeenCalledWith(testDir);
+      expect(mockDialogoiPathService.resolveMetaPath).toHaveBeenCalledTimes(1);
+
       expect(result).not.toBe(null);
       expect(result?.readme).toBe('README.md');
       expect(result?.files.length).toBe(2);
@@ -176,11 +192,15 @@ files:
       expect(result?.files[1]?.type).toBe('subdirectory');
     });
 
-    it('.dialogoi-meta.yamlファイルが存在しない場合nullを返す', async () => {
+    it('メタデータファイルが存在しない場合nullを返す', async () => {
       const testDir = '/test/project';
       addDirectory(testDir);
 
       const result = await service.loadMetaYamlAsync(testDir);
+
+      // DialogoiPathServiceのresolveMetaPathが正しく呼び出されたことを検証
+      expect(mockDialogoiPathService.resolveMetaPath).toHaveBeenCalledWith(testDir);
+
       expect(result).toBe(null);
     });
 
@@ -206,7 +226,7 @@ files:
       expect(result).toBe(null);
     });
 
-    it('空の.dialogoi-meta.yamlファイルの場合nullを返す', async () => {
+    it('空のメタデータファイルの場合nullを返す', async () => {
       const testDir = '/test/project';
       addDirectory(testDir);
       addFile(`${testDir}/.dialogoi-meta.yaml`, '');
@@ -215,7 +235,7 @@ files:
       expect(result).toBe(null);
     });
 
-    it('最小構成の.dialogoi-meta.yamlファイルを読み込む', async () => {
+    it('最小構成のメタデータファイルを読み込む', async () => {
       const testDir = '/test/project';
       const metaContent = `files: []`;
 
@@ -260,6 +280,13 @@ files:
       addDirectory(testDir);
 
       const result = await service.saveMetaYamlAsync(testDir, meta);
+
+      // DialogoiPathServiceのメソッドが正しく呼び出されたことを検証
+      expect(mockDialogoiPathService.ensureDialogoiDirectory).toHaveBeenCalledWith(testDir);
+      expect(mockDialogoiPathService.resolveMetaPath).toHaveBeenCalledWith(testDir);
+      expect(mockDialogoiPathService.ensureDialogoiDirectory).toHaveBeenCalledTimes(1);
+      expect(mockDialogoiPathService.resolveMetaPath).toHaveBeenCalledTimes(1);
+
       expect(result).toBe(true);
 
       // 保存されたファイルを確認
@@ -339,7 +366,7 @@ files:
       const result = await service.saveMetaYamlAsync(testDir, invalidMeta);
       expect(result).toBe(false);
 
-      // .dialogoi-meta.yamlファイルが作成されていないことを確認
+      // メタデータファイルが作成されていないことを確認
       const metaUri = mockFileRepository.createFileUri(`${testDir}/.dialogoi-meta.yaml`);
       expect(await mockFileRepository.existsAsync(metaUri)).toBe(false);
     });
@@ -395,7 +422,7 @@ files: []`;
       expect(result).toBe(null);
     });
 
-    it('.dialogoi-meta.yamlにreadmeが設定されていない場合nullを返す', async () => {
+    it('メタデータファイルにreadmeが設定されていない場合nullを返す', async () => {
       const testDir = '/test/project';
       const metaContent = `files: []`;
 
@@ -406,7 +433,7 @@ files: []`;
       expect(result).toBe(null);
     });
 
-    it('.dialogoi-meta.yamlが存在しない場合nullを返す', async () => {
+    it('メタデータファイルが存在しない場合nullを返す', async () => {
       const testDir = '/test/project';
       addDirectory(testDir);
 
@@ -570,6 +597,10 @@ files: []`;
       // タグを更新
       const newTags = ['新タグ1', '新タグ2', '新タグ3'];
       const result = await service.updateFileTags(testDir, fileName, newTags);
+
+      // DialogoiPathServiceのresolveMetaPathが呼び出されたことを検証
+      expect(mockDialogoiPathService.resolveMetaPath).toHaveBeenCalledWith(testDir);
+
       expect(result).toBe(true);
 
       // 更新されたタグを確認
@@ -889,7 +920,7 @@ files: []`;
       expect(fileItem.tags).toEqual(['タグ1']);
     });
 
-    it('.dialogoi-meta.yamlが存在しない場合はfalseを返す', async () => {
+    it('メタデータファイルが存在しない場合はfalseを返す', async () => {
       const testDir = '/test/project';
       const fileName = 'chapter1.txt';
 
