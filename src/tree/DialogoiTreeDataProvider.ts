@@ -74,7 +74,8 @@ export class DialogoiTreeDataProvider
 
   constructor() {
     this.workspaceRoot = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath ?? '';
-    this.fileChangeNotificationService = FileChangeNotificationService.getInstance();
+    const serviceContainer = ServiceContainer.getInstance();
+    this.fileChangeNotificationService = serviceContainer.getFileChangeNotificationService();
     // 非同期初期化は別途呼び出す
     void this.findNovelRoot();
   }

@@ -37,12 +37,12 @@ export interface DropResult {
  */
 export class DropHandlerService {
   private logger = Logger.getInstance();
-  private fileChangeNotificationService = FileChangeNotificationService.getInstance();
 
   constructor(
     private characterService: CharacterService,
     private metaYamlService: MetaYamlService,
     private dialogoiYamlService: DialogoiYamlService,
+    private fileChangeNotificationService: FileChangeNotificationService,
   ) {}
 
   /**

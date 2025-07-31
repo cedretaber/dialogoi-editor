@@ -26,7 +26,10 @@ import { ProjectLinkUpdateServiceImpl } from '../services/ProjectLinkUpdateServi
 import { Logger } from '../utils/Logger.js';
 import { Uri } from '../interfaces/Uri.js';
 import { EventEmitterRepository } from '../repositories/EventEmitterRepository.js';
-import { FileChangeEvent } from '../services/FileChangeNotificationService.js';
+import {
+  FileChangeEvent,
+  FileChangeNotificationService,
+} from '../services/FileChangeNotificationService.js';
 
 /**
  * サービスコンテナのインターフェース
@@ -45,6 +48,7 @@ export interface IServiceContainer {
   getDropHandlerService(): DropHandlerService;
   getSettingsRepository(): SettingsRepository;
   getEventEmitterRepository(): EventEmitterRepository<FileChangeEvent>;
+  getFileChangeNotificationService(): FileChangeNotificationService;
   getDialogoiSettingsService(): DialogoiSettingsService;
   getProjectSettingsService(): ProjectSettingsService;
   getFileStatusService(): FileStatusService;
@@ -84,6 +88,7 @@ export class ServiceContainer implements IServiceContainer {
   private projectSetupService: ProjectSetupService | null = null;
   private projectPathService: ProjectPathService | null = null;
   private coreFileService: CoreFileService | null = null;
+  private fileChangeNotificationService: FileChangeNotificationService | null = null;
 
   private constructor(
     fileRepository: FileRepository,
@@ -241,6 +246,7 @@ export class ServiceContainer implements IServiceContainer {
         this.getCharacterService(),
         this.getMetaYamlService(),
         this.getDialogoiYamlService(),
+        this.getFileChangeNotificationService(),
       );
     }
     return this.dropHandlerService;
@@ -268,6 +274,7 @@ export class ServiceContainer implements IServiceContainer {
     this.projectSetupService = null;
     this.projectPathService = null;
     this.coreFileService = null;
+    this.fileChangeNotificationService = null;
   }
 
   getSettingsRepository(): SettingsRepository {
@@ -279,6 +286,18 @@ export class ServiceContainer implements IServiceContainer {
    */
   getEventEmitterRepository(): EventEmitterRepository<FileChangeEvent> {
     return this.eventEmitterRepository;
+  }
+
+  /**
+   * FileChangeNotificationServiceを取得
+   */
+  getFileChangeNotificationService(): FileChangeNotificationService {
+    if (!this.fileChangeNotificationService) {
+      this.fileChangeNotificationService = new FileChangeNotificationService(
+        this.eventEmitterRepository,
+      );
+    }
+    return this.fileChangeNotificationService;
   }
 
   getDialogoiSettingsService(): DialogoiSettingsService {
@@ -325,9 +344,11 @@ export class ServiceContainer implements IServiceContainer {
     if (!this.fileTypeConversionService) {
       const fileRepository = this.getFileRepository();
       const metaYamlService = this.getMetaYamlService();
+      const fileChangeNotificationService = this.getFileChangeNotificationService();
       this.fileTypeConversionService = new FileTypeConversionService(
         fileRepository,
         metaYamlService,
+        fileChangeNotificationService,
       );
     }
     return this.fileTypeConversionService;

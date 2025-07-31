@@ -78,7 +78,8 @@ export class FileDetailsViewProvider implements vscode.WebviewViewProvider {
   private fileChangeDisposable?: DisposableEvent;
 
   constructor(private readonly _extensionUri: vscode.Uri) {
-    this.fileChangeNotificationService = FileChangeNotificationService.getInstance();
+    const serviceContainer = ServiceContainer.getInstance();
+    this.fileChangeNotificationService = serviceContainer.getFileChangeNotificationService();
     // ファイル変更イベントの購読
     this.setupFileChangeListener();
     // meta.yamlファイルの変更を監視

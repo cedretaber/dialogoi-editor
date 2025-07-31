@@ -4,35 +4,31 @@ import { CharacterService } from './CharacterService.js';
 import { MetaYamlService } from './MetaYamlService.js';
 import { DialogoiYamlService } from './DialogoiYamlService.js';
 import { MetaYaml, DialogoiTreeItem } from '../utils/MetaYamlUtils.js';
-import { FileChangeNotificationService, FileChangeEvent } from './FileChangeNotificationService.js';
-import { EventEmitterRepository } from '../repositories/EventEmitterRepository.js';
+import { FileChangeNotificationService } from './FileChangeNotificationService.js';
 
 describe('DropHandlerService テストスイート', () => {
   let dropHandlerService: DropHandlerService;
   let mockCharacterService: MockProxy<CharacterService>;
   let mockMetaYamlService: MockProxy<MetaYamlService>;
   let mockDialogoiYamlService: MockProxy<DialogoiYamlService>;
+  let mockFileChangeNotificationService: MockProxy<FileChangeNotificationService>;
 
   beforeEach(() => {
     jest.clearAllMocks();
 
     // シングルトンサービスのモック設定
-    const mockEventEmitterRepository = mock<EventEmitterRepository<FileChangeEvent>>();
-    mockEventEmitterRepository.onEvent.mockReturnValue({ dispose: jest.fn() });
-    mockEventEmitterRepository.fire.mockImplementation(() => {});
-
-    FileChangeNotificationService.setInstance(mockEventEmitterRepository);
-
     // jest-mock-extendedでモック作成
     mockCharacterService = mock<CharacterService>();
     mockMetaYamlService = mock<MetaYamlService>();
     mockDialogoiYamlService = mock<DialogoiYamlService>();
+    mockFileChangeNotificationService = mock<FileChangeNotificationService>();
 
     // サービスを作成
     dropHandlerService = new DropHandlerService(
       mockCharacterService,
       mockMetaYamlService,
       mockDialogoiYamlService,
+      mockFileChangeNotificationService,
     );
   });
 
@@ -107,6 +103,17 @@ describe('DropHandlerService テストスイート', () => {
             }),
           ]),
         }),
+      );
+
+      // ファイル変更通知が呼ばれたことを確認
+      expect(mockFileChangeNotificationService.notifyReferenceUpdated).toHaveBeenCalledWith(
+        `${contentsDir}/chapter1.txt`,
+        {
+          operation: 'add',
+          reference: 'settings/character1.md',
+          fileName: 'chapter1.txt',
+          source: 'drag_and_drop',
+        },
       );
     });
 

@@ -4,8 +4,6 @@ import { FileTypeConversionService } from './FileTypeConversionService.js';
 import { FileRepository } from '../repositories/FileRepository.js';
 import { MetaYamlService } from './MetaYamlService.js';
 import { FileChangeNotificationService } from './FileChangeNotificationService.js';
-import { EventEmitterRepository } from '../repositories/EventEmitterRepository.js';
-import { FileChangeEvent } from './FileChangeNotificationService.js';
 import { Uri } from '../interfaces/Uri.js';
 import { MetaYaml } from '../utils/MetaYamlUtils.js';
 import * as path from 'path';
@@ -14,6 +12,7 @@ describe('FileTypeConversionService テストスイート', () => {
   let service: FileTypeConversionService;
   let mockFileRepository: MockProxy<FileRepository>;
   let mockMetaYamlService: MockProxy<MetaYamlService>;
+  let mockFileChangeNotificationService: MockProxy<FileChangeNotificationService>;
   let fileSystem: Map<string, string>;
   let directories: Set<string>;
 
@@ -25,15 +24,16 @@ describe('FileTypeConversionService テストスイート', () => {
     // jest-mock-extendedでモック作成
     mockFileRepository = mock<FileRepository>();
     mockMetaYamlService = mock<MetaYamlService>();
-
-    // FileChangeNotificationServiceを初期化（シングルトン）
-    const mockEventEmitterRepository = mock<EventEmitterRepository<FileChangeEvent>>();
-    FileChangeNotificationService.setInstance(mockEventEmitterRepository);
+    mockFileChangeNotificationService = mock<FileChangeNotificationService>();
 
     // モックの設定
     setupMocks();
 
-    service = new FileTypeConversionService(mockFileRepository, mockMetaYamlService);
+    service = new FileTypeConversionService(
+      mockFileRepository,
+      mockMetaYamlService,
+      mockFileChangeNotificationService,
+    );
   });
 
   function setupMocks(): void {
@@ -154,6 +154,11 @@ describe('FileTypeConversionService テストスイート', () => {
       expect(updatedMetaYaml).toBeTruthy();
       const updatedFile = updatedMetaYaml?.files.find((file) => file.name === fileName);
       expect(updatedFile?.type).toBe('setting');
+
+      // ファイル変更通知が呼ばれたことを確認
+      expect(mockFileChangeNotificationService.notifyMetaYamlUpdated).toHaveBeenCalledWith(
+        `${testDir}/.dialogoi-meta.yaml`,
+      );
     });
 
     it('settingファイルをcontentに変更する', async () => {
@@ -209,6 +214,11 @@ describe('FileTypeConversionService テストスイート', () => {
       expect(updatedMetaYaml).toBeTruthy();
       const updatedFile = updatedMetaYaml?.files.find((file) => file.name === fileName);
       expect(updatedFile?.type).toBe('content');
+
+      // ファイル変更通知が呼ばれたことを確認
+      expect(mockFileChangeNotificationService.notifyMetaYamlUpdated).toHaveBeenCalledWith(
+        `${testDir}/.dialogoi-meta.yaml`,
+      );
     });
 
     it('既に同じ種別の場合は何もしない', async () => {
@@ -259,6 +269,9 @@ describe('FileTypeConversionService テストスイート', () => {
       expect(result.oldType).toBe('content');
       expect(result.newType).toBe('content');
       expect(result.message.includes('既にcontent種別です')).toBeTruthy();
+
+      // 変更が行われないため、ファイル変更通知は呼ばれない
+      expect(mockFileChangeNotificationService.notifyMetaYamlUpdated).not.toHaveBeenCalled();
     });
 
     it('存在しないファイルの場合はエラーを返す', async () => {

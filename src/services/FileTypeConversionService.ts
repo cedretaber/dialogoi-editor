@@ -32,6 +32,7 @@ export class FileTypeConversionService {
   constructor(
     private fileRepository: FileRepository,
     private metaYamlService: MetaYamlService,
+    private fileChangeNotificationService: FileChangeNotificationService,
   ) {}
 
   /**
@@ -152,7 +153,7 @@ export class FileTypeConversionService {
       }
 
       // 8. ファイル変更通知を送信
-      FileChangeNotificationService.getInstance().notifyMetaYamlUpdated(
+      this.fileChangeNotificationService.notifyMetaYamlUpdated(
         path.join(directoryPath, '.dialogoi-meta.yaml'),
       );
 

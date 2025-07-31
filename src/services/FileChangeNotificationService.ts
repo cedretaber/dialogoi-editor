@@ -41,33 +41,11 @@ export interface FileChangeEvent {
  * 3. WebViewとTreeViewの更新タイミングの調整
  */
 export class FileChangeNotificationService {
-  private static instance: FileChangeNotificationService | null = null;
   private eventEmitterRepository: EventEmitterRepository<FileChangeEvent>;
   private logger = Logger.getInstance();
 
-  private constructor(eventEmitterRepository: EventEmitterRepository<FileChangeEvent>) {
+  constructor(eventEmitterRepository: EventEmitterRepository<FileChangeEvent>) {
     this.eventEmitterRepository = eventEmitterRepository;
-  }
-
-  /**
-   * シングルトンインスタンスを取得
-   */
-  public static getInstance(): FileChangeNotificationService {
-    if (!FileChangeNotificationService.instance) {
-      throw new Error(
-        'FileChangeNotificationServiceが初期化されていません。setInstance()を先に呼び出してください。',
-      );
-    }
-    return FileChangeNotificationService.instance;
-  }
-
-  /**
-   * シングルトンインスタンスを設定
-   */
-  public static setInstance(eventEmitterRepository: EventEmitterRepository<FileChangeEvent>): void {
-    FileChangeNotificationService.instance = new FileChangeNotificationService(
-      eventEmitterRepository,
-    );
   }
 
   /**

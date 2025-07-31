@@ -41,8 +41,7 @@ describe('FileChangeNotificationService', () => {
       listeners.forEach((listener) => listener(event));
     });
 
-    FileChangeNotificationService.setInstance(mockEventEmitterRepository);
-    service = FileChangeNotificationService.getInstance();
+    service = new FileChangeNotificationService(mockEventEmitterRepository);
   });
 
   describe('notifyReferenceUpdated', () => {
@@ -136,17 +135,6 @@ describe('FileChangeNotificationService', () => {
       expect(event?.type).toBe(FileChangeType.META_YAML_UPDATED);
       expect(event?.filePath).toBe(testFilePath);
       expect(event?.metadata).toEqual(testMetadata);
-    });
-  });
-
-  describe('getInstance', () => {
-    it('setInstanceで設定されていない場合はエラーを投げる', () => {
-      // インスタンスをクリア
-      FileChangeNotificationService['instance'] = null;
-
-      expect(() => {
-        FileChangeNotificationService.getInstance();
-      }).toThrow(/FileChangeNotificationServiceが初期化されていません/);
     });
   });
 });

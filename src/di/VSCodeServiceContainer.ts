@@ -2,10 +2,7 @@ import * as vscode from 'vscode';
 import { ServiceContainer, IServiceContainer } from './ServiceContainer.js';
 import { VSCodeFileRepository } from '../repositories/VSCodeFileRepository.js';
 import { VSCodeSettingsRepository } from '../repositories/VSCodeSettingsRepository.js';
-import {
-  FileChangeNotificationService,
-  FileChangeEvent,
-} from '../services/FileChangeNotificationService.js';
+import { FileChangeEvent } from '../services/FileChangeNotificationService.js';
 import { VSCodeEventEmitterRepository } from '../repositories/VSCodeEventEmitterRepository.js';
 
 /**
@@ -25,9 +22,6 @@ export class VSCodeServiceContainer {
 
       // ServiceContainerをコンストラクタ注入で作成
       ServiceContainer.createInstance(fileRepository, settingsRepository, eventEmitterRepository);
-
-      // FileChangeNotificationServiceの初期化
-      FileChangeNotificationService.setInstance(eventEmitterRepository);
 
       return ServiceContainer.getInstance();
     } catch (error) {
