@@ -4,6 +4,7 @@ import { CommentService } from './CommentService.js';
 import { CreateCommentOptions } from '../models/Comment.js';
 import { FileRepository } from '../repositories/FileRepository.js';
 import { DialogoiYamlService } from './DialogoiYamlService.js';
+import { DialogoiPathService } from './DialogoiPathService.js';
 import { Uri } from '../interfaces/Uri.js';
 import { DialogoiYaml } from '../utils/DialogoiYamlUtils.js';
 
@@ -13,6 +14,7 @@ describe('CommentService テストスイート', () => {
   let testRelativeFilePath: string;
   let mockFileRepository: MockProxy<FileRepository>;
   let mockDialogoiYamlService: MockProxy<DialogoiYamlService>;
+  let mockDialogoiPathService: MockProxy<DialogoiPathService>;
   let fileSystem: Map<string, string>;
   let directories: Set<string>;
   let workspaceRoot: Uri;
@@ -28,13 +30,19 @@ describe('CommentService テストスイート', () => {
     // jest-mock-extendedでモック作成
     mockFileRepository = mock<FileRepository>();
     mockDialogoiYamlService = mock<DialogoiYamlService>();
+    mockDialogoiPathService = mock<DialogoiPathService>();
 
     // テスト用のワークスペースを設定
     workspaceRootPath = '/workspace';
     workspaceRoot = { path: workspaceRootPath, fsPath: workspaceRootPath } as Uri;
 
     // サービスインスタンス作成
-    commentService = new CommentService(mockFileRepository, mockDialogoiYamlService, workspaceRoot);
+    commentService = new CommentService(
+      mockFileRepository,
+      mockDialogoiYamlService,
+      mockDialogoiPathService,
+      workspaceRoot,
+    );
     testRelativeFilePath = 'test.txt';
 
     // ファイルシステムモックの設定
@@ -117,6 +125,41 @@ describe('CommentService テストスイート', () => {
       }
       return Promise.resolve(result as DialogoiYaml);
     });
+
+    // DialogoiPathServiceのモック設定
+    mockDialogoiPathService.resolveCommentPath.mockImplementation((filePath: string) => {
+      // 新しいパス構造: /workspace/.dialogoi/{relativePath}/.{filename}.comments.yaml
+      const relativePath = path.relative(workspaceRootPath, path.dirname(filePath));
+      const filename = path.basename(filePath);
+
+      if (relativePath === '' || relativePath === '.') {
+        // ルートディレクトリの場合
+        return path.join(workspaceRootPath, '.dialogoi', `.${filename}.comments.yaml`);
+      } else {
+        // サブディレクトリの場合
+        return path.join(
+          workspaceRootPath,
+          '.dialogoi',
+          relativePath,
+          `.${filename}.comments.yaml`,
+        );
+      }
+    });
+
+    mockDialogoiPathService.ensureDialogoiDirectory.mockImplementation((targetPath: string) => {
+      // .dialogoi/ 内のディレクトリ構造を作成
+      const relativePath = path.relative(workspaceRootPath, targetPath);
+
+      if (relativePath === '' || relativePath === '.') {
+        // ルートディレクトリの場合
+        addDirectory(path.join(workspaceRootPath, '.dialogoi'));
+      } else {
+        // サブディレクトリの場合
+        addDirectory(path.join(workspaceRootPath, '.dialogoi', relativePath));
+      }
+
+      return Promise.resolve();
+    });
   }
 
   // テスト用ヘルパー関数
@@ -137,6 +180,14 @@ describe('CommentService テストスイート', () => {
 
       await commentService.addCommentAsync(testRelativeFilePath, options);
 
+      // DialogoiPathServiceのメソッド呼び出しを検証
+      expect(mockDialogoiPathService.resolveCommentPath).toHaveBeenCalledWith(
+        path.join(workspaceRootPath, testRelativeFilePath),
+      );
+      expect(mockDialogoiPathService.ensureDialogoiDirectory).toHaveBeenCalledWith(
+        workspaceRootPath,
+      );
+
       // コメントファイルが作成されているか確認
       const commentFile = await commentService.loadCommentFileAsync(testRelativeFilePath);
       expect(commentFile).not.toBeNull();
@@ -148,6 +199,9 @@ describe('CommentService テストスイート', () => {
       expect(commentFile?.comments[0]?.posted_by).toBe('author');
       expect(commentFile?.comments[0]?.created_at).toBeTruthy();
       expect(commentFile?.comments[0]?.file_hash).toBeTruthy();
+
+      // resolveCommentPathが適切に呼ばれることを確認（add時、既存ファイル読み込み時、load時）
+      expect(mockDialogoiPathService.resolveCommentPath).toHaveBeenCalledTimes(3);
     });
 
     it('複数行コメントを追加する', async () => {
@@ -328,7 +382,16 @@ created_at: '2024-01-01T00:00:00Z'`;
       };
 
       await commentService.addCommentAsync(testRelativeFilePath, options);
+
+      // モック呼び出し回数をリセット
+      jest.clearAllMocks();
+
       await commentService.deleteCommentAsync(testRelativeFilePath, 0);
+
+      // DialogoiPathServiceのメソッド呼び出しを検証
+      expect(mockDialogoiPathService.resolveCommentPath).toHaveBeenCalledWith(
+        path.join(workspaceRootPath, testRelativeFilePath),
+      );
 
       const commentFile = await commentService.loadCommentFileAsync(testRelativeFilePath);
       // コメントが全て削除された場合、ファイル自体が削除される
@@ -501,10 +564,46 @@ created_at: '2024-01-01T00:00:00Z'`;
     });
   });
 
+  describe('DialogoiPathService統合テスト', () => {
+    it('saveCommentFileAsyncがensureDialogoiDirectoryを呼び出す', async () => {
+      const options: CreateCommentOptions = {
+        line: 1,
+        content: '新しいディレクトリにコメント追加',
+      };
+
+      // モックをクリア
+      jest.clearAllMocks();
+
+      await commentService.addCommentAsync(testRelativeFilePath, options);
+
+      // DialogoiPathServiceのメソッド呼び出しを検証
+      expect(mockDialogoiPathService.ensureDialogoiDirectory).toHaveBeenCalledWith(
+        workspaceRootPath, // ファイルの親ディレクトリ
+      );
+      expect(mockDialogoiPathService.resolveCommentPath).toHaveBeenCalledWith(
+        path.join(workspaceRootPath, testRelativeFilePath),
+      );
+    });
+
+    it('loadCommentFileAsyncがresolveCommentPathを呼び出す', async () => {
+      // モックをクリア
+      jest.clearAllMocks();
+
+      // 存在しないファイルでも呼び出し確認
+      await commentService.loadCommentFileAsync('nonexistent.txt');
+
+      expect(mockDialogoiPathService.resolveCommentPath).toHaveBeenCalledWith(
+        path.join(workspaceRootPath, 'nonexistent.txt'),
+      );
+    });
+  });
+
   describe('データ妥当性検証', () => {
     it('不正なYAMLファイルをロードするとエラーが発生する', async () => {
+      // 新しいパス構造に対応: .dialogoi/.{filename}.comments.yaml
       const commentFilePath = path.join(
         workspaceRootPath,
+        '.dialogoi',
         `.${testRelativeFilePath}.comments.yaml`,
       );
       addFile(commentFilePath, 'file_hash: "test"\ninvalid: yaml: [unclosed');
@@ -515,8 +614,10 @@ created_at: '2024-01-01T00:00:00Z'`;
     });
 
     it('不正な形式のコメントファイルをロードするとエラーが発生する', async () => {
+      // 新しいパス構造に対応: .dialogoi/.{filename}.comments.yaml
       const commentFilePath = path.join(
         workspaceRootPath,
+        '.dialogoi',
         `.${testRelativeFilePath}.comments.yaml`,
       );
       addFile(commentFilePath, 'comments:\n  - invalid_field: "no required fields"');

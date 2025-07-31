@@ -185,6 +185,7 @@ export class ServiceContainer implements IServiceContainer {
     return new CommentService(
       this.getFileRepository(),
       this.getDialogoiYamlService(),
+      this.getDialogoiPathService(),
       workspaceRoot,
     );
   }

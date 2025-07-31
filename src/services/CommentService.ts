@@ -11,6 +11,7 @@ import { FileRepository } from '../repositories/FileRepository.js';
 import { Uri } from '../interfaces/Uri.js';
 import { HashCalculator } from '../utils/HashCalculator.js';
 import { DialogoiYamlService } from './DialogoiYamlService.js';
+import { DialogoiPathService } from './DialogoiPathService.js';
 import { formatTargetFile } from '../utils/FileLineUrlParser.js';
 
 /**
@@ -23,23 +24,20 @@ export class CommentService {
   constructor(
     private fileRepository: FileRepository,
     private dialogoiYamlService: DialogoiYamlService,
+    private dialogoiPathService: DialogoiPathService,
     workspaceRoot: Uri,
   ) {
     this.workspaceRoot = workspaceRoot;
   }
 
   /**
-   * コメントファイルのパスを取得（新形式）
+   * コメントファイルのパスを取得（.dialogoi/構造対応）
    * @param targetRelativeFilePath 対象ファイルのパス（小説ルートからの相対パス）
-   * @returns コメントファイルのパス (.{filename}.comments.yaml 形式)
+   * @returns コメントファイルの絶対パス
    */
   private getCommentFilePath(targetRelativeFilePath: string): string {
-    const fileName = path.basename(targetRelativeFilePath);
-    const relativeDirName = path.dirname(targetRelativeFilePath);
-    const commentFileName = `.${fileName}.comments.yaml`;
-
-    // 対象ファイルと同じディレクトリに配置
-    return path.join(relativeDirName, commentFileName);
+    const absoluteFilePath = path.join(this.workspaceRoot.fsPath, targetRelativeFilePath);
+    return this.dialogoiPathService.resolveCommentPath(absoluteFilePath);
   }
 
   /**
@@ -48,8 +46,8 @@ export class CommentService {
    * @returns コメントファイルの URI
    */
   private getCommentFileUri(targetRelativeFilePath: string): Uri {
-    const commentRelativeFilePath = this.getCommentFilePath(targetRelativeFilePath);
-    return this.fileRepository.joinPath(this.workspaceRoot, commentRelativeFilePath);
+    const commentAbsolutePath = this.getCommentFilePath(targetRelativeFilePath);
+    return this.fileRepository.createFileUri(commentAbsolutePath);
   }
 
   /**
@@ -92,6 +90,11 @@ export class CommentService {
     const commentFileUri = this.getCommentFileUri(targetRelativeFilePath);
 
     try {
+      // 保存前に.dialogoi/ディレクトリ構造を自動作成
+      const absoluteFilePath = path.join(this.workspaceRoot.fsPath, targetRelativeFilePath);
+      const targetDirPath = path.dirname(absoluteFilePath);
+      await this.dialogoiPathService.ensureDialogoiDirectory(targetDirPath);
+
       const yamlContent = yaml.dump(commentFile, {
         flowLevel: -1,
         lineWidth: -1,

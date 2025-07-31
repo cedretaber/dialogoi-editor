@@ -442,24 +442,37 @@ VSCode上での実際の操作：
 - **文字列リテラル統一**: `.dialogoi-meta.yaml` 参照を「メタデータファイル」に統一し混乱を回避
 - **品質保証**: 全690+テスト通過、`npm run check-all` 完全クリア
 
-### Phase 3: コメントシステムの移行（推定: 3時間）
+### Phase 3: コメントシステムの移行（推定: 3時間） ✅ **2025-01-31完了**
 
-- [ ] **3.1** CommentService にDialogoiPathService を依存注入  
-  - コンストラクタに DialogoiPathService を追加
-  - ServiceContainer での注入設定
+**コメントファイルを `.dialogoi/` ディレクトリ構造に移行完了**
 
-- [ ] **3.2** CommentService の `getCommentFilePath()` を更新
-  - DialogoiPathService.resolveCommentPath() を使用
+- [x] **3.1** CommentService にDialogoiPathService を依存注入  
+  - コンストラクタに DialogoiPathService を追加完了
+  - ServiceContainer での注入設定完了
 
-- [ ] **3.3** CommentService の `ensureCommentFile()` を更新
-  - DialogoiPathService.ensureDialogoiDirectory() でディレクトリ作成
+- [x] **3.2** CommentService の `getCommentFilePath()` および `getCommentFileUri()` を更新
+  - DialogoiPathService.resolveCommentPath() を使用完了
+  - 絶対パス変換ロジックの統合完了
 
-- [ ] **3.4** CommentService の `deleteCommentFile()` を更新
-  - 新しいパスからファイルを削除
+- [x] **3.3** CommentService の `saveCommentFileAsync()` を更新
+  - DialogoiPathService.ensureDialogoiDirectory() でディレクトリ作成完了
+  - 保存前の自動ディレクトリ作成処理を追加完了
 
-- [ ] **3.5** CommentService のテストを修正
-  - `mock<DialogoiPathService>()` によるモック化対応
-  - 新しいパス構造での全機能の動作確認
+- [x] **3.4** CommentService の `deleteCommentAsync()` を更新
+  - 新しいパス構造からファイルを削除完了
+  - ファイル削除処理のパス解決を更新完了
+
+- [x] **3.5** CommentService のテストを修正
+  - `mock<DialogoiPathService>()` によるモック化対応完了
+  - 新しいパス構造での全機能の動作確認完了
+  - DialogoiPathService統合テストセクション追加完了
+
+**Phase 3 完了時の技術的成果:**
+- **パス構造移行**: `{directory}/.{filename}.comments.yaml` → `{projectRoot}/.dialogoi/{relativePath}/.{filename}.comments.yaml`
+- **自動ディレクトリ作成**: コメント保存時に必要な `.dialogoi/` 構造を自動生成
+- **テスト品質向上**: DialogoiPathServiceのモック呼び出し検証により信頼性の高いテストに改善
+- **統合テスト追加**: 専用のDialogoiPathService統合テストセクションで包括的検証
+- **品質保証**: 全687テスト通過、`npm run check-all` 完全クリア
 
 ### Phase 4: UI・監視システムの更新（推定: 5時間）
 
