@@ -22,7 +22,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
 
   try {
     logger.debug('ServiceContainer初期化を開始...');
-    await VSCodeServiceContainer.initialize(context);
+    VSCodeServiceContainer.initialize(context);
     logger.debug('ServiceContainer初期化完了');
 
     // VSCode設定の初期化

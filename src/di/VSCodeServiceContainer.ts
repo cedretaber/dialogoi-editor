@@ -1,5 +1,6 @@
 import * as vscode from 'vscode';
 import { ServiceContainer, IServiceContainer } from './ServiceContainer.js';
+import { VSCodeFileRepository } from '../repositories/VSCodeFileRepository.js';
 import { VSCodeSettingsRepository } from '../repositories/VSCodeSettingsRepository.js';
 import {
   FileChangeNotificationService,
@@ -15,31 +16,23 @@ export class VSCodeServiceContainer {
   /**
    * VSCode環境でServiceContainerを初期化
    */
-  static async initialize(context: vscode.ExtensionContext): Promise<IServiceContainer> {
-    const container = ServiceContainer.getInstance();
-
+  static initialize(context: vscode.ExtensionContext): IServiceContainer {
     try {
-      // VSCodeFileRepositoryを動的にロード
-      const { VSCodeFileRepository } = await import('../repositories/VSCodeFileRepository.js');
+      // すべてのレポジトリを統一パターンで初期化
       const fileRepository = new VSCodeFileRepository(context);
+      const settingsRepository = new VSCodeSettingsRepository();
+      const eventEmitterRepository = new VSCodeEventEmitterRepository<FileChangeEvent>();
 
-      // ServiceContainerが具体的なクラスなのでキャストして使用
-      if (container instanceof ServiceContainer) {
-        container.setFileRepository(fileRepository);
+      // ServiceContainerをコンストラクタ注入で作成
+      ServiceContainer.createInstance(fileRepository, settingsRepository, eventEmitterRepository);
 
-        // FileChangeNotificationServiceの初期化
-        const eventEmitterRepository = new VSCodeEventEmitterRepository<FileChangeEvent>();
-        FileChangeNotificationService.setInstance(eventEmitterRepository);
+      // FileChangeNotificationServiceの初期化
+      FileChangeNotificationService.setInstance(eventEmitterRepository);
 
-        // SettingsRepositoryの初期化
-        const settingsRepository = new VSCodeSettingsRepository();
-        container.setSettingsRepository(settingsRepository);
-      }
-
-      return container;
+      return ServiceContainer.getInstance();
     } catch (error) {
       throw new Error(
-        `VSCodeFileRepositoryの読み込みに失敗しました: ${error instanceof Error ? error.message : String(error)}`,
+        `ServiceContainerの初期化に失敗しました: ${error instanceof Error ? error.message : String(error)}`,
       );
     }
   }

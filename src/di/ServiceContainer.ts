@@ -25,6 +25,8 @@ import { CoreFileServiceImpl } from '../services/CoreFileServiceImpl.js';
 import { ProjectLinkUpdateServiceImpl } from '../services/ProjectLinkUpdateServiceImpl.js';
 import { Logger } from '../utils/Logger.js';
 import { Uri } from '../interfaces/Uri.js';
+import { EventEmitterRepository } from '../repositories/EventEmitterRepository.js';
+import { FileChangeEvent } from '../services/FileChangeNotificationService.js';
 
 /**
  * サービスコンテナのインターフェース
@@ -42,7 +44,7 @@ export interface IServiceContainer {
   getHyperlinkExtractorService(): HyperlinkExtractorService;
   getDropHandlerService(): DropHandlerService;
   getSettingsRepository(): SettingsRepository;
-  setSettingsRepository(repository: SettingsRepository): void;
+  getEventEmitterRepository(): EventEmitterRepository<FileChangeEvent>;
   getDialogoiSettingsService(): DialogoiSettingsService;
   getProjectSettingsService(): ProjectSettingsService;
   getFileStatusService(): FileStatusService;
@@ -61,7 +63,9 @@ export interface IServiceContainer {
  */
 export class ServiceContainer implements IServiceContainer {
   private static instance: ServiceContainer | null = null;
-  protected fileRepository: FileRepository | null = null;
+  protected fileRepository: FileRepository;
+  protected settingsRepository: SettingsRepository;
+  protected eventEmitterRepository: EventEmitterRepository<FileChangeEvent>;
   private characterService: CharacterService | null = null;
   private foreshadowingService: ForeshadowingService | null = null;
   private referenceManager: ReferenceManager | null = null;
@@ -71,7 +75,6 @@ export class ServiceContainer implements IServiceContainer {
   private filePathMapService: FilePathMapService | null = null;
   private hyperlinkExtractorService: HyperlinkExtractorService | null = null;
   private dropHandlerService: DropHandlerService | null = null;
-  private settingsRepository: SettingsRepository | null = null;
   private dialogoiSettingsService: DialogoiSettingsService | null = null;
   private projectSettingsService: ProjectSettingsService | null = null;
   private fileStatusService: FileStatusService | null = null;
@@ -82,46 +85,47 @@ export class ServiceContainer implements IServiceContainer {
   private projectPathService: ProjectPathService | null = null;
   private coreFileService: CoreFileService | null = null;
 
-  protected constructor() {}
+  private constructor(
+    fileRepository: FileRepository,
+    settingsRepository: SettingsRepository,
+    eventEmitterRepository: EventEmitterRepository<FileChangeEvent>,
+  ) {
+    this.fileRepository = fileRepository;
+    this.settingsRepository = settingsRepository;
+    this.eventEmitterRepository = eventEmitterRepository;
+  }
+
+  /**
+   * レポジトリを注入してServiceContainerインスタンスを作成
+   */
+  static createInstance(
+    fileRepository: FileRepository,
+    settingsRepository: SettingsRepository,
+    eventEmitterRepository: EventEmitterRepository<FileChangeEvent>,
+  ): void {
+    ServiceContainer.instance = new ServiceContainer(
+      fileRepository,
+      settingsRepository,
+      eventEmitterRepository,
+    );
+  }
 
   /**
    * ServiceContainerのインスタンスを取得
    */
   static getInstance(): IServiceContainer {
     if (!ServiceContainer.instance) {
-      ServiceContainer.instance = new ServiceContainer();
+      throw new Error(
+        'ServiceContainer is not initialized. Call createInstance() first or use VSCodeServiceContainer.initialize().',
+      );
     }
     return ServiceContainer.instance;
-  }
-
-  /**
-   * FileRepositoryを設定（テスト用）
-   */
-  setFileRepository(repository: FileRepository): void {
-    this.fileRepository = repository;
-    // 依存サービスをリセット
-    this.characterService = null;
-    this.foreshadowingService = null;
-    this.referenceManager = null;
-    this.dialogoiYamlService = null;
-    this.metaYamlService = null;
-    this.metadataService = null;
-    this.filePathMapService = null;
-    this.hyperlinkExtractorService = null;
-    this.dropHandlerService = null;
-    this.projectSettingsService = null;
-    this.fileStatusService = null;
   }
 
   /**
    * FileRepositoryを取得
    */
   getFileRepository(): FileRepository {
-    if (!this.fileRepository) {
-      throw new Error(
-        'FileRepositoryが初期化されていません。VSCodeServiceContainer.initialize()を使用してください。',
-      );
-    }
     return this.fileRepository;
   }
 
@@ -246,7 +250,7 @@ export class ServiceContainer implements IServiceContainer {
    * サービスをリセット（テスト用）
    */
   reset(): void {
-    this.fileRepository = null;
+    ServiceContainer.instance = null;
     this.characterService = null;
     this.foreshadowingService = null;
     this.referenceManager = null;
@@ -256,7 +260,6 @@ export class ServiceContainer implements IServiceContainer {
     this.filePathMapService = null;
     this.hyperlinkExtractorService = null;
     this.dropHandlerService = null;
-    this.settingsRepository = null;
     this.dialogoiSettingsService = null;
     this.fileStatusService = null;
     this.fileManagementService = null;
@@ -268,14 +271,14 @@ export class ServiceContainer implements IServiceContainer {
   }
 
   getSettingsRepository(): SettingsRepository {
-    if (!this.settingsRepository) {
-      throw new Error('SettingsRepository has not been set');
-    }
     return this.settingsRepository;
   }
 
-  setSettingsRepository(repository: SettingsRepository): void {
-    this.settingsRepository = repository;
+  /**
+   * EventEmitterRepositoryを取得
+   */
+  getEventEmitterRepository(): EventEmitterRepository<FileChangeEvent> {
+    return this.eventEmitterRepository;
   }
 
   getDialogoiSettingsService(): DialogoiSettingsService {
