@@ -1,20 +1,22 @@
 import { MetadataService } from './MetadataService.js';
-import { TestServiceContainer } from '../di/TestServiceContainer.js';
-import { MockFileRepository } from '../repositories/MockFileRepository.js';
+import { MetaYamlService } from './MetaYamlService.js';
 import { createContentItem } from '../test/testHelpers.js';
+import { MockProxy, mock } from 'jest-mock-extended';
+import { MetaYaml } from '../utils/MetaYamlUtils.js';
 
-suite('MetadataService テストスイート', () => {
+describe('MetadataService テストスイート', () => {
   let metadataService: MetadataService;
-  let mockFileRepository: MockFileRepository;
+  let mockMetaYamlService: MockProxy<MetaYamlService>;
+  let testMetaYaml: MetaYaml;
 
   beforeEach(async () => {
-    const container = TestServiceContainer.create();
-    mockFileRepository = container.getFileRepository() as MockFileRepository;
-    metadataService = container.getMetadataService();
+    // モックの作成
+    mockMetaYamlService = mock<MetaYamlService>();
 
-    // テスト用ディレクトリ構造の準備
-    mockFileRepository.createDirectoryForTest('/test');
+    // MetadataServiceの初期化
+    metadataService = new MetadataService(mockMetaYamlService);
 
+    // テスト用MetaYamlデータの作成
     const testItem = createContentItem({
       name: 'test.txt',
       path: '/test/test.txt',
@@ -29,49 +31,42 @@ suite('MetadataService テストスイート', () => {
       references: [],
     });
 
-    const metaYamlContent = `readme: README.md
-files:
-  - name: ${testItem.name}
-    type: ${testItem.type}
-    path: ${testItem.path}
-    hash: ${testItem.hash}
-    tags:
-      - tag1
-    references:
-      - /other/file.txt
-    comments: '${testItem.comments}'
-    isUntracked: ${testItem.isUntracked}
-    isMissing: ${testItem.isMissing}
-  - name: ${notagItem.name}
-    type: ${notagItem.type}
-    path: ${notagItem.path}
-    hash: ${notagItem.hash}
-    tags: []
-    references: []
-    comments: '${notagItem.comments}'
-    isUntracked: ${notagItem.isUntracked}
-    isMissing: ${notagItem.isMissing}
-`;
+    testMetaYaml = {
+      readme: 'README.md',
+      files: [testItem, notagItem],
+    };
 
-    await mockFileRepository.writeFileAsync(
-      mockFileRepository.createFileUri('/test/.dialogoi-meta.yaml'),
-      metaYamlContent,
-    );
+    // MetaYamlServiceのモック実装
+    mockMetaYamlService.loadMetaYamlAsync.mockImplementation(async () => {
+      // deep copyを返す
+      return JSON.parse(JSON.stringify(testMetaYaml));
+    });
+
+    mockMetaYamlService.saveMetaYamlAsync.mockImplementation(async (_dirPath, metaYaml) => {
+      testMetaYaml = JSON.parse(JSON.stringify(metaYaml));
+      return true;
+    });
   });
 
-  suite('タグ操作', () => {
+  describe('タグ操作', () => {
     it('タグを追加できる', async () => {
       const newTag = 'tag2';
       const result = await metadataService.addTag('/test', 'test.txt', newTag);
 
       expect(result.success).toBe(true);
 
-      // メタデータが更新されているか確認
-      const metaContent = await mockFileRepository.readFileAsync(
-        mockFileRepository.createFileUri('/test/.dialogoi-meta.yaml'),
-        'utf8',
+      // saveMetaYamlAsyncが正しく呼び出されたか確認
+      expect(mockMetaYamlService.saveMetaYamlAsync).toHaveBeenCalledWith(
+        '/test',
+        expect.objectContaining({
+          files: expect.arrayContaining([
+            expect.objectContaining({
+              name: 'test.txt',
+              tags: expect.arrayContaining(['tag1', 'tag2']),
+            }),
+          ]),
+        }),
       );
-      expect(metaContent.includes('tag2')).toBeTruthy();
     });
 
     it('存在しないファイルにタグを追加するとエラー', async () => {
@@ -87,12 +82,18 @@ files:
 
       expect(result.success).toBe(true);
 
-      // メタデータからタグが削除されているか確認
-      const metaContent = await mockFileRepository.readFileAsync(
-        mockFileRepository.createFileUri('/test/.dialogoi-meta.yaml'),
-        'utf8',
+      // saveMetaYamlAsyncが正しく呼び出されたか確認
+      expect(mockMetaYamlService.saveMetaYamlAsync).toHaveBeenCalledWith(
+        '/test',
+        expect.objectContaining({
+          files: expect.arrayContaining([
+            expect.objectContaining({
+              name: 'test.txt',
+              tags: expect.not.arrayContaining(['tag1']),
+            }),
+          ]),
+        }),
       );
-      expect(metaContent.includes('tag1')).toBeFalsy();
     });
 
     it('タグを完全置換できる', async () => {
@@ -102,12 +103,17 @@ files:
       expect(result.success).toBe(true);
 
       // 新しいタグのみ存在することを確認
-      const metaContent = await mockFileRepository.readFileAsync(
-        mockFileRepository.createFileUri('/test/.dialogoi-meta.yaml'),
-        'utf8',
+      expect(mockMetaYamlService.saveMetaYamlAsync).toHaveBeenCalledWith(
+        '/test',
+        expect.objectContaining({
+          files: expect.arrayContaining([
+            expect.objectContaining({
+              name: 'test.txt',
+              tags: ['newtag1', 'newtag2'],
+            }),
+          ]),
+        }),
       );
-      expect(metaContent.includes('newtag1')).toBe(true);
-      expect(metaContent.includes('newtag2')).toBe(true);
     });
 
     it('タグがないファイルにタグを追加できる', async () => {
@@ -116,25 +122,37 @@ files:
 
       expect(result.success).toBe(true);
 
-      const metaContent = await mockFileRepository.readFileAsync(
-        mockFileRepository.createFileUri('/test/.dialogoi-meta.yaml'),
-        'utf8',
+      expect(mockMetaYamlService.saveMetaYamlAsync).toHaveBeenCalledWith(
+        '/test',
+        expect.objectContaining({
+          files: expect.arrayContaining([
+            expect.objectContaining({
+              name: 'notag.txt',
+              tags: ['tag3'],
+            }),
+          ]),
+        }),
       );
-      expect(metaContent.includes('tag3')).toBeTruthy();
     });
   });
 
-  suite('参照操作', () => {
+  describe('参照操作', () => {
     it('参照を追加できる', async () => {
       const result = await metadataService.addReference('/test', 'test.txt', '/new/reference.txt');
 
       expect(result.success).toBe(true);
 
-      const metaContent = await mockFileRepository.readFileAsync(
-        mockFileRepository.createFileUri('/test/.dialogoi-meta.yaml'),
-        'utf8',
+      expect(mockMetaYamlService.saveMetaYamlAsync).toHaveBeenCalledWith(
+        '/test',
+        expect.objectContaining({
+          files: expect.arrayContaining([
+            expect.objectContaining({
+              name: 'test.txt',
+              references: expect.arrayContaining(['/other/file.txt', '/new/reference.txt']),
+            }),
+          ]),
+        }),
       );
-      expect(metaContent.includes('/new/reference.txt')).toBeTruthy();
     });
 
     it('参照を削除できる', async () => {
@@ -142,11 +160,17 @@ files:
 
       expect(result.success).toBe(true);
 
-      const metaContent = await mockFileRepository.readFileAsync(
-        mockFileRepository.createFileUri('/test/.dialogoi-meta.yaml'),
-        'utf8',
+      expect(mockMetaYamlService.saveMetaYamlAsync).toHaveBeenCalledWith(
+        '/test',
+        expect.objectContaining({
+          files: expect.arrayContaining([
+            expect.objectContaining({
+              name: 'test.txt',
+              references: expect.not.arrayContaining(['/other/file.txt']),
+            }),
+          ]),
+        }),
       );
-      expect(metaContent.includes('/other/file.txt')).toBeFalsy();
     });
 
     it('参照を完全置換できる', async () => {
@@ -155,13 +179,17 @@ files:
 
       expect(result.success).toBe(true);
 
-      const metaContent = await mockFileRepository.readFileAsync(
-        mockFileRepository.createFileUri('/test/.dialogoi-meta.yaml'),
-        'utf8',
+      expect(mockMetaYamlService.saveMetaYamlAsync).toHaveBeenCalledWith(
+        '/test',
+        expect.objectContaining({
+          files: expect.arrayContaining([
+            expect.objectContaining({
+              name: 'test.txt',
+              references: ['/ref1.txt', '/ref2.txt'],
+            }),
+          ]),
+        }),
       );
-      expect(metaContent.includes('/other/file.txt')).toBeFalsy();
-      expect(metaContent.includes('/ref1.txt')).toBeTruthy();
-      expect(metaContent.includes('/ref2.txt')).toBeTruthy();
     });
 
     it('参照がないファイルに参照を追加できる', async () => {
@@ -169,15 +197,21 @@ files:
 
       expect(result.success).toBe(true);
 
-      const metaContent = await mockFileRepository.readFileAsync(
-        mockFileRepository.createFileUri('/test/.dialogoi-meta.yaml'),
-        'utf8',
+      expect(mockMetaYamlService.saveMetaYamlAsync).toHaveBeenCalledWith(
+        '/test',
+        expect.objectContaining({
+          files: expect.arrayContaining([
+            expect.objectContaining({
+              name: 'notag.txt',
+              references: ['/new/ref.txt'],
+            }),
+          ]),
+        }),
       );
-      expect(metaContent.includes('/new/ref.txt')).toBeTruthy();
     });
   });
 
-  suite('汎用メタデータ操作', () => {
+  describe('汎用メタデータ操作', () => {
     it('updateMetaYamlで任意の更新ができる', async () => {
       const result = await metadataService.updateMetaYaml('/test', (meta) => {
         meta.readme = 'updated-readme.md';
@@ -186,23 +220,25 @@ files:
 
       expect(result.success).toBe(true);
 
-      const metaContent = await mockFileRepository.readFileAsync(
-        mockFileRepository.createFileUri('/test/.dialogoi-meta.yaml'),
-        'utf8',
+      expect(mockMetaYamlService.saveMetaYamlAsync).toHaveBeenCalledWith(
+        '/test',
+        expect.objectContaining({
+          readme: 'updated-readme.md',
+        }),
       );
-      expect(metaContent.includes('readme: updated-readme.md')).toBeTruthy();
     });
   });
 
-  suite('エラーハンドリング', () => {
+  describe('エラーハンドリング', () => {
     it('メタデータファイルが存在しない場合のエラー', async () => {
-      // 存在しないディレクトリ
+      // loadMetaYamlAsyncがnullを返すようにモック設定
+      mockMetaYamlService.loadMetaYamlAsync.mockResolvedValueOnce(null);
+      
       const newTag = 'tag';
       const result = await metadataService.addTag('/nonexistent', 'file.txt', newTag);
 
       expect(result.success).toBe(false);
-      // メッセージが存在することを確認
-      expect(!!result.message).toBe(true);
+      expect(result.message).toContain('.dialogoi-meta.yamlが見つからないか、読み込みに失敗しました。');
     });
   });
 });

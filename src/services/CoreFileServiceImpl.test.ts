@@ -569,7 +569,6 @@ describe('CoreFileService テストスイート', () => {
   describe('ユーティリティメソッド', () => {
     it('ノベルルートパスを取得できる', () => {
       const rootPath = coreFileService.getNovelRootPath();
-      // TestServiceContainerではノベルルートパスが設定されていることを確認
       expect(typeof rootPath).toBe('string');
     });
   });

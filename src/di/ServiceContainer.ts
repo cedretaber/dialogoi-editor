@@ -1,5 +1,4 @@
 import { FileRepository } from '../repositories/FileRepository.js';
-import { MockFileRepository } from '../repositories/MockFileRepository.js';
 import { CharacterService } from '../services/CharacterService.js';
 import { ForeshadowingService } from '../services/ForeshadowingService.js';
 import { ReferenceManager } from '../services/ReferenceManager.js';
@@ -250,13 +249,6 @@ export class ServiceContainer implements IServiceContainer {
     return this.dropHandlerService;
   }
 
-  /**
-   * テスト用のモックサービスでコンテナを初期化
-   * @deprecated テスト環境ではTestServiceContainerを使用してください
-   */
-  initializeForTesting(): void {
-    this.setFileRepository(new MockFileRepository());
-  }
 
   /**
    * サービスをリセット（テスト用）
