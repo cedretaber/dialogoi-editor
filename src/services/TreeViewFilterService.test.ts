@@ -1,12 +1,8 @@
 import { mock, MockProxy } from 'jest-mock-extended';
 import { TreeViewFilterService } from './TreeViewFilterService.js';
 import { DialogoiTreeItem } from '../utils/MetaYamlUtils.js';
-import { ReferenceManager } from './ReferenceManager.js';
-import { ServiceContainer } from '../di/ServiceContainer.js';
-import { FileRepository } from '../repositories/FileRepository.js';
-import { FilePathMapService } from './FilePathMapService.js';
-import { HyperlinkExtractorService } from './HyperlinkExtractorService.js';
-import { MetaYamlService } from './MetaYamlService.js';
+import { ReferenceService } from './ReferenceService.js';
+// 不要なimportは削除（依存関係注入でモック統一）
 import {
   createContentItem,
   createSettingItem,
@@ -15,47 +11,22 @@ import {
 
 describe('TreeViewFilterService テストスイート', () => {
   let filterService: TreeViewFilterService;
-  let referenceManager: ReferenceManager;
-  let mockFileRepository: MockProxy<FileRepository>;
-  let mockServiceContainer: MockProxy<ServiceContainer>;
-  let mockFilePathMapService: MockProxy<FilePathMapService>;
-  let mockHyperlinkExtractorService: MockProxy<HyperlinkExtractorService>;
-  let mockMetaYamlService: MockProxy<MetaYamlService>;
+  let mockReferenceService: MockProxy<ReferenceService>;
+  // 依存サービスはすべてモックで統一
 
   beforeEach(() => {
     jest.clearAllMocks();
 
     // jest-mock-extendedでモック作成
-    mockFileRepository = mock<FileRepository>();
-    mockServiceContainer = mock<ServiceContainer>();
-    mockFilePathMapService = mock<FilePathMapService>();
-    mockHyperlinkExtractorService = mock<HyperlinkExtractorService>();
-    mockMetaYamlService = mock<MetaYamlService>();
+    mockReferenceService = mock<ReferenceService>();
 
-    // ServiceContainerのモックを設定（全サービスをモック）
-    jest.spyOn(ServiceContainer, 'getInstance').mockReturnValue(mockServiceContainer);
-    mockServiceContainer.getFileRepository.mockReturnValue(mockFileRepository);
-    mockServiceContainer.getFilePathMapService.mockReturnValue(mockFilePathMapService);
-    mockServiceContainer.getHyperlinkExtractorService.mockReturnValue(
-      mockHyperlinkExtractorService,
-    );
-    mockServiceContainer.getMetaYamlService.mockReturnValue(mockMetaYamlService);
+    // デフォルトのモック戻り値を設定
+    mockReferenceService.getAllReferencePaths.mockReturnValue([]);
 
-    // サービスのメソッドをモック
-    mockFilePathMapService.buildFileMap.mockResolvedValue(undefined);
-    mockMetaYamlService.loadMetaYamlAsync.mockResolvedValue(null);
-
-    // ReferenceManagerを初期化
-    referenceManager = ReferenceManager.getInstance();
-    referenceManager.clear();
-    // プロジェクトルートを初期化（テスト用）
-    void referenceManager.initialize('/test', mockFileRepository);
-
-    filterService = new TreeViewFilterService();
+    filterService = new TreeViewFilterService(mockReferenceService);
   });
 
   afterEach(() => {
-    referenceManager.clear();
     jest.restoreAllMocks();
   });
 
@@ -261,9 +232,16 @@ describe('TreeViewFilterService テストスイート', () => {
     ];
 
     it('参照関係でフィルタリング', () => {
-      // ReferenceManagerに参照データを設定
-      referenceManager.updateFileReferences('/test/chapter1.md', ['character1.md', 'settings.md']);
-      referenceManager.updateFileReferences('/test/chapter2.md', ['character2.md', 'magic.md']);
+      // ReferenceServiceのモック設定
+      mockReferenceService.getAllReferencePaths.mockImplementation((filePath: string) => {
+        if (filePath === '/test/chapter1.md') {
+          return ['character1.md', 'settings.md'];
+        }
+        if (filePath === '/test/chapter2.md') {
+          return ['character2.md', 'magic.md'];
+        }
+        return [];
+      });
 
       filterService.setReferenceFilter('character1.md');
       const result = filterService.applyFilter(testItems);
@@ -273,9 +251,16 @@ describe('TreeViewFilterService テストスイート', () => {
     });
 
     it('参照関係の部分一致フィルタリング', () => {
-      // ReferenceManagerに参照データを設定
-      referenceManager.updateFileReferences('/test/chapter1.md', ['character1.md', 'settings.md']);
-      referenceManager.updateFileReferences('/test/chapter2.md', ['character2.md', 'magic.md']);
+      // ReferenceServiceのモック設定
+      mockReferenceService.getAllReferencePaths.mockImplementation((filePath: string) => {
+        if (filePath === '/test/chapter1.md') {
+          return ['character1.md', 'settings.md'];
+        }
+        if (filePath === '/test/chapter2.md') {
+          return ['character2.md', 'magic.md'];
+        }
+        return [];
+      });
 
       filterService.setReferenceFilter('character');
       const result = filterService.applyFilter(testItems);
@@ -367,7 +352,12 @@ describe('TreeViewFilterService テストスイート', () => {
       expect(result.length).toBe(1);
 
       // 参照関係フィルターに変更
-      referenceManager.updateFileReferences('/test.md', ['char.md']);
+      mockReferenceService.getAllReferencePaths.mockImplementation((filePath: string) => {
+        if (filePath === '/test.md') {
+          return ['char.md'];
+        }
+        return [];
+      });
       filterService.setReferenceFilter('char.md');
       result = filterService.applyFilter(testItems);
       expect(result.length).toBe(1);

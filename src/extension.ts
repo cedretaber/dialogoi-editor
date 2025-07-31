@@ -91,21 +91,20 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
       );
     }
 
-    // ReferenceManagerの初期化
-    logger.debug('ReferenceManager初期化を開始...');
-    const referenceManager = container.getReferenceManager();
+    // ReferenceServiceの初期化
+    logger.debug('ReferenceService初期化を開始...');
+    const referenceService = container.getReferenceService();
     if (vscode.workspace.workspaceFolders && vscode.workspace.workspaceFolders[0]) {
       const workspaceRoot = vscode.workspace.workspaceFolders[0].uri.fsPath;
       const metaYamlService = container.getMetaYamlService();
       const novelRoot = await metaYamlService.findNovelRootAsync(workspaceRoot);
 
       if (novelRoot !== null && novelRoot !== undefined && novelRoot !== '') {
-        const fileRepository = container.getFileRepository();
-        void referenceManager.initialize(novelRoot, fileRepository);
-        logger.info(`ReferenceManagerを初期化しました: ${novelRoot}`);
+        void referenceService.initialize(novelRoot);
+        logger.info(`ReferenceServiceを初期化しました: ${novelRoot}`);
       }
     }
-    logger.debug('ReferenceManager初期化完了');
+    logger.debug('ReferenceService初期化完了');
 
     // ファイル内容変更の監視（ハイパーリンク再抽出用）
     logger.debug('ファイル監視を開始...');
@@ -113,7 +112,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
       // .mdファイルが保存された場合にハイパーリンク参照を更新
       if (document.fileName.endsWith('.md')) {
         try {
-          void referenceManager.updateFileHyperlinkReferencesAsync(document.fileName);
+          void referenceService.updateFileHyperlinkReferencesAsync(document.fileName);
           // TreeViewを更新してUI反映
           treeDataProvider.refresh();
         } catch (error) {

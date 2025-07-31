@@ -11,7 +11,7 @@ import {
 import { Logger } from '../utils/Logger.js';
 import { DialogoiTreeDataProvider } from '../tree/DialogoiTreeDataProvider.js';
 import { MetaYamlService } from '../services/MetaYamlService.js';
-import { ReferenceManager } from '../services/ReferenceManager.js';
+// ReferenceService は ServiceContainer 経由でアクセス
 import { DialogoiYamlService } from '../services/DialogoiYamlService.js';
 import { ServiceContainer } from '../di/ServiceContainer.js';
 import {
@@ -362,22 +362,21 @@ export class FileDetailsViewProvider implements vscode.WebviewViewProvider {
       // ファイルからプロジェクト内リンクを抽出
       const projectLinks = await hyperlinkExtractorService.extractProjectLinksAsync(filePath);
 
-      // ReferenceManager形式に変換
+      // ReferenceService形式に変換
       const references = projectLinks.map((linkPath) => ({
         path: linkPath,
         source: 'hyperlink' as const,
       }));
 
       // 設定ファイルは他のファイルから参照されることもある
-      const referenceManager = ReferenceManager.getInstance();
+      const referenceService = ServiceContainer.getInstance().getReferenceService();
 
-      // ReferenceManagerが初期化されていない場合は初期化
-      if (!referenceManager.isInitialized()) {
-        const fileRepository = serviceContainer.getFileRepository();
-        void referenceManager.initialize(projectRoot, fileRepository);
+      // ReferenceServiceが初期化されていない場合は初期化
+      if (!referenceService.isInitialized()) {
+        void referenceService.initialize(projectRoot);
       }
 
-      const referenceInfo = referenceManager.getReferences(filePath);
+      const referenceInfo = referenceService.getReferences(filePath);
 
       const result = {
         allReferences: projectLinks,
@@ -525,10 +524,10 @@ export class FileDetailsViewProvider implements vscode.WebviewViewProvider {
           // 設定ファイルの場合：ハイパーリンクから参照を抽出
           referenceData = await this.getSettingFileReferences(item.path);
         } else {
-          // 本文ファイルの場合：ReferenceManagerから参照情報を取得
-          const referenceManager = ReferenceManager.getInstance();
-          const allReferences = referenceManager.getAllReferencePaths(item.path);
-          const referenceInfo = referenceManager.getReferences(item.path);
+          // 本文ファイルの場合：ReferenceServiceから参照情報を取得
+          const referenceService = ServiceContainer.getInstance().getReferenceService();
+          const allReferences = referenceService.getAllReferencePaths(item.path);
+          const referenceInfo = referenceService.getReferences(item.path);
           referenceData = {
             allReferences,
             references: referenceInfo.references,
@@ -937,15 +936,14 @@ export class FileDetailsViewProvider implements vscode.WebviewViewProvider {
         this.logger.info(`逆参照削除: ${referenceSourceFile} → ${this.currentItem.name}`);
         vscode.window.showInformationMessage(`参照 "${referenceSourceFile}" を削除しました`);
 
-        // ReferenceManagerも更新する必要がある
-        const referenceManager = ReferenceManager.getInstance();
-        if (referenceManager.isInitialized()) {
+        // ReferenceServiceも更新する必要がある
+        const referenceService = ServiceContainer.getInstance().getReferenceService();
+        if (referenceService.isInitialized()) {
           // 参照元ファイルのハイパーリンク参照を再スキャン
-          await referenceManager.updateFileHyperlinkReferencesAsync(referenceSourceAbsolutePath);
+          await referenceService.updateFileHyperlinkReferencesAsync(referenceSourceAbsolutePath);
 
           // プロジェクト全体の参照関係を再スキャンして確実に更新
-          const fileRepository = ServiceContainer.getInstance().getFileRepository();
-          void referenceManager.initialize(projectRoot, fileRepository);
+          void referenceService.initialize(projectRoot);
         }
 
         // TreeViewを更新（WebViewは自動的にイベント経由で更新される）

@@ -4,7 +4,7 @@ import { CharacterService } from './CharacterService.js';
 import { MetaYamlService } from './MetaYamlService.js';
 import { DialogoiYamlService } from './DialogoiYamlService.js';
 import { FileChangeNotificationService } from './FileChangeNotificationService.js';
-import { ReferenceManager } from './ReferenceManager.js';
+import { ReferenceService } from './ReferenceService.js';
 import { hasReferencesProperty } from '../utils/MetaYamlUtils.js';
 
 /**
@@ -43,6 +43,7 @@ export class DropHandlerService {
     private metaYamlService: MetaYamlService,
     private dialogoiYamlService: DialogoiYamlService,
     private fileChangeNotificationService: FileChangeNotificationService,
+    private referenceService: ReferenceService,
   ) {}
 
   /**
@@ -192,10 +193,9 @@ export class DropHandlerService {
     // meta.yamlを保存
     const success = await this.metaYamlService.saveMetaYamlAsync(targetDirAbsolutePath, meta);
     if (success === true) {
-      // ReferenceManagerを更新
-      const referenceManager = ReferenceManager.getInstance();
+      // ReferenceServiceを更新
       const updatedReferences = fileItem.references ?? [];
-      referenceManager.updateFileReferences(targetFileAbsolutePath, updatedReferences);
+      this.referenceService.updateFileReferences(targetFileAbsolutePath, updatedReferences);
 
       // 参照更新イベントを通知
       this.fileChangeNotificationService.notifyReferenceUpdated(targetFileAbsolutePath, {

@@ -1,6 +1,6 @@
 import * as path from 'path';
 import { FileRepository } from '../repositories/FileRepository.js';
-import { ServiceContainer } from '../di/ServiceContainer.js';
+import { MetaYamlService } from './MetaYamlService.js';
 import { HyperlinkExtractorService } from './HyperlinkExtractorService.js';
 import { FilePathMapService } from './FilePathMapService.js';
 import { hasReferencesProperty } from '../utils/MetaYamlUtils.js';
@@ -15,42 +15,30 @@ export interface ReferenceInfo {
   referencedBy: ReferenceEntry[]; // このファイルを参照しているファイル
 }
 
-export class ReferenceManager {
-  private static instance: ReferenceManager | null = null;
+export class ReferenceService {
   private referencesMap: Map<string, ReferenceInfo> = new Map();
   private novelRoot: string | null = null;
-  private fileRepository: FileRepository | null = null;
-  private hyperlinkExtractorService: HyperlinkExtractorService | null = null;
-  private filePathMapService: FilePathMapService | null = null;
 
-  private constructor() {}
-
-  static getInstance(): ReferenceManager {
-    if (!ReferenceManager.instance) {
-      ReferenceManager.instance = new ReferenceManager();
-    }
-    return ReferenceManager.instance;
-  }
+  constructor(
+    private fileRepository: FileRepository,
+    private metaYamlService: MetaYamlService,
+    private hyperlinkExtractorService: HyperlinkExtractorService,
+    private filePathMapService: FilePathMapService,
+  ) {}
 
   /**
    * 初期化済みかどうかを確認
    */
   isInitialized(): boolean {
-    return this.novelRoot !== null && this.fileRepository !== null;
+    return this.novelRoot !== null;
   }
 
   /**
    * 参照関係を初期化（全.dialogoi-meta.yamlを走査）
    */
-  async initialize(novelRoot: string, fileRepository: FileRepository): Promise<void> {
+  async initialize(novelRoot: string): Promise<void> {
     this.novelRoot = novelRoot;
-    this.fileRepository = fileRepository;
     this.referencesMap.clear();
-
-    // ServiceContainerから新しいサービスを取得
-    const serviceContainer = ServiceContainer.getInstance();
-    this.filePathMapService = serviceContainer.getFilePathMapService();
-    this.hyperlinkExtractorService = serviceContainer.getHyperlinkExtractorService();
 
     // ファイルマップを構築
     await this.filePathMapService.buildFileMap(novelRoot);
@@ -79,7 +67,7 @@ export class ReferenceManager {
    * ファイルのハイパーリンク参照を更新（非同期版）
    */
   async updateFileHyperlinkReferencesAsync(filePath: string): Promise<void> {
-    if (this.novelRoot === null || this.hyperlinkExtractorService === null) {
+    if (this.novelRoot === null) {
       return;
     }
 
@@ -143,9 +131,6 @@ export class ReferenceManager {
   clear(): void {
     this.referencesMap.clear();
     this.novelRoot = null;
-    this.fileRepository = null;
-    this.hyperlinkExtractorService = null;
-    this.filePathMapService = null;
   }
 
   /**
@@ -159,11 +144,7 @@ export class ReferenceManager {
    * 指定ディレクトリの.dialogoi-meta.yamlを読み込み、参照関係を構築
    */
   private async scanDirectoryReferences(dirPath: string, relativeDirPath: string): Promise<void> {
-    if (!this.fileRepository) {
-      return;
-    }
-    const metaYamlService = ServiceContainer.getInstance().getMetaYamlService();
-    const meta = await metaYamlService.loadMetaYamlAsync(dirPath);
+    const meta = await this.metaYamlService.loadMetaYamlAsync(dirPath);
     if (!meta) {
       return;
     }
@@ -187,8 +168,7 @@ export class ReferenceManager {
           file.name.endsWith('.md') &&
           this.novelRoot !== null &&
           this.novelRoot !== undefined &&
-          this.novelRoot !== '' &&
-          this.hyperlinkExtractorService
+          this.novelRoot !== ''
         ) {
           // TODO: ReferenceManagerの@deprecated削除時に対応
           // const absoluteFilePath = path.join(dirPath, file.name);
@@ -297,7 +277,7 @@ export class ReferenceManager {
    * TODO: Phase 3での利用を想定
    */
   async checkFileExistsAsync(referencedFile: string): Promise<boolean> {
-    if (this.novelRoot === null || this.fileRepository === null) {
+    if (this.novelRoot === null) {
       return false;
     }
 

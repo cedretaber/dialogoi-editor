@@ -1,18 +1,18 @@
 import { mock, MockProxy } from 'jest-mock-extended';
 import * as path from 'path';
-import { ReferenceManager } from './ReferenceManager.js';
+import { ReferenceService } from './ReferenceService.js';
 import { FileRepository, DirectoryEntry } from '../repositories/FileRepository.js';
 import { HyperlinkExtractorService } from './HyperlinkExtractorService.js';
 import { FilePathMapService } from './FilePathMapService.js';
 import { MetaYamlService } from './MetaYamlService.js';
-import { ServiceContainer } from '../di/ServiceContainer.js';
+// ServiceContainer は依存関係注入で不要
 import { Uri } from '../interfaces/Uri.js';
 import { MetaYaml } from '../utils/MetaYamlUtils.js';
 import * as yaml from 'js-yaml';
 
-describe('ReferenceManager テストスイート', () => {
+describe('ReferenceService テストスイート', () => {
   let testDir: string;
-  let refManager: ReferenceManager;
+  let refManager: ReferenceService;
   let mockFileRepository: MockProxy<FileRepository>;
   let mockHyperlinkExtractorService: MockProxy<HyperlinkExtractorService>;
   let mockFilePathMapService: MockProxy<FilePathMapService>;
@@ -39,20 +39,18 @@ describe('ReferenceManager テストスイート', () => {
     // ファイルシステムモックの設定
     setupFileSystemMocks();
 
-    // ServiceContainerのモック設定
-    const mockServiceContainer = mock<ServiceContainer>();
-    mockServiceContainer.getFilePathMapService.mockReturnValue(mockFilePathMapService);
-    mockServiceContainer.getHyperlinkExtractorService.mockReturnValue(
-      mockHyperlinkExtractorService,
-    );
-    mockServiceContainer.getMetaYamlService.mockReturnValue(mockMetaYamlService);
-    jest.spyOn(ServiceContainer, 'getInstance').mockReturnValue(mockServiceContainer);
+    // 依存関係注入パターンなのでServiceContainerのモック設定は不要
 
     // テスト用のプロジェクト構造を作成
     createTestProject();
 
-    // ReferenceManagerのインスタンスを取得
-    refManager = ReferenceManager.getInstance();
+    // ReferenceServiceのインスタンスを作成
+    refManager = new ReferenceService(
+      mockFileRepository,
+      mockMetaYamlService,
+      mockHyperlinkExtractorService,
+      mockFilePathMapService,
+    );
     refManager.clear(); // 前のテストの影響を除去
   });
 
@@ -264,7 +262,7 @@ files:
   }
 
   it('初期化が正しく動作する', async () => {
-    await refManager.initialize(testDir, mockFileRepository);
+    await refManager.initialize(testDir);
 
     // chapter1.txtの参照関係をチェック
     const chapter1Refs = refManager.getReferences(path.join(testDir, 'contents', 'chapter1.txt'));
@@ -293,7 +291,7 @@ files:
   });
 
   it('単一ファイルの参照関係を更新できる', async () => {
-    await refManager.initialize(testDir, mockFileRepository);
+    await refManager.initialize(testDir);
 
     const filePath = path.join(testDir, 'contents', 'chapter1.txt');
     const newReferences = ['settings/world.md', 'settings/magic.md']; // hero.mdを削除、magic.mdを追加
@@ -317,7 +315,7 @@ files:
   });
 
   it('存在しないファイルの参照関係を取得すると空の配列が返る', async () => {
-    await refManager.initialize(testDir, mockFileRepository);
+    await refManager.initialize(testDir);
 
     const nonExistentPath = path.join(testDir, 'non-existent.txt');
     const refs = refManager.getReferences(nonExistentPath);
@@ -327,7 +325,7 @@ files:
   });
 
   it('clearメソッドで参照関係がクリアされる', async () => {
-    await refManager.initialize(testDir, mockFileRepository);
+    await refManager.initialize(testDir);
 
     // 初期化後は参照関係がある
     const chapter1Refs = refManager.getReferences(path.join(testDir, 'contents', 'chapter1.txt'));
@@ -344,7 +342,7 @@ files:
   });
 
   it('ファイルの存在チェック（非同期版）が正しく動作する', async () => {
-    await refManager.initialize(testDir, mockFileRepository);
+    await refManager.initialize(testDir);
 
     // 存在するファイル
     expect(await refManager.checkFileExistsAsync('settings/world.md')).toBe(true);
@@ -356,7 +354,7 @@ files:
   });
 
   it('無効な参照先ファイルを取得（非同期版）できる', async () => {
-    await refManager.initialize(testDir, mockFileRepository);
+    await refManager.initialize(testDir);
 
     // chapter1.txtに存在しない参照を追加
     const filePath = path.join(testDir, 'contents', 'chapter1.txt');
@@ -373,7 +371,7 @@ files:
   });
 
   it('空の参照配列で更新すると参照関係が削除される', async () => {
-    await refManager.initialize(testDir, mockFileRepository);
+    await refManager.initialize(testDir);
 
     const filePath = path.join(testDir, 'contents', 'chapter1.txt');
 
@@ -394,7 +392,7 @@ files:
   });
 
   it('同じファイルを複数回参照しても重複しない', async () => {
-    await refManager.initialize(testDir, mockFileRepository);
+    await refManager.initialize(testDir);
 
     const filePath = path.join(testDir, 'contents', 'chapter1.txt');
     const duplicateReferences = [
@@ -417,10 +415,8 @@ files:
     expect(chapter1Count).toBe(1);
   });
 
-  it('シングルトンパターンが正しく動作する', () => {
-    const instance1 = ReferenceManager.getInstance();
-    const instance2 = ReferenceManager.getInstance();
-
-    expect(instance1).toBe(instance2);
+  it('依存関係注入でインスタンスが正しく作成される', () => {
+    expect(refManager).toBeDefined();
+    expect(refManager.isInitialized()).toBe(false);
   });
 });

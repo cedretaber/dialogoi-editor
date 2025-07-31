@@ -5,6 +5,7 @@ import { MetaYamlService } from './MetaYamlService.js';
 import { DialogoiYamlService } from './DialogoiYamlService.js';
 import { MetaYaml, DialogoiTreeItem } from '../utils/MetaYamlUtils.js';
 import { FileChangeNotificationService } from './FileChangeNotificationService.js';
+import { ReferenceService } from './ReferenceService.js';
 
 describe('DropHandlerService テストスイート', () => {
   let dropHandlerService: DropHandlerService;
@@ -12,6 +13,7 @@ describe('DropHandlerService テストスイート', () => {
   let mockMetaYamlService: MockProxy<MetaYamlService>;
   let mockDialogoiYamlService: MockProxy<DialogoiYamlService>;
   let mockFileChangeNotificationService: MockProxy<FileChangeNotificationService>;
+  let mockReferenceService: MockProxy<ReferenceService>;
 
   beforeEach(() => {
     jest.clearAllMocks();
@@ -22,6 +24,7 @@ describe('DropHandlerService テストスイート', () => {
     mockMetaYamlService = mock<MetaYamlService>();
     mockDialogoiYamlService = mock<DialogoiYamlService>();
     mockFileChangeNotificationService = mock<FileChangeNotificationService>();
+    mockReferenceService = mock<ReferenceService>();
 
     // サービスを作成
     dropHandlerService = new DropHandlerService(
@@ -29,7 +32,12 @@ describe('DropHandlerService テストスイート', () => {
       mockMetaYamlService,
       mockDialogoiYamlService,
       mockFileChangeNotificationService,
+      mockReferenceService,
     );
+  });
+
+  afterEach(() => {
+    jest.restoreAllMocks();
   });
 
   describe('handleDrop - 本文ファイルへのドロップ', () => {
@@ -105,6 +113,12 @@ describe('DropHandlerService テストスイート', () => {
         }),
       );
 
+      // ReferenceServiceが正しい引数で呼ばれたことを確認
+      expect(mockReferenceService.updateFileReferences).toHaveBeenCalledWith(
+        `${contentsDir}/chapter1.txt`,
+        ['settings/character1.md'],
+      );
+
       // ファイル変更通知が呼ばれたことを確認
       expect(mockFileChangeNotificationService.notifyReferenceUpdated).toHaveBeenCalledWith(
         `${contentsDir}/chapter1.txt`,
@@ -177,6 +191,9 @@ describe('DropHandlerService テストスイート', () => {
 
       // saveが呼ばれないことを確認（重複のため）
       expect(mockMetaYamlService.saveMetaYamlAsync).not.toHaveBeenCalled();
+
+      // ReferenceServiceも呼ばれないことを確認（重複のため）
+      expect(mockReferenceService.updateFileReferences).not.toHaveBeenCalled();
     });
   });
 
@@ -220,6 +237,9 @@ describe('DropHandlerService テストスイート', () => {
       expect(result.message).toBe('マークダウンリンク "hero.md" を生成しました。');
       expect(result.insertText).toBe('[hero.md](settings/characters/hero.md)');
       expect(result.insertPosition).toEqual({ line: 0, character: 0 });
+
+      // 設定ファイルへのドロップではReferenceServiceは呼ばれない
+      expect(mockReferenceService.updateFileReferences).not.toHaveBeenCalled();
     });
   });
 
@@ -248,6 +268,9 @@ describe('DropHandlerService テストスイート', () => {
       expect(result.message).toBe(
         'ドロップ先のファイルがDialogoiプロジェクトのファイルではありません。',
       );
+
+      // エラーケースではReferenceServiceは呼ばれない
+      expect(mockReferenceService.updateFileReferences).not.toHaveBeenCalled();
     });
 
     it('meta.yamlが存在しないディレクトリの本文ファイルにドロップした場合、エラーになる', async () => {
@@ -279,6 +302,9 @@ describe('DropHandlerService テストスイート', () => {
       expect(result.message).toBe(
         'ドロップ先のファイルがDialogoiプロジェクトのファイルではありません。',
       );
+
+      // エラーケースではReferenceServiceは呼ばれない
+      expect(mockReferenceService.updateFileReferences).not.toHaveBeenCalled();
     });
   });
 });

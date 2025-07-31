@@ -1,6 +1,6 @@
 import { DialogoiTreeItem, hasTagsProperty } from '../utils/MetaYamlUtils.js';
 import { Logger } from '../utils/Logger.js';
-import { ReferenceManager } from './ReferenceManager.js';
+import { ReferenceService } from './ReferenceService.js';
 
 /**
  * フィルタリング状態の定義
@@ -22,6 +22,8 @@ export class TreeViewFilterService {
     filterValue: '',
   };
   private logger = Logger.getInstance();
+
+  constructor(private referenceService: ReferenceService) {}
 
   /**
    * タグでフィルタリングを設定
@@ -131,11 +133,11 @@ export class TreeViewFilterService {
    * 参照関係でフィルタリング
    */
   private filterByReference(items: DialogoiTreeItem[], referenceValue: string): DialogoiTreeItem[] {
-    const referenceManager = ReferenceManager.getInstance();
+    const referenceService = this.referenceService;
 
     return items.filter((item) => {
-      // ReferenceManagerから実際の参照関係を取得
-      const allReferencePaths = referenceManager.getAllReferencePaths(item.path);
+      // ReferenceServiceから実際の参照関係を取得
+      const allReferencePaths = referenceService.getAllReferencePaths(item.path);
 
       if (allReferencePaths.length === 0) {
         return false;

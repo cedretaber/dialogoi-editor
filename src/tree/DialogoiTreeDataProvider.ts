@@ -9,7 +9,7 @@ import {
   isGlossaryItem,
 } from '../utils/MetaYamlUtils.js';
 import { ServiceContainer } from '../di/ServiceContainer.js';
-import { ReferenceManager } from '../services/ReferenceManager.js';
+// ReferenceService は ServiceContainer 経由でアクセス
 import { TreeViewFilterService, FilterState } from '../services/TreeViewFilterService.js';
 import { Logger } from '../utils/Logger.js';
 import { FileOperationResult } from '../services/CoreFileService.js';
@@ -56,7 +56,7 @@ export class DialogoiTreeDataProvider
 
   private workspaceRoot: string;
   private novelRoot: string | null = null;
-  private filterService: TreeViewFilterService = new TreeViewFilterService();
+  private filterService: TreeViewFilterService;
   private logger = Logger.getInstance();
   private fileChangeNotificationService: FileChangeNotificationService;
   private loadMetaYamlCache: Map<string, DialogoiTreeItem[]> = new Map();
@@ -76,6 +76,9 @@ export class DialogoiTreeDataProvider
     this.workspaceRoot = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath ?? '';
     const serviceContainer = ServiceContainer.getInstance();
     this.fileChangeNotificationService = serviceContainer.getFileChangeNotificationService();
+    // TreeViewFilterServiceを初期化
+    const referenceService = serviceContainer.getReferenceService();
+    this.filterService = new TreeViewFilterService(referenceService);
     // 非同期初期化は別途呼び出す
     void this.findNovelRoot();
   }
@@ -88,10 +91,9 @@ export class DialogoiTreeDataProvider
       vscode.commands.executeCommand('setContext', 'dialogoi:hasNovelProject', true);
 
       // 参照関係を初期化（まだ初期化されていない場合のみ）
-      const referenceManager = ReferenceManager.getInstance();
-      if (!referenceManager.isInitialized()) {
-        const fileRepository = ServiceContainer.getInstance().getFileRepository();
-        void referenceManager.initialize(this.novelRoot, fileRepository);
+      const referenceService = ServiceContainer.getInstance().getReferenceService();
+      if (!referenceService.isInitialized()) {
+        void referenceService.initialize(this.novelRoot);
       }
 
       this.logger.info(`novelRoot初期化完了: ${this.novelRoot}`);
@@ -590,12 +592,12 @@ export class DialogoiTreeDataProvider
 
     // 参照関係情報（キャラクターの場合は「登場話」として表示）
     if (element.type !== 'subdirectory') {
-      const referenceManager = ReferenceManager.getInstance();
-      const references = referenceManager.getReferences(element.path);
+      const referenceService = ServiceContainer.getInstance().getReferenceService();
+      const references = referenceService.getReferences(element.path);
 
       // 双方向の参照を「登場話」として統合
       const allAppearances = new Set<string>();
-      referenceManager.getAllReferencePaths(element.path).forEach((ref) => allAppearances.add(ref));
+      referenceService.getAllReferencePaths(element.path).forEach((ref) => allAppearances.add(ref));
       references.referencedBy.forEach((refEntry) => allAppearances.add(refEntry.path));
 
       if (allAppearances.size > 0) {
@@ -603,8 +605,8 @@ export class DialogoiTreeDataProvider
         const invalidAppearances: string[] = [];
 
         allAppearances.forEach((ref) => {
-          // TODO: ReferenceManagerの@deprecated削除後に非同期版で対応
-          // if (referenceManager.checkFileExists(ref)) {
+          // TODO: ReferenceServiceの@deprecated削除後に非同期版で対応
+          // if (referenceService.checkFileExists(ref)) {
           //   validAppearances.push(ref);
           // } else {
           //   invalidAppearances.push(ref);
@@ -707,13 +709,13 @@ export class DialogoiTreeDataProvider
     const result = await metadataService.addReference(dirPath, fileName, referencePath);
 
     if (result.success) {
-      // ReferenceManagerを更新
-      const referenceManager = ReferenceManager.getInstance();
+      // ReferenceServiceを更新
+      const referenceService = ServiceContainer.getInstance().getReferenceService();
       const filePath = path.join(dirPath, fileName);
       const foundItem = result.updatedItems?.find((item) => item.name === fileName);
       const currentReferences =
         foundItem && hasReferencesProperty(foundItem) ? foundItem.references : [];
-      referenceManager.updateFileReferences(filePath, currentReferences);
+      referenceService.updateFileReferences(filePath, currentReferences);
 
       this.refresh();
 
@@ -737,13 +739,13 @@ export class DialogoiTreeDataProvider
     const result = await metadataService.removeReference(dirPath, fileName, referencePath);
 
     if (result.success) {
-      // ReferenceManagerを更新
-      const referenceManager = ReferenceManager.getInstance();
+      // ReferenceServiceを更新
+      const referenceService = ServiceContainer.getInstance().getReferenceService();
       const filePath = path.join(dirPath, fileName);
       const foundItem = result.updatedItems?.find((item) => item.name === fileName);
       const currentReferences =
         foundItem && hasReferencesProperty(foundItem) ? foundItem.references : [];
-      referenceManager.updateFileReferences(filePath, currentReferences);
+      referenceService.updateFileReferences(filePath, currentReferences);
 
       this.refresh();
 
@@ -767,13 +769,13 @@ export class DialogoiTreeDataProvider
     const result = await metadataService.setReferences(dirPath, fileName, references);
 
     if (result.success) {
-      // ReferenceManagerを更新
-      const referenceManager = ReferenceManager.getInstance();
+      // ReferenceServiceを更新
+      const referenceService = ServiceContainer.getInstance().getReferenceService();
       const filePath = path.join(dirPath, fileName);
       const foundItem = result.updatedItems?.find((item) => item.name === fileName);
       const currentReferences =
         foundItem && hasReferencesProperty(foundItem) ? foundItem.references : [];
-      referenceManager.updateFileReferences(filePath, currentReferences);
+      referenceService.updateFileReferences(filePath, currentReferences);
 
       this.refresh();
     }

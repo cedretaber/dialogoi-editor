@@ -1,7 +1,7 @@
 import { FileRepository } from '../repositories/FileRepository.js';
 import { CharacterService } from '../services/CharacterService.js';
 import { ForeshadowingService } from '../services/ForeshadowingService.js';
-import { ReferenceManager } from '../services/ReferenceManager.js';
+import { ReferenceService } from '../services/ReferenceService.js';
 import { CommentService } from '../services/CommentService.js';
 import { DialogoiYamlService } from '../services/DialogoiYamlService.js';
 import { DialogoiYamlServiceImpl } from '../services/DialogoiYamlServiceImpl.js';
@@ -38,7 +38,7 @@ export interface IServiceContainer {
   getFileRepository(): FileRepository;
   getCharacterService(): CharacterService;
   getForeshadowingService(): ForeshadowingService;
-  getReferenceManager(): ReferenceManager;
+  getReferenceService(): ReferenceService;
   getCommentService(workspaceRoot: Uri): CommentService;
   getDialogoiYamlService(): DialogoiYamlService;
   getMetaYamlService(): MetaYamlService;
@@ -72,7 +72,7 @@ export class ServiceContainer implements IServiceContainer {
   protected eventEmitterRepository: EventEmitterRepository<FileChangeEvent>;
   private characterService: CharacterService | null = null;
   private foreshadowingService: ForeshadowingService | null = null;
-  private referenceManager: ReferenceManager | null = null;
+  private referenceService: ReferenceService | null = null;
   private dialogoiYamlService: DialogoiYamlService | null = null;
   private metaYamlService: MetaYamlService | null = null;
   private metadataService: MetadataService | null = null;
@@ -161,13 +161,18 @@ export class ServiceContainer implements IServiceContainer {
   }
 
   /**
-   * ReferenceManagerを取得
+   * ReferenceServiceを取得
    */
-  getReferenceManager(): ReferenceManager {
-    if (!this.referenceManager) {
-      this.referenceManager = ReferenceManager.getInstance();
+  getReferenceService(): ReferenceService {
+    if (!this.referenceService) {
+      this.referenceService = new ReferenceService(
+        this.getFileRepository(),
+        this.getMetaYamlService(),
+        this.getHyperlinkExtractorService(),
+        this.getFilePathMapService(),
+      );
     }
-    return this.referenceManager;
+    return this.referenceService;
   }
 
   /**
@@ -247,6 +252,7 @@ export class ServiceContainer implements IServiceContainer {
         this.getMetaYamlService(),
         this.getDialogoiYamlService(),
         this.getFileChangeNotificationService(),
+        this.getReferenceService(),
       );
     }
     return this.dropHandlerService;
@@ -259,7 +265,7 @@ export class ServiceContainer implements IServiceContainer {
     ServiceContainer.instance = null;
     this.characterService = null;
     this.foreshadowingService = null;
-    this.referenceManager = null;
+    this.referenceService = null;
     this.dialogoiYamlService = null;
     this.metaYamlService = null;
     this.metadataService = null;
