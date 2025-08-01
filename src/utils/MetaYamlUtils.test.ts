@@ -15,7 +15,6 @@ describe('MetaYamlUtils テストスイート', () => {
 files:
   - name: chapter1.txt
     type: content
-    path: /test/chapter1.txt
     hash: "abc123"
     tags:
       - 重要
@@ -23,13 +22,8 @@ files:
     references:
       - settings/world.md
     comments: ".chapter1.txt.comments.yaml"
-    isUntracked: false
-    isMissing: false
   - name: settings
-    type: subdirectory
-    path: /test/settings
-    isUntracked: false
-    isMissing: false`;
+    type: subdirectory`;
 
       const result = MetaYamlUtils.parseMetaYaml(yamlContent);
       expect(result).not.toBe(null);
@@ -45,19 +39,19 @@ files:
       expect(contentItem.references).toEqual(['settings/world.md']);
       expect(contentItem.comments).toBe('.chapter1.txt.comments.yaml');
       expect(contentItem.hash).toBe('abc123');
+      // 実行時プロパティはダミー値で設定される
+      expect(contentItem.path).toBe('');
+      expect(contentItem.isUntracked).toBe(false);
+      expect(contentItem.isMissing).toBe(false);
     });
 
     it('最小構成のYAMLを正しく解析する', () => {
       const yamlContent = `files:
   - name: test.txt
     type: content
-    path: /test/test.txt
     hash: "hash123"
     tags: []
-    references: []
-    comments: ".test.txt.comments.yaml"
-    isUntracked: false
-    isMissing: false`;
+    references: []`;
 
       const result = MetaYamlUtils.parseMetaYaml(yamlContent);
       expect(result).not.toBe(null);
@@ -65,7 +59,10 @@ files:
       expect(result?.files.length).toBe(1);
       expect(result?.files[0]?.name).toBe('test.txt');
       expect(result?.files[0]?.type).toBe('content');
-      expect(result?.files[0]?.path).toBe('/test/test.txt');
+      // 実行時プロパティはダミー値で設定される
+      expect(result?.files[0]?.path).toBe('');
+      expect(result?.files[0]?.isUntracked).toBe(false);
+      expect(result?.files[0]?.isMissing).toBe(false);
     });
 
     it('空のfilesを正しく解析する', () => {
@@ -185,6 +182,10 @@ files:
       expect(result.includes('name: chapter1.txt')).toBeTruthy();
       expect(result.includes('type: content')).toBeTruthy();
       expect(result.includes('hash: abc123')).toBeTruthy();
+      // 実行時プロパティが除去されていることを確認
+      expect(result.includes('path:')).toBeFalsy();
+      expect(result.includes('isUntracked:')).toBeFalsy();
+      expect(result.includes('isMissing:')).toBeFalsy();
     });
 
     it('readmeがない場合も正しく変換する', () => {
@@ -210,6 +211,10 @@ files:
       expect(result.includes('name: test.txt')).toBeTruthy();
       expect(result.includes('type: content')).toBeTruthy();
       expect(!result.includes('readme:')).toBeTruthy();
+      // 実行時プロパティが除去されていることを確認
+      expect(result.includes('path:')).toBeFalsy();
+      expect(result.includes('isUntracked:')).toBeFalsy();
+      expect(result.includes('isMissing:')).toBeFalsy();
     });
 
     it('空のfilesを持つMetaYamlを正しく変換する', () => {
@@ -248,6 +253,10 @@ files:
       expect(result.includes('hash: abc123')).toBeTruthy();
       // commentsフィールドがYAMLに含まれていないことを確認
       expect(result.includes('comments:')).toBeFalsy();
+      // 実行時プロパティが除去されていることを確認
+      expect(result.includes('path:')).toBeFalsy();
+      expect(result.includes('isUntracked:')).toBeFalsy();
+      expect(result.includes('isMissing:')).toBeFalsy();
     });
 
     it('commentsフィールドがないSettingItemを正しく変換する', () => {
@@ -273,6 +282,10 @@ files:
       expect(result.includes('hash: def456')).toBeTruthy();
       // commentsフィールドがYAMLに含まれていないことを確認
       expect(result.includes('comments:')).toBeFalsy();
+      // 実行時プロパティが除去されていることを確認
+      expect(result.includes('path:')).toBeFalsy();
+      expect(result.includes('isUntracked:')).toBeFalsy();
+      expect(result.includes('isMissing:')).toBeFalsy();
     });
   });
 

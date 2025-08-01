@@ -1115,8 +1115,8 @@ files: []`;
       expect(updatedTargetMeta.files.length).toBe(2);
       expect(updatedTargetMeta.files[0]?.name).toBe('file1.txt');
       expect(updatedTargetMeta.files[1]?.name).toBe('file3.txt');
-      // パスが更新されていることを確認
-      expect(updatedTargetMeta.files[0]?.path).toBe(`${targetDir}/file1.txt`);
+      // parseMetaYaml後は実行時プロパティはダミー値になる
+      expect(updatedTargetMeta.files[0]?.path).toBe('');
     });
 
     it('同じディレクトリ内で重複ファイル移動を試行（エラーにならない）', async () => {

@@ -5,6 +5,59 @@ export interface ForeshadowingPoint {
   comment: string;
 }
 
+// ===== 内部永続化型定義（YAML保存用 - exportしない） =====
+
+interface MetaYamlFileItemBase {
+  name: string;
+  type: 'content' | 'setting' | 'subdirectory';
+}
+
+interface MetaYamlSubdirectoryItem extends MetaYamlFileItemBase {
+  type: 'subdirectory';
+}
+
+interface MetaYamlContentItem extends MetaYamlFileItemBase {
+  type: 'content';
+  hash: string;
+  tags: string[];
+  references: string[];
+  comments?: string;
+}
+
+interface MetaYamlSettingItem extends MetaYamlFileItemBase {
+  type: 'setting';
+  hash: string;
+  tags: string[];
+  comments?: string;
+}
+
+interface MetaYamlCharacterItem extends MetaYamlSettingItem {
+  character: {
+    importance: 'main' | 'sub' | 'background';
+    multiple_characters: boolean;
+    display_name: string;
+  };
+}
+
+interface MetaYamlForeshadowingItem extends MetaYamlSettingItem {
+  foreshadowing: {
+    plants: ForeshadowingPoint[];
+    payoff: ForeshadowingPoint;
+  };
+}
+
+interface MetaYamlGlossaryItem extends MetaYamlSettingItem {
+  glossary: true;
+}
+
+type MetaYamlFileItem =
+  | MetaYamlSubdirectoryItem
+  | MetaYamlContentItem
+  | MetaYamlSettingItem
+  | MetaYamlCharacterItem
+  | MetaYamlForeshadowingItem
+  | MetaYamlGlossaryItem;
+
 export interface DialogoiTreeItemBase {
   name: string;
   type: 'content' | 'setting' | 'subdirectory';
@@ -64,6 +117,35 @@ export interface MetaYaml {
   files: DialogoiTreeItem[];
 }
 
+// ===== 内部変換関数（永続化型 ⇔ 実行時型） =====
+
+/**
+ * MetaYamlFileItem → DialogoiTreeItem 変換（内部関数）
+ * 永続化データに実行時プロパティを追加
+ */
+function enrichMetaYamlItem(
+  metaItem: MetaYamlFileItem,
+  absolutePath: string,
+  isUntracked: boolean,
+  isMissing: boolean,
+): DialogoiTreeItem {
+  return {
+    ...metaItem,
+    path: absolutePath,
+    isUntracked,
+    isMissing,
+  } as DialogoiTreeItem;
+}
+
+/**
+ * DialogoiTreeItem → MetaYamlFileItem 変換（内部関数）
+ * 実行時プロパティを除去して永続化用データを生成
+ */
+function stripRuntimeProperties(item: DialogoiTreeItem): MetaYamlFileItem {
+  const { path, isUntracked, isMissing, ...metaItem } = item;
+  return metaItem as MetaYamlFileItem;
+}
+
 /**
  * メタデータファイルの純粋なYAML処理を行うユーティリティクラス
  * ファイル操作を含まない純粋なYAMLテキスト処理のみを提供
@@ -71,14 +153,25 @@ export interface MetaYaml {
 export class MetaYamlUtils {
   /**
    * YAML文字列をMetaYamlオブジェクトに変換
+   * 永続化型から実行時型への変換を内部で実行
    */
   static parseMetaYaml(content: string): MetaYaml | null {
     try {
-      const meta = yaml.load(content) as MetaYaml;
-      if (meta === null || meta === undefined || meta.files === undefined) {
+      // まず永続化型として解析
+      const rawMeta = yaml.load(content) as { readme?: string; files: MetaYamlFileItem[] };
+      if (rawMeta === null || rawMeta === undefined || rawMeta.files === undefined) {
         return null;
       }
-      return meta;
+
+      // 実行時型に変換（ダミーの実行時プロパティを設定）
+      const enrichedFiles: DialogoiTreeItem[] = rawMeta.files.map((metaItem) =>
+        enrichMetaYamlItem(metaItem, '', false, false),
+      );
+
+      return {
+        readme: rawMeta.readme,
+        files: enrichedFiles,
+      };
     } catch (error) {
       console.error('メタデータファイルの解析エラー:', error);
       return null;
@@ -87,9 +180,20 @@ export class MetaYamlUtils {
 
   /**
    * MetaYamlオブジェクトをYAML文字列に変換
+   * 実行時型から永続化型への変換を内部で実行
    */
   static stringifyMetaYaml(meta: MetaYaml): string {
-    return yaml.dump(meta, {
+    // 実行時プロパティを除去して永続化型に変換
+    const persistentFiles: MetaYamlFileItem[] = meta.files.map((item) =>
+      stripRuntimeProperties(item),
+    );
+
+    const persistentMeta = {
+      readme: meta.readme,
+      files: persistentFiles,
+    };
+
+    return yaml.dump(persistentMeta, {
       flowLevel: -1,
       lineWidth: -1,
       indent: 2,

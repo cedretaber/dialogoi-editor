@@ -104,19 +104,53 @@ novel/
 
 ```yaml
 readme: README.md  # ディレクトリ選択時の表示内容
-files:            # ファイル・サブディレクトリのリスト（順序を保持）
-  - name: ファイル名またはディレクトリ名
-    type: content | setting | subdirectory
-    # 以下はオプション
+files:             # ファイル・サブディレクトリのリスト（順序を保持）
+
+    # ディレクトリの場合
+  - name: ディレクトリ名
+    type: subdirectory
+
+    # 本文ファイルの場合
+  - name: ファイル名
+    type: content
     tags: ["タグ1", "タグ2"]
-    references: ["パス1", "パス2"]  # 小説ルートからの相対パス
-    comments: ".ファイル名.comments.yaml"  # コメントファイルへの参照
-    glossary: true                   # 用語集の場合
-    character:                       # キャラクター設定の場合
+    hash: "..."                  # ファイルのハッシュ値 
+    references: ["パス1", "パス2"] # 小説ルートからの相対パス
+    comments: ".ファイル名.comments.yaml"  # 省略可。コメントファイルへの参照
+
+    # 設定ファイルの場合
+  - name: ファイル名
+    type: setting
+    tags: ["タグ1", "タグ2"]
+    hash: "..."
+    comments: ".ファイル名.comments.yaml"
+
+    # 設定ファイル（キャラクター）の場合
+  - name: ファイル名
+    type: setting
+    tags: ["タグ1", "タグ2"]
+    hash: "..."
+    comments: ".ファイル名.comments.yaml"
+    character:
       importance: main/sub/background
       multiple_characters: true/false
       display_name: "田中太郎"       # マークダウンから自動取得
-    foreshadowing:                   # 伏線の場合
+
+    # 設定ファイル（用語集）の場合
+  - name: ファイル名
+    type: setting
+    tags: ["タグ1", "タグ2"]
+    hash: "..."
+    comments: ".ファイル名.comments.yaml"
+    glossary: true
+
+    # 設定ファイル（伏線）の場合
+  - name: ファイル名
+    type: setting
+    tags: ["タグ1", "タグ2"]
+    hash: "..."
+    comments: ".ファイル名.comments.yaml"
+    foreshadowing:
       plants:                        # 植込み位置（配列）
         - location: "contents/chapter1.txt"
           comment: "伏線の説明"
