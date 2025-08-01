@@ -5,6 +5,7 @@ import { CreateCommentOptions } from '../models/Comment.js';
 import { FileRepository } from '../repositories/FileRepository.js';
 import { DialogoiYamlService } from './DialogoiYamlService.js';
 import { DialogoiPathService } from './DialogoiPathService.js';
+import { MetaYamlService } from './MetaYamlService.js';
 import { Uri } from '../interfaces/Uri.js';
 import { DialogoiYaml } from '../utils/DialogoiYamlUtils.js';
 
@@ -15,6 +16,7 @@ describe('CommentService テストスイート', () => {
   let mockFileRepository: MockProxy<FileRepository>;
   let mockDialogoiYamlService: MockProxy<DialogoiYamlService>;
   let mockDialogoiPathService: MockProxy<DialogoiPathService>;
+  let mockMetaYamlService: MockProxy<MetaYamlService>;
   let fileSystem: Map<string, string>;
   let directories: Set<string>;
   let workspaceRoot: Uri;
@@ -31,6 +33,7 @@ describe('CommentService テストスイート', () => {
     mockFileRepository = mock<FileRepository>();
     mockDialogoiYamlService = mock<DialogoiYamlService>();
     mockDialogoiPathService = mock<DialogoiPathService>();
+    mockMetaYamlService = mock<MetaYamlService>();
 
     // テスト用のワークスペースを設定
     workspaceRootPath = '/workspace';
@@ -41,12 +44,19 @@ describe('CommentService テストスイート', () => {
       mockFileRepository,
       mockDialogoiYamlService,
       mockDialogoiPathService,
+      mockMetaYamlService,
       workspaceRoot,
     );
     testRelativeFilePath = 'test.txt';
 
     // ファイルシステムモックの設定
     setupFileSystemMocks();
+
+    // getProjectRootのモック設定
+    mockFileRepository.getProjectRoot.mockReturnValue(workspaceRootPath);
+
+    // MetaYamlServiceのモック設定
+    mockMetaYamlService.updateFileCommentsAsync.mockResolvedValue(true);
 
     // テスト用ディレクトリとファイルを作成
     addDirectory(workspaceRootPath);
@@ -195,8 +205,8 @@ describe('CommentService テストスイート', () => {
       expect(commentFile?.comments[0]?.created_at).toBeTruthy();
       expect(commentFile?.comments[0]?.file_hash).toBeTruthy();
 
-      // resolveCommentPathが適切に呼ばれることを確認（add時、既存ファイル読み込み時、load時）
-      expect(mockDialogoiPathService.resolveCommentPath).toHaveBeenCalledTimes(3);
+      // resolveCommentPathが適切に呼ばれることを確認（add時、既存ファイル読み込み時、updateMetaYaml時、load時）
+      expect(mockDialogoiPathService.resolveCommentPath).toHaveBeenCalledTimes(4);
     });
 
     it('複数行コメントを追加する', async () => {

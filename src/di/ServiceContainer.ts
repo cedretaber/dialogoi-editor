@@ -186,6 +186,7 @@ export class ServiceContainer implements IServiceContainer {
       this.getFileRepository(),
       this.getDialogoiYamlService(),
       this.getDialogoiPathService(),
+      this.getMetaYamlService(),
       workspaceRoot,
     );
   }

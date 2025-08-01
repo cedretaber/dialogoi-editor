@@ -357,7 +357,6 @@ export class ProjectAutoSetupService {
             hash: 'default-hash',
             tags: [],
             references: fileType === 'content' ? [] : undefined,
-            comments: `.${fileName}.comments.yaml`,
           } as DialogoiTreeItem;
 
           metaYaml.files.push(newEntry);

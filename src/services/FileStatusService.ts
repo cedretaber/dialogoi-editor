@@ -72,7 +72,11 @@ export class FileStatusService {
 
       // コメントファイルも管理対象として登録
       for (const fileEntry of metaYaml.files) {
-        if (hasCommentsProperty(fileEntry) && fileEntry.comments !== '') {
+        if (
+          hasCommentsProperty(fileEntry) &&
+          fileEntry.comments !== undefined &&
+          fileEntry.comments !== ''
+        ) {
           managedFilenames.add(fileEntry.comments);
         }
       }
@@ -207,7 +211,6 @@ export class FileStatusService {
           path: statusInfo.absolutePath,
           hash: '',
           tags: [],
-          comments: '',
           isUntracked: true,
           isMissing: false,
         };

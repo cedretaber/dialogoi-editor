@@ -1,7 +1,7 @@
 import * as path from 'path';
 import { FileRepository } from '../repositories/FileRepository.js';
 import { MetaYamlService } from './MetaYamlService.js';
-import { DialogoiTreeItem, MetaYaml } from '../utils/MetaYamlUtils.js';
+import { DialogoiTreeItem, MetaYaml, ContentItem, SettingItem } from '../utils/MetaYamlUtils.js';
 import { ProjectLinkUpdateService } from './ProjectLinkUpdateService.js';
 import { CoreFileService, FileOperationResult } from './CoreFileService.js';
 
@@ -115,7 +115,6 @@ export class CoreFileServiceImpl implements CoreFileService {
             hash: 'default-hash',
             tags: tags,
             references: [],
-            comments: `.${fileName}.comments.yaml`,
             isUntracked: false,
             isMissing: false,
           };
@@ -128,7 +127,6 @@ export class CoreFileServiceImpl implements CoreFileService {
               path: absoluteFilePath,
               hash: 'default-hash',
               tags: tags,
-              comments: `.${fileName}.comments.yaml`,
               isUntracked: false,
               isMissing: false,
               character: {
@@ -144,7 +142,6 @@ export class CoreFileServiceImpl implements CoreFileService {
               path: absoluteFilePath,
               hash: 'default-hash',
               tags: tags,
-              comments: `.${fileName}.comments.yaml`,
               isUntracked: false,
               isMissing: false,
             };
@@ -256,6 +253,9 @@ export class CoreFileServiceImpl implements CoreFileService {
       // ファイル名を変更
       await this.fileRepository.renameAsync(oldFileUri, newFileUri);
 
+      // コメントファイルもリネーム
+      await this.renameCommentFileIfExists(oldName, newName, absoluteDirPath);
+
       // リンク更新
       if (this.linkUpdateService) {
         await this.linkUpdateService.updateLinksAfterFileOperation(
@@ -272,6 +272,17 @@ export class CoreFileServiceImpl implements CoreFileService {
           if (fileItem) {
             fileItem.name = newName;
             fileItem.path = newAbsolutePath;
+
+            // commentsフィールドがある場合はリネーム
+            if (fileItem.type === 'content' || fileItem.type === 'setting') {
+              const contentOrSettingItem = fileItem as ContentItem | SettingItem;
+              if (
+                contentOrSettingItem.comments !== undefined &&
+                contentOrSettingItem.comments !== ''
+              ) {
+                contentOrSettingItem.comments = `.${newName}.comments.yaml`;
+              }
+            }
           }
         }
         return meta;
@@ -807,6 +818,34 @@ export class CoreFileServiceImpl implements CoreFileService {
     } catch (error) {
       // コメントファイル移動失敗は警告のみ
       console.warn(`コメントファイルの移動に失敗: ${fileName}`, error);
+    }
+  }
+
+  /**
+   * コメントファイルをリネーム（存在する場合）
+   * @param oldFileName 旧ファイル名
+   * @param newFileName 新ファイル名
+   * @param dirPath ディレクトリパス
+   */
+  private async renameCommentFileIfExists(
+    oldFileName: string,
+    newFileName: string,
+    dirPath: string,
+  ): Promise<void> {
+    try {
+      const oldCommentFileName = `.${oldFileName}.comments.yaml`;
+      const newCommentFileName = `.${newFileName}.comments.yaml`;
+      const oldCommentPath = path.join(dirPath, oldCommentFileName);
+      const newCommentPath = path.join(dirPath, newCommentFileName);
+
+      const oldCommentUri = this.fileRepository.createFileUri(oldCommentPath);
+      if (await this.fileRepository.existsAsync(oldCommentUri)) {
+        const newCommentUri = this.fileRepository.createFileUri(newCommentPath);
+        await this.fileRepository.renameAsync(oldCommentUri, newCommentUri);
+      }
+    } catch (error) {
+      // コメントファイルリネーム失敗は警告のみ
+      console.warn(`コメントファイルのリネームに失敗: ${oldFileName} -> ${newFileName}`, error);
     }
   }
 }

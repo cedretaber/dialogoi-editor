@@ -7,8 +7,7 @@ files:
       - 基本設定
     references:
       - contents/02_entrance_ceremony.txt
-    hash: ''
-    comments: ''
+    hash: 'placeholder_hash_world'
     isUntracked: false
     isMissing: false
   - name: magic_system.md
@@ -18,8 +17,7 @@ files:
       - システム
     references:
       - contents/03_first_magic_lesson.txt
-    hash: ''
-    comments: ''
+    hash: 'placeholder_hash_magic'
     isUntracked: false
     isMissing: false
   - name: glossary.md
@@ -27,8 +25,7 @@ files:
     glossary: true
     tags:
       - 用語集
-    hash: ''
-    comments: ''
+    hash: 'placeholder_hash_glossary'
     isUntracked: false
     isMissing: false
   - name: characters

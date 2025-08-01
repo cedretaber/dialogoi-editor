@@ -4,6 +4,8 @@ import {
   DialogoiTreeItem,
   SubdirectoryItem,
   ContentItem,
+  SettingItem,
+  hasValidComments,
 } from './MetaYamlUtils.js';
 
 describe('MetaYamlUtils テストスイート', () => {
@@ -104,6 +106,49 @@ files:
       const result = MetaYamlUtils.parseMetaYaml(yamlContent);
       expect(result).toBe(null);
     });
+
+    it('commentsフィールドがないコンテンツファイルを正しく解析する', () => {
+      const yamlContent = `files:
+  - name: test-no-comments.txt
+    type: content
+    path: /test/test-no-comments.txt
+    hash: "hash456"
+    tags: []
+    references: []
+    isUntracked: false
+    isMissing: false`;
+
+      const result = MetaYamlUtils.parseMetaYaml(yamlContent);
+      expect(result).not.toBe(null);
+      expect(result?.files.length).toBe(1);
+
+      const file = result?.files[0];
+      expect(file?.name).toBe('test-no-comments.txt');
+      expect(file?.type).toBe('content');
+      const contentItem = file as ContentItem;
+      expect(contentItem.comments).toBeUndefined();
+    });
+
+    it('commentsフィールドがない設定ファイルを正しく解析する', () => {
+      const yamlContent = `files:
+  - name: setting-no-comments.md
+    type: setting
+    path: /test/setting-no-comments.md
+    hash: "hash789"
+    tags: []
+    isUntracked: false
+    isMissing: false`;
+
+      const result = MetaYamlUtils.parseMetaYaml(yamlContent);
+      expect(result).not.toBe(null);
+      expect(result?.files.length).toBe(1);
+
+      const file = result?.files[0];
+      expect(file?.name).toBe('setting-no-comments.md');
+      expect(file?.type).toBe('setting');
+      const settingItem = file as SettingItem;
+      expect(settingItem.comments).toBeUndefined();
+    });
   });
 
   describe('stringifyMetaYaml', () => {
@@ -177,6 +222,57 @@ files:
       expect(typeof result).toBe('string');
       expect(result.includes('readme: README.md')).toBeTruthy();
       expect(result.includes('files: []')).toBeTruthy();
+    });
+
+    it('commentsフィールドがないContentItemを正しく変換する', () => {
+      const meta: MetaYaml = {
+        files: [
+          {
+            name: 'test-no-comments.txt',
+            type: 'content',
+            path: '/test/test-no-comments.txt',
+            hash: 'abc123',
+            tags: ['tag1'],
+            references: ['ref1'],
+            // comments は省略（undefined）
+            isUntracked: false,
+            isMissing: false,
+          },
+        ],
+      };
+
+      const result = MetaYamlUtils.stringifyMetaYaml(meta);
+      expect(typeof result).toBe('string');
+      expect(result.includes('name: test-no-comments.txt')).toBeTruthy();
+      expect(result.includes('type: content')).toBeTruthy();
+      expect(result.includes('hash: abc123')).toBeTruthy();
+      // commentsフィールドがYAMLに含まれていないことを確認
+      expect(result.includes('comments:')).toBeFalsy();
+    });
+
+    it('commentsフィールドがないSettingItemを正しく変換する', () => {
+      const meta: MetaYaml = {
+        files: [
+          {
+            name: 'setting-no-comments.md',
+            type: 'setting',
+            path: '/test/setting-no-comments.md',
+            hash: 'def456',
+            tags: ['setting-tag'],
+            // comments は省略（undefined）
+            isUntracked: false,
+            isMissing: false,
+          },
+        ],
+      };
+
+      const result = MetaYamlUtils.stringifyMetaYaml(meta);
+      expect(typeof result).toBe('string');
+      expect(result.includes('name: setting-no-comments.md')).toBeTruthy();
+      expect(result.includes('type: setting')).toBeTruthy();
+      expect(result.includes('hash: def456')).toBeTruthy();
+      // commentsフィールドがYAMLに含まれていないことを確認
+      expect(result.includes('comments:')).toBeFalsy();
     });
   });
 
@@ -253,6 +349,56 @@ files:
           'type フィールドは content, setting, subdirectory のいずれかである必要があります',
         ),
       ).toBeTruthy();
+    });
+
+    it('commentsフィールドがないコンテンツアイテムのバリデーションが成功する', () => {
+      const item: ContentItem = {
+        name: 'test-no-comments.txt',
+        type: 'content',
+        path: '/test/test-no-comments.txt',
+        hash: 'abc123',
+        tags: ['tag1'],
+        references: ['ref1'],
+        // comments は省略（undefined）
+        isUntracked: false,
+        isMissing: false,
+      };
+
+      const errors = MetaYamlUtils.validateDialogoiTreeItem(item);
+      expect(errors.length).toBe(0);
+    });
+
+    it('commentsフィールドがない設定アイテムのバリデーションが成功する', () => {
+      const item: SettingItem = {
+        name: 'setting-no-comments.md',
+        type: 'setting',
+        path: '/test/setting-no-comments.md',
+        hash: 'def456',
+        tags: ['setting-tag'],
+        // comments は省略（undefined）
+        isUntracked: false,
+        isMissing: false,
+      };
+
+      const errors = MetaYamlUtils.validateDialogoiTreeItem(item);
+      expect(errors.length).toBe(0);
+    });
+
+    it('commentsが空文字列のコンテンツアイテムのバリデーションが成功する', () => {
+      const item: ContentItem = {
+        name: 'test-empty-comments.txt',
+        type: 'content',
+        path: '/test/test-empty-comments.txt',
+        hash: 'ghi789',
+        tags: [],
+        references: [],
+        comments: '', // 空文字列は許可される
+        isUntracked: false,
+        isMissing: false,
+      };
+
+      const errors = MetaYamlUtils.validateDialogoiTreeItem(item);
+      expect(errors.length).toBe(0);
     });
   });
 
@@ -346,6 +492,115 @@ files:
       expect(meta.readme).toBe(undefined);
       expect(meta.files.length).toBe(0);
       expect(Array.isArray(meta.files)).toBeTruthy();
+    });
+  });
+
+  describe('hasValidComments 型ガード関数', () => {
+    it('有効なcommentsを持つContentItemでtrueを返す', () => {
+      const item: ContentItem = {
+        name: 'test.txt',
+        type: 'content',
+        path: '/test/test.txt',
+        hash: 'abc123',
+        tags: [],
+        references: [],
+        comments: '.test.txt.comments.yaml',
+        isUntracked: false,
+        isMissing: false,
+      };
+
+      const result = hasValidComments(item);
+      expect(result).toBe(true);
+
+      // 型ガードテスト - 条件外でexpectを実行
+      const isString = result && typeof item.comments === 'string';
+      const hasLength = result && item.comments !== undefined && item.comments.length > 0;
+      expect(isString).toBe(true);
+      expect(hasLength).toBe(true);
+    });
+
+    it('有効なcommentsを持つSettingItemでtrueを返す', () => {
+      const item: SettingItem = {
+        name: 'setting.md',
+        type: 'setting',
+        path: '/test/setting.md',
+        hash: 'def456',
+        tags: [],
+        comments: '.setting.md.comments.yaml',
+        isUntracked: false,
+        isMissing: false,
+      };
+
+      const result = hasValidComments(item);
+      expect(result).toBe(true);
+
+      // 型ガードテスト - 条件外でexpectを実行
+      const isString = result && typeof item.comments === 'string';
+      const hasLength = result && item.comments !== undefined && item.comments.length > 0;
+      expect(isString).toBe(true);
+      expect(hasLength).toBe(true);
+    });
+
+    it('commentsがundefinedのContentItemでfalseを返す', () => {
+      const item: ContentItem = {
+        name: 'test-no-comments.txt',
+        type: 'content',
+        path: '/test/test-no-comments.txt',
+        hash: 'ghi789',
+        tags: [],
+        references: [],
+        // comments: undefined
+        isUntracked: false,
+        isMissing: false,
+      };
+
+      expect(hasValidComments(item)).toBe(false);
+    });
+
+    it('commentsが空文字列のSettingItemでfalseを返す', () => {
+      const item: SettingItem = {
+        name: 'setting-empty-comments.md',
+        type: 'setting',
+        path: '/test/setting-empty-comments.md',
+        hash: 'jkl012',
+        tags: [],
+        comments: '', // 空文字列
+        isUntracked: false,
+        isMissing: false,
+      };
+
+      expect(hasValidComments(item)).toBe(false);
+    });
+
+    it('SubdirectoryItemでfalseを返す', () => {
+      const item: SubdirectoryItem = {
+        name: 'subdirectory',
+        type: 'subdirectory',
+        path: '/test/subdirectory',
+        isUntracked: false,
+        isMissing: false,
+      };
+
+      expect(hasValidComments(item)).toBe(false);
+    });
+
+    it('commentsフィールドがない（"comments" in item === false）場合にfalseを返す', () => {
+      // commentsプロパティが存在しないオブジェクトを作成
+      const itemBase = {
+        name: 'test-no-prop.txt',
+        type: 'content' as const,
+        path: '/test/test-no-prop.txt',
+        hash: 'mno345',
+        tags: [],
+        references: [],
+        isUntracked: false,
+        isMissing: false,
+      };
+
+      // commentsプロパティを意図的に除外したオブジェクトを作成
+      const item = itemBase as ContentItem;
+
+      expect(hasValidComments(item)).toBe(false);
     });
   });
 });

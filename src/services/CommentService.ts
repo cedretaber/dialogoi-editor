@@ -12,6 +12,7 @@ import { Uri } from '../interfaces/Uri.js';
 import { HashCalculator } from '../utils/HashCalculator.js';
 import { DialogoiYamlService } from './DialogoiYamlService.js';
 import { DialogoiPathService } from './DialogoiPathService.js';
+import { MetaYamlService } from './MetaYamlService.js';
 import { formatTargetFile } from '../utils/FileLineUrlParser.js';
 
 /**
@@ -25,6 +26,7 @@ export class CommentService {
     private fileRepository: FileRepository,
     private dialogoiYamlService: DialogoiYamlService,
     private dialogoiPathService: DialogoiPathService,
+    private metaYamlService: MetaYamlService,
     workspaceRoot: Uri,
   ) {
     this.workspaceRoot = workspaceRoot;
@@ -159,7 +161,7 @@ export class CommentService {
     await this.saveCommentFileAsync(targetRelativeFilePath, commentFile);
 
     // メタデータを更新
-    this.updateMetaYamlAsync(targetRelativeFilePath);
+    await this.updateMetaYamlAsync(targetRelativeFilePath);
   }
 
   /**
@@ -304,9 +306,37 @@ export class CommentService {
   /**
    * メタデータYAMLの更新
    */
-  private updateMetaYamlAsync(_targetRelativeFilePath: string): void {
-    // TODO: MetaYamlServiceとの連携を実装
-    // 暫定的に何もしない
+  private async updateMetaYamlAsync(targetRelativeFilePath: string): Promise<void> {
+    try {
+      // プロジェクトルートからの絶対パスを生成
+      const projectRoot = this.fileRepository.getProjectRoot();
+      const targetAbsolutePath = path.join(projectRoot, targetRelativeFilePath);
+
+      // DialogoiPathServiceを使用してコメントファイルパスを取得
+      const commentFileAbsolutePath =
+        this.dialogoiPathService.resolveCommentPath(targetAbsolutePath);
+
+      // プロジェクトルートからの相対パスに変換
+      const commentFileRelativePath = path.relative(projectRoot, commentFileAbsolutePath);
+
+      // ディレクトリパスとファイル名を取得
+      const dirPath = path.dirname(targetRelativeFilePath);
+      const fileName = path.basename(targetRelativeFilePath);
+      const dirAbsolutePath = path.join(projectRoot, dirPath);
+
+      // MetaYamlServiceを使用してcommentsフィールドを設定
+      const success = await this.metaYamlService.updateFileCommentsAsync(
+        dirAbsolutePath,
+        fileName,
+        commentFileRelativePath,
+      );
+
+      if (!success) {
+        console.warn(`meta.yamlの更新に失敗しました: ${targetRelativeFilePath}`);
+      }
+    } catch (error) {
+      console.error('メタデータYAMLの更新に失敗しました:', error);
+    }
   }
 
   /**

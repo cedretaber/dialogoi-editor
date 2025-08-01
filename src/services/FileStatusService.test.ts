@@ -582,6 +582,275 @@ files:
     });
   });
 
+  describe('バグ再現テスト (examples/sample-novel のケース)', () => {
+    it('contents/01_prologue.txt が参照されているが実際には存在しない場合のMissing検出', async () => {
+      const directoryPath = '/sample-novel/contents';
+      addDirectory(directoryPath);
+
+      // contents/dialogoi-meta.yaml (01_prologue.txtの記載なし)
+      const contentsMetaContent = `readme: README.md
+files:
+  - name: 02_entrance_ceremony.txt
+    type: content
+    tags:
+      - 第1章
+      - 入学式
+    references:
+      - settings/characters/tarou.md
+    hash: placeholder_hash_02
+    isUntracked: false
+    isMissing: false`;
+
+      addFile('/sample-novel/contents/.dialogoi-meta.yaml', contentsMetaContent);
+      addFile('/sample-novel/contents/02_entrance_ceremony.txt', 'ceremony content');
+      // 01_prologue.txt は作成しない（存在しない状態）
+
+      const result = await fileStatusService.getFileStatusList(directoryPath);
+
+      // 01_prologue.txt はメタデータに記載されていないため、結果に含まれない
+      expect(result.length).toBe(1);
+      expect(result[0]?.name).toBe('02_entrance_ceremony.txt');
+      expect(result[0]?.status).toBe(FileStatus.Managed);
+
+      // 存在しないファイルは結果に含まれない（これが現在の動作）
+      const prologueFile = result.find((f) => f.name === '01_prologue.txt');
+      expect(prologueFile).toBe(undefined);
+    });
+
+    it('settings/characters/01_prologue.txt が未追跡ファイルとして検出される', async () => {
+      const directoryPath = '/sample-novel/settings/characters';
+      addDirectory(directoryPath);
+
+      // characters/dialogoi-meta.yaml (01_prologue.txtの記載なし)
+      const charactersMetaContent = `readme: README.md
+files:
+  - name: tarou.md
+    type: setting
+    character:
+      importance: main
+      multiple_characters: false
+    tags:
+      - 主人公
+    references:
+      - contents/01_prologue.txt
+    hash: placeholder_hash_tarou
+    isUntracked: false
+    isMissing: false`;
+
+      addFile('/sample-novel/settings/characters/.dialogoi-meta.yaml', charactersMetaContent);
+      addFile('/sample-novel/settings/characters/tarou.md', 'tarou character');
+      addFile('/sample-novel/settings/characters/01_prologue.txt', 'prologue content'); // 実際のファイル
+
+      const result = await fileStatusService.getFileStatusList(directoryPath);
+
+      expect(result.length).toBe(2);
+
+      const tarouFile = result.find((f) => f.name === 'tarou.md');
+      if (!tarouFile) {
+        throw new Error('tarouFile not found');
+      }
+      expect(tarouFile.status).toBe(FileStatus.Managed);
+
+      const prologueFile = result.find((f) => f.name === '01_prologue.txt');
+      if (!prologueFile) {
+        throw new Error('prologueFile not found');
+      }
+      expect(prologueFile.status).toBe(FileStatus.Untracked);
+      expect(prologueFile.metaEntry).toBe(undefined);
+      expect(prologueFile.isDirectory).toBe(false);
+    });
+
+    it('メタデータに記載されているが実際に存在しないファイルのMissing検出', async () => {
+      const directoryPath = '/test/missing-file-case';
+      addDirectory(directoryPath);
+
+      // 存在しないファイルを明示的にメタデータに記載
+      const metaContent = `readme: README.md
+files:
+  - name: missing_chapter.txt
+    type: content
+    tags:
+      - 未完成
+    references: []
+    hash: missing_hash
+    isUntracked: false
+    isMissing: false
+  - name: existing_chapter.txt
+    type: content
+    tags:
+      - 完成
+    references: []
+    hash: existing_hash
+    isUntracked: false
+    isMissing: false`;
+
+      addFile('/test/missing-file-case/.dialogoi-meta.yaml', metaContent);
+      addFile('/test/missing-file-case/existing_chapter.txt', 'existing content');
+      // missing_chapter.txt は作成しない
+
+      const result = await fileStatusService.getFileStatusList(directoryPath);
+
+      expect(result.length).toBe(2);
+
+      const existingFile = result.find((f) => f.name === 'existing_chapter.txt');
+      if (!existingFile) {
+        throw new Error('existingFile not found');
+      }
+      expect(existingFile.status).toBe(FileStatus.Managed);
+      expect(existingFile.isDirectory).toBe(false);
+
+      const missingFile = result.find((f) => f.name === 'missing_chapter.txt');
+      if (!missingFile) {
+        throw new Error('missingFile not found');
+      }
+      expect(missingFile.status).toBe(FileStatus.Missing);
+      expect(missingFile.isDirectory).toBe(undefined);
+      if (!missingFile.metaEntry) {
+        throw new Error('missingFile.metaEntry not found');
+      }
+      expect(missingFile.metaEntry.name).toBe('missing_chapter.txt');
+    });
+  });
+
+  describe('実際のsample-novelディレクトリでの動作確認', () => {
+    it('contentsディレクトリのFileStatusListを実際のFileOperationServiceで確認', async () => {
+      // 実際のサンプルディレクトリを模擬
+      const directoryPath =
+        '/home/cedretaber/src/ts/dialogoi-editor/examples/sample-novel/contents';
+      addDirectory(directoryPath);
+
+      // 実際のcontents/.dialogoi-meta.yaml の内容
+      const actualMetaContent = `readme: README.md
+files:
+  - name: 02_entrance_ceremony.txt
+    type: content
+    tags:
+      - 第1章
+      - 入学式
+    references:
+      - settings/characters/tarou.md
+      - settings/characters/hanako.md
+    hash: placeholder_hash_02
+    isUntracked: false
+    isMissing: false
+  - name: 03_first_magic_lesson.txt
+    type: content
+    tags:
+      - 第2章
+      - 魔法
+      - 授業
+    references:
+      - settings/magic_system.md
+      - settings/foreshadowings/hidden_power.md
+    hash: placeholder_hash_03
+    isUntracked: false
+    isMissing: false
+  - name: 04_new_friendship.txt
+    type: content
+    tags:
+      - 第3章
+      - 友情
+    references:
+      - settings/characters/jirou.md
+    hash: placeholder_hash_04
+    isUntracked: false
+    isMissing: false`;
+
+      addFile(`${directoryPath}/.dialogoi-meta.yaml`, actualMetaContent);
+      addFile(`${directoryPath}/02_entrance_ceremony.txt`, 'ceremony content');
+      addFile(`${directoryPath}/03_first_magic_lesson.txt`, 'lesson content');
+      addFile(`${directoryPath}/04_new_friendship.txt`, 'friendship content');
+
+      const result = await fileStatusService.getFileStatusList(directoryPath);
+
+      // 3つの管理対象ファイルが全てManagedとして検出される
+      expect(result.length).toBe(3);
+
+      const ceremony = result.find((f) => f.name === '02_entrance_ceremony.txt');
+      expect(ceremony?.status).toBe(FileStatus.Managed);
+
+      const lesson = result.find((f) => f.name === '03_first_magic_lesson.txt');
+      expect(lesson?.status).toBe(FileStatus.Managed);
+
+      const friendship = result.find((f) => f.name === '04_new_friendship.txt');
+      expect(friendship?.status).toBe(FileStatus.Managed);
+
+      // 01_prologue.txt は存在しない
+      const prologue = result.find((f) => f.name === '01_prologue.txt');
+      expect(prologue).toBe(undefined);
+    });
+
+    it('charactersディレクトリで01_prologue.txtが未追跡として検出される', async () => {
+      const directoryPath =
+        '/home/cedretaber/src/ts/dialogoi-editor/examples/sample-novel/settings/characters';
+      addDirectory(directoryPath);
+
+      // 実際のcharacters/.dialogoi-meta.yaml の内容（一部抜粋）
+      const charactersMetaContent = `readme: README.md
+files:
+  - name: tarou.md
+    type: setting
+    character:
+      importance: main
+      multiple_characters: false
+    tags:
+      - 主人公
+      - メインキャラクター
+    references:
+      - contents/01_prologue.txt
+      - contents/02_entrance_ceremony.txt
+      - contents/03_first_magic_lesson.txt
+      - contents/04_new_friendship.txt
+    hash: 'placeholder_hash_tarou'
+    isUntracked: false
+    isMissing: false
+  - name: hanako.md
+    type: setting
+    character:
+      importance: main
+      multiple_characters: false
+    tags:
+      - ヒロイン
+      - メインキャラクター
+    references:
+      - contents/02_entrance_ceremony.txt
+      - contents/03_first_magic_lesson.txt
+      - contents/04_new_friendship.txt
+    hash: 'placeholder_hash_hanako'
+    isUntracked: false
+    isMissing: false`;
+
+      addFile(`${directoryPath}/.dialogoi-meta.yaml`, charactersMetaContent);
+      addFile(`${directoryPath}/tarou.md`, 'tarou character');
+      addFile(`${directoryPath}/hanako.md`, 'hanako character');
+      addFile(`${directoryPath}/jirou.md`, 'jirou character');
+      addFile(`${directoryPath}/teachers.md`, 'teachers description');
+      addFile(`${directoryPath}/01_prologue.txt`, 'prologue content'); // 実際のファイル（未追跡）
+
+      const result = await fileStatusService.getFileStatusList(directoryPath);
+
+      // 管理対象2 + 未追跡3 = 5ファイル
+      expect(result.length).toBe(5);
+
+      const tarou = result.find((f) => f.name === 'tarou.md');
+      expect(tarou?.status).toBe(FileStatus.Managed);
+
+      const hanako = result.find((f) => f.name === 'hanako.md');
+      expect(hanako?.status).toBe(FileStatus.Managed);
+
+      // 未追跡ファイル
+      const jirou = result.find((f) => f.name === 'jirou.md');
+      expect(jirou?.status).toBe(FileStatus.Untracked);
+
+      const teachers = result.find((f) => f.name === 'teachers.md');
+      expect(teachers?.status).toBe(FileStatus.Untracked);
+
+      const prologue = result.find((f) => f.name === '01_prologue.txt');
+      expect(prologue?.status).toBe(FileStatus.Untracked);
+      expect(prologue?.metaEntry).toBe(undefined);
+    });
+  });
+
   describe('isExcluded', () => {
     it('完全一致パターンでマッチする', () => {
       const excludePatterns = ['node_modules', 'dist', '.git'];

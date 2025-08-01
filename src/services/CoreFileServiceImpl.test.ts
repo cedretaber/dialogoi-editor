@@ -5,7 +5,7 @@ import { FileRepository } from '../repositories/FileRepository.js';
 import { MetaYamlService } from './MetaYamlService.js';
 import { ProjectLinkUpdateService } from './ProjectLinkUpdateService.js';
 import { Uri } from '../interfaces/Uri.js';
-import { MetaYaml } from '../utils/MetaYamlUtils.js';
+import { MetaYaml, ContentItem, SettingItem } from '../utils/MetaYamlUtils.js';
 import * as yaml from 'js-yaml';
 
 describe('CoreFileService テストスイート', () => {
@@ -427,6 +427,92 @@ describe('CoreFileService テストスイート', () => {
 
       expect(result.success).toBe(false);
       expect(result.message.includes('既に使用されています')).toBeTruthy();
+    });
+
+    it('コメントファイルが存在する場合、リネーム時に連動してリネームされる', async () => {
+      // コメントファイルも作成
+      const commentFileName = '.existing.txt.comments.yaml';
+      const commentContent = `comments:
+  - id: 1
+    target_file: "existing.txt#L5"
+    content: "テストコメント"
+    posted_by: "reviewer"
+    status: "open"
+    created_at: "2025-01-01T00:00:00Z"`;
+
+      await mockFileRepository.writeFileAsync(
+        mockFileRepository.createFileUri(`/test/${commentFileName}`),
+        commentContent,
+      );
+
+      // ファイルをリネーム
+      const result = await coreFileService.renameFile('/test', 'existing.txt', 'renamed.txt');
+
+      expect(result.success).toBe(true);
+
+      // 新しいコメントファイルが存在することを確認
+      const newCommentUri = mockFileRepository.createFileUri('/test/.renamed.txt.comments.yaml');
+      expect(await mockFileRepository.existsAsync(newCommentUri)).toBeTruthy();
+
+      // 旧コメントファイルが存在しないことを確認
+      const oldCommentUri = mockFileRepository.createFileUri(`/test/${commentFileName}`);
+      expect(await mockFileRepository.existsAsync(oldCommentUri)).toBeFalsy();
+    });
+
+    it('コメントファイルが存在しない場合はエラーにならない', async () => {
+      const result = await coreFileService.renameFile('/test', 'existing.txt', 'renamed.txt');
+
+      expect(result.success).toBe(true);
+      expect(
+        result.message.includes('ファイル名を "existing.txt" から "renamed.txt" に変更しました'),
+      ).toBeTruthy();
+    });
+
+    it('meta.yamlのcommentsフィールドがリネーム時に更新される', async () => {
+      // commentsフィールドを持つファイルを作成
+      await coreFileService.createFile('/test', 'file-with-comments.txt', 'content');
+
+      // meta.yamlを手動で更新してcommentsフィールドを追加
+      const metaContent = await mockFileRepository.readFileAsync(
+        mockFileRepository.createFileUri('/test/.dialogoi-meta.yaml'),
+        'utf8',
+      );
+
+      const meta = yaml.load(metaContent) as MetaYaml;
+      const fileItem = meta.files.find((f) => f.name === 'file-with-comments.txt');
+      if (fileItem && (fileItem.type === 'content' || fileItem.type === 'setting')) {
+        const contentOrSettingItem = fileItem as ContentItem | SettingItem;
+        contentOrSettingItem.comments = '.file-with-comments.txt.comments.yaml';
+      }
+
+      await mockFileRepository.writeFileAsync(
+        mockFileRepository.createFileUri('/test/.dialogoi-meta.yaml'),
+        yaml.dump(meta),
+      );
+
+      // ファイルをリネーム
+      const result = await coreFileService.renameFile(
+        '/test',
+        'file-with-comments.txt',
+        'renamed-file.txt',
+      );
+
+      expect(result.success).toBe(true);
+
+      // meta.yamlのcommentsフィールドが更新されていることを確認
+      const updatedMetaContent = await mockFileRepository.readFileAsync(
+        mockFileRepository.createFileUri('/test/.dialogoi-meta.yaml'),
+        'utf8',
+      );
+      const updatedMeta = yaml.load(updatedMetaContent) as MetaYaml;
+      const updatedFileItem = updatedMeta.files.find((f) => f.name === 'renamed-file.txt');
+
+      expect(updatedFileItem).toBeTruthy();
+      expect(updatedFileItem?.type).toMatch(/^(content|setting)$/);
+
+      // updatedFileItemがContentItem | SettingItemであることを保証してからテスト
+      const contentOrSettingItem = updatedFileItem as ContentItem | SettingItem;
+      expect(contentOrSettingItem.comments).toBe('.renamed-file.txt.comments.yaml');
     });
   });
 

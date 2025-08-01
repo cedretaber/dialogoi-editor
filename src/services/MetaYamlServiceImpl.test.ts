@@ -1,6 +1,6 @@
 import { mock, MockProxy } from 'jest-mock-extended';
 import { MetaYamlServiceImpl } from './MetaYamlServiceImpl.js';
-import { MetaYaml } from '../utils/MetaYamlUtils.js';
+import { MetaYaml, SubdirectoryItem } from '../utils/MetaYamlUtils.js';
 import { FileRepository } from '../repositories/FileRepository.js';
 import { DialogoiPathService } from './DialogoiPathService.js';
 import { Uri } from '../interfaces/Uri.js';
@@ -457,13 +457,14 @@ files: []`;
   });
 
   describe('findNovelRootAsync', () => {
-    it('dialogoi.yamlが存在するディレクトリを見つける', async () => {
+    it('.dialogoi/dialogoi.yamlが存在するディレクトリを見つける', async () => {
       const workspaceRoot = '/test/workspace';
       const novelRoot = '/test/workspace/novel';
 
       addDirectory(workspaceRoot);
       addDirectory(novelRoot);
-      addFile(`${novelRoot}/dialogoi.yaml`, 'version: 1.0');
+      addDirectory(`${novelRoot}/.dialogoi`);
+      addFile(`${novelRoot}/.dialogoi/dialogoi.yaml`, 'version: 1.0');
 
       const result = await service.findNovelRootAsync(workspaceRoot);
       expect(result).toBe(novelRoot);
@@ -477,7 +478,8 @@ files: []`;
       addDirectory(`${workspaceRoot}/projects`);
       addDirectory(`${workspaceRoot}/projects/novel`);
       addDirectory(novelRoot);
-      addFile(`${novelRoot}/dialogoi.yaml`, 'version: 1.0');
+      addDirectory(`${novelRoot}/.dialogoi`);
+      addFile(`${novelRoot}/.dialogoi/dialogoi.yaml`, 'version: 1.0');
 
       const result = await service.findNovelRootAsync(workspaceRoot);
       expect(result).toBe(novelRoot);
@@ -491,15 +493,17 @@ files: []`;
       addDirectory(workspaceRoot);
       addDirectory(novelRoot1);
       addDirectory(novelRoot2);
-      addFile(`${novelRoot1}/dialogoi.yaml`, 'version: 1.0');
-      addFile(`${novelRoot2}/dialogoi.yaml`, 'version: 1.0');
+      addDirectory(`${novelRoot1}/.dialogoi`);
+      addDirectory(`${novelRoot2}/.dialogoi`);
+      addFile(`${novelRoot1}/.dialogoi/dialogoi.yaml`, 'version: 1.0');
+      addFile(`${novelRoot2}/.dialogoi/dialogoi.yaml`, 'version: 1.0');
 
       const result = await service.findNovelRootAsync(workspaceRoot);
       // どちらか一方が返されることを確認（実装に依存）
       expect(result === novelRoot1 || result === novelRoot2).toBeTruthy();
     });
 
-    it('dialogoi.yamlが存在しない場合nullを返す', async () => {
+    it('.dialogoi/dialogoi.yamlが存在しない場合nullを返す', async () => {
       const workspaceRoot = '/test/workspace';
       addDirectory(workspaceRoot);
       addDirectory(`${workspaceRoot}/project1`);
@@ -512,7 +516,8 @@ files: []`;
     it('ワークスペースルート自体にdialogoiプロジェクトがある場合', async () => {
       const workspaceRoot = '/test/workspace';
       addDirectory(workspaceRoot);
-      addFile(`${workspaceRoot}/dialogoi.yaml`, 'version: 1.0');
+      addDirectory(`${workspaceRoot}/.dialogoi`);
+      addFile(`${workspaceRoot}/.dialogoi/dialogoi.yaml`, 'version: 1.0');
 
       const result = await service.findNovelRootAsync(workspaceRoot);
       expect(result).toBe(workspaceRoot);
@@ -1140,6 +1145,161 @@ files: []`;
       const result = await service.moveFileInMetadata(testDir, testDir, 'file1.txt', 0);
 
       expect(result.success).toBe(true);
+    });
+  });
+
+  describe('updateFileCommentsAsync', () => {
+    it('ファイルのcommentsフィールドを正常に更新する', async () => {
+      const testDir = '/test/project';
+      const fileName = 'test.txt';
+      const commentsPath = 'test.txt.comments.yaml';
+
+      const meta: MetaYaml = {
+        readme: 'README.md',
+        files: [
+          {
+            name: fileName,
+            type: 'content',
+            path: `${testDir}/${fileName}`,
+            hash: 'hash123',
+            tags: [],
+            references: [],
+            isUntracked: false,
+            isMissing: false,
+          },
+        ],
+      };
+
+      addDirectory(testDir);
+      await service.saveMetaYamlAsync(testDir, meta);
+
+      // commentsフィールドを更新
+      const result = await service.updateFileCommentsAsync(testDir, fileName, commentsPath);
+      expect(result).toBe(true);
+
+      // 更新されたメタデータを確認
+      const updatedMeta = await service.loadMetaYamlAsync(testDir);
+      expect(updatedMeta).not.toBe(null);
+
+      if (updatedMeta === null) {
+        throw new Error('updatedMeta should not be null');
+      }
+
+      const fileItem = updatedMeta.files.find((f) => f.name === fileName);
+      expect(fileItem).not.toBe(undefined);
+
+      // 型ガードの外でテスト
+      const isValidType =
+        fileItem !== undefined && (fileItem.type === 'content' || fileItem.type === 'setting');
+      expect(isValidType).toBe(true);
+
+      // commentsフィールドの確認
+      const hasComments =
+        isValidType && 'comments' in fileItem && fileItem.comments === commentsPath;
+      expect(hasComments).toBe(true);
+    });
+
+    it('settingファイルのcommentsフィールドを更新する', async () => {
+      const testDir = '/test/project';
+      const fileName = 'setting.md';
+      const commentsPath = 'setting.md.comments.yaml';
+
+      const meta: MetaYaml = {
+        readme: 'README.md',
+        files: [
+          {
+            name: fileName,
+            type: 'setting',
+            path: `${testDir}/${fileName}`,
+            hash: 'hash456',
+            tags: [],
+            isUntracked: false,
+            isMissing: false,
+          },
+        ],
+      };
+
+      addDirectory(testDir);
+      await service.saveMetaYamlAsync(testDir, meta);
+
+      // commentsフィールドを更新
+      const result = await service.updateFileCommentsAsync(testDir, fileName, commentsPath);
+      expect(result).toBe(true);
+
+      // 更新されたメタデータを確認
+      const updatedMeta = await service.loadMetaYamlAsync(testDir);
+      expect(updatedMeta).not.toBe(null);
+
+      if (updatedMeta === null) {
+        throw new Error('updatedMeta should not be null');
+      }
+
+      const fileItem = updatedMeta.files.find((f) => f.name === fileName);
+      expect(fileItem).not.toBe(undefined);
+
+      // 型ガードの外でテスト
+      const isValidType =
+        fileItem !== undefined && (fileItem.type === 'content' || fileItem.type === 'setting');
+      expect(isValidType).toBe(true);
+
+      // commentsフィールドの確認
+      const hasComments =
+        isValidType && 'comments' in fileItem && fileItem.comments === commentsPath;
+      expect(hasComments).toBe(true);
+    });
+
+    it('存在しないファイルに対してはfalseを返す', async () => {
+      const testDir = '/test/project';
+      const fileName = 'nonexistent.txt';
+      const commentsPath = 'nonexistent.txt.comments.yaml';
+
+      const meta: MetaYaml = {
+        readme: 'README.md',
+        files: [],
+      };
+
+      addDirectory(testDir);
+      await service.saveMetaYamlAsync(testDir, meta);
+
+      // 存在しないファイルに対してcommentsフィールドを更新
+      const result = await service.updateFileCommentsAsync(testDir, fileName, commentsPath);
+      expect(result).toBe(false);
+    });
+
+    it('subdirectoryファイルに対してはfalseを返す', async () => {
+      const testDir = '/test/project';
+      const dirName = 'subdir';
+      const commentsPath = 'subdir.comments.yaml';
+
+      const meta: MetaYaml = {
+        readme: 'README.md',
+        files: [
+          {
+            name: dirName,
+            type: 'subdirectory',
+            path: dirName,
+            isUntracked: false,
+            isMissing: false,
+          } as SubdirectoryItem,
+        ],
+      };
+
+      addDirectory(testDir);
+      await service.saveMetaYamlAsync(testDir, meta);
+
+      // subdirectoryファイルに対してcommentsフィールドを更新
+      const result = await service.updateFileCommentsAsync(testDir, dirName, commentsPath);
+      expect(result).toBe(false);
+    });
+
+    it('メタデータファイルが存在しない場合はfalseを返す', async () => {
+      const testDir = '/test/nonexistent';
+      const fileName = 'test.txt';
+      const commentsPath = 'test.txt.comments.yaml';
+
+      // メタデータファイルが存在しない場合
+      const result = await service.updateFileCommentsAsync(testDir, fileName, commentsPath);
+      expect(result).toBe(false);
     });
   });
 });

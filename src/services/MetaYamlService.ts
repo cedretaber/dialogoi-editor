@@ -72,4 +72,13 @@ export interface MetaYamlService {
    * ファイルのキャラクター情報を削除
    */
   removeFileCharacter(dirAbsolutePath: string, fileName: string): Promise<boolean>;
+
+  /**
+   * ファイルのcommentsフィールドを更新
+   */
+  updateFileCommentsAsync(
+    dirAbsolutePath: string,
+    fileName: string,
+    commentsPath: string,
+  ): Promise<boolean>;
 }

@@ -92,7 +92,6 @@ export class FileManagementService {
           hash: 'default-hash',
           tags: [],
           references: [],
-          comments: `.${fileName}.comments.yaml`,
           isUntracked: false,
           isMissing: false,
         };
@@ -104,7 +103,6 @@ export class FileManagementService {
           path: absoluteFilePath,
           hash: 'default-hash',
           tags: [],
-          comments: `.${fileName}.comments.yaml`,
           isUntracked: false,
           isMissing: false,
         };

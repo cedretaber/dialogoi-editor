@@ -22,14 +22,14 @@ export interface ContentItem extends DialogoiTreeItemBase {
   hash: string;
   tags: string[];
   references: string[];
-  comments: string;
+  comments?: string;
 }
 
 export interface SettingItem extends DialogoiTreeItemBase {
   type: 'setting';
   hash: string;
   tags: string[];
-  comments: string;
+  comments?: string;
 }
 
 export interface CharacterItem extends SettingItem {
@@ -124,9 +124,7 @@ export class MetaYamlUtils {
       if (!Array.isArray(contentItem.references)) {
         errors.push('content アイテムの references フィールドは配列である必要があります');
       }
-      if (!contentItem.comments) {
-        errors.push('content アイテムには comments フィールドが必須です');
-      }
+      // comments フィールドはオプショナルになったため、必須チェックを削除
     } else if (item.type === 'setting') {
       const settingItem = item;
       if ('hash' in settingItem && !settingItem.hash) {
@@ -135,9 +133,7 @@ export class MetaYamlUtils {
       if ('tags' in settingItem && !Array.isArray(settingItem.tags)) {
         errors.push('setting アイテムの tags フィールドは配列である必要があります');
       }
-      if ('comments' in settingItem && !settingItem.comments) {
-        errors.push('setting アイテムには comments フィールドが必須です');
-      }
+      // comments フィールドはオプショナルになったため、必須チェックを削除
 
       // 拡張型の検証
       if ('character' in settingItem) {
@@ -150,9 +146,7 @@ export class MetaYamlUtils {
         if (typeof characterItem.character.multiple_characters !== 'boolean') {
           errors.push('character.multiple_characters は boolean である必要があります');
         }
-        if (!characterItem.character.display_name) {
-          errors.push('character.display_name は必須です');
-        }
+        // display_name はオプショナルフィールドなので、必須チェックを削除
       }
 
       if ('foreshadowing' in settingItem) {
@@ -302,6 +296,20 @@ export function hasCommentsProperty(
   item: DialogoiTreeItem,
 ): item is ContentItem | SettingItem | CharacterItem | ForeshadowingItem | GlossaryItem {
   return item.type === 'content' || item.type === 'setting';
+}
+
+/**
+ * アイテムが有効なコメントフィールドを持つかどうかを判定
+ */
+export function hasValidComments(
+  item: DialogoiTreeItem,
+): item is (ContentItem | SettingItem) & { comments: string } {
+  return (
+    (item.type === 'content' || item.type === 'setting') &&
+    'comments' in item &&
+    typeof item.comments === 'string' &&
+    item.comments.length > 0
+  );
 }
 
 /**

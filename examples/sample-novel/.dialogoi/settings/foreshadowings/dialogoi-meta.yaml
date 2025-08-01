@@ -13,8 +13,7 @@ files:
       - 主人公
       - 古代魔法
       - 長期伏線
-    hash: ''
-    comments: ''
+    hash: 'placeholder_hash_hidden_power'
     isUntracked: false
     isMissing: false
   - name: academy_secret.md
@@ -30,8 +29,7 @@ files:
       - 魔法学院
       - 秘密
       - 中期伏線
-    hash: ''
-    comments: ''
+    hash: 'placeholder_hash_academy_secret'
     isUntracked: false
     isMissing: false
   - name: ancient_prophecy.md
@@ -47,7 +45,6 @@ files:
       - 予言
       - 運命
       - 長期伏線
-    hash: ''
-    comments: ''
+    hash: 'placeholder_hash_ancient_prophecy'
     isUntracked: false
     isMissing: false
