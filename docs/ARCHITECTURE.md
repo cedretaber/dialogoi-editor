@@ -246,7 +246,7 @@ export class ServiceContainer {
 - 汎用メタデータ更新：updateMetaYaml
 
 ### 3. MetaYamlService
-`.dialogoi-meta.yaml`ファイルの管理：
+`dialogoi-meta.yaml`ファイルの管理：
 - 読み込み・保存・バリデーション
 - ファイル情報の追加・削除・更新
 
@@ -259,13 +259,13 @@ export class ServiceContainer {
 
 ### 5. FileManagementService
 ファイル管理操作と業務ロジック：
-- 未管理ファイルのmeta.yaml追加・削除
+- 未管理ファイルのdialogoi-meta.yaml追加・削除
 - 欠損ファイルの作成（テンプレート対応）
 - キャラクター操作：setCharacterImportance, setMultipleCharacters, removeCharacter
 - 伏線操作：setForeshadowing, removeForeshadowing
 
 ### 6. DialogoiYamlService
-プロジェクト設定（`dialogoi.yaml`）の管理：
+プロジェクト設定（`.dialogoi/dialogoi.yaml`）の管理：
 - プロジェクト作成・読み込み・保存
 - プロジェクトルート検索・判定
 - バリデーション・除外パターン取得

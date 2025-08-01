@@ -13,7 +13,7 @@
 
 主要機能：
 - TreeViewによる階層的ファイル管理 ✅
-- meta.yamlによるメタデータ管理 ✅
+- .dialogoi/dialogoi-meta.yamlによるメタデータ管理 ✅
 - ファイル作成・削除・名前変更・並び替え ✅
 - タグシステム（ファイル・ディレクトリへのタグ付与） ✅
 - 参照関係管理（双方向参照追跡） ✅
@@ -146,7 +146,7 @@ npm run check-all
 - ビルド: TypeScriptが`out/webviews/`にコンパイル
 - Provider側でHTMLテンプレートを読み込み、プレースホルダーを置換してWebViewに設定
 
-### meta.yaml/レビューファイル 固有の注意事項
+### メタデータ/コメントファイル 固有の注意事項
 
 **YAMLファイル操作:**
 - `js-yaml`ライブラリを使用
@@ -582,7 +582,7 @@ files:
 files:
   - name: "chapter1.txt"
     type: "content"
-    comments: ".chapter1.txt.comments.yaml"  # 新規
+    comments: "chapter1.txt.comments.yaml"  # 新規（.dialogoi/内に配置）
 ```
 
 この実装により、協業前提の複雑なレビューシステムから、一人作業でも有用なシンプルなコメント・TODO管理システムへの移行が完了しました。

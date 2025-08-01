@@ -37,7 +37,7 @@ Dialogoi Editorは、小説作品の執筆を体系的に支援するVSCode拡�
 - ファイル存在確認による状態管理
 
 ### ⚙️ **プロジェクト管理**
-- `dialogoi.yaml`による作品メタデータ管理
+- `.dialogoi/dialogoi.yaml`による作品メタデータ管理
 - 既存ディレクトリからの自動プロジェクト生成
 - 除外パターンによる不要ファイルの除外
 
@@ -127,17 +127,22 @@ code .
 
 ```
 novel-project/
-├── dialogoi.yaml          # プロジェクト設定
+├── .dialogoi/             # Dialogoi管理ディレクトリ
+│   ├── dialogoi.yaml      # プロジェクト設定
+│   ├── dialogoi-meta.yaml # ルートディレクトリのメタデータ
+│   ├── contents/
+│   │   └── dialogoi-meta.yaml
+│   ├── characters/
+│   │   └── dialogoi-meta.yaml
+│   └── settings/
+│       └── dialogoi-meta.yaml
 ├── contents/              # 本文ファイル
-│   ├── .dialogoi-meta.yaml
 │   ├── prologue.txt
 │   └── chapter1.txt
 ├── characters/            # キャラクター設定
-│   ├── .dialogoi-meta.yaml
 │   ├── protagonist.md
 │   └── heroine.md
 └── settings/              # 世界設定・用語集
-    ├── .dialogoi-meta.yaml
     ├── world.md
     └── magic_system.md
 ```

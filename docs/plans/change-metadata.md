@@ -647,3 +647,57 @@ return path.join(projectRoot, '.dialogoi', `${filename}.comments.yaml`);
 - `.dialogoi/templates/` - ユーザー定義テンプレート
 
 これらは本実装の範囲外ですが、ディレクトリ構造はこれらを考慮して設計されています。
+
+## 11. トラブルシューティング
+
+### 11.1 メタデータファイルの場所に関する混乱
+
+**問題**: メタデータファイルの場所を間違えやすい（例：`.dialogoi-meta.yaml` vs `.dialogoi/dialogoi-meta.yaml`）
+
+**原因**: 
+- Phase 1-4 で段階的に移行したため、新旧の構造が混在する期間があった
+- ドキュメントの各所に旧パス（`.dialogoi-meta.yaml`）への言及が残っている
+
+**対策**:
+1. **現在の構造を明確に理解する**:
+   - メタデータ: `{projectRoot}/.dialogoi/{relativePath}/dialogoi-meta.yaml`
+   - コメント: `{projectRoot}/.dialogoi/{relativePath}/{filename}.comments.yaml`
+   - プロジェクト設定: `{projectRoot}/.dialogoi/dialogoi.yaml`
+
+2. **デバッグ時の確認方法**:
+   ```bash
+   # プロジェクト内のメタデータファイルを確認
+   find . -name "dialogoi-meta.yaml" -type f
+   
+   # .dialogoi ディレクトリ構造を確認
+   tree .dialogoi/
+   ```
+
+3. **コード内での参照**:
+   - 直接パスを構築せず、必ず `DialogoiPathService` を使用する
+   - `resolveMetaPath()` と `resolveCommentPath()` メソッドを活用
+
+### 11.2 検証エラー「character.display_name は必須です」
+
+**問題**: キャラクターファイルの検証で `display_name` が必須として扱われる
+
+**原因**: 
+- 型定義では `display_name?: string` とオプショナルだが、検証ロジックで必須チェックしていた
+- サンプルデータに `display_name` フィールドが含まれていない
+
+**解決策**:
+- `MetaYamlUtils.ts` の検証ロジックから `display_name` の必須チェックを削除（実装済み）
+- `display_name` はオプショナルフィールドとして扱う
+
+### 11.3 ファイル移動時の注意事項
+
+**問題**: 本文ファイルを設定ディレクトリ（特にキャラクター）に移動すると不適切
+
+**理由**:
+- ディレクトリごとにファイルタイプの期待値が異なる
+- キャラクターディレクトリには `character` プロパティを持つ設定ファイルのみを配置すべき
+
+**推奨事項**:
+- 本文ファイル（content type）は `contents/` ディレクトリに配置
+- 設定ファイル（setting type）は `settings/` 配下の適切なサブディレクトリに配置
+- ファイル移動時は移動先のディレクトリの用途を確認
