@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 import { DialogoiTreeDataProvider } from '../tree/DialogoiTreeDataProvider.js';
-import { DialogoiTreeItem, hasTagsProperty } from '../utils/MetaYamlUtils.js';
+import { DialogoiTreeItem, hasTagsProperty } from '../models/DialogoiTreeItem.js';
 
 /**
  * タグ関連のコマンドを登録

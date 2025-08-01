@@ -4,8 +4,8 @@ import { CharacterService } from './CharacterService.js';
 import { FileRepository } from '../repositories/FileRepository.js';
 import { MetaYamlService } from './MetaYamlService.js';
 import { Uri } from '../interfaces/Uri.js';
-import { MetaYaml, DialogoiTreeItem } from '../utils/MetaYamlUtils.js';
-import { hasCharacterProperty } from '../utils/MetaYamlUtils.js';
+import { DialogoiTreeItem, hasCharacterProperty } from '../models/DialogoiTreeItem.js';
+import { MetaYaml } from '../models/MetaYaml.js';
 import * as yaml from 'js-yaml';
 
 describe('CharacterService テストスイート', () => {

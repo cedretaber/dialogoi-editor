@@ -3,7 +3,7 @@ import { FileRepository } from '../repositories/FileRepository.js';
 import { MetaYamlService } from './MetaYamlService.js';
 import { HyperlinkExtractorService } from './HyperlinkExtractorService.js';
 import { FilePathMapService } from './FilePathMapService.js';
-import { hasReferencesProperty } from '../utils/MetaYamlUtils.js';
+import { hasReferencesProperty } from '../models/DialogoiTreeItem.js';
 
 export interface ReferenceEntry {
   path: string;

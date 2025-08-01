@@ -2,7 +2,8 @@ import { mock, MockProxy } from 'jest-mock-extended';
 import { FilePathMapService } from './FilePathMapService.js';
 import { MetaYamlService } from './MetaYamlService.js';
 import { CoreFileService } from './CoreFileService.js';
-import { DialogoiTreeItem, MetaYaml } from '../utils/MetaYamlUtils.js';
+import { DialogoiTreeItem } from '../models/DialogoiTreeItem.js';
+import { MetaYaml } from '../models/MetaYaml.js';
 import * as yaml from 'js-yaml';
 import * as path from 'path';
 

@@ -5,7 +5,7 @@ import { MetaYamlService } from './MetaYamlService.js';
 import { DialogoiYamlService } from './DialogoiYamlService.js';
 import { FileChangeNotificationService } from './FileChangeNotificationService.js';
 import { ReferenceService } from './ReferenceService.js';
-import { hasReferencesProperty } from '../utils/MetaYamlUtils.js';
+import { hasReferencesProperty } from '../models/DialogoiTreeItem.js';
 
 /**
  * ドロップされたファイル情報

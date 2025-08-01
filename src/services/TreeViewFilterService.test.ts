@@ -1,6 +1,6 @@
 import { mock, MockProxy } from 'jest-mock-extended';
 import { TreeViewFilterService } from './TreeViewFilterService.js';
-import { DialogoiTreeItem } from '../utils/MetaYamlUtils.js';
+import { DialogoiTreeItem } from '../models/DialogoiTreeItem.js';
 import { ReferenceService } from './ReferenceService.js';
 // 不要なimportは削除（依存関係注入でモック統一）
 import {

@@ -1,8 +1,7 @@
 import * as path from 'path';
 import { FileRepository } from '../repositories/FileRepository.js';
 import { MetaYamlService } from './MetaYamlService.js';
-import { hasCharacterProperty } from '../utils/MetaYamlUtils.js';
-import { DialogoiTreeItem } from '../utils/MetaYamlUtils.js';
+import { DialogoiTreeItem, hasCharacterProperty } from '../models/DialogoiTreeItem.js';
 
 export class CharacterService {
   constructor(

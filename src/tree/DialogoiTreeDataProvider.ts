@@ -7,7 +7,7 @@ import {
   hasCharacterProperty,
   hasForeshadowingProperty,
   isGlossaryItem,
-} from '../utils/MetaYamlUtils.js';
+} from '../models/DialogoiTreeItem.js';
 import { ServiceContainer } from '../di/ServiceContainer.js';
 // ReferenceService は ServiceContainer 経由でアクセス
 import { TreeViewFilterService, FilterState } from '../services/TreeViewFilterService.js';

@@ -1,6 +1,7 @@
 import { mock, MockProxy } from 'jest-mock-extended';
 import { MetaYamlServiceImpl } from './MetaYamlServiceImpl.js';
-import { MetaYaml, SubdirectoryItem } from '../utils/MetaYamlUtils.js';
+import { SubdirectoryItem } from '../models/DialogoiTreeItem.js';
+import { MetaYaml } from '../models/MetaYaml.js';
 import { FileRepository } from '../repositories/FileRepository.js';
 import { DialogoiPathService } from './DialogoiPathService.js';
 import { Uri } from '../interfaces/Uri.js';

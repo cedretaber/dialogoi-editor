@@ -1,6 +1,6 @@
 import * as path from 'path';
 import { FileRepository } from '../repositories/FileRepository.js';
-import { ForeshadowingPoint, isForeshadowingItem } from '../utils/MetaYamlUtils.js';
+import { ForeshadowingPoint, isForeshadowingItem } from '../models/DialogoiTreeItem.js';
 import { MetaYamlService } from './MetaYamlService.js';
 
 export interface ForeshadowingData {

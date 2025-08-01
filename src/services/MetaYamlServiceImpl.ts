@@ -1,13 +1,13 @@
 import * as path from 'path';
 import { FileRepository } from '../repositories/FileRepository.js';
 import {
-  MetaYamlUtils,
-  MetaYaml,
   DialogoiTreeItem,
   hasTagsProperty,
   hasReferencesProperty,
   hasCharacterProperty,
-} from '../utils/MetaYamlUtils.js';
+} from '../models/DialogoiTreeItem.js';
+import { MetaYaml } from '../models/MetaYaml.js';
+import { MetaYamlUtils } from '../utils/MetaYamlUtils.js';
 
 import { MetaYamlService } from './MetaYamlService.js';
 import { DialogoiPathService } from './DialogoiPathService.js';

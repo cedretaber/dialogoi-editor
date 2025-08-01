@@ -1,10 +1,10 @@
 import { FileOperationResult } from './CoreFileService.js';
 import {
-  MetaYaml,
   DialogoiTreeItem,
   hasTagsProperty,
   hasReferencesProperty,
-} from '../utils/MetaYamlUtils.js';
+} from '../models/DialogoiTreeItem.js';
+import { MetaYaml } from '../models/MetaYaml.js';
 import { MetaYamlService } from './MetaYamlService.js';
 import * as path from 'path';
 

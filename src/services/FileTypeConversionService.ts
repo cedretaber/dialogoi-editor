@@ -1,7 +1,8 @@
 import { FileRepository } from '../repositories/FileRepository.js';
 import { MetaYamlService } from './MetaYamlService.js';
 import { FileChangeNotificationService } from './FileChangeNotificationService.js';
-import { DialogoiTreeItem, MetaYaml, ContentItem, SettingItem } from '../utils/MetaYamlUtils.js';
+import { DialogoiTreeItem, ContentItem, SettingItem } from '../models/DialogoiTreeItem.js';
+import { MetaYaml } from '../models/MetaYaml.js';
 import { Logger } from '../utils/Logger.js';
 import * as path from 'path';
 

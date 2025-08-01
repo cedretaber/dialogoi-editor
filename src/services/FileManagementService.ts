@@ -2,12 +2,12 @@ import { FileRepository } from '../repositories/FileRepository.js';
 import { MetaYamlService } from './MetaYamlService.js';
 import {
   DialogoiTreeItem,
-  MetaYaml,
   hasCharacterProperty,
   isForeshadowingItem,
   CharacterItem,
   ForeshadowingItem,
-} from '../utils/MetaYamlUtils.js';
+} from '../models/DialogoiTreeItem.js';
+import { MetaYaml } from '../models/MetaYaml.js';
 import { ForeshadowingData } from './ForeshadowingService.js';
 import * as path from 'path';
 

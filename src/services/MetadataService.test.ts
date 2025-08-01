@@ -2,7 +2,7 @@ import { MetadataService } from './MetadataService.js';
 import { MetaYamlService } from './MetaYamlService.js';
 import { createContentItem } from '../test/testHelpers.js';
 import { MockProxy, mock } from 'jest-mock-extended';
-import { MetaYaml } from '../utils/MetaYamlUtils.js';
+import { MetaYaml } from '../models/MetaYaml.js';
 
 describe('MetadataService テストスイート', () => {
   let metadataService: MetadataService;

@@ -3,7 +3,8 @@ import * as path from 'path';
 import { FileStatusService, FileStatus, FileStatusInfo } from './FileStatusService.js';
 import { FileRepository, DirectoryEntry } from '../repositories/FileRepository.js';
 import { MetaYamlService } from './MetaYamlService.js';
-import { DialogoiTreeItem, MetaYaml } from '../utils/MetaYamlUtils.js';
+import { DialogoiTreeItem } from '../models/DialogoiTreeItem.js';
+import { MetaYaml } from '../models/MetaYaml.js';
 import { Uri } from '../interfaces/Uri.js';
 import * as yaml from 'js-yaml';
 

@@ -1,7 +1,8 @@
 import * as path from 'path';
 import { FileRepository } from '../repositories/FileRepository.js';
 import { MetaYamlService } from './MetaYamlService.js';
-import { DialogoiTreeItem, MetaYaml, ContentItem, SettingItem } from '../utils/MetaYamlUtils.js';
+import { DialogoiTreeItem, ContentItem, SettingItem } from '../models/DialogoiTreeItem.js';
+import { MetaYaml } from '../models/MetaYaml.js';
 import { ProjectLinkUpdateService } from './ProjectLinkUpdateService.js';
 import { CoreFileService, FileOperationResult } from './CoreFileService.js';
 

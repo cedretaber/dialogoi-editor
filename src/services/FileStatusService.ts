@@ -1,6 +1,6 @@
 import { FileRepository } from '../repositories/FileRepository.js';
 import { MetaYamlService } from './MetaYamlService.js';
-import { DialogoiTreeItem, hasCommentsProperty } from '../utils/MetaYamlUtils.js';
+import { DialogoiTreeItem, hasCommentsProperty } from '../models/DialogoiTreeItem.js';
 import * as path from 'path';
 
 /**

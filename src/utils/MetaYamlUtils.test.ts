@@ -1,12 +1,12 @@
+import { MetaYamlUtils } from './MetaYamlUtils.js';
+import { MetaYaml } from '../models/MetaYaml.js';
 import {
-  MetaYamlUtils,
-  MetaYaml,
   DialogoiTreeItem,
   SubdirectoryItem,
   ContentItem,
   SettingItem,
   hasValidComments,
-} from './MetaYamlUtils.js';
+} from '../models/DialogoiTreeItem.js';
 
 describe('MetaYamlUtils テストスイート', () => {
   describe('parseMetaYaml', () => {

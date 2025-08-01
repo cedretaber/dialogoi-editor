@@ -7,7 +7,7 @@ import { FilePathMapService } from './FilePathMapService.js';
 import { MetaYamlService } from './MetaYamlService.js';
 // ServiceContainer は依存関係注入で不要
 import { Uri } from '../interfaces/Uri.js';
-import { MetaYaml } from '../utils/MetaYamlUtils.js';
+import { MetaYaml } from '../models/MetaYaml.js';
 import * as yaml from 'js-yaml';
 
 describe('ReferenceService テストスイート', () => {

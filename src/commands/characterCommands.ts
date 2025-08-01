@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import { DialogoiTreeDataProvider } from '../tree/DialogoiTreeDataProvider.js';
 import { ServiceContainer } from '../di/ServiceContainer.js';
-import { DialogoiTreeItem, isCharacterItem } from '../utils/MetaYamlUtils.js';
+import { DialogoiTreeItem, isCharacterItem } from '../models/DialogoiTreeItem.js';
 
 export function registerCharacterCommands(
   context: vscode.ExtensionContext,

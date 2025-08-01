@@ -2,7 +2,8 @@ import { FileRepository } from '../repositories/FileRepository.js';
 import { MetaYamlService } from './MetaYamlService.js';
 import { DialogoiYamlService } from './DialogoiYamlService.js';
 import { FileTypeDetector } from '../utils/FileTypeDetector.js';
-import { DialogoiTreeItem, MetaYamlUtils } from '../utils/MetaYamlUtils.js';
+import { DialogoiTreeItem } from '../models/DialogoiTreeItem.js';
+import { MetaYamlUtils } from '../utils/MetaYamlUtils.js';
 import * as path from 'path';
 
 /**

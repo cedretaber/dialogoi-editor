@@ -2,7 +2,7 @@ import * as path from 'path';
 import { FileRepository } from '../repositories/FileRepository.js';
 import { MetaYamlService } from './MetaYamlService.js';
 import { PathNormalizer } from '../utils/PathNormalizer.js';
-import { hasReferencesProperty } from '../utils/MetaYamlUtils.js';
+import { hasReferencesProperty } from '../models/DialogoiTreeItem.js';
 import { ProjectLinkUpdateService, LinkUpdateResult } from './ProjectLinkUpdateService.js';
 
 /**

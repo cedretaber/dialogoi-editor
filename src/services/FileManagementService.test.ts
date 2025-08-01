@@ -4,7 +4,7 @@ import { ForeshadowingData } from './ForeshadowingService.js';
 import { FileRepository } from '../repositories/FileRepository.js';
 import { MetaYamlService } from './MetaYamlService.js';
 import { Uri } from '../interfaces/Uri.js';
-import { MetaYaml } from '../utils/MetaYamlUtils.js';
+import { MetaYaml } from '../models/MetaYaml.js';
 import * as yaml from 'js-yaml';
 
 describe('FileManagementService テストスイート', () => {

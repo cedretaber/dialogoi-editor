@@ -4,7 +4,7 @@ import { FileRepository } from '../repositories/FileRepository.js';
 import { MetaYamlService } from './MetaYamlService.js';
 import { DialogoiYamlService } from './DialogoiYamlService.js';
 import { Uri } from '../interfaces/Uri.js';
-import { MetaYaml } from '../utils/MetaYamlUtils.js';
+import { MetaYaml } from '../models/MetaYaml.js';
 import { DialogoiYaml } from '../utils/DialogoiYamlUtils.js';
 import * as yaml from 'js-yaml';
 import * as path from 'path';

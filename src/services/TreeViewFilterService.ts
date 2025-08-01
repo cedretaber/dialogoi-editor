@@ -1,4 +1,4 @@
-import { DialogoiTreeItem, hasTagsProperty } from '../utils/MetaYamlUtils.js';
+import { DialogoiTreeItem, hasTagsProperty } from '../models/DialogoiTreeItem.js';
 import { Logger } from '../utils/Logger.js';
 import { ReferenceService } from './ReferenceService.js';
 

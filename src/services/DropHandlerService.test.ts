@@ -3,7 +3,8 @@ import { DropHandlerService, DroppedFileInfo } from './DropHandlerService.js';
 import { CharacterService } from './CharacterService.js';
 import { MetaYamlService } from './MetaYamlService.js';
 import { DialogoiYamlService } from './DialogoiYamlService.js';
-import { MetaYaml, DialogoiTreeItem } from '../utils/MetaYamlUtils.js';
+import { DialogoiTreeItem } from '../models/DialogoiTreeItem.js';
+import { MetaYaml } from '../models/MetaYaml.js';
 import { FileChangeNotificationService } from './FileChangeNotificationService.js';
 import { ReferenceService } from './ReferenceService.js';
 

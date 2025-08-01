@@ -7,7 +7,7 @@ import {
   SettingItem,
   SubdirectoryItem,
   CharacterItem,
-} from '../utils/MetaYamlUtils.js';
+} from '../models/DialogoiTreeItem.js';
 
 export function createContentItem(partial: Partial<ContentItem>): ContentItem {
   return {

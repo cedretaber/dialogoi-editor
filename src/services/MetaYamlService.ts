@@ -1,4 +1,5 @@
-import { MetaYaml, DialogoiTreeItem } from '../utils/MetaYamlUtils.js';
+import { DialogoiTreeItem } from '../models/DialogoiTreeItem.js';
+import { MetaYaml } from '../models/MetaYaml.js';
 
 /**
  * .dialogoi-meta.yaml ファイル操作サービスのインターフェース

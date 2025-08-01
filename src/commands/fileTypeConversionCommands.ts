@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import { ServiceContainer } from '../di/ServiceContainer.js';
 import { FileTypeConversionService } from '../services/FileTypeConversionService.js';
-import { DialogoiTreeItem } from '../utils/MetaYamlUtils.js';
+import { DialogoiTreeItem } from '../models/DialogoiTreeItem.js';
 
 /**
  * ファイル種別変更コマンドを登録する

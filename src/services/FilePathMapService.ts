@@ -4,7 +4,7 @@ import {
   hasCharacterProperty,
   isGlossaryItem,
   isForeshadowingItem,
-} from '../utils/MetaYamlUtils.js';
+} from '../models/DialogoiTreeItem.js';
 import { MetaYamlService } from './MetaYamlService.js';
 import { CoreFileService } from './CoreFileService.js';
 

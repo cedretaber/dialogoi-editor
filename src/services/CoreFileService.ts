@@ -1,4 +1,4 @@
-import { DialogoiTreeItem } from '../utils/MetaYamlUtils.js';
+import { DialogoiTreeItem } from '../models/DialogoiTreeItem.js';
 
 /**
  * ファイル操作の結果を表すインターフェイス

@@ -5,7 +5,8 @@ import { FileRepository } from '../repositories/FileRepository.js';
 import { MetaYamlService } from './MetaYamlService.js';
 import { ProjectLinkUpdateService } from './ProjectLinkUpdateService.js';
 import { Uri } from '../interfaces/Uri.js';
-import { MetaYaml, ContentItem, SettingItem } from '../utils/MetaYamlUtils.js';
+import { ContentItem, SettingItem } from '../models/DialogoiTreeItem.js';
+import { MetaYaml } from '../models/MetaYaml.js';
 import * as yaml from 'js-yaml';
 
 describe('CoreFileService テストスイート', () => {
