@@ -17,7 +17,6 @@ export function createContentItem(partial: Partial<ContentItem>): ContentItem {
     hash: 'default-hash',
     tags: [],
     references: [],
-    comments: 'default-comments.yaml',
     isUntracked: false,
     isMissing: false,
     ...partial,
@@ -31,7 +30,6 @@ export function createSettingItem(partial: Partial<SettingItem>): SettingItem {
     path: '/test/test.md',
     hash: 'default-hash',
     tags: [],
-    comments: 'default-comments.yaml',
     isUntracked: false,
     isMissing: false,
     ...partial,
@@ -56,7 +54,6 @@ export function createCharacterItem(partial: Partial<CharacterItem>): CharacterI
     path: '/test/test.md',
     hash: 'default-hash',
     tags: [],
-    comments: 'default-comments.yaml',
     isUntracked: false,
     isMissing: false,
     character: {

@@ -5,7 +5,6 @@ import { FileRepository } from '../repositories/FileRepository.js';
 import { MetaYamlService } from './MetaYamlService.js';
 import { ProjectLinkUpdateService } from './ProjectLinkUpdateService.js';
 import { Uri } from '../interfaces/Uri.js';
-import { ContentItem, SettingItem } from '../models/DialogoiTreeItem.js';
 import { MetaYaml } from '../models/MetaYaml.js';
 import * as yaml from 'js-yaml';
 
@@ -480,11 +479,6 @@ describe('CoreFileService テストスイート', () => {
       );
 
       const meta = yaml.load(metaContent) as MetaYaml;
-      const fileItem = meta.files.find((f) => f.name === 'file-with-comments.txt');
-      if (fileItem && (fileItem.type === 'content' || fileItem.type === 'setting')) {
-        const contentOrSettingItem = fileItem as ContentItem | SettingItem;
-        contentOrSettingItem.comments = '.file-with-comments.txt.comments.yaml';
-      }
 
       await mockFileRepository.writeFileAsync(
         mockFileRepository.createFileUri('/test/.dialogoi-meta.yaml'),
@@ -510,10 +504,6 @@ describe('CoreFileService テストスイート', () => {
 
       expect(updatedFileItem).toBeTruthy();
       expect(updatedFileItem?.type).toMatch(/^(content|setting)$/);
-
-      // updatedFileItemがContentItem | SettingItemであることを保証してからテスト
-      const contentOrSettingItem = updatedFileItem as ContentItem | SettingItem;
-      expect(contentOrSettingItem.comments).toBe('.renamed-file.txt.comments.yaml');
     });
   });
 

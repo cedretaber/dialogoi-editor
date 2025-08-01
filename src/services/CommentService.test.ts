@@ -5,9 +5,9 @@ import { CreateCommentOptions } from '../models/Comment.js';
 import { FileRepository } from '../repositories/FileRepository.js';
 import { DialogoiYamlService } from './DialogoiYamlService.js';
 import { DialogoiPathService } from './DialogoiPathService.js';
-import { MetaYamlService } from './MetaYamlService.js';
 import { Uri } from '../interfaces/Uri.js';
 import { DialogoiYaml } from '../utils/DialogoiYamlUtils.js';
+import { ContentItem, SettingItem, SubdirectoryItem } from '../models/DialogoiTreeItem.js';
 
 describe('CommentService テストスイート', () => {
   let workspaceRootPath: string;
@@ -16,7 +16,6 @@ describe('CommentService テストスイート', () => {
   let mockFileRepository: MockProxy<FileRepository>;
   let mockDialogoiYamlService: MockProxy<DialogoiYamlService>;
   let mockDialogoiPathService: MockProxy<DialogoiPathService>;
-  let mockMetaYamlService: MockProxy<MetaYamlService>;
   let fileSystem: Map<string, string>;
   let directories: Set<string>;
   let workspaceRoot: Uri;
@@ -33,7 +32,6 @@ describe('CommentService テストスイート', () => {
     mockFileRepository = mock<FileRepository>();
     mockDialogoiYamlService = mock<DialogoiYamlService>();
     mockDialogoiPathService = mock<DialogoiPathService>();
-    mockMetaYamlService = mock<MetaYamlService>();
 
     // テスト用のワークスペースを設定
     workspaceRootPath = '/workspace';
@@ -44,7 +42,6 @@ describe('CommentService テストスイート', () => {
       mockFileRepository,
       mockDialogoiYamlService,
       mockDialogoiPathService,
-      mockMetaYamlService,
       workspaceRoot,
     );
     testRelativeFilePath = 'test.txt';
@@ -56,7 +53,6 @@ describe('CommentService テストスイート', () => {
     mockFileRepository.getProjectRoot.mockReturnValue(workspaceRootPath);
 
     // MetaYamlServiceのモック設定
-    mockMetaYamlService.updateFileCommentsAsync.mockResolvedValue(true);
 
     // テスト用ディレクトリとファイルを作成
     addDirectory(workspaceRootPath);
@@ -205,8 +201,8 @@ describe('CommentService テストスイート', () => {
       expect(commentFile?.comments[0]?.created_at).toBeTruthy();
       expect(commentFile?.comments[0]?.file_hash).toBeTruthy();
 
-      // resolveCommentPathが適切に呼ばれることを確認（add時、既存ファイル読み込み時、updateMetaYaml時、load時）
-      expect(mockDialogoiPathService.resolveCommentPath).toHaveBeenCalledTimes(4);
+      // resolveCommentPathが適切に呼ばれることを確認（add時、既存ファイル読み込み時、load時）
+      expect(mockDialogoiPathService.resolveCommentPath).toHaveBeenCalledTimes(3);
     });
 
     it('複数行コメントを追加する', async () => {
@@ -600,6 +596,140 @@ created_at: '2024-01-01T00:00:00Z'`;
       expect(mockDialogoiPathService.resolveCommentPath).toHaveBeenCalledWith(
         path.join(workspaceRootPath, 'nonexistent.txt'),
       );
+    });
+  });
+
+  describe('hasCommentsAsync メソッド', () => {
+    test('コメントファイルが存在する場合はtrueを返す', async () => {
+      const targetPath = 'contents/chapter1.txt';
+      const commentFileUri = {
+        path: `/workspace/.dialogoi/chapter1.txt.comments.yaml`,
+        fsPath: `/workspace/.dialogoi/chapter1.txt.comments.yaml`,
+      } as Uri;
+
+      mockDialogoiPathService.resolveCommentPath.mockReturnValue(
+        `/workspace/.dialogoi/chapter1.txt.comments.yaml`,
+      );
+      mockFileRepository.createFileUri.mockReturnValue(commentFileUri);
+      mockFileRepository.existsAsync.mockResolvedValue(true);
+
+      const result = await commentService.hasCommentsAsync(targetPath);
+
+      expect(result).toBe(true);
+      expect(mockFileRepository.existsAsync).toHaveBeenCalledWith(commentFileUri);
+    });
+
+    test('コメントファイルが存在しない場合はfalseを返す', async () => {
+      const targetPath = 'contents/chapter2.txt';
+      const commentFileUri = {
+        path: `/workspace/.dialogoi/chapter2.txt.comments.yaml`,
+        fsPath: `/workspace/.dialogoi/chapter2.txt.comments.yaml`,
+      } as Uri;
+
+      mockDialogoiPathService.resolveCommentPath.mockReturnValue(
+        `/workspace/.dialogoi/chapter2.txt.comments.yaml`,
+      );
+      mockFileRepository.createFileUri.mockReturnValue(commentFileUri);
+      mockFileRepository.existsAsync.mockResolvedValue(false);
+
+      const result = await commentService.hasCommentsAsync(targetPath);
+
+      expect(result).toBe(false);
+    });
+  });
+
+  describe('hasCommentsForItemAsync メソッド', () => {
+    test('ContentItemでコメントが存在する場合', async () => {
+      const item: ContentItem = {
+        name: 'chapter1.txt',
+        type: 'content',
+        path: '/workspace/contents/chapter1.txt',
+        hash: 'hash123',
+        tags: [],
+        references: [],
+        isUntracked: false,
+        isMissing: false,
+      };
+
+      const commentFileUri = {
+        path: `/workspace/.dialogoi/chapter1.txt.comments.yaml`,
+        fsPath: `/workspace/.dialogoi/chapter1.txt.comments.yaml`,
+      } as Uri;
+
+      mockDialogoiPathService.resolveCommentPath.mockReturnValue(
+        `/workspace/.dialogoi/chapter1.txt.comments.yaml`,
+      );
+      mockFileRepository.createFileUri.mockReturnValue(commentFileUri);
+      mockFileRepository.existsAsync.mockResolvedValue(true);
+
+      const result = await commentService.hasCommentsForItemAsync(item);
+
+      expect(result).toBe(true);
+    });
+
+    test('SettingItemでコメントが存在する場合', async () => {
+      const item: SettingItem = {
+        name: 'character.md',
+        type: 'setting',
+        path: '/workspace/settings/character.md',
+        hash: 'hash456',
+        tags: [],
+        isUntracked: false,
+        isMissing: false,
+      };
+
+      const commentFileUri = {
+        path: `/workspace/.dialogoi/character.md.comments.yaml`,
+        fsPath: `/workspace/.dialogoi/character.md.comments.yaml`,
+      } as Uri;
+
+      mockDialogoiPathService.resolveCommentPath.mockReturnValue(
+        `/workspace/.dialogoi/character.md.comments.yaml`,
+      );
+      mockFileRepository.createFileUri.mockReturnValue(commentFileUri);
+      mockFileRepository.existsAsync.mockResolvedValue(true);
+
+      const result = await commentService.hasCommentsForItemAsync(item);
+
+      expect(result).toBe(true);
+    });
+
+    test('SubdirectoryItemの場合はfalseを返す', async () => {
+      const item: SubdirectoryItem = {
+        name: 'subfolder',
+        type: 'subdirectory',
+        path: '/workspace/subfolder',
+        isUntracked: false,
+        isMissing: false,
+      };
+
+      const result = await commentService.hasCommentsForItemAsync(item);
+
+      expect(result).toBe(false);
+      expect(mockFileRepository.existsAsync).not.toHaveBeenCalled();
+    });
+
+    test('相対パス計算でエラーが発生した場合はfalseを返す', async () => {
+      const item: ContentItem = {
+        name: 'test.txt',
+        type: 'content',
+        path: '/invalid/path/test.txt',
+        hash: 'hash123',
+        tags: [],
+        references: [],
+        isUntracked: false,
+        isMissing: false,
+      };
+
+      // path.relativeがエラーを投げるような設定はできないため、
+      // hasCommentsAsyncで例外が発生する設定
+      mockDialogoiPathService.resolveCommentPath.mockImplementation(() => {
+        throw new Error('パス解決エラー');
+      });
+
+      const result = await commentService.hasCommentsForItemAsync(item);
+
+      expect(result).toBe(false);
     });
   });
 

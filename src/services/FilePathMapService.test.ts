@@ -262,7 +262,6 @@ files: []
         hash: 'newhash',
         tags: [],
         references: [],
-        comments: '',
         isUntracked: false,
         isMissing: false,
       };

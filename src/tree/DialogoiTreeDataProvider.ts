@@ -934,7 +934,6 @@ export class DialogoiTreeDataProvider
             hash: '',
             tags: [],
             references: [],
-            comments: '',
             isUntracked: false,
             isMissing: false,
           };
@@ -945,7 +944,6 @@ export class DialogoiTreeDataProvider
             type: 'setting',
             hash: '',
             tags: [],
-            comments: '',
             isUntracked: false,
             isMissing: false,
           };

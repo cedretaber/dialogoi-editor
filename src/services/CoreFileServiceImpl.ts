@@ -1,7 +1,7 @@
 import * as path from 'path';
 import { FileRepository } from '../repositories/FileRepository.js';
 import { MetaYamlService } from './MetaYamlService.js';
-import { DialogoiTreeItem, ContentItem, SettingItem } from '../models/DialogoiTreeItem.js';
+import { DialogoiTreeItem } from '../models/DialogoiTreeItem.js';
 import { MetaYaml } from '../models/MetaYaml.js';
 import { ProjectLinkUpdateService } from './ProjectLinkUpdateService.js';
 import { CoreFileService, FileOperationResult } from './CoreFileService.js';
@@ -273,17 +273,6 @@ export class CoreFileServiceImpl implements CoreFileService {
           if (fileItem) {
             fileItem.name = newName;
             fileItem.path = newAbsolutePath;
-
-            // commentsフィールドがある場合はリネーム
-            if (fileItem.type === 'content' || fileItem.type === 'setting') {
-              const contentOrSettingItem = fileItem as ContentItem | SettingItem;
-              if (
-                contentOrSettingItem.comments !== undefined &&
-                contentOrSettingItem.comments !== ''
-              ) {
-                contentOrSettingItem.comments = `.${newName}.comments.yaml`;
-              }
-            }
           }
         }
         return meta;

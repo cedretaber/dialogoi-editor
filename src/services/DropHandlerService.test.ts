@@ -57,7 +57,6 @@ describe('DropHandlerService テストスイート', () => {
         hash: 'hash123',
         tags: [],
         references: [],
-        comments: '.chapter1.txt.comments.yaml',
         isUntracked: false,
         isMissing: false,
       };
@@ -72,7 +71,6 @@ describe('DropHandlerService テストスイート', () => {
             hash: 'hash123',
             tags: [],
             references: [],
-            comments: '.chapter1.txt.comments.yaml',
             isUntracked: false,
             isMissing: false,
           },
@@ -147,7 +145,6 @@ describe('DropHandlerService テストスイート', () => {
         hash: 'hash789',
         tags: [],
         references: ['settings/character1.md'],
-        comments: '.chapter1.txt.comments.yaml',
         isUntracked: false,
         isMissing: false,
       };
@@ -163,7 +160,6 @@ describe('DropHandlerService テストスイート', () => {
             hash: 'hash789',
             tags: [],
             references: ['settings/character1.md'],
-            comments: '.chapter1.txt.comments.yaml',
             isUntracked: false,
             isMissing: false,
           },
@@ -212,7 +208,6 @@ describe('DropHandlerService テストスイート', () => {
         type: 'setting',
         hash: 'hash_overview',
         tags: [],
-        comments: '.overview.md.comments.yaml',
         isUntracked: false,
         isMissing: false,
       };

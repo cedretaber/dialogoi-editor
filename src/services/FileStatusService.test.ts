@@ -357,8 +357,8 @@ files:
 
       const result = await fileStatusService.getFileStatusList(directoryPath);
 
-      // コメントファイルは表示されない（管理対象として隠される）
-      expect(result.length).toBe(2);
+      // 新仕様では、コメントファイルは別途管理されるため、通常ファイルとして表示される
+      expect(result.length).toBe(3);
 
       const chapter1 = result.find((f) => f.name === 'chapter1.txt');
       if (!chapter1) {
@@ -372,9 +372,10 @@ files:
       }
       expect(chapter2.status).toBe(FileStatus.Managed);
 
-      // コメントファイルが結果に含まれていないことを確認
+      // 新仕様では、コメントファイルも通常ファイルとして表示される
       const commentFile = result.find((f) => f.name === '.chapter1.txt.comments.yaml');
-      expect(commentFile).toBe(undefined);
+      expect(commentFile).toBeDefined();
+      expect(commentFile?.status).toBe(FileStatus.Untracked);
     });
 
     it('管理ファイル(.dialogoi-meta.yaml, dialogoi.yaml)は除外される', async () => {
@@ -494,7 +495,6 @@ files:
         hash: 'testhash',
         tags: ['重要'],
         references: [],
-        comments: '.test.txt.comments.yaml',
         isUntracked: false,
         isMissing: false,
       };
@@ -513,9 +513,8 @@ files:
       expect(result.type).toBe('content');
       expect(result.path).toBe('/test/test.txt');
       // Type assertion since we just confirmed the type above
-      const contentResult = result as { type: 'content'; tags: string[]; comments: string };
+      const contentResult = result as { type: 'content'; tags: string[] };
       expect(contentResult.tags).toEqual(['重要']);
-      expect(contentResult.comments).toBe('.test.txt.comments.yaml');
       expect(result.isMissing).toBe(false);
       expect(result.isUntracked).toBe(false);
     });
@@ -528,7 +527,6 @@ files:
         hash: 'missinghash',
         tags: [],
         references: [],
-        comments: '',
         isUntracked: false,
         isMissing: false,
       };

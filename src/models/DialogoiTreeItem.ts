@@ -27,14 +27,12 @@ export interface ContentItem extends DialogoiTreeItemBase {
   hash: string;
   tags: string[];
   references: string[];
-  comments?: string;
 }
 
 export interface SettingItem extends DialogoiTreeItemBase {
   type: 'setting';
   hash: string;
   tags: string[];
-  comments?: string;
 }
 
 export interface CharacterItem extends SettingItem {
@@ -143,24 +141,8 @@ export function hasHashProperty(
 /**
  * アイテムがコメントを持つことができるかどうかを判定
  */
-export function hasCommentsProperty(
-  item: DialogoiTreeItem,
-): item is ContentItem | SettingItem | CharacterItem | ForeshadowingItem | GlossaryItem {
+export function canHaveComments(item: DialogoiTreeItem): item is ContentItem | SettingItem {
   return item.type === 'content' || item.type === 'setting';
-}
-
-/**
- * アイテムが有効なコメントフィールドを持つかどうかを判定
- */
-export function hasValidComments(
-  item: DialogoiTreeItem,
-): item is (ContentItem | SettingItem) & { comments: string } {
-  return (
-    (item.type === 'content' || item.type === 'setting') &&
-    'comments' in item &&
-    typeof item.comments === 'string' &&
-    item.comments.length > 0
-  );
 }
 
 /**

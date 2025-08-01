@@ -532,8 +532,6 @@ export class MetaYamlServiceImpl implements MetaYamlService {
       path: fileItem.path,
       hash: fileItem.hash,
       tags: fileItem.tags,
-      ...(fileItem.comments !== undefined &&
-        fileItem.comments !== '' && { comments: fileItem.comments }),
       isUntracked: fileItem.isUntracked,
       isMissing: fileItem.isMissing,
     };
@@ -544,44 +542,6 @@ export class MetaYamlServiceImpl implements MetaYamlService {
       meta.files[itemIndex] = newSettingItem;
     }
 
-    return await this.saveMetaYamlAsync(dirAbsolutePath, meta);
-  }
-
-  /**
-   * ファイルのcommentsフィールドを更新
-   */
-  async updateFileCommentsAsync(
-    dirAbsolutePath: string,
-    fileName: string,
-    commentsPath: string,
-  ): Promise<boolean> {
-    // メタデータファイルを読み込み
-    const meta = await this.loadMetaYamlAsync(dirAbsolutePath);
-    if (!meta) {
-      console.error(`メタデータファイルの読み込みに失敗しました: ${dirAbsolutePath}`);
-      return false;
-    }
-
-    // 対象ファイルを検索
-    const fileItem = meta.files.find((item) => item.name === fileName);
-    if (!fileItem) {
-      console.error(`ファイルが見つかりません: ${fileName} in ${dirAbsolutePath}`);
-      return false;
-    }
-
-    // commentsフィールドを更新（オプショナルなので条件分岐）
-    if (fileItem.type === 'content') {
-      // ContentItemの場合（型ナローイングされているためアサーション不要）
-      fileItem.comments = commentsPath;
-    } else if (fileItem.type === 'setting') {
-      // SettingItemの場合（型ナローイングされているためアサーション不要）
-      fileItem.comments = commentsPath;
-    } else {
-      console.error(`コメント対象外のファイルタイプです: ${fileItem.type}`);
-      return false;
-    }
-
-    // メタデータファイルを保存
     return await this.saveMetaYamlAsync(dirAbsolutePath, meta);
   }
 }

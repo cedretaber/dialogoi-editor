@@ -12,8 +12,8 @@ import { Uri } from '../interfaces/Uri.js';
 import { HashCalculator } from '../utils/HashCalculator.js';
 import { DialogoiYamlService } from './DialogoiYamlService.js';
 import { DialogoiPathService } from './DialogoiPathService.js';
-import { MetaYamlService } from './MetaYamlService.js';
 import { formatTargetFile } from '../utils/FileLineUrlParser.js';
+import { DialogoiTreeItem } from '../models/DialogoiTreeItem.js';
 
 /**
  * コメント管理サービス
@@ -26,7 +26,6 @@ export class CommentService {
     private fileRepository: FileRepository,
     private dialogoiYamlService: DialogoiYamlService,
     private dialogoiPathService: DialogoiPathService,
-    private metaYamlService: MetaYamlService,
     workspaceRoot: Uri,
   ) {
     this.workspaceRoot = workspaceRoot;
@@ -159,9 +158,6 @@ export class CommentService {
 
     // ファイルを保存
     await this.saveCommentFileAsync(targetRelativeFilePath, commentFile);
-
-    // メタデータを更新
-    await this.updateMetaYamlAsync(targetRelativeFilePath);
   }
 
   /**
@@ -286,6 +282,36 @@ export class CommentService {
   }
 
   /**
+   * ファイルがコメントを持つかどうかを判定
+   * @param targetRelativeFilePath 対象ファイルのパス（小説ルートからの相対パス）
+   * @returns コメントファイルが存在する場合はtrue
+   */
+  async hasCommentsAsync(targetRelativeFilePath: string): Promise<boolean> {
+    const commentFileUri = this.getCommentFileUri(targetRelativeFilePath);
+    return await this.fileRepository.existsAsync(commentFileUri);
+  }
+
+  /**
+   * DialogoiTreeItemがコメントを持つかどうかを判定
+   * @param item DialogoiTreeItem
+   * @returns コメントファイルが存在する場合はtrue
+   */
+  async hasCommentsForItemAsync(item: DialogoiTreeItem): Promise<boolean> {
+    try {
+      if (item.type !== 'content' && item.type !== 'setting') {
+        return false;
+      }
+
+      // itemのpathからworkspaceRootからの相対パスを計算
+      const relativePath = path.relative(this.workspaceRoot.fsPath, item.path);
+      return await this.hasCommentsAsync(relativePath);
+    } catch (error) {
+      console.warn(`コメントファイル存在チェックでエラー: ${item.path}`, error);
+      return false;
+    }
+  }
+
+  /**
    * posted_byの取得
    */
   private async getPostedByAsync(): Promise<string> {
@@ -301,42 +327,6 @@ export class CommentService {
     }
     // デフォルト値
     return 'author';
-  }
-
-  /**
-   * メタデータYAMLの更新
-   */
-  private async updateMetaYamlAsync(targetRelativeFilePath: string): Promise<void> {
-    try {
-      // プロジェクトルートからの絶対パスを生成
-      const projectRoot = this.fileRepository.getProjectRoot();
-      const targetAbsolutePath = path.join(projectRoot, targetRelativeFilePath);
-
-      // DialogoiPathServiceを使用してコメントファイルパスを取得
-      const commentFileAbsolutePath =
-        this.dialogoiPathService.resolveCommentPath(targetAbsolutePath);
-
-      // プロジェクトルートからの相対パスに変換
-      const commentFileRelativePath = path.relative(projectRoot, commentFileAbsolutePath);
-
-      // ディレクトリパスとファイル名を取得
-      const dirPath = path.dirname(targetRelativeFilePath);
-      const fileName = path.basename(targetRelativeFilePath);
-      const dirAbsolutePath = path.join(projectRoot, dirPath);
-
-      // MetaYamlServiceを使用してcommentsフィールドを設定
-      const success = await this.metaYamlService.updateFileCommentsAsync(
-        dirAbsolutePath,
-        fileName,
-        commentFileRelativePath,
-      );
-
-      if (!success) {
-        console.warn(`meta.yamlの更新に失敗しました: ${targetRelativeFilePath}`);
-      }
-    } catch (error) {
-      console.error('メタデータYAMLの更新に失敗しました:', error);
-    }
   }
 
   /**

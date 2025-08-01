@@ -1,6 +1,6 @@
 import { FileRepository } from '../repositories/FileRepository.js';
 import { MetaYamlService } from './MetaYamlService.js';
-import { DialogoiTreeItem, hasCommentsProperty } from '../models/DialogoiTreeItem.js';
+import { DialogoiTreeItem } from '../models/DialogoiTreeItem.js';
 import * as path from 'path';
 
 /**
@@ -70,16 +70,8 @@ export class FileStatusService {
         managedFilenames.add(metaYaml.readme);
       }
 
-      // コメントファイルも管理対象として登録
-      for (const fileEntry of metaYaml.files) {
-        if (
-          hasCommentsProperty(fileEntry) &&
-          fileEntry.comments !== undefined &&
-          fileEntry.comments !== ''
-        ) {
-          managedFilenames.add(fileEntry.comments);
-        }
-      }
+      // コメントファイルは新しい仕様では別途管理されるため、
+      // ここでの登録は不要になりました
     }
 
     // 2. 実際のファイルシステムからファイル一覧を取得

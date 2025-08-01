@@ -1,6 +1,5 @@
 import { mock, MockProxy } from 'jest-mock-extended';
 import { MetaYamlServiceImpl } from './MetaYamlServiceImpl.js';
-import { SubdirectoryItem } from '../models/DialogoiTreeItem.js';
 import { MetaYaml } from '../models/MetaYaml.js';
 import { FileRepository } from '../repositories/FileRepository.js';
 import { DialogoiPathService } from './DialogoiPathService.js';
@@ -161,7 +160,6 @@ files:
       - 重要
       - 序章
     references: []
-    comments: ${contentItem.comments}
     isUntracked: ${contentItem.isUntracked}
     isMissing: ${contentItem.isMissing}
   - name: ${subdirItem.name}
@@ -215,7 +213,6 @@ files:
     hash: hash123
     tags: []
     references: []
-    comments: ''
     isUntracked: false
     isMissing: false
   - invalid: yaml: content`;
@@ -263,7 +260,6 @@ files:
             path: `${testDir}/chapter1.txt`,
             tags: ['重要', '序章'],
             references: ['settings/world.md'],
-            comments: '.chapter1.txt.comments.yaml',
             hash: 'abc123',
             isUntracked: false,
             isMissing: false,
@@ -298,7 +294,6 @@ files:
       expect(savedContent.includes('readme: README.md')).toBeTruthy();
       expect(savedContent.includes('name: chapter1.txt')).toBeTruthy();
       expect(savedContent.includes('type: content')).toBeTruthy();
-      expect(savedContent.includes('comments: .chapter1.txt.comments.yaml')).toBeTruthy();
       expect(savedContent.includes('hash: abc123')).toBeTruthy();
     });
 
@@ -330,7 +325,6 @@ files:
             name: 'test.txt',
             path: `${testDir}/test.txt`,
             hash: 'hash123',
-            comments: '.test.txt.comments.yaml',
           }),
         ],
       };
@@ -545,7 +539,6 @@ files: []`;
             path: `${testDir}/chapter1.txt`,
             tags: ['重要', '序章'],
             references: ['settings/world.md'],
-            comments: '.chapter1.txt.comments.yaml',
             hash: 'abc123',
             isUntracked: false,
             isMissing: false,
@@ -590,7 +583,6 @@ files: []`;
             hash: 'hash123',
             tags: ['既存タグ1', '既存タグ2'],
             references: [],
-            comments: `.${fileName}.comments.yaml`,
             isUntracked: false,
             isMissing: false,
           },
@@ -638,7 +630,6 @@ files: []`;
             hash: 'hash123',
             tags: ['既存タグ1', '既存タグ2'],
             references: [],
-            comments: `.${fileName}.comments.yaml`,
             isUntracked: false,
             isMissing: false,
           },
@@ -681,7 +672,6 @@ files: []`;
             hash: 'hash123',
             tags: ['既存タグ1'],
             references: [],
-            comments: '.test.comments.yaml',
             isUntracked: false,
             isMissing: false,
           },
@@ -724,7 +714,6 @@ files: []`;
             hash: 'hash123',
             tags: ['既存タグ1'],
             references: [],
-            comments: '.test.comments.yaml',
             isUntracked: false,
             isMissing: false,
           },
@@ -767,7 +756,6 @@ files: []`;
             hash: 'hash123',
             tags: [],
             references: [],
-            comments: `.${fileName}.comments.yaml`,
             isUntracked: false,
             isMissing: false,
           },
@@ -810,7 +798,6 @@ files: []`;
             hash: 'hash123',
             tags: ['タグ1', 'タグ2', 'タグ3'],
             references: [],
-            comments: '.test.comments.yaml',
             isUntracked: false,
             isMissing: false,
           },
@@ -853,7 +840,6 @@ files: []`;
             hash: 'hash123',
             tags: ['タグ1'],
             references: [],
-            comments: '.test.comments.yaml',
             isUntracked: false,
             isMissing: false,
           },
@@ -896,7 +882,6 @@ files: []`;
             hash: 'hash123',
             tags: ['タグ1'],
             references: [],
-            comments: '.test.comments.yaml',
             isUntracked: false,
             isMissing: false,
           },
@@ -955,7 +940,6 @@ files: []`;
             hash: 'hash123',
             tags: [],
             references: [],
-            comments: '.chapter1.txt.comments.yaml',
             isUntracked: false,
             isMissing: false,
           },
@@ -989,7 +973,6 @@ files: []`;
             hash: 'hash123',
             tags: [],
             references: [],
-            comments: '.file1.txt.comments.yaml',
             isUntracked: false,
             isMissing: false,
           },
@@ -1000,7 +983,6 @@ files: []`;
             hash: 'hash123',
             tags: [],
             references: [],
-            comments: '.file2.txt.comments.yaml',
             isUntracked: false,
             isMissing: false,
           },
@@ -1011,7 +993,6 @@ files: []`;
             hash: 'hash123',
             tags: [],
             references: [],
-            comments: '.file3.txt.comments.yaml',
             isUntracked: false,
             isMissing: false,
           },
@@ -1053,7 +1034,6 @@ files: []`;
             hash: 'hash123',
             tags: [],
             references: [],
-            comments: '.file1.txt.comments.yaml',
             isUntracked: false,
             isMissing: false,
           },
@@ -1064,7 +1044,6 @@ files: []`;
             hash: 'hash123',
             tags: [],
             references: [],
-            comments: '.file2.txt.comments.yaml',
             isUntracked: false,
             isMissing: false,
           },
@@ -1081,7 +1060,6 @@ files: []`;
             hash: 'hash123',
             tags: [],
             references: [],
-            comments: '.file3.txt.comments.yaml',
             isUntracked: false,
             isMissing: false,
           },
@@ -1132,7 +1110,6 @@ files: []`;
             hash: 'hash123',
             tags: [],
             references: [],
-            comments: '.file1.txt.comments.yaml',
             isUntracked: false,
             isMissing: false,
           },
@@ -1146,161 +1123,6 @@ files: []`;
       const result = await service.moveFileInMetadata(testDir, testDir, 'file1.txt', 0);
 
       expect(result.success).toBe(true);
-    });
-  });
-
-  describe('updateFileCommentsAsync', () => {
-    it('ファイルのcommentsフィールドを正常に更新する', async () => {
-      const testDir = '/test/project';
-      const fileName = 'test.txt';
-      const commentsPath = 'test.txt.comments.yaml';
-
-      const meta: MetaYaml = {
-        readme: 'README.md',
-        files: [
-          {
-            name: fileName,
-            type: 'content',
-            path: `${testDir}/${fileName}`,
-            hash: 'hash123',
-            tags: [],
-            references: [],
-            isUntracked: false,
-            isMissing: false,
-          },
-        ],
-      };
-
-      addDirectory(testDir);
-      await service.saveMetaYamlAsync(testDir, meta);
-
-      // commentsフィールドを更新
-      const result = await service.updateFileCommentsAsync(testDir, fileName, commentsPath);
-      expect(result).toBe(true);
-
-      // 更新されたメタデータを確認
-      const updatedMeta = await service.loadMetaYamlAsync(testDir);
-      expect(updatedMeta).not.toBe(null);
-
-      if (updatedMeta === null) {
-        throw new Error('updatedMeta should not be null');
-      }
-
-      const fileItem = updatedMeta.files.find((f) => f.name === fileName);
-      expect(fileItem).not.toBe(undefined);
-
-      // 型ガードの外でテスト
-      const isValidType =
-        fileItem !== undefined && (fileItem.type === 'content' || fileItem.type === 'setting');
-      expect(isValidType).toBe(true);
-
-      // commentsフィールドの確認
-      const hasComments =
-        isValidType && 'comments' in fileItem && fileItem.comments === commentsPath;
-      expect(hasComments).toBe(true);
-    });
-
-    it('settingファイルのcommentsフィールドを更新する', async () => {
-      const testDir = '/test/project';
-      const fileName = 'setting.md';
-      const commentsPath = 'setting.md.comments.yaml';
-
-      const meta: MetaYaml = {
-        readme: 'README.md',
-        files: [
-          {
-            name: fileName,
-            type: 'setting',
-            path: `${testDir}/${fileName}`,
-            hash: 'hash456',
-            tags: [],
-            isUntracked: false,
-            isMissing: false,
-          },
-        ],
-      };
-
-      addDirectory(testDir);
-      await service.saveMetaYamlAsync(testDir, meta);
-
-      // commentsフィールドを更新
-      const result = await service.updateFileCommentsAsync(testDir, fileName, commentsPath);
-      expect(result).toBe(true);
-
-      // 更新されたメタデータを確認
-      const updatedMeta = await service.loadMetaYamlAsync(testDir);
-      expect(updatedMeta).not.toBe(null);
-
-      if (updatedMeta === null) {
-        throw new Error('updatedMeta should not be null');
-      }
-
-      const fileItem = updatedMeta.files.find((f) => f.name === fileName);
-      expect(fileItem).not.toBe(undefined);
-
-      // 型ガードの外でテスト
-      const isValidType =
-        fileItem !== undefined && (fileItem.type === 'content' || fileItem.type === 'setting');
-      expect(isValidType).toBe(true);
-
-      // commentsフィールドの確認
-      const hasComments =
-        isValidType && 'comments' in fileItem && fileItem.comments === commentsPath;
-      expect(hasComments).toBe(true);
-    });
-
-    it('存在しないファイルに対してはfalseを返す', async () => {
-      const testDir = '/test/project';
-      const fileName = 'nonexistent.txt';
-      const commentsPath = 'nonexistent.txt.comments.yaml';
-
-      const meta: MetaYaml = {
-        readme: 'README.md',
-        files: [],
-      };
-
-      addDirectory(testDir);
-      await service.saveMetaYamlAsync(testDir, meta);
-
-      // 存在しないファイルに対してcommentsフィールドを更新
-      const result = await service.updateFileCommentsAsync(testDir, fileName, commentsPath);
-      expect(result).toBe(false);
-    });
-
-    it('subdirectoryファイルに対してはfalseを返す', async () => {
-      const testDir = '/test/project';
-      const dirName = 'subdir';
-      const commentsPath = 'subdir.comments.yaml';
-
-      const meta: MetaYaml = {
-        readme: 'README.md',
-        files: [
-          {
-            name: dirName,
-            type: 'subdirectory',
-            path: dirName,
-            isUntracked: false,
-            isMissing: false,
-          } as SubdirectoryItem,
-        ],
-      };
-
-      addDirectory(testDir);
-      await service.saveMetaYamlAsync(testDir, meta);
-
-      // subdirectoryファイルに対してcommentsフィールドを更新
-      const result = await service.updateFileCommentsAsync(testDir, dirName, commentsPath);
-      expect(result).toBe(false);
-    });
-
-    it('メタデータファイルが存在しない場合はfalseを返す', async () => {
-      const testDir = '/test/nonexistent';
-      const fileName = 'test.txt';
-      const commentsPath = 'test.txt.comments.yaml';
-
-      // メタデータファイルが存在しない場合
-      const result = await service.updateFileCommentsAsync(testDir, fileName, commentsPath);
-      expect(result).toBe(false);
     });
   });
 });

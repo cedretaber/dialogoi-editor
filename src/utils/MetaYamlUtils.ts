@@ -18,14 +18,12 @@ interface MetaYamlContentItem extends MetaYamlFileItemBase {
   hash: string;
   tags: string[];
   references: string[];
-  comments?: string;
 }
 
 interface MetaYamlSettingItem extends MetaYamlFileItemBase {
   type: 'setting';
   hash: string;
   tags: string[];
-  comments?: string;
 }
 
 interface MetaYamlCharacterItem extends MetaYamlSettingItem {

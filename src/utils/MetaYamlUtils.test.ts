@@ -5,7 +5,7 @@ import {
   SubdirectoryItem,
   ContentItem,
   SettingItem,
-  hasValidComments,
+  canHaveComments,
 } from '../models/DialogoiTreeItem.js';
 
 describe('MetaYamlUtils テストスイート', () => {
@@ -21,7 +21,6 @@ files:
       - 序章
     references:
       - settings/world.md
-    comments: ".chapter1.txt.comments.yaml"
   - name: settings
     type: subdirectory`;
 
@@ -37,7 +36,6 @@ files:
       const contentItem = file1 as DialogoiTreeItem & { type: 'content' };
       expect(contentItem.tags).toEqual(['重要', '序章']);
       expect(contentItem.references).toEqual(['settings/world.md']);
-      expect(contentItem.comments).toBe('.chapter1.txt.comments.yaml');
       expect(contentItem.hash).toBe('abc123');
       // 実行時プロパティはダミー値で設定される
       expect(contentItem.path).toBe('');
@@ -84,7 +82,6 @@ files:
     hash: hash123
     tags: []
     references: []
-    comments: ''
     isUntracked: false
     isMissing: false
   - invalid: yaml: syntax`;
@@ -103,49 +100,6 @@ files:
       const result = MetaYamlUtils.parseMetaYaml(yamlContent);
       expect(result).toBe(null);
     });
-
-    it('commentsフィールドがないコンテンツファイルを正しく解析する', () => {
-      const yamlContent = `files:
-  - name: test-no-comments.txt
-    type: content
-    path: /test/test-no-comments.txt
-    hash: "hash456"
-    tags: []
-    references: []
-    isUntracked: false
-    isMissing: false`;
-
-      const result = MetaYamlUtils.parseMetaYaml(yamlContent);
-      expect(result).not.toBe(null);
-      expect(result?.files.length).toBe(1);
-
-      const file = result?.files[0];
-      expect(file?.name).toBe('test-no-comments.txt');
-      expect(file?.type).toBe('content');
-      const contentItem = file as ContentItem;
-      expect(contentItem.comments).toBeUndefined();
-    });
-
-    it('commentsフィールドがない設定ファイルを正しく解析する', () => {
-      const yamlContent = `files:
-  - name: setting-no-comments.md
-    type: setting
-    path: /test/setting-no-comments.md
-    hash: "hash789"
-    tags: []
-    isUntracked: false
-    isMissing: false`;
-
-      const result = MetaYamlUtils.parseMetaYaml(yamlContent);
-      expect(result).not.toBe(null);
-      expect(result?.files.length).toBe(1);
-
-      const file = result?.files[0];
-      expect(file?.name).toBe('setting-no-comments.md');
-      expect(file?.type).toBe('setting');
-      const settingItem = file as SettingItem;
-      expect(settingItem.comments).toBeUndefined();
-    });
   });
 
   describe('stringifyMetaYaml', () => {
@@ -160,7 +114,6 @@ files:
             hash: 'abc123',
             tags: ['重要', '序章'],
             references: ['settings/world.md'],
-            comments: '.chapter1.txt.comments.yaml',
             isUntracked: false,
             isMissing: false,
           },
@@ -198,7 +151,6 @@ files:
             hash: 'hash123',
             tags: [],
             references: [],
-            comments: '.test.txt.comments.yaml',
             isUntracked: false,
             isMissing: false,
           },
@@ -298,7 +250,6 @@ files:
         hash: 'abc123',
         tags: ['tag1', 'tag2'],
         references: ['ref1', 'ref2'],
-        comments: '.test.txt.comments.yaml',
         isUntracked: false,
         isMissing: false,
       };
@@ -328,7 +279,6 @@ files:
         hash: 'abc123',
         tags: [],
         references: [],
-        comments: '.test.txt.comments.yaml',
         isUntracked: false,
         isMissing: false,
       };
@@ -405,7 +355,6 @@ files:
         hash: 'ghi789',
         tags: [],
         references: [],
-        comments: '', // 空文字列は許可される
         isUntracked: false,
         isMissing: false,
       };
@@ -427,7 +376,6 @@ files:
             hash: 'abc123',
             tags: [],
             references: [],
-            comments: '.test.txt.comments.yaml',
             isUntracked: false,
             isMissing: false,
           },
@@ -471,7 +419,6 @@ files:
             hash: 'abc123',
             tags: [],
             references: [],
-            comments: '.valid.txt.comments.yaml',
             isUntracked: false,
             isMissing: false,
           },
@@ -508,8 +455,8 @@ files:
     });
   });
 
-  describe('hasValidComments 型ガード関数', () => {
-    it('有効なcommentsを持つContentItemでtrueを返す', () => {
+  describe('canHaveComments 型ガード関数', () => {
+    it('ContentItemでtrueを返す', () => {
       const item: ContentItem = {
         name: 'test.txt',
         type: 'content',
@@ -517,72 +464,27 @@ files:
         hash: 'abc123',
         tags: [],
         references: [],
-        comments: '.test.txt.comments.yaml',
         isUntracked: false,
         isMissing: false,
       };
 
-      const result = hasValidComments(item);
+      const result = canHaveComments(item);
       expect(result).toBe(true);
-
-      // 型ガードテスト - 条件外でexpectを実行
-      const isString = result && typeof item.comments === 'string';
-      const hasLength = result && item.comments !== undefined && item.comments.length > 0;
-      expect(isString).toBe(true);
-      expect(hasLength).toBe(true);
     });
 
-    it('有効なcommentsを持つSettingItemでtrueを返す', () => {
+    it('SettingItemでtrueを返す', () => {
       const item: SettingItem = {
         name: 'setting.md',
         type: 'setting',
         path: '/test/setting.md',
         hash: 'def456',
         tags: [],
-        comments: '.setting.md.comments.yaml',
         isUntracked: false,
         isMissing: false,
       };
 
-      const result = hasValidComments(item);
+      const result = canHaveComments(item);
       expect(result).toBe(true);
-
-      // 型ガードテスト - 条件外でexpectを実行
-      const isString = result && typeof item.comments === 'string';
-      const hasLength = result && item.comments !== undefined && item.comments.length > 0;
-      expect(isString).toBe(true);
-      expect(hasLength).toBe(true);
-    });
-
-    it('commentsがundefinedのContentItemでfalseを返す', () => {
-      const item: ContentItem = {
-        name: 'test-no-comments.txt',
-        type: 'content',
-        path: '/test/test-no-comments.txt',
-        hash: 'ghi789',
-        tags: [],
-        references: [],
-        // comments: undefined
-        isUntracked: false,
-        isMissing: false,
-      };
-
-      expect(hasValidComments(item)).toBe(false);
-    });
-
-    it('commentsが空文字列のSettingItemでfalseを返す', () => {
-      const item: SettingItem = {
-        name: 'setting-empty-comments.md',
-        type: 'setting',
-        path: '/test/setting-empty-comments.md',
-        hash: 'jkl012',
-        tags: [],
-        comments: '', // 空文字列
-        isUntracked: false,
-        isMissing: false,
-      };
-
-      expect(hasValidComments(item)).toBe(false);
     });
 
     it('SubdirectoryItemでfalseを返す', () => {
@@ -594,26 +496,7 @@ files:
         isMissing: false,
       };
 
-      expect(hasValidComments(item)).toBe(false);
-    });
-
-    it('commentsフィールドがない（"comments" in item === false）場合にfalseを返す', () => {
-      // commentsプロパティが存在しないオブジェクトを作成
-      const itemBase = {
-        name: 'test-no-prop.txt',
-        type: 'content' as const,
-        path: '/test/test-no-prop.txt',
-        hash: 'mno345',
-        tags: [],
-        references: [],
-        isUntracked: false,
-        isMissing: false,
-      };
-
-      // commentsプロパティを意図的に除外したオブジェクトを作成
-      const item = itemBase as ContentItem;
-
-      expect(hasValidComments(item)).toBe(false);
+      expect(canHaveComments(item)).toBe(false);
     });
   });
 });
