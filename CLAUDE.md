@@ -541,10 +541,10 @@ class FileOperationService {
 **シンプルで保守しやすいコメントシステムへの完全移行を実現**
 
 #### 技術的成果
-- **新データ構造**: `.{filename}.comments.yaml` 形式 + 連番ID管理
+- **新データ構造**: `.dialogoi/{path}/{filename}.comments.yaml` 形式 + 連番ID管理
 - **GitHub互換行番号**: `#L42`, `#L4-L7` 形式対応
 - **汎用URLパーサー**: `FileLineUrlParser` - 将来的にマークダウンリンクでも利用可能
-- **meta.yaml構造変更**: `comments`フィールドでコメントファイル参照
+- **meta.yaml構造変更**: `comments`フィールドは削除され、ファイル存在ベースで判定
 
 #### アーキテクチャ改善
 ```typescript
@@ -577,12 +577,16 @@ files:
   - name: "chapter1.txt"
     reviews: "chapter1.txt_reviews.yaml"  # 廃止
     review_count: { open: 3, resolved: 5 }  # 廃止
+    comments: "chapter1.txt.comments.yaml"  # 廃止
 
 # 新構造（実装完了）
 files:
   - name: "chapter1.txt"
     type: "content"
-    comments: "chapter1.txt.comments.yaml"  # 新規（.dialogoi/内に配置）
+    hash: "sha256hash..."
+    tags: ["重要"]
+    references: ["settings/world.md"]
+    # commentsフィールドは削除 - ファイル存在ベースで判定
 ```
 
 この実装により、協業前提の複雑なレビューシステムから、一人作業でも有用なシンプルなコメント・TODO管理システムへの移行が完了しました。

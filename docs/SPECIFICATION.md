@@ -116,21 +116,21 @@ files:             # ファイル・サブディレクトリのリスト（順�
     tags: ["タグ1", "タグ2"]
     hash: "..."                  # ファイルのハッシュ値 
     references: ["パス1", "パス2"] # 小説ルートからの相対パス
-    comments: ".ファイル名.comments.yaml"  # 省略可。コメントファイルへの参照
+    # comments フィールドは削除 - ファイル存在ベースで判定
 
     # 設定ファイルの場合
   - name: ファイル名
     type: setting
     tags: ["タグ1", "タグ2"]
     hash: "..."
-    comments: ".ファイル名.comments.yaml"
+    # comments フィールドは削除
 
     # 設定ファイル（キャラクター）の場合
   - name: ファイル名
     type: setting
     tags: ["タグ1", "タグ2"]
     hash: "..."
-    comments: ".ファイル名.comments.yaml"
+    # comments フィールドは削除
     character:
       importance: main/sub/background
       multiple_characters: true/false
@@ -141,7 +141,7 @@ files:             # ファイル・サブディレクトリのリスト（順�
     type: setting
     tags: ["タグ1", "タグ2"]
     hash: "..."
-    comments: ".ファイル名.comments.yaml"
+    # comments フィールドは削除
     glossary: true
 
     # 設定ファイル（伏線）の場合
@@ -149,7 +149,7 @@ files:             # ファイル・サブディレクトリのリスト（順�
     type: setting
     tags: ["タグ1", "タグ2"]
     hash: "..."
-    comments: ".ファイル名.comments.yaml"
+    # comments フィールドは削除
     foreshadowing:
       plants:                        # 植込み位置（配列）
         - location: "contents/chapter1.txt"
@@ -304,7 +304,7 @@ project_settings:
 ### コメントファイル形式
 
 ```yaml
-# novel/contents/.content1.txt.comments.yaml
+# novel/.dialogoi/contents/content1.txt.comments.yaml
 comments:
   - id: 1
     target_file: "contents/content1.txt#L42"  # GitHub風行番号形式
@@ -324,9 +324,9 @@ comments:
 
 ### ファイル配置規則
 
-- コメントファイルは対象ファイルと同じディレクトリに配置
-- ファイル名は `.{対象ファイル名}.comments.yaml` 形式（隠しファイル）
-- 例: `contents/chapter1.txt` → `contents/.chapter1.txt.comments.yaml`
+- コメントファイルは `.dialogoi/` ディレクトリ内に配置
+- ファイル名は `{対象ファイル名}.comments.yaml` 形式（通常ファイル）
+- 例: `contents/chapter1.txt` → `.dialogoi/contents/chapter1.txt.comments.yaml`
 
 ### コメントのステータス
 

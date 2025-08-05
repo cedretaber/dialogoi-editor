@@ -62,3 +62,6 @@ Thumbs.db
 
 # その他
 .cache/
+
+# MCP サーバー設定ディレクトリ
+.serena/
