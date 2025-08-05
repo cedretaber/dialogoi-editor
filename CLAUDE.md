@@ -1,55 +1,31 @@
 # CLAUDE.md
 
-このファイルは Claude Code (claude.ai/code) がこのリポジトリで作業する際のガイダンスを提供します。
+このファイルは Claude Code がこのリポジトリで作業する際のガイダンスを提供します。
 
-## 利用言語について
+## 利用言語
 
-- ユーザとのコミュニケーションには日本語を使用してください
-- コード中のコメントやテストケース名も可能な限り日本語でお願いします
+- ユーザとのコミュニケーションには日本語を使用
+- コード中のコメントやテストケース名も可能な限り日本語で記述
 
 ## プロジェクト概要
 
 小説執筆支援のためのVSCode Extensionです。本文・設定・キャラクター・用語集・伏線などを体系的に管理し、執筆の一貫性を保ちながら効率的な作業を支援します。
 
-主要機能：
-- TreeViewによる階層的ファイル管理 ✅
-- .dialogoi/dialogoi-meta.yamlによるメタデータ管理 ✅
-- ファイル作成・削除・名前変更・並び替え ✅
-- タグシステム（ファイル・ディレクトリへのタグ付与） ✅
-- 参照関係管理（双方向参照追跡） ✅
-- ツールチップによる詳細情報表示 ✅
-- レビュー機能（編集者・AI連携） 🔄（Phase 2b）
-- 将来的にDialogoi MCP サーバとの連携 🔄（Phase 4）
+**主要機能**
+- TreeViewによる階層的ファイル管理
+- `.dialogoi/dialogoi-meta.yaml`によるメタデータ管理
+- ファイル作成・削除・名前変更・並び替え
+- タグシステム（ファイル・ディレクトリへのタグ付与）
+- 参照関係管理（双方向参照追跡）
+- ツールチップによる詳細情報表示
+- コメント・TODO管理機能（`.dialogoi/{path}/{filename}.comments.yaml`）
+- WebViewによるファイル詳細・プロジェクト設定の編集
 
 ## 開発方針
 
-### 作業時間について
+**破壊的変更の許可**: このプロジェクトは開発段階のため、後方互換性を気にせず最適な設計を追求してください。
 
-**時間の節約について考える必要はありません**
-納期があるわけではないので、多少時間がかかっても丁寧に仕事をしてください。
-技術的負債を残さないことを優先してください。
-
-### 後方互換性について
-
-**重要**: このプロジェクトは開発段階であり、まだ公開されていません。利用者も開発者のみのため、**後方互換性については一切気にする必要はありません**。
-
-- 破壊的変更は積極的に行う
-- 仕様の大幅な変更も躊躇なく実行
-- メタデータフォーマットの変更も自由に行う
-- 新しいアイデアを試すことを優先
-
-この方針により、最適な設計を追求し、技術的負債を蓄積することなく開発を進めることができます。
-
-### 効率化ツールの利用について
-
-**重要**: このプロジェクトでは **Serena MCP サーバー** を推奨ツールとして採用しています。
-
-- 大規模なコードベース探索やシンボル検索が必要な場合、積極的に serena MCP の機能を利用してください
-- 標準ツール（Read、Grep、Glob等）で対応可能な簡単な作業では標準ツールを使用
-- **効率性を重視**: 標準ツールで3-4回のやり取りが必要な場合は serena MCP の利用を検討
-- リファクタリング時の影響範囲調査や複雑なパターン検索では serena MCP を優先
-
-**目的**: 無駄なトークン消費を避け、開発効率を最大化すること
+**Serena MCP サーバーの活用**: 大規模なコードベース探索やシンボル検索では serena MCP を積極的に利用し、開発効率を最大化してください。
 
 ## 開発コマンド
 
@@ -59,351 +35,120 @@
 # 依存関係のインストール
 npm install
 
-# 開発モードでのExtension起動（F5キーでも可能）
+# 開発モード（VSCode内でF5キーでも可能）
 npm run watch
-# または
-npm run compile:watch
-
-# 新しいVSCodeウィンドウでExtensionをデバッグ実行
-# VSCode内でF5キーを押すか、以下のコマンド
-code --extensionDevelopmentPath=.
 
 # Extensionのパッケージング
 npm run package
-# または
-npx vsce package
 ```
 
 ### テストと品質管理
 
-テスト実行方法、品質管理、テスト作成時の注意事項については、以下のドキュメントを参照してください： @docs/rules/testing-guidelines.md
+```bash
+# 全テスト実行（サーバサイド + React）
+npm run test:all
 
-## 開発時の注意事項
+# 単体テスト実行
+npm test
 
-### package.json の設定
-- 可能な限り最新のライブラリを利用する
-- package.json の依存を確認し、バージョンの古いライブラリがあればアップデートする
-- 依存の問題でバージョンが上げられないなどやむを得ない場合のみ古いライブラリの利用を許可
+# Reactコンポーネントテスト
+npm run test:react
 
-### VSCode Extension API 固有の注意事項
+# 全体品質チェック（TypeScript + ESLint + Prettier + テスト + WebView）
+npm run check-all
 
-**Activation Events:**
-- package.jsonの`activationEvents`で適切な起動条件を設定
-- 不要な起動を避けてパフォーマンスを保つ
-- `onView:dialogoi-explorer`等、必要最小限のイベントのみ
+# TypeScript型チェック
+npm run typecheck
 
-**TreeView Provider:**
-- `vscode.TreeDataProvider`を実装する際は、`refresh()`メソッドで適切にUIを更新
-- 大量データの場合は遅延読み込みを実装
-- アイコンは`vscode.ThemeIcon`またはファイルパスを使用
+# ESLintチェック
+npm run lint
 
-**WebView:**
-- CSP（Content Security Policy）を適切に設定
-- `acquireVsCodeApi()`でExtensionとの通信を確立
-- XSS対策を必ず実装（HTMLエスケープ等）
+# コードフォーマット
+npm run format
+```
 
-**ファイルシステム操作:**
-- `vscode.workspace.fs`を使用（Node.jsのfsモジュールより推奨）
-- `vscode.FileSystemWatcher`でファイル変更を監視
-- 相対パスではなく`vscode.Uri`を使用
+詳細なテスト・品質管理については：@docs/rules/testing-guidelines.md
 
-**設定管理:**
-- `vscode.workspace.getConfiguration()`で設定を取得
-- 設定変更時は`onDidChangeConfiguration`イベントで対応
+## アーキテクチャ設計
 
-**WebView実装パターン:**
-- WebViewのUIは`webview/`ディレクトリにReact/TypeScriptで実装
-- 構成ファイル:
-  - `webview/index.html`: HTMLテンプレート（プレースホルダー含む）
-  - `webview/index.tsx`: Reactアプリのエントリーポイント  
-  - `webview/components/`: Reactコンポーネント群
-  - `webview/style.css`: 共通CSS
-  - `webview/types/`: TypeScript型定義
-- ビルド: TypeScriptが`out/webviews/`にコンパイル
-- Provider側でHTMLテンプレートを読み込み、プレースホルダーを置換してWebViewに設定
+### 依存関係注入（DI）パターン
 
-### メタデータ/コメントファイル 固有の注意事項
-
-**YAMLファイル操作:**
-- `js-yaml`ライブラリを使用
-- パース エラーに対する適切なエラーハンドリング
-- ファイルのSHA-256ハッシュ計算で変更検知
-
-**レビュー機能:**
-- レビューファイルの位置情報は行番号+文字位置で管理
-- ファイル変更時はハッシュ値で変更検知し、ユーザーに警告表示
-- スレッド機能では配列インデックスで管理（IDは使用しない）
-
-**エラーハンドリング:**
-- ファイルが存在しない場合の処理
-- 不正なYAML形式の場合の処理
-- メタデータの整合性チェック
-
-### パフォーマンス考慮事項
-
-- 大規模プロジェクト（数百ファイル）での応答性を保つ
-- ファイル監視は必要最小限に限定
-- メタデータのキャッシング戦略
-
-### 依存関係注入（DI）アーキテクチャ
-
-**重要**: このプロジェクトではVSCode依存の局所化とテスト可能性の向上のため、依存関係注入パターンを採用しています。2025年1月31日にアーキテクチャの大幅改善を完了し、全サービスでコンストラクタ注入パターンを統一しました。
-
-#### レイヤー設計の基本原則
-
-**サービス層（/src/services/）の責務:**
+**サービス層（`/src/services/`）の責務:**
 - 純粋なビジネスロジックの実装
 - VSCode APIへの直接アクセス禁止
 - 単体テスト可能な設計
-- 依存関係注入パターンの使用
 
-**コマンド層（/src/commands/）の責務:**
+**コマンド層（`/src/commands/`）の責務:**
 - VSCodeとの連携・UI操作
-- ユーザーインターフェース制御
 - サービス層のビジネスロジックを利用
 
-**サービスクラスの作成指針:**
-- 全てのサービスクラスはコンストラクタでFileOperationServiceを受け取る
-- 直接的なファイル操作（Node.js `fs`モジュール）は行わない
-- VSCode APIへの直接アクセスは避ける
-
-**例：**
 ```typescript
-// ❌ 悪い例：services/でVSCode APIを使用
-export class BadService {
-  someMethod(): void {
-    const editor = vscode.window.activeTextEditor; // VSCode依存
-    // ...
-  }
-}
-
-// ✅ 良い例：services/はビジネスロジックのみ
+// ✅ 推奨パターン
 export class NewService {
   constructor(private fileOperationService: FileOperationService) {}
   
   someMethod(): void {
-    // ❌ 悪い例：直接ファイル操作
-    // const content = fs.readFileSync(path);
-    
-    // ✅ 良い例：FileOperationService経由
     const uri = this.fileOperationService.createFileUri(path);
     const content = this.fileOperationService.readFileSync(uri);
   }
 }
-
-// ✅ 良い例：commands/でVSCodeとサービスを連携
-export function registerSomeCommands(context: vscode.ExtensionContext) {
-  const service = ServiceContainer.getInstance().getNewService();
-  
-  const command = vscode.commands.registerCommand('some.command', () => {
-    const editor = vscode.window.activeTextEditor; // VSCode依存はここで
-    const result = service.someMethod(); // ビジネスロジックは分離
-    // 結果をVSCode UIに反映
-  });
-  
-  context.subscriptions.push(command);
-}
 ```
 
-**テストの作成指針**については、[テスト実行・品質管理ガイドライン](docs/rules/testing-guidelines.md)を参照してください。
+### テスト設計
 
-### Reactコンポーネントテストの注意事項
-
-Reactコンポーネントテストの詳細な制約と推奨事項については、[テスト実行・品質管理ガイドライン](docs/rules/testing-guidelines.md)を参照してください。
-
-## 開発の進め方
-
-- 機能開発などある程度まとまった規模の開発を行う際は、**まず docs/ の下に計画書を作り** ユーザのレビューを受けること
-  - TODO リストなども含め、 **いつでも中断・再開が可能なように** 工夫すること
-- 複数のフェーズに分かれている開発の場合は、フェーズが1つ終わるごとに必ず `test-quality-checker` agentで品質チェックを行うこと
-- そのフェーズで作成したファイルにはテストを書くこと
-- 品質チェックが通ったら git commit する
-- 実装を修正した際は必ずドキュメントを確認し、差分をドキュメントに反映すること
-
-**コミット前のワークフロー：**
-1. コード変更・ファイル作成
-2. テスト作成（新機能の場合）
-3. **`test-quality-checker` agentによる品質保証**: 「コミット前に品質チェックをお願いします」
-   - 自動的に `npm run check-all` を実行
-   - 軽微な問題は自動修正
-   - 重要な問題は詳細レポートで報告
-4. 全チェック通過後に git commit
-
-### テスト修正に関する重要な原則
-
-テスト修正に関する詳細な原則については、[テスト実行・品質管理ガイドライン](docs/rules/testing-guidelines.md)を参照してください。
-
-### コーディング規約と型安全性
-
-**基本原則：** コーディング規約、型安全性についてはその言語のベストプラクティスに従うこと。敢えてベストプラクティスから外れる場合はその理由を明記すること。
-
-**その他原則**
-
-- インデントの不一致などについては気にする必要はない。
-  - `npm run format` で修正されるため
-
-**TypeScript 固有の注意事項：**
-
-- `any` 型の使用は極力避ける（型安全性を損なうため）
-- `unknown` や適切な型ガードを使用して型安全を保つ
-- `as` キャストは最小限に留め、型の整合性を保証できる場合のみ使用
-- 関数の戻り値型は明示的に指定する（推論に頼らない）
-- `strict` モードを有効にしたまま開発する
-
-**例外的な使用が許される場合：**
-
-- サードパーティライブラリの型定義が不完全な場合
-- 複雑な型変換で一時的な型キャストが必要な場合
-- ただし、その理由をコメントで明記すること
-
-**ファイルパスの命名規則：**
-
-パスの種類を明確にするため、以下の命名規則を必ず守ること：
-
-- **相対パス**: `relativePath`, `relativeFilePath`, `relativeDir` 等
-- **絶対パス**: `absolutePath`, `absoluteFilePath`, `absoluteDir` 等
-- **汎用的な `path`, `filePath`, `dirPath` は使用禁止**
-
-例：
+**jest-mock-extended使用**
 ```typescript
-// ❌ 悪い例
-const path = '/absolute/path/to/file.txt';
-const filePath = 'relative/path/to/file.txt';
+import { mock, MockProxy } from 'jest-mock-extended';
 
-// ✅ 良い例
-const absolutePath = '/absolute/path/to/file.txt';
-const relativePath = 'relative/path/to/file.txt';
-const absoluteFilePath = '/absolute/path/to/file.txt';
-const relativeFilePath = 'relative/path/to/file.txt';
+const mockFileRepository = mock<FileRepository>();
+const service = new CommentService(mockFileRepository);
 ```
 
-この規則により、パスの種類の取り違えによるバグを防ぐ。
+詳細なテスト作成指針：@docs/rules/testing-guidelines.md
 
-## 実装実績
+## VSCode Extension固有の注意事項
 
-### アーキテクチャ統一プロジェクト ✅ **2025-01-31完了**
+### WebView実装
+詳細なWebView開発ガイドライン：@docs/rules/webview-guidelines.md
 
-**全サービスでjest-mock-extended移行とDIパターン統一を実現**
+### ファイルシステム操作
+- `vscode.workspace.fs`を使用（Node.js fsモジュールより推奨）
+- 相対パスではなく`vscode.Uri`を使用
 
-#### 技術的成果
-- **jest-mock-extended完全移行**: TestServiceContainer廃止によるシンプル化
-- **ReferenceService改名**: ReferenceManager → ReferenceServiceで命名統一
-- **ServiceContainer統一**: コンストラクタ注入パターンの完全統一
-- **テスト品質向上**: 517→600+テストに増加
+### メタデータ/コメントファイル
+- `js-yaml`ライブラリを使用
+- ファイルのSHA-256ハッシュ計算で変更検知
+- GitHub互換行番号形式（`#L42`, `#L4-L7`）対応
 
-#### アーキテクチャ改善
-```typescript
-// 旧: 複雑なテストコンテナ
-const container = TestServiceContainer.create();
-const service = container.getCommentService();
+## コーディング規約
 
-// 新: シンプルなモック注入
-const mockFileRepo = mock<FileRepository>();
-const service = new CommentService(mockFileRepo);
-```
+**TypeScript 固有の注意事項:**
+- `any` 型の使用は極力避ける
+- `strict` モードを有効にしたまま開発
+- 関数の戻り値型は明示的に指定
 
-#### 品質指標
-- **ESLintエラー**: 261個→0個の完全解決
-- **型安全性**: TypeScript strict mode + MockProxy<T>
-- **テストカバレッジ**: 全サービス・WebViewコンポーネントの包括的テスト
-- **CI/CD**: GitHub Actions完全通過
+**ファイルパスの命名規則:**
+- **相対パス**: `relativePath`, `relativeFilePath`
+- **絶対パス**: `absolutePath`, `absoluteFilePath`
+- **汎用的な `path`, `filePath` は使用禁止**
 
-### Phase 3.5b: インライン編集機能の完全実装 ✅ **2025-01-22完了**
+## 開発ワークフロー
 
-**VSCode標準エクスプローラー準拠のファイル名編集機能を実現**
+1. **機能開発前**: docs/下に計画書を作成
+2. **実装**: コード変更・ファイル作成
+3. **テスト作成**（新機能の場合）
+4. **品質チェック**: `test-quality-checker` agentで品質保証
+5. **git commit**: 全チェック通過後
 
-#### 技術的成果
-- **非同期ファイル操作**: `workspace.fs.rename` APIによるエディタ状態保持
-- **Repository層拡張**: 同期・非同期両対応のファイルリネーム機能
-- **React WebView**: 150msデバウンスバリデーション付きインライン編集
-- **VSCode API準拠**: 標準エクスプローラーと同じ挙動を実現
+**コミット前必須チェック:**
+「コミット前に品質チェックをお願いします」→ `npm run check-all` 自動実行
 
-#### アーキテクチャ改善
-```typescript
-// 抽象層での非同期メソッド定義
-abstract class FileRepository {
-  abstract renameAsync(oldUri: Uri, newUri: Uri): Promise<void>;
-}
+## 実装済み機能
 
-// VSCode API実装
-class VSCodeFileRepository extends FileRepository {
-  async renameAsync(oldUri: Uri, newUri: Uri): Promise<void> {
-    await vscode.workspace.fs.rename(oldVsCodeUri, newVsCodeUri, {
-      overwrite: false
-    });
-  }
-}
+- **TreeView階層管理**: VSCode標準エクスプローラー準拠のUI
+- **メタデータ管理**: `.dialogoi/dialogoi-meta.yaml`による統合管理
+- **コメントシステム**: `.dialogoi/{path}/{filename}.comments.yaml`形式
+- **DI アーキテクチャ**: jest-mock-extended + コンストラクタ注入パターン統一
+- **包括的テスト**: 30+サービステスト + 10+Reactコンポーネントテスト
 
-// サービス層での非同期対応
-class FileOperationService {
-  async renameFileAsync(dirPath: string, oldName: string, newName: string): Promise<FileOperationResult> {
-    await this.fileRepository.renameAsync(oldUri, newUri);
-  }
-}
-```
-
-#### UX改善
-- **直感的操作**: クリックするだけで編集モード切り替え
-- **リアルタイム検証**: 入力中の即座なフィードバック
-- **キーボード対応**: Enter（保存）/ Escape（キャンセル）
-- **エラーハンドリング**: 親切なエラーメッセージ表示
-
-#### テスト対応
-- MockFileRepository での非同期メソッド実装
-- Promise.resolve() による適切な型対応
-- ESLint require-await ルール準拠
-
-### コメントシステムリファクタリング完了 ✅ **2025-01-25完了**
-
-**シンプルで保守しやすいコメントシステムへの完全移行を実現**
-
-#### 技術的成果
-- **新データ構造**: `.dialogoi/{path}/{filename}.comments.yaml` 形式 + 連番ID管理
-- **GitHub互換行番号**: `#L42`, `#L4-L7` 形式対応
-- **汎用URLパーサー**: `FileLineUrlParser` - 将来的にマークダウンリンクでも利用可能
-- **meta.yaml構造変更**: `comments`フィールドは削除され、ファイル存在ベースで判定
-
-#### アーキテクチャ改善
-```typescript
-// 新コメントデータ構造
-interface CommentItem {
-  id: number;                           // 連番ID (1, 2, 3...)
-  target_file: string;                  // "contents/chapter1.txt#L42"
-  file_hash: string;                    // ファイル変更検知
-  content: string;                      // マークダウン対応コメント
-  posted_by: string;                    // 投稿者識別
-  status: 'open' | 'resolved';         // シンプル2状態
-  created_at: string;                   // ISO 8601形式
-}
-
-// 汎用的な行番号URLパーサー
-export function parseFileLineUrl(url: string): ParsedFileLineUrl;
-export function formatFileLineUrl(filePath: string, startLine?: number, endLine?: number): string;
-```
-
-#### 品質指標
-- **テストカバレッジ**: CommentService 25テスト + FileLineUrlParser 15テスト
-- **型安全性**: TypeScript strict mode + ESLint max-warnings 0
-- **後方互換性**: エイリアス関数で既存コード継続動作
-- **実用性**: examples/sample-novel でサンプルデータ提供
-
-#### meta.yaml新構造
-```yaml
-# 旧構造（廃止）
-files:
-  - name: "chapter1.txt"
-    reviews: "chapter1.txt_reviews.yaml"  # 廃止
-    review_count: { open: 3, resolved: 5 }  # 廃止
-    comments: "chapter1.txt.comments.yaml"  # 廃止
-
-# 新構造（実装完了）
-files:
-  - name: "chapter1.txt"
-    type: "content"
-    hash: "sha256hash..."
-    tags: ["重要"]
-    references: ["settings/world.md"]
-    # commentsフィールドは削除 - ファイル存在ベースで判定
-```
-
-この実装により、協業前提の複雑なレビューシステムから、一人作業でも有用なシンプルなコメント・TODO管理システムへの移行が完了しました。
+**品質指標**: ESLintエラー0個、TypeScript strict mode、GitHub Actions完全通過
