@@ -76,42 +76,7 @@ npx vsce package
 
 ### テストと品質管理
 
-```bash
-# 単体テスト実行（CI用 - VSCode非依存）
-npm test
-
-# Reactコンポーネントテスト実行（CI用 - VSCode非依存）
-npm run test:react
-
-# 全てのテスト実行（サーバサイド + React）
-npm run test:all
-
-# VSCode拡張機能テスト実行（開発用 - VSCode環境必要）
-npm run test:vscode
-
-# TypeScript コンパイル
-npm run compile
-
-# TypeScript型チェック
-npm run typecheck
-
-# ESLintチェック
-npm run lint
-
-# Prettierフォーマット
-npm run format
-
-# 全体チェック（CI用）
-npm run check-all
-```
-
-**テスト実行環境について：**
-- `npm test`: 標準のNode.js環境で実行可能（サーバサイドテストのCI/CD自動実行）
-- `npm run test:react`: 標準のNode.js環境で実行可能（ReactコンポーネントテストのCI/CD自動実行）
-- `npm run test:all`: 上記2つを結合した統合テスト
-- `npm run test:vscode`: VSCode環境が必要（開発時に手動実行）
-  - VSCode内でF5キーでデバッグ実行時
-  - または `xvfb-run -a npm run test:vscode` でヘッドレス実行
+テスト実行方法、品質管理、テスト作成時の注意事項については、以下のドキュメントを参照してください： @docs/rules/testing-guidelines.md
 
 ## 開発時の注意事項
 
@@ -240,164 +205,33 @@ export function registerSomeCommands(context: vscode.ExtensionContext) {
 }
 ```
 
-**テストの作成指針 (2025-01-31更新):**
-- 全てのサービスクラスのテストはjest-mock-extendedを使用
-- MockProxy<T>パターンで依存関係をモック化
-- 実際のファイルシステムに依存しない
-
-**例（最新版）：**
-```typescript
-describe('NewService テストスイート', () => {
-  let service: NewService;
-  let mockFileRepository: MockProxy<FileRepository>;
-
-  beforeEach(() => {
-    mockFileRepository = mock<FileRepository>();
-    service = new NewService(mockFileRepository);
-  });
-
-  test('テストケース', () => {
-    // モックの動作を設定
-    mockFileRepository.readFileAsync.mockResolvedValue('test content');
-    
-    // テスト実行
-    const result = service.someMethod();
-    
-    // 結果検証
-    expect(result).toBe('expected');
-    expect(mockFileRepository.readFileAsync).toHaveBeenCalledWith(/* 期待引数 */);
-  });
-});
-```
-
-**テストケース作成の指針**
-- テストファーストを試みる
-- 先にテストケースを作成し、失敗することを確かめてから実装を作り込む
+**テストの作成指針**については、[テスト実行・品質管理ガイドライン](docs/rules/testing-guidelines.md)を参照してください。
 
 ### Reactコンポーネントテストの注意事項
 
-**重要**: React Testing Library環境での特有の制約と推奨事項を以下に記載します。
-
-#### DOM要素の取得について
-
-**❌ 使用禁止：**
-```typescript
-// document.querySelector は使用しない
-const element = document.querySelector('.some-class');
-
-// 理由：
-// 1. React Testing Libraryの仮想DOM環境では期待通りに動作しない
-// 2. 無限待機状態（infinite wait）を引き起こす可能性がある
-// 3. テストが不安定になる原因となる
-```
-
-**✅ 推奨方法：**
-```typescript
-// React Testing Libraryのセレクタを使用
-const element = screen.getByRole('button');
-const element = screen.getByText('テキスト');
-const element = screen.getByTestId('test-id');
-const element = screen.getByLabelText('ラベル');
-
-// 複数要素がある場合
-const elements = screen.getAllByText('テキスト');
-const specificElement = elements.find(el => el.closest('.specific-class'));
-```
-
-#### 重複要素問題への対処
-
-同じテキストや要素が複数箇所に表示される場合：
-
-```typescript
-// ❌ 悪い例：getByTextで重複要素エラー
-assert(screen.getByText('test.md')); // "Found multiple elements" エラー
-
-// ✅ 良い例1：より具体的なセレクタを使用
-const fileTitle = screen.getByRole('heading');
-assert(fileTitle.textContent === 'test.md');
-
-// ✅ 良い例2：getAllByTextで特定要素を絞り込み
-const elements = screen.getAllByText('test.md');
-const titleElement = elements.find(el => el.closest('.file-title'));
-assert(titleElement);
-
-// ✅ 良い例3：間接的な存在確認
-// 重複がある場合は、特定要素の確認を避けて機能の存在のみ確認
-// 例：ファイル名の表示確認を省略し、セクション存在のみ確認
-assert(screen.getByText('基本情報'));
-assert(screen.getByText('タグ'));
-```
-
-#### waitFor使用時の注意
-
-```typescript
-// ✅ 必ずタイムアウトを設定
-await waitFor(() => {
-  assert(screen.getByText('期待する要素'));
-}, { timeout: 3000 });
-
-// ❌ タイムアウト未設定は無限待機のリスク
-await waitFor(() => {
-  assert(screen.getByText('期待する要素'));
-}); // 危険
-```
-
-#### 非同期関数のテスト
-
-```typescript
-// ✅ Promise返却関数のテスト
-const mockFunction = (arg1: string, arg2: string): Promise<void> => {
-  history.push({ arg1, arg2 });
-  return Promise.resolve();
-};
-
-// ❌ voidを返すと型エラー
-const badMock = (arg1: string, arg2: string): void => {
-  // Promise<void>が期待される場合に型エラー
-};
-```
-
-#### デバッグ方法
-
-```typescript
-// DOM構造の確認
-screen.debug(); // 全体のDOM
-screen.debug(screen.getByText('特定要素')); // 特定要素周辺のDOM
-
-// 要素の存在確認
-console.log('要素一覧:', screen.queryAllByText('テキスト'));
-```
-
-これらの制約を守ることで、安定した結合テストを作成できます。
+Reactコンポーネントテストの詳細な制約と推奨事項については、[テスト実行・品質管理ガイドライン](docs/rules/testing-guidelines.md)を参照してください。
 
 ## 開発の進め方
 
 - 機能開発などある程度まとまった規模の開発を行う際は、**まず docs/ の下に計画書を作り** ユーザのレビューを受けること
   - TODO リストなども含め、 **いつでも中断・再開が可能なように** 工夫すること
-- 複数のフェーズに分かれている開発の場合は、フェーズが1つ終わるごとに必ず `npm run check-all` を行うこと
+- 複数のフェーズに分かれている開発の場合は、フェーズが1つ終わるごとに必ず `test-quality-checker` agentで品質チェックを行うこと
 - そのフェーズで作成したファイルにはテストを書くこと
-- `npm run check-all` が通ったら git commit する
+- 品質チェックが通ったら git commit する
 - 実装を修正した際は必ずドキュメントを確認し、差分をドキュメントに反映すること
 
 **コミット前のワークフロー：**
 1. コード変更・ファイル作成
 2. テスト作成（新機能の場合）
-3. `npm run check-all` 実行
-4. エラーがあれば修正して再度 `npm run check-all`
-5. 全チェック通過後に git commit
+3. **`test-quality-checker` agentによる品質保証**: 「コミット前に品質チェックをお願いします」
+   - 自動的に `npm run check-all` を実行
+   - 軽微な問題は自動修正
+   - 重要な問題は詳細レポートで報告
+4. 全チェック通過後に git commit
 
 ### テスト修正に関する重要な原則
 
-**テストが通らなくてもテストケースやファイルを削除しないこと**
-- テストが失敗する場合は、まず根本原因を特定する
-- テストケースが間違っているのか、実装が間違っているのかを判断する
-- 安易にテストを削除するのではなく、実装またはテストの期待値を修正する
-
-**エラーがなかなか修正できない場合は、必ずユーザに報告して指示を仰ぐこと**
-- 30分以上同じエラーで行き詰まった場合
-- 根本原因が特定できない場合
-- 修正方法に複数の選択肢があり判断に迷う場合
-- 大きな設計変更が必要そうな場合
+テスト修正に関する詳細な原則については、[テスト実行・品質管理ガイドライン](docs/rules/testing-guidelines.md)を参照してください。
 
 ### コーディング規約と型安全性
 
@@ -444,34 +278,6 @@ const relativeFilePath = 'relative/path/to/file.txt';
 ```
 
 この規則により、パスの種類の取り違えによるバグを防ぐ。
-
-## **重要：git commit 前の必須チェック**
-
-**新しいファイルを作成・編集した後は、git commit前に必ず以下のコマンドを実行してCIの通過を確保すること：**
-
-```bash
-npm run check-all
-```
-
-このコマンドは以下を一括実行します：
-1. `npm run typecheck` - TypeScript 型チェック
-2. `npm run lint` - ESLint チェック（警告0個必須）
-3. `npm run format:check` - Prettier フォーマット確認
-4. `npm run test:all` - 全テストの実行（サーバサイド + Reactコンポーネント）
-
-**重要な注意事項：**
-- `check-all`が失敗した場合は、必ず修正後に再度`check-all`を実行すること
-- フォーマットエラーの場合は`npm run format`で修正してから再実行
-- これらのチェックを怠ると GitHub Actions CI が失敗する
-- **どんな小さな変更でも必ずコミット前に実行すること**
-
-**個別チェックが必要な場合：**
-- フォーマット修正：`npm run format`
-- 型チェックのみ：`npm run typecheck`
-- リントのみ：`npm run lint`
-- サーバサイドテストのみ：`npm test`
-- Reactコンポーネントテストのみ：`npm run test:react`
-- 全テスト：`npm run test:all`
 
 ## 実装実績
 
