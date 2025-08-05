@@ -32,6 +32,9 @@ describe('CoreFileService テストスイート', () => {
     // ノベルルートパスの設定
     const novelRootPath = '/test-novel-root';
 
+    // getProjectRootのモックを追加
+    mockFileRepository.getProjectRoot.mockReturnValue('/');
+
     // CoreFileServiceインスタンスを作成
     coreFileService = new CoreFileServiceImpl(
       mockFileRepository,
@@ -430,8 +433,15 @@ describe('CoreFileService テストスイート', () => {
     });
 
     it('コメントファイルが存在する場合、リネーム時に連動してリネームされる', async () => {
-      // コメントファイルも作成
-      const commentFileName = '.existing.txt.comments.yaml';
+      // .dialogoi/test ディレクトリが存在することを確認
+      await mockFileRepository.createDirectoryAsync(
+        mockFileRepository.createDirectoryUri('/.dialogoi'),
+      );
+      await mockFileRepository.createDirectoryAsync(
+        mockFileRepository.createDirectoryUri('/.dialogoi/test'),
+      );
+
+      // コメントファイルを.dialogoi/内に作成
       const commentContent = `comments:
   - id: 1
     target_file: "existing.txt#L5"
@@ -441,7 +451,7 @@ describe('CoreFileService テストスイート', () => {
     created_at: "2025-01-01T00:00:00Z"`;
 
       await mockFileRepository.writeFileAsync(
-        mockFileRepository.createFileUri(`/test/${commentFileName}`),
+        mockFileRepository.createFileUri('/.dialogoi/test/existing.txt.comments.yaml'),
         commentContent,
       );
 
@@ -451,11 +461,15 @@ describe('CoreFileService テストスイート', () => {
       expect(result.success).toBe(true);
 
       // 新しいコメントファイルが存在することを確認
-      const newCommentUri = mockFileRepository.createFileUri('/test/.renamed.txt.comments.yaml');
+      const newCommentUri = mockFileRepository.createFileUri(
+        '/.dialogoi/test/renamed.txt.comments.yaml',
+      );
       expect(await mockFileRepository.existsAsync(newCommentUri)).toBeTruthy();
 
       // 旧コメントファイルが存在しないことを確認
-      const oldCommentUri = mockFileRepository.createFileUri(`/test/${commentFileName}`);
+      const oldCommentUri = mockFileRepository.createFileUri(
+        '/.dialogoi/test/existing.txt.comments.yaml',
+      );
       expect(await mockFileRepository.existsAsync(oldCommentUri)).toBeFalsy();
     });
 
@@ -538,6 +552,17 @@ describe('CoreFileService テストスイート', () => {
         mockFileRepository.createFileUri('/target/.dialogoi-meta.yaml'),
         'files: []',
       );
+
+      // .dialogoi/ディレクトリ構造を作成
+      await mockFileRepository.createDirectoryAsync(
+        mockFileRepository.createDirectoryUri('/.dialogoi'),
+      );
+      await mockFileRepository.createDirectoryAsync(
+        mockFileRepository.createDirectoryUri('/.dialogoi/test'),
+      );
+      await mockFileRepository.createDirectoryAsync(
+        mockFileRepository.createDirectoryUri('/.dialogoi/target'),
+      );
     });
 
     it('ファイルを別ディレクトリに移動できる', async () => {
@@ -593,6 +618,39 @@ describe('CoreFileService テストスイート', () => {
 
       expect(result.success).toBe(false);
       expect(result.message.includes('見つかりません')).toBeTruthy();
+    });
+
+    it('コメントファイルが存在する場合、ファイル移動時に連動して移動される', async () => {
+      // コメントファイルを.dialogoi/内に作成
+      const commentContent = `comments:
+  - id: 1
+    target_file: "existing.txt#L5"
+    content: "テストコメント"
+    posted_by: "reviewer"
+    status: "open"
+    created_at: "2025-01-01T00:00:00Z"`;
+
+      await mockFileRepository.writeFileAsync(
+        mockFileRepository.createFileUri('/.dialogoi/test/existing.txt.comments.yaml'),
+        commentContent,
+      );
+
+      // ファイルを移動
+      const result = await coreFileService.moveFile('/test', 'existing.txt', '/target');
+
+      expect(result.success).toBe(true);
+
+      // 新しい場所にコメントファイルが存在することを確認
+      const newCommentUri = mockFileRepository.createFileUri(
+        '/.dialogoi/target/existing.txt.comments.yaml',
+      );
+      expect(await mockFileRepository.existsAsync(newCommentUri)).toBeTruthy();
+
+      // 旧場所のコメントファイルが存在しないことを確認
+      const oldCommentUri = mockFileRepository.createFileUri(
+        '/.dialogoi/test/existing.txt.comments.yaml',
+      );
+      expect(await mockFileRepository.existsAsync(oldCommentUri)).toBeFalsy();
     });
   });
 

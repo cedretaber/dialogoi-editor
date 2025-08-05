@@ -14,8 +14,6 @@ files:
       - contents/03_first_magic_lesson.txt
       - contents/04_new_friendship.txt
     hash: placeholder_hash_tarou
-    isUntracked: false
-    isMissing: false
   - name: hanako.md
     type: setting
     character:
@@ -29,8 +27,6 @@ files:
       - contents/03_first_magic_lesson.txt
       - contents/04_new_friendship.txt
     hash: placeholder_hash_hanako
-    isUntracked: false
-    isMissing: false
   - name: jirou.md
     type: setting
     character:
@@ -42,8 +38,6 @@ files:
     references:
       - contents/04_new_friendship.txt
     hash: placeholder_hash_jirou
-    isUntracked: false
-    isMissing: false
   - name: teachers.md
     type: setting
     character:
@@ -56,5 +50,3 @@ files:
       - contents/02_entrance_ceremony.txt
       - contents/03_first_magic_lesson.txt
     hash: placeholder_hash_teachers
-    isUntracked: false
-    isMissing: false

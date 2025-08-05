@@ -796,12 +796,34 @@ export class CoreFileServiceImpl implements CoreFileService {
     targetDir: string,
   ): Promise<void> {
     try {
-      const commentFileName = `.${fileName}.comments.yaml`;
-      const sourceCommentPath = path.join(sourceDir, commentFileName);
-      const targetCommentPath = path.join(targetDir, commentFileName);
+      // DialogoiPathServiceを使用してコメントファイルのパスを取得
+      const projectRoot = this.fileRepository.getProjectRoot();
+
+      const commentFileName = `${fileName}.comments.yaml`;
+
+      // .dialogoi/内のコメントファイルパスを構築
+      const sourceRelativeDir = path.relative(projectRoot, sourceDir);
+      const targetRelativeDir = path.relative(projectRoot, targetDir);
+
+      const sourceCommentPath =
+        sourceRelativeDir === ''
+          ? path.join(projectRoot, '.dialogoi', commentFileName)
+          : path.join(projectRoot, '.dialogoi', sourceRelativeDir, commentFileName);
+
+      const targetCommentPath =
+        targetRelativeDir === ''
+          ? path.join(projectRoot, '.dialogoi', commentFileName)
+          : path.join(projectRoot, '.dialogoi', targetRelativeDir, commentFileName);
 
       const sourceCommentUri = this.fileRepository.createFileUri(sourceCommentPath);
       if (await this.fileRepository.existsAsync(sourceCommentUri)) {
+        // ターゲットディレクトリが.dialogoi内に存在することを確認
+        const targetCommentDir = path.dirname(targetCommentPath);
+        const targetCommentDirUri = this.fileRepository.createDirectoryUri(targetCommentDir);
+        if (!(await this.fileRepository.existsAsync(targetCommentDirUri))) {
+          await this.fileRepository.createDirectoryAsync(targetCommentDirUri);
+        }
+
         const targetCommentUri = this.fileRepository.createFileUri(targetCommentPath);
         await this.fileRepository.renameAsync(sourceCommentUri, targetCommentUri);
       }
@@ -823,10 +845,23 @@ export class CoreFileServiceImpl implements CoreFileService {
     dirPath: string,
   ): Promise<void> {
     try {
-      const oldCommentFileName = `.${oldFileName}.comments.yaml`;
-      const newCommentFileName = `.${newFileName}.comments.yaml`;
-      const oldCommentPath = path.join(dirPath, oldCommentFileName);
-      const newCommentPath = path.join(dirPath, newCommentFileName);
+      // DialogoiPathServiceを使用してコメントファイルのパスを取得
+      const projectRoot = this.fileRepository.getProjectRoot();
+      const oldCommentFileName = `${oldFileName}.comments.yaml`;
+      const newCommentFileName = `${newFileName}.comments.yaml`;
+
+      // .dialogoi/内のコメントファイルパスを構築
+      const relativeDir = path.relative(projectRoot, dirPath);
+
+      const oldCommentPath =
+        relativeDir === ''
+          ? path.join(projectRoot, '.dialogoi', oldCommentFileName)
+          : path.join(projectRoot, '.dialogoi', relativeDir, oldCommentFileName);
+
+      const newCommentPath =
+        relativeDir === ''
+          ? path.join(projectRoot, '.dialogoi', newCommentFileName)
+          : path.join(projectRoot, '.dialogoi', relativeDir, newCommentFileName);
 
       const oldCommentUri = this.fileRepository.createFileUri(oldCommentPath);
       if (await this.fileRepository.existsAsync(oldCommentUri)) {
